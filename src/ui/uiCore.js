@@ -292,9 +292,9 @@ const UICore = {
             text = `🧭 Exploring ${regionName}`;
 
             const regionState = state.regions[state.currentRegion];
-            const totalDiscoveryItems = regionState.discoveredNodeTypes.length +
-                                       regionState.discoveredCraftingStations.length +
-                                       regionState.discoveredExitPaths.length;
+            const totalDiscoveryItems = (regionState?.discoveredNodeTypes?.length || 0) +
+                                       (regionState?.discoveredCraftingStations?.length || 0) +
+                                       (regionState?.discoveredExitPaths?.length || 0);
 
             progress = (state.activeNavigation.regionHealth / state.activeNavigation.maxRegionHealth) * 100;
             progressText = `${totalDiscoveryItems} Discoveries | ${Math.floor(state.activeNavigation.regionHealth)} HP`;

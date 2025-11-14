@@ -502,6 +502,37 @@ const MigrationSystem = {
             changes++;
         }
 
+        // Ensure ALL regions have discoveredNodeTypes and discoveredCraftingStations arrays
+        if (GameEngine.state.regions) {
+            for (let regionId in GameEngine.state.regions) {
+                const region = GameEngine.state.regions[regionId];
+
+                if (!region.discoveredNodeTypes) {
+                    region.discoveredNodeTypes = [];
+                    changes++;
+                }
+
+                if (!region.discoveredCraftingStations) {
+                    region.discoveredCraftingStations = [];
+                    changes++;
+                }
+
+                if (!region.discoveredExitPaths) {
+                    region.discoveredExitPaths = [];
+                    changes++;
+                }
+
+                if (!region.nodeHealthBonuses) {
+                    region.nodeHealthBonuses = {};
+                    changes++;
+                }
+            }
+
+            if (changes > 0) {
+                console.log(`  ✅ Added missing arrays to ${Object.keys(GameEngine.state.regions).length} regions`);
+            }
+        }
+
         return changes;
     },
 
