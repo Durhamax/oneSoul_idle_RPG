@@ -535,6 +535,40 @@ const GameEngine = {
             }
         }
 
+        // ALWAYS ensure starting region is unlocked and set as current region
+        const STARTING_REGION = "region_-3_-4";
+
+        // Ensure current region is set to starting region if not set
+        if (!this.state.currentRegion) {
+            this.state.currentRegion = STARTING_REGION;
+            console.log("✅ Set current region to starting region");
+        }
+
+        // ALWAYS ensure starting region exists in state and is discovered
+        if (!this.state.regions[STARTING_REGION]) {
+            this.state.regions[STARTING_REGION] = {
+                discovered: true,
+                discoveryProgress: 0,
+                discoveredLocations: [],
+                discoveredNodeTypes: [],
+                nodeHealthBonuses: {},
+                discoveredExitPaths: [],
+                discoveredCraftingStations: []
+            };
+            console.log("✅ Created starting region state (region_-3_-4)");
+        } else if (!this.state.regions[STARTING_REGION].discovered) {
+            // If starting region exists but isn't discovered, unlock it
+            this.state.regions[STARTING_REGION].discovered = true;
+            console.log("✅ Unlocked starting region (region_-3_-4)");
+        }
+
+        // Ensure starting region has all required arrays
+        const startRegion = this.state.regions[STARTING_REGION];
+        if (!startRegion.discoveredNodeTypes) startRegion.discoveredNodeTypes = [];
+        if (!startRegion.discoveredCraftingStations) startRegion.discoveredCraftingStations = [];
+        if (!startRegion.discoveredExitPaths) startRegion.discoveredExitPaths = [];
+        if (!startRegion.nodeHealthBonuses) startRegion.nodeHealthBonuses = {};
+
         // Initialize background system AFTER world map is guaranteed to exist
         if (typeof BackgroundSystem !== 'undefined') {
             BackgroundSystem.init();
