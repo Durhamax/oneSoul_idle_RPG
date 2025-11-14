@@ -94,24 +94,36 @@ const RegionModal = {
                     </div>
                 </div>
 
-                <!-- Travel Button -->
-                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
+                <!-- Region Actions -->
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
                     ${isCurrentRegion ? `
-                        <div style="color: #4caf50; font-size: 1.1em;">
+                        <div style="color: #4caf50; font-size: 1.1em; text-align: center; margin-bottom: 12px;">
                             📍 You are here
                         </div>
+                        <button onclick="RegionModal.startNavigating()"
+                                class="action-btn"
+                                style="width: 100%; padding: 12px; background: linear-gradient(135deg, #ff9800, #f57c00); border: none; border-radius: 6px; color: white; font-size: 1em; cursor: pointer; font-weight: bold; margin-bottom: 8px;">
+                            🧭 Start Navigating
+                        </button>
                     ` : canTravel ? `
                         <button onclick="RegionModal.travelToRegion('${this.currentRegionId}')"
                                 class="action-btn"
-                                style="width: 100%; padding: 12px; background: linear-gradient(135deg, #4a9eff, #357abd); border: none; border-radius: 6px; color: white; font-size: 1em; cursor: pointer; font-weight: bold;">
+                                style="width: 100%; padding: 12px; background: linear-gradient(135deg, #4a9eff, #357abd); border: none; border-radius: 6px; color: white; font-size: 1em; cursor: pointer; font-weight: bold; margin-bottom: 8px;">
                             🗺️ Travel Here
                         </button>
+                        ${meetsNavReq ? `
+                        <button onclick="RegionModal.travelAndNavigate('${this.currentRegionId}')"
+                                class="action-btn"
+                                style="width: 100%; padding: 12px; background: linear-gradient(135deg, #66bb6a, #43a047); border: none; border-radius: 6px; color: white; font-size: 1em; cursor: pointer; font-weight: bold;">
+                            🧭 Travel & Navigate
+                        </button>
+                        ` : ''}
                     ` : !meetsNavReq ? `
-                        <div style="color: #f44336;">
+                        <div style="color: #f44336; text-align: center;">
                             🔒 Requires Navigation Level ${hexDef.navigationRequirement}
                         </div>
                     ` : `
-                        <div style="color: #ff9800;">
+                        <div style="color: #ff9800; text-align: center;">
                             🔒 Path not discovered yet
                         </div>
                     `}
@@ -353,6 +365,57 @@ const RegionModal = {
 
         const result = GameEngine.travelToRegion(regionId);
         if (result.success) {
+            this.close();
+            // Trigger UI update
+            if (typeof UI !== 'undefined' && UI.updateAll) {
+                UI.updateAll();
+            }
+        } else {
+            alert(result.reason || "Cannot travel to this region");
+        }
+    },
+
+    /**
+     * Start navigating in the current region (from modal)
+     */
+    startNavigating() {
+        if (GameEngine.state.currentRegion !== this.currentRegionId) {
+            alert("You must be in this region to start navigating.");
+            return;
+        }
+
+        // Call the global startNavigating function
+        if (typeof startNavigating === 'function') {
+            startNavigating();
+            this.close();
+        } else if (GameEngine.startNavigation) {
+            GameEngine.startNavigation();
+            this.close();
+            if (typeof UI !== 'undefined' && UI.updateAll) {
+                UI.updateAll();
+            }
+        } else {
+            console.error("❌ startNavigating function not available");
+        }
+    },
+
+    /**
+     * Travel to a region and immediately start navigating
+     */
+    travelAndNavigate(regionId) {
+        if (!GameEngine.travelToRegion) {
+            console.error("❌ travelToRegion function not available");
+            return;
+        }
+
+        const result = GameEngine.travelToRegion(regionId);
+        if (result.success) {
+            // After successful travel, start navigating
+            if (typeof startNavigating === 'function') {
+                startNavigating();
+            } else if (GameEngine.startNavigation) {
+                GameEngine.startNavigation();
+            }
             this.close();
             // Trigger UI update
             if (typeof UI !== 'undefined' && UI.updateAll) {

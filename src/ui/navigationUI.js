@@ -581,20 +581,34 @@ const NavigationUI = {
                 </div>
             </div>
 
-            <!-- Action Interval Bar -->
+            <!-- Endurance Bar -->
+            <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px;">
+                <div style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
+                    💪 Endurance
+                </div>
+                <div class="health-bar" style="margin-bottom: 5px;">
+                    <div class="health-bar-fill" id="navigationHealthBar" style="width: ${endurancePercent}%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width 0.3s ease-out;"></div>
+                    <div class="health-bar-text" id="navigationHealthText">${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}</div>
+                </div>
+                <div style="font-size: 0.75em; color: #888;">
+                    ${isNavigating ? 'Draining while exploring' : 'Regenerates when not exploring'}
+                </div>
+            </div>
+
+            <!-- Navigation Action Interval Bar -->
             <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px;">
                 <div style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
                     ${isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action'}
                 </div>
+                <div class="health-bar" style="margin-bottom: 8px;">
+                    <div class="health-bar-fill" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #FF9800, #FFC107); transition: width 0.3s ease-out;"></div>
+                    <div class="health-bar-text" id="navigationIntervalText">${isNavigating ? '0.0s' : 'Not Exploring'}</div>
+                </div>
                 ${isNavigating ? `
-                    <div class="health-bar" style="margin-bottom: 8px;">
-                        <div class="health-bar-fill" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #FF9800, #FFC107); transition: width 0.3s ease-out;"></div>
-                        <div class="health-bar-text" id="navigationIntervalText">Ready</div>
-                    </div>
-                    <div style="font-size: 0.75em; color: #888;">Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)</div>
+                    <div style="font-size: 0.75em; color: #888; margin-bottom: 8px;">Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)</div>
                 ` : `
                     <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">
-                        Click Explore to discover resources and enemies in this region
+                        Click Start Exploring to discover resources and enemies in this region
                     </div>
                 `}
                 <button onclick="${isNavigating ? 'stopNavigating()' : 'startNavigating()'}"
@@ -604,16 +618,16 @@ const NavigationUI = {
             </div>
 
             <!-- Rest Resource Consumption Bar -->
-            ${isNavigating ? `
             <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px;">
                 <div style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">🔥 Rest Resources</div>
                 <div class="health-bar" style="margin-bottom: 8px;">
                     <div class="health-bar-fill" id="restIntervalBar" style="width: 0%; background: linear-gradient(90deg, #FF9800, #d32f2f); transition: width 0.3s ease-out;"></div>
-                    <div class="health-bar-text" id="restIntervalText">6.0s</div>
+                    <div class="health-bar-text" id="restIntervalText">${isNavigating ? '6.0s' : 'Not Active'}</div>
                 </div>
-                <div style="font-size: 0.75em; color: #888;">Consuming 1 food + 1 log every 6 seconds</div>
+                <div style="font-size: 0.75em; color: #888;">
+                    ${isNavigating ? 'Consuming 1 food + 1 log every 6 seconds' : 'Resources consumed while exploring'}
+                </div>
             </div>
-            ` : ''}
         `;
 
         container.innerHTML = html;
@@ -637,9 +651,11 @@ const NavigationUI = {
      */
     updateNavigationProgressBars() {
         const activeNav = GameEngine.state.activeNavigation;
-        if (!activeNav || !activeNav.isNavigating) return;
+        if (!activeNav) return;
 
-        // Update endurance bar
+        const isNavigating = activeNav.isNavigating && GameEngine.state.currentActivity === 'navigation';
+
+        // Always update endurance bar (whether navigating or not)
         const healthBar = document.getElementById("navigationHealthBar");
         const healthText = document.getElementById("navigationHealthText");
         if (healthBar && healthText) {
@@ -648,7 +664,27 @@ const NavigationUI = {
             healthText.textContent = `${Math.max(0, Math.floor(activeNav.endurance))}/${activeNav.maxEndurance}`;
         }
 
-        // Update interval bar
+        // Only update interval and rest bars if navigating
+        if (!isNavigating) {
+            // Reset interval bar when not navigating
+            const intervalBar = document.getElementById("navigationIntervalBar");
+            const intervalText = document.getElementById("navigationIntervalText");
+            if (intervalBar && intervalText) {
+                intervalBar.style.width = "0%";
+                intervalText.textContent = "Not Exploring";
+            }
+
+            // Reset rest bar when not navigating
+            const restBar = document.getElementById("restIntervalBar");
+            const restText = document.getElementById("restIntervalText");
+            if (restBar && restText) {
+                restBar.style.width = "0%";
+                restText.textContent = "Not Active";
+            }
+            return;
+        }
+
+        // Update interval bar (when navigating)
         const stats = GameEngine.getNavigationStats();
         const lastTick = activeNav.lastNavigationTick;
         const nextTick = lastTick + stats.discoveryInterval;
@@ -666,7 +702,7 @@ const NavigationUI = {
             intervalText.textContent = remaining > 0 ? `${remaining.toFixed(1)}s` : "Discovering!";
         }
 
-        // Update rest resource consumption bar
+        // Update rest resource consumption bar (when navigating)
         const CONSUMPTION_INTERVAL = 6000; // 6 seconds
         const now = Date.now();
         const lastRestConsumption = activeNav.lastRestConsumption || now;
