@@ -330,7 +330,8 @@ const GameEngine = {
                 const regionId = `region_${q}_${r}`;
                 const biome = getBiome(q, r);
                 const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
-                const navRequirement = Math.max(0, Math.floor(distanceFromStart / 2));
+                // Starting region has nav requirement of 1, others scale based on distance (minimum 1)
+                const navRequirement = (q === startQ && r === startR) ? 1 : Math.max(1, Math.floor(distanceFromStart / 2) + 1);
 
                 // Get valid neighbors
                 const neighbors = getNeighbors(q, r);
@@ -3259,6 +3260,40 @@ const GameEngine = {
                 console.log("Available regions (first 10):", Object.keys(this.definitions.worldMap).slice(0, 10));
             }
         }
+
+        // ALWAYS ensure starting region is unlocked and set as current region
+        const STARTING_REGION = "region_-10_0";
+
+        // Ensure current region is set to starting region if not set
+        if (!this.state.currentRegion) {
+            this.state.currentRegion = STARTING_REGION;
+            console.log("✅ Set current region to starting region");
+        }
+
+        // ALWAYS ensure starting region exists in state and is discovered
+        if (!this.state.regions[STARTING_REGION]) {
+            this.state.regions[STARTING_REGION] = {
+                discovered: true,
+                discoveryProgress: 0,
+                discoveredLocations: [],
+                discoveredNodeTypes: [],
+                nodeHealthBonuses: {},
+                discoveredExitPaths: [],
+                discoveredCraftingStations: []
+            };
+            console.log("✅ Created starting region state (region_-10_0)");
+        } else if (!this.state.regions[STARTING_REGION].discovered) {
+            // If starting region exists but isn't discovered, unlock it
+            this.state.regions[STARTING_REGION].discovered = true;
+            console.log("✅ Unlocked starting region (region_-10_0)");
+        }
+
+        // Ensure starting region has all required arrays
+        const startRegion = this.state.regions[STARTING_REGION];
+        if (!startRegion.discoveredNodeTypes) startRegion.discoveredNodeTypes = [];
+        if (!startRegion.discoveredCraftingStations) startRegion.discoveredCraftingStations = [];
+        if (!startRegion.discoveredExitPaths) startRegion.discoveredExitPaths = [];
+        if (!startRegion.nodeHealthBonuses) startRegion.nodeHealthBonuses = {};
 
         // Ensure new features exist for backward compatibility with old saves
         if (!this.state.nodeCollection) {
