@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Background Image Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .test-container {
+            width: 800px;
+            height: 600px;
+            margin: 20px auto;
+            border: 2px solid #4caf50;
+        }
+        .bg-test {
+            background-size: cover;
+            background-position: center;
+            width: 100%;
+            height: 100%;
+        }
+        img {
+            max-width: 800px;
+            border: 2px solid #2196f3;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🖼️ Background Image Test</h1>
+
+    <h2>Test 1: Direct Image Tag</h2>
+    <img src="assets/backgrounds/regions/region_the_scar_01.png" alt="The Scar" onerror="this.style.border='2px solid red'; this.alt='❌ IMAGE FAILED TO LOAD'">
+
+    <h2>Test 2: CSS Background</h2>
+    <div class="test-container">
+        <div class="bg-test" style="background-image: url('assets/backgrounds/regions/region_the_scar_01.png');"></div>
+    </div>
+
+    <h2>Test 3: Absolute Path</h2>
+    <div class="test-container">
+        <div class="bg-test" style="background-image: url('/assets/backgrounds/regions/region_the_scar_01.png');"></div>
+    </div>
+
+    <h2>Console Check</h2>
+    <button onclick="testImageLoad()">Test Image Load</button>
+    <div id="result"></div>
+
+    <script>
+        async function testImageLoad() {
+            const paths = [
+                'assets/backgrounds/regions/region_the_scar_01.png',
+                '/assets/backgrounds/regions/region_the_scar_01.png',
+                './assets/backgrounds/regions/region_the_scar_01.png'
+            ];
+
+            const result = document.getElementById('result');
+            result.innerHTML = '<h3>Testing paths...</h3>';
+
+            for (const path of paths) {
+                try {
+                    const response = await fetch(path);
+                    if (response.ok) {
+                        result.innerHTML += `<p style="color: #4caf50;">✅ ${path} - WORKS!</p>`;
+                    } else {
+                        result.innerHTML += `<p style="color: #f44336;">❌ ${path} - Status: ${response.status}</p>`;
+                    }
+                } catch (error) {
+                    result.innerHTML += `<p style="color: #f44336;">❌ ${path} - Error: ${error.message}</p>`;
+                }
+            }
+        }
+
+        // Auto-run on load
+        window.onload = () => {
+            console.log('Testing image paths...');
+            testImageLoad();
+        };
+    </script>
+</body>
+</html>

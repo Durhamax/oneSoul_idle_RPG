@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Background Diagnostics</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 { color: #4caf50; }
+        h2 { color: #2196f3; margin-top: 30px; }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+        }
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+        .info { color: #ffc107; }
+        .image-preview {
+            width: 400px;
+            height: 300px;
+            border: 2px solid #4caf50;
+            margin: 10px 0;
+            background-size: cover;
+            background-position: center;
+        }
+        .code {
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #results { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Background Image Diagnostics</h1>
+    <p>This page will test if your background image can be loaded and identify any issues.</p>
+
+    <div class="test-section">
+        <h2>Test 1: File Path Tests</h2>
+        <p>Testing different path formats...</p>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="testGameBackgroundLayer()">Test Game Background Layer</button>
+        <div id="results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Visual Tests</h2>
+        <p class="info">Test 2a: Direct &lt;img&gt; tag (relative path)</p>
+        <img id="testImg1" src="assets/backgrounds/regions/region_the_scar_01.png"
+             style="max-width: 400px; border: 2px solid #2196f3;"
+             onload="imgSuccess(this)"
+             onerror="imgError(this)">
+
+        <p class="info">Test 2b: CSS background (relative path)</p>
+        <div class="image-preview"
+             id="testBg1"
+             style="background-image: url('assets/backgrounds/regions/region_the_scar_01.png');"></div>
+
+        <p class="info">Test 2c: CSS background (absolute path from root)</p>
+        <div class="image-preview"
+             id="testBg2"
+             style="background-image: url('/assets/backgrounds/regions/region_the_scar_01.png');"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Console Debugging Commands</h2>
+        <p>Copy and paste these commands into the browser console (F12) while viewing your game:</p>
+
+        <div class="code">
+// Test 1: Check if image file can be loaded<br>
+const testImg = new Image();<br>
+testImg.onload = () => console.log('✅ Image loads!', testImg.width, 'x', testImg.height);<br>
+testImg.onerror = () => console.error('❌ Image failed to load!');<br>
+testImg.src = 'assets/backgrounds/regions/region_the_scar_01.png';
+        </div>
+
+        <div class="code">
+// Test 2: Check background layer element<br>
+const bgLayer = document.getElementById('backgroundLayer');<br>
+console.log('Background layer:', bgLayer);<br>
+console.log('Style backgroundImage:', bgLayer?.style.backgroundImage);<br>
+console.log('Computed backgroundImage:', window.getComputedStyle(bgLayer)?.backgroundImage);
+        </div>
+
+        <div class="code">
+// Test 3: Force set the background image<br>
+const bgLayer = document.getElementById('backgroundLayer');<br>
+bgLayer.style.backgroundImage = "url('assets/backgrounds/regions/region_the_scar_01.png')";<br>
+bgLayer.style.backgroundSize = 'cover';<br>
+bgLayer.style.backgroundPosition = 'center';<br>
+console.log('✅ Manually set background. Check if visible!');
+        </div>
+
+        <div class="code">
+// Test 4: Check current region data<br>
+console.log('Current region:', GameEngine.state.currentRegion);<br>
+console.log('Region data:', GameEngine.definitions.worldMap[GameEngine.state.currentRegion]);<br>
+console.log('Current biome:', BackgroundSystem.currentBiome);
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: File System Check</h2>
+        <button onclick="checkFileExists()">Check if File Exists (via Fetch)</button>
+        <div id="fileCheckResult"></div>
+    </div>
+
+    <script>
+        function imgSuccess(img) {
+            const p = document.createElement('p');
+            p.className = 'success';
+            p.textContent = `✅ Image loaded successfully! (${img.naturalWidth}x${img.naturalHeight})`;
+            img.parentNode.insertBefore(p, img);
+        }
+
+        function imgError(img) {
+            const p = document.createElement('p');
+            p.className = 'error';
+            p.textContent = '❌ Image failed to load!';
+            img.parentNode.insertBefore(p, img);
+        }
+
+        async function runAllTests() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h3>Testing paths...</h3>';
+
+            const paths = [
+                'assets/backgrounds/regions/region_the_scar_01.png',
+                '/assets/backgrounds/regions/region_the_scar_01.png',
+                './assets/backgrounds/regions/region_the_scar_01.png',
+                '../assets/backgrounds/regions/region_the_scar_01.png'
+            ];
+
+            for (const path of paths) {
+                // Test with Image object
+                const imgTest = await testImageLoad(path);
+
+                // Test with fetch
+                const fetchTest = await testFetch(path);
+
+                const resultDiv = document.createElement('div');
+                resultDiv.style.margin = '10px 0';
+                resultDiv.style.padding = '10px';
+                resultDiv.style.background = '#1a1a1a';
+                resultDiv.style.borderRadius = '4px';
+
+                let html = `<strong>Path: ${path}</strong><br>`;
+                html += imgTest.success ?
+                    `<span class="success">✅ Image load: SUCCESS (${imgTest.width}x${imgTest.height})</span>` :
+                    `<span class="error">❌ Image load: FAILED (${imgTest.error})</span>`;
+                html += '<br>';
+                html += fetchTest.success ?
+                    `<span class="success">✅ Fetch: SUCCESS (${fetchTest.size} bytes)</span>` :
+                    `<span class="error">❌ Fetch: FAILED (${fetchTest.error})</span>`;
+
+                resultDiv.innerHTML = html;
+                results.appendChild(resultDiv);
+            }
+        }
+
+        function testImageLoad(path) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve({
+                    success: true,
+                    width: img.width,
+                    height: img.height
+                });
+                img.onerror = (e) => resolve({
+                    success: false,
+                    error: 'Image failed to load'
+                });
+                img.src = path;
+            });
+        }
+
+        async function testFetch(path) {
+            try {
+                const response = await fetch(path);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    return { success: true, size: blob.size };
+                } else {
+                    return { success: false, error: `HTTP ${response.status}` };
+                }
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function checkFileExists() {
+            const result = document.getElementById('fileCheckResult');
+            result.innerHTML = '<p class="info">Checking...</p>';
+
+            const path = 'assets/backgrounds/regions/region_the_scar_01.png';
+
+            try {
+                const response = await fetch(path);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    result.innerHTML = `
+                        <p class="success">✅ File exists and is accessible!</p>
+                        <p>Size: ${blob.size} bytes (${(blob.size / 1024).toFixed(2)} KB)</p>
+                        <p>Type: ${blob.type}</p>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <p class="error">❌ File not accessible</p>
+                        <p>HTTP Status: ${response.status} ${response.statusText}</p>
+                    `;
+                }
+            } catch (error) {
+                result.innerHTML = `
+                    <p class="error">❌ Error accessing file</p>
+                    <p>Error: ${error.message}</p>
+                `;
+            }
+        }
+
+        function testGameBackgroundLayer() {
+            const results = document.getElementById('results');
+
+            try {
+                // Check if game elements exist
+                const bgLayer = document.getElementById('backgroundLayer');
+
+                if (!bgLayer) {
+                    results.innerHTML = '<p class="error">❌ backgroundLayer element not found. Is the game loaded?</p>';
+                    return;
+                }
+
+                // Get current styles
+                const inlineStyle = bgLayer.style.backgroundImage;
+                const computedStyle = window.getComputedStyle(bgLayer).backgroundImage;
+
+                let html = '<h3>Game Background Layer Status:</h3>';
+                html += `<p><strong>Element found:</strong> <span class="success">✅ Yes</span></p>`;
+                html += `<p><strong>Inline style:</strong> ${inlineStyle || '(not set)'}</p>`;
+                html += `<p><strong>Computed style:</strong> ${computedStyle}</p>`;
+
+                // Try to manually set it
+                const testPath = 'assets/backgrounds/regions/region_the_scar_01.png';
+                bgLayer.style.backgroundImage = `url('${testPath}')`;
+                bgLayer.style.backgroundSize = 'cover';
+                bgLayer.style.backgroundPosition = 'center';
+
+                html += `<p class="success">✅ Manually set background image. Check the game window!</p>`;
+                html += `<p class="info">If you see the image in the game now, the issue is with the JavaScript logic, not the image path.</p>`;
+
+                results.innerHTML = html;
+            } catch (error) {
+                results.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Auto-run tests on load
+        window.onload = () => {
+            console.log('🔍 Diagnostics page loaded. Running automatic tests...');
+            setTimeout(runAllTests, 500);
+        };
+    </script>
+</body>
+</html>

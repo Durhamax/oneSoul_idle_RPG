@@ -1,0 +1,61 @@
+========================================
+HOW TO ADD YOUR BACKGROUND IMAGE
+========================================
+
+YOU JUST UPLOADED A BEAUTIFUL LANDSCAPE IMAGE!
+
+Here's how to save it so it appears in "The Scar" (your starting region):
+
+STEP 1: Save Your Image
+------------------------
+1. Right-click the image you uploaded in the chat
+2. Select "Save image as..."
+3. Save it with this EXACT filename:
+
+   region_the_scar_01.png
+
+4. Save it to THIS folder:
+   C:\Users\durha\idlegame\assets\backgrounds\regions\
+
+STEP 2: Test It
+---------------
+1. Open or refresh your game
+2. The background should load automatically for "The Scar"
+3. Check the browser console (F12) - you should see:
+   "🎨 Loading special background for The Scar"
+
+TROUBLESHOOTING
+---------------
+If the image doesn't appear:
+
+1. Check the filename is EXACTLY: region_the_scar_01.png
+   - All lowercase
+   - Underscores (not spaces or dashes)
+   - .png extension
+
+2. Check the file is in the right folder:
+   C:\Users\durha\idlegame\assets\backgrounds\regions\
+
+3. Check browser console (F12) for any errors
+
+4. Try hard refresh: Ctrl+F5 (Windows) or Cmd+Shift+R (Mac)
+
+WHAT'S BEEN SET UP
+------------------
+✅ "The Scar" region name updated
+✅ Description updated (massive crater, Unity members, wooded, lake)
+✅ Background system configured to load your image
+✅ Falls back to gradient if image not found
+
+YOUR IMAGE WILL BE USED FOR:
+-----------------------------
+- Region ID: region_-10_0
+- Region Name: The Scar
+- Location: Starting region (where players begin)
+- Description: A massive crater, home to the Unity members long
+  banished to this corner of the new planet. The Scar is heavily
+  wooded and features a large lake of trapped freshwater.
+
+NEED HELP?
+----------
+See the complete guide: assets/ASSET_GUIDE.md

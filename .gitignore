@@ -1,0 +1,31 @@
+# Logs
+*.log
+npm-debug.log*
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+temp/
+
+# Debug files
+debug_*.js
+debug_*.html
+
+# Save game files (optional - uncomment if you don't want to track saves)
+# save_*.json
+# autosave.json
+
+# Windows device files
+nul

@@ -1,0 +1,2871 @@
+    definitions: {
+        // Skills definitions
+        skills: {
+            navigation: {
+                name: "Navigation",
+                description: "Explore regions and discover new locations",
+                // EXP formula: expToLevel = baseExp * (level ^ expCurve)
+                baseExp: 100,
+                expCurve: 1.5,
+                // Effects
+                explorationSpeed: 0.1  // Base exploration speed per level (% per second)
+            },
+            mining: {
+                name: "Mining",
+                description: "Increases ore gathering efficiency",
+                baseExp: 100,
+                expCurve: 1.5,
+                bonusPerLevel: 0.05  // +5% ore per level
+            },
+            logging: {
+                name: "Logging",
+                description: "Increases wood gathering efficiency",
+                baseExp: 100,
+                expCurve: 1.5,
+                bonusPerLevel: 0.05  // +5% wood per level
+            },
+            fishing: {
+                name: "Fishing",
+                description: "Catch fish from lakes, rivers, and streams",
+                baseExp: 100,
+                expCurve: 1.5,
+                bonusPerLevel: 0.05  // +5% fishing success per level
+            },
+            hunting: {
+                name: "Hunting",
+                description: "Track and hunt animals for meat and materials",
+                baseExp: 100,
+                expCurve: 1.5,
+                bonusPerLevel: 0.05  // +5% hunting success per level
+            },
+            foraging: {
+                name: "Foraging",
+                description: "Gather mushrooms, herbs, flowers, and plants",
+                baseExp: 100,
+                expCurve: 1.5,
+                bonusPerLevel: 0.05  // +5% foraging success per level
+            },
+            thieving: {
+                name: "Thieving",
+                description: "Steal valuables from locations and NPCs",
+                baseExp: 120,
+                expCurve: 1.6,
+                bonusPerLevel: 0.05  // +5% thieving success per level
+            },
+            combat: {
+                name: "Combat",
+                description: "Increases combat effectiveness",
+                baseExp: 150,
+                expCurve: 1.6,
+                bonusPerLevel: 0.1  // +10% damage per level
+            },
+
+            // Crafting Skills
+            forging: {
+                name: "Forging",
+                description: "Craft melee weapons, armor plates, and metal components",
+                baseExp: 120,
+                expCurve: 1.5,
+                bonusPerLevel: 0.03  // +3% crafting speed/success per level
+            },
+            machining: {
+                name: "Machining",
+                description: "Craft firearms, weapon parts, and mechanical components",
+                baseExp: 120,
+                expCurve: 1.5,
+                bonusPerLevel: 0.03  // +3% crafting speed/success per level
+            },
+            cooking: {
+                name: "Cooking",
+                description: "Prepare food and consumables that provide buffs",
+                baseExp: 100,
+                expCurve: 1.4,
+                bonusPerLevel: 0.05  // +5% buff effectiveness per level
+            },
+            chemistry: {
+                name: "Chemistry",
+                description: "Create medical supplies, explosives, and chemical compounds",
+                baseExp: 130,
+                expCurve: 1.6,
+                bonusPerLevel: 0.04  // +4% potency per level
+            },
+            textiles: {
+                name: "Textiles",
+                description: "Craft clothing, tactical gear, and fabric-based items",
+                baseExp: 110,
+                expCurve: 1.5,
+                bonusPerLevel: 0.03  // +3% crafting speed/success per level
+            },
+            engineering: {
+                name: "Engineering",
+                description: "Advanced tech crafting and unlocking new techniques",
+                baseExp: 150,
+                expCurve: 1.7,
+                bonusPerLevel: 0.02  // +2% all crafting effectiveness per level
+            }
+        },
+
+        // Character Level definitions
+        characterLevel: {
+            name: "Character Level",
+            description: "Your overall character level, gained from all activities",
+            baseExp: 1000,       // Base EXP required for first level
+            expCurve: 2.0,       // Steeper curve than skills
+            attributePointsPerLevel: 3,  // Points awarded per level up
+            generalExpRate: 0.1  // 10% of skill XP also goes to character XP
+        },
+
+        // Combat Attribute definitions
+        combatAttributes: {
+            health: {
+                name: "Health",
+                description: "Increases maximum health points",
+                effectPerPoint: 10  // +10 max HP per point
+            },
+            defense: {
+                name: "Defense",
+                description: "Reduces damage taken from attacks",
+                effectPerPoint: 0.02  // +2% damage reduction per point
+            },
+            strength: {
+                name: "Strength",
+                description: "Increases physical damage dealt",
+                effectPerPoint: 2  // +2 attack damage per point
+            },
+            stealth: {
+                name: "Stealth",
+                description: "Improves thieving success and enables stealth attacks",
+                effectPerPoint: 0.01  // +1% thieving success per point
+            },
+            perception: {
+                name: "Perception",
+                description: "Improves accuracy and foraging success rates",
+                effectPerPoint: 0.5  // +0.5% accuracy and foraging success per point
+            },
+            mobility: {
+                name: "Mobility",
+                description: "Increases attack speed and dodge chance",
+                effectPerPoint: 0.02  // +2% attack speed per point
+            },
+            intellect: {
+                name: "Intellect",
+                description: "Improves skill learning and magic abilities",
+                effectPerPoint: 0.01  // +1% skill exp gain per point (future: magic damage)
+            }
+        },
+
+        // Hex Grid World Map (axial coordinates: q, r)
+        // Generated procedurally at initialization - see generateWorldMap()
+        worldMap: null,
+
+        // OLD worldMap for reference (replaced by generated 20x20 grid)
+        _oldWorldMap: {
+            // Center starting hex
+            "region_0_0": {
+                name: "Starting Plains",
+                biome: "plains",
+                hexCoords: { q: 0, r: 0 },
+                navigationRequirement: 0,
+                adjacentHexes: [
+                    { id: "region_1_0", direction: "E", discovered: false },
+                    { id: "region_1_-1", direction: "NE", discovered: false },
+                    { id: "region_0_-1", direction: "NW", discovered: false },
+                    { id: "region_-1_0", direction: "W", discovered: false },
+                    { id: "region_-1_1", direction: "SW", discovered: false },
+                    { id: "region_0_1", direction: "SE", discovered: false }
+                ]
+            },
+            // East
+            "region_1_0": {
+                name: "Verdant Woods",
+                biome: "forest",
+                hexCoords: { q: 1, r: 0 },
+                navigationRequirement: 2,
+                adjacentHexes: [
+                    { id: "region_2_0", direction: "E", discovered: false },
+                    { id: "region_2_-1", direction: "NE", discovered: false },
+                    { id: "region_1_-1", direction: "NW", discovered: false },
+                    { id: "region_0_0", direction: "W", discovered: false },
+                    { id: "region_0_1", direction: "SW", discovered: false },
+                    { id: "region_1_1", direction: "SE", discovered: false }
+                ]
+            },
+            // Northeast
+            "region_1_-1": {
+                name: "Highland Ridge",
+                biome: "mountains",
+                hexCoords: { q: 1, r: -1 },
+                navigationRequirement: 3,
+                adjacentHexes: [
+                    { id: "region_2_-1", direction: "E", discovered: false },
+                    { id: "region_2_-2", direction: "NE", discovered: false },
+                    { id: "region_1_-2", direction: "NW", discovered: false },
+                    { id: "region_0_-1", direction: "W", discovered: false },
+                    { id: "region_0_0", direction: "SW", discovered: false },
+                    { id: "region_1_0", direction: "SE", discovered: false }
+                ]
+            },
+            // Northwest
+            "region_0_-1": {
+                name: "Frozen Tundra",
+                biome: "tundra",
+                hexCoords: { q: 0, r: -1 },
+                navigationRequirement: 4,
+                adjacentHexes: [
+                    { id: "region_1_-1", direction: "E", discovered: false },
+                    { id: "region_1_-2", direction: "NE", discovered: false },
+                    { id: "region_0_-2", direction: "NW", discovered: false },
+                    { id: "region_-1_-1", direction: "W", discovered: false },
+                    { id: "region_-1_0", direction: "SW", discovered: false },
+                    { id: "region_0_0", direction: "SE", discovered: false }
+                ]
+            },
+            // West
+            "region_-1_0": {
+                name: "Arid Wastes",
+                biome: "desert",
+                hexCoords: { q: -1, r: 0 },
+                navigationRequirement: 3,
+                adjacentHexes: [
+                    { id: "region_0_0", direction: "E", discovered: false },
+                    { id: "region_0_-1", direction: "NE", discovered: false },
+                    { id: "region_-1_-1", direction: "NW", discovered: false },
+                    { id: "region_-2_0", direction: "W", discovered: false },
+                    { id: "region_-2_1", direction: "SW", discovered: false },
+                    { id: "region_-1_1", direction: "SE", discovered: false }
+                ]
+            },
+            // Southwest
+            "region_-1_1": {
+                name: "Murky Swamp",
+                biome: "swamp",
+                hexCoords: { q: -1, r: 1 },
+                navigationRequirement: 3,
+                adjacentHexes: [
+                    { id: "region_0_1", direction: "E", discovered: false },
+                    { id: "region_0_0", direction: "NE", discovered: false },
+                    { id: "region_-1_0", direction: "NW", discovered: false },
+                    { id: "region_-2_1", direction: "W", discovered: false },
+                    { id: "region_-2_2", direction: "SW", discovered: false },
+                    { id: "region_-1_2", direction: "SE", discovered: false }
+                ]
+            },
+            // Southeast
+            "region_0_1": {
+                name: "Coastal Shores",
+                biome: "coast",
+                hexCoords: { q: 0, r: 1 },
+                navigationRequirement: 2,
+                adjacentHexes: [
+                    { id: "region_1_1", direction: "E", discovered: false },
+                    { id: "region_1_0", direction: "NE", discovered: false },
+                    { id: "region_0_0", direction: "NW", discovered: false },
+                    { id: "region_-1_1", direction: "W", discovered: false },
+                    { id: "region_-1_2", direction: "SW", discovered: false },
+                    { id: "region_0_2", direction: "SE", discovered: false }
+                ]
+            }
+        },
+
+        // Biome definitions (determines what can be discovered in each hex)
+        biomes: {
+            plains: {
+                name: "Plains",
+                description: "Open grasslands with basic resources",
+                icon: "🌾",
+                color: "#7fb069",
+                gatheringNodes: {
+                    mining: ["copperVein", "tinRock"],
+                    logging: ["oakTree"],
+                    fishing: ["lake", "stream"],
+                    hunting: ["plain"],
+                    foraging: ["flowerPatch", "berryBush"],
+                    thieving: ["abandonedCart", "merchantStall"]
+                },
+                craftingNodes: {
+                    forging: ["basicForge"],
+                    machining: ["basicWorkbench"],
+                    cooking: ["campfire"],
+                    chemistry: ["chemTable"],
+                    textiles: ["sewingKit"],
+                    engineering: ["engineeringDesk"]
+                },
+                exitPathChance: 0.15  // 15% chance per discovery to find exit path
+            },
+            forest: {
+                name: "Forest",
+                description: "Dense woodland with timber and wildlife",
+                icon: "🌲",
+                color: "#2d6a4f",
+                gatheringNodes: {
+                    mining: ["copperVein", "tinRock", "coalDeposit"],
+                    logging: ["oakTree", "pineTree"],
+                    fishing: ["lake", "stream", "river"],
+                    hunting: ["hardwoodForest"],
+                    foraging: ["berryBush", "mushroomLog", "herbGarden"],
+                    thieving: ["merchantStall", "guardPost"]
+                },
+                craftingNodes: {
+                    forging: ["basicForge", "advancedForge"],
+                    machining: ["basicWorkbench", "machineShop"],
+                    cooking: ["campfire", "fieldKitchen"],
+                    chemistry: ["chemTable", "chemLab"],
+                    textiles: ["sewingKit", "tailorShop"],
+                    engineering: ["engineeringDesk", "techBench"]
+                },
+                exitPathChance: 0.12
+            },
+            mountains: {
+                name: "Mountains",
+                description: "Rocky peaks rich with ore and minerals",
+                icon: "⛰️",
+                color: "#8b7355",
+                gatheringNodes: {
+                    mining: ["coalDeposit", "ironVein", "silverVein", "goldVein"],
+                    logging: ["pineTree"],
+                    fishing: ["stream", "waterfall"],
+                    hunting: ["pineForest", "mountain"],
+                    foraging: ["herbGarden", "rootField", "alpineMeadow"],
+                    thieving: ["guardPost", "techWarehouse"]
+                },
+                craftingNodes: {
+                    forging: ["advancedForge", "masterForge"],
+                    machining: ["machineShop", "precisionLab"],
+                    cooking: ["fieldKitchen", "fullKitchen"],
+                    chemistry: ["chemLab", "researchLab"],
+                    textiles: ["tailorShop", "fabricMill"],
+                    engineering: ["techBench", "innovationCenter"]
+                },
+                exitPathChance: 0.10
+            },
+            tundra: {
+                name: "Tundra",
+                description: "Frozen wasteland with unique cold-climate resources",
+                icon: "❄️",
+                color: "#cce7ff",
+                gatheringNodes: {
+                    mining: ["ironVein", "silverVein"],
+                    logging: ["pineTree"],
+                    fishing: ["lake", "stream"],
+                    hunting: ["tundra"],
+                    foraging: ["alpineMeadow"],
+                    thieving: ["techWarehouse"]
+                },
+                craftingNodes: {
+                    forging: ["advancedForge"],
+                    machining: ["machineShop"],
+                    cooking: ["fieldKitchen"],
+                    chemistry: ["chemLab"],
+                    textiles: ["tailorShop"],
+                    engineering: ["techBench"]
+                },
+                exitPathChance: 0.10
+            },
+            desert: {
+                name: "Desert",
+                description: "Arid landscape with scarce but valuable resources",
+                icon: "🏜️",
+                color: "#f4a261",
+                gatheringNodes: {
+                    mining: ["goldVein", "silverVein"],
+                    logging: [],
+                    fishing: [],
+                    hunting: ["desert"],
+                    foraging: ["cactus"],
+                    thieving: ["mansion", "dataCenter"]
+                },
+                craftingNodes: {
+                    forging: ["basicForge"],
+                    machining: ["machineShop"],
+                    cooking: ["campfire"],
+                    chemistry: ["chemTable"],
+                    textiles: ["sewingKit"],
+                    engineering: ["techBench"]
+                },
+                exitPathChance: 0.08
+            },
+            swamp: {
+                name: "Swamp",
+                description: "Murky wetlands with poisonous plants and hidden treasures",
+                icon: "🐊",
+                color: "#52796f",
+                gatheringNodes: {
+                    mining: [],
+                    logging: ["oakTree"],
+                    fishing: ["swamp"],
+                    hunting: ["swamp"],
+                    foraging: ["mushroomLog", "herbGarden", "poisonBerry"],
+                    thieving: ["abandonedCart", "guardPost"]
+                },
+                craftingNodes: {
+                    forging: ["basicForge"],
+                    machining: ["basicWorkbench"],
+                    cooking: ["fieldKitchen"],
+                    chemistry: ["chemLab"],
+                    textiles: ["sewingKit"],
+                    engineering: ["engineeringDesk"]
+                },
+                exitPathChance: 0.10
+            },
+            coast: {
+                name: "Coast",
+                description: "Shoreline with abundant fish and maritime resources",
+                icon: "🌊",
+                color: "#4a90e2",
+                gatheringNodes: {
+                    mining: ["copperVein"],
+                    logging: ["oakTree"],
+                    fishing: ["ocean", "beach", "reef"],
+                    hunting: ["coast"],
+                    foraging: ["seaweed", "shellfish"],
+                    thieving: ["merchantStall", "harbor"]
+                },
+                craftingNodes: {
+                    forging: ["basicForge"],
+                    machining: ["basicWorkbench"],
+                    cooking: ["campfire", "fieldKitchen"],
+                    chemistry: ["chemTable"],
+                    textiles: ["sewingKit"],
+                    engineering: ["engineeringDesk"]
+                },
+                exitPathChance: 0.12
+            }
+        },
+
+        // Region definitions (legacy - will be phased out in favor of worldMap)
+        regions: {
+            startingPlains: {
+                name: "Starting Plains",
+                description: "A peaceful grassland with basic resources",
+                // Discoverable gathering nodes (references to resourceNodes)
+                gatheringNodes: {
+                    mining: ["copperVein", "tinRock"],
+                    logging: ["oakTree"],
+                    fishing: ["lake", "stream"],
+                    hunting: ["plain"],
+                    foraging: ["flowerPatch", "berryBush"],
+                    thieving: ["abandonedCart", "merchantStall"]
+                },
+                // Discoverable crafting stations (references to craftingNodes)
+                craftingNodes: {
+                    forging: ["basicForge"],
+                    machining: ["basicWorkbench"],
+                    cooking: ["campfire"],
+                    chemistry: ["chemTable"],
+                    textiles: ["sewingKit"],
+                    engineering: ["engineeringDesk"]
+                },
+                // Special locations to discover
+                locations: [
+                    { id: "abandonedCamp", name: "Abandoned Camp", reward: { gold: 50 } },
+                    { id: "oldShrine", name: "Old Shrine", reward: { navigation: 20 } }
+                ],
+                // Fog of war settings
+                baseFogAmount: 100,  // Starting fog %
+                navigationRequirement: 0  // Min navigation level to explore
+            },
+            darkForest: {
+                name: "Dark Forest",
+                description: "A dense forest rich with timber and ore deposits",
+                gatheringNodes: {
+                    mining: ["copperVein", "tinRock", "coalDeposit", "ironVein"],
+                    logging: ["oakTree", "pineTree"],
+                    fishing: ["lake", "stream", "river"],
+                    hunting: ["hardwoodForest"],
+                    foraging: ["berryBush", "mushroomLog", "herbGarden"],
+                    thieving: ["merchantStall", "guardPost", "techWarehouse"]
+                },
+                craftingNodes: {
+                    forging: ["basicForge", "advancedForge"],
+                    machining: ["basicWorkbench", "machineShop"],
+                    cooking: ["campfire", "fieldKitchen"],
+                    chemistry: ["chemTable", "chemLab"],
+                    textiles: ["sewingKit", "tailorShop"],
+                    engineering: ["engineeringDesk", "techBench"]
+                },
+                locations: [
+                    { id: "huntersCabin", name: "Hunter's Cabin", reward: { wood: 100 } },
+                    { id: "hiddenCave", name: "Hidden Cave", reward: { ore: 50 } }
+                ],
+                baseFogAmount: 100,
+                navigationRequirement: 3,
+                unlockRequirement: { navigation: 2 }
+            },
+            mountainPass: {
+                name: "Mountain Pass",
+                description: "Rocky terrain with abundant ore and precious metals",
+                gatheringNodes: {
+                    mining: ["coalDeposit", "ironVein", "silverVein", "goldVein"],
+                    logging: ["pineTree"],
+                    fishing: ["stream", "waterfall"],
+                    hunting: ["pineForest", "mountain"],
+                    foraging: ["herbGarden", "rootField", "alpineMeadow"],
+                    thieving: ["techWarehouse", "mansion", "dataCenter"]
+                },
+                craftingNodes: {
+                    forging: ["advancedForge", "masterForge"],
+                    machining: ["machineShop", "precisionLab"],
+                    cooking: ["fieldKitchen", "fullKitchen"],
+                    chemistry: ["chemLab", "researchLab"],
+                    textiles: ["tailorShop", "fabricMill"],
+                    engineering: ["techBench", "innovationCenter"]
+                },
+                locations: [
+                    { id: "dwarvenOutpost", name: "Dwarven Outpost", reward: { gold: 200, ore: 100 } },
+                    { id: "peakShrine", name: "Peak Shrine", reward: { mining: 50 } }
+                ],
+                baseFogAmount: 100,
+                navigationRequirement: 5,
+                unlockRequirement: { navigation: 5, mining: 3 }
+            }
+        },
+
+        // Item definitions
+        items: {
+            // Resources
+            gold: {
+                name: "Gold Coins",
+                description: "Shiny gold coins used for trading",
+                image: "💰",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "currency"
+            },
+            ore: {
+                name: "Iron Ore",
+                description: "Raw iron ore from the mines",
+                image: "⛏️",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "material"
+            },
+            wood: {
+                name: "Wood Logs",
+                description: "Sturdy logs from trees",
+                image: "🪵",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "material"
+            },
+            stone: {
+                name: "Stone",
+                description: "Hard stone from quarries",
+                image: "🪨",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "material"
+            },
+            copperOre: {
+                name: "Copper Ore",
+                description: "Raw copper ore, useful for crafting",
+                image: "🟠",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "ore"
+            },
+            tinOre: {
+                name: "Tin Ore",
+                description: "Silvery tin ore",
+                image: "⚪",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "ore"
+            },
+            coal: {
+                name: "Coal",
+                description: "Black coal for fuel",
+                image: "⚫",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "ore"
+            },
+            silverOre: {
+                name: "Silver Ore",
+                description: "Shiny silver ore",
+                image: "⚪",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "ore"
+            },
+            goldOre: {
+                name: "Gold Ore",
+                description: "Precious gold ore",
+                image: "🟡",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "ore"
+            },
+            // Equipment - Tools (Pickaxes)
+            bronzePickaxe: {
+                name: "Bronze Pickaxe",
+                description: "A basic mining pickaxe",
+                image: "⛏️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    pickaxeDamage: 5,
+                    attackDamage: 3
+                }
+            },
+            ironPickaxe: {
+                name: "Iron Pickaxe",
+                description: "A sturdy iron pickaxe",
+                image: "⛏️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    pickaxeDamage: 10,
+                    attackDamage: 5
+                }
+            },
+            steelPickaxe: {
+                name: "Steel Pickaxe",
+                description: "A strong steel pickaxe",
+                image: "⛏️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    pickaxeDamage: 20,
+                    attackDamage: 8
+                }
+            },
+            mithrilPickaxe: {
+                name: "Mithril Pickaxe",
+                description: "A legendary pickaxe made from mithril",
+                image: "⛏️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    pickaxeDamage: 40,
+                    attackDamage: 12
+                }
+            },
+            // Equipment - Tools (Axes)
+            bronzeAxe: {
+                name: "Bronze Axe",
+                description: "A basic woodcutting axe",
+                image: "🪓",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    chopDamage: 5,
+                    attackDamage: 4
+                }
+            },
+            ironAxe: {
+                name: "Iron Axe",
+                description: "A sturdy iron axe",
+                image: "🪓",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    chopDamage: 10,
+                    attackDamage: 7
+                }
+            },
+            steelAxe: {
+                name: "Steel Axe",
+                description: "A sharp steel axe",
+                image: "🪓",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    chopDamage: 20,
+                    attackDamage: 12
+                }
+            },
+            // Equipment - Tools (Fishing Rods)
+            bambooPole: {
+                name: "Bamboo Fishing Pole",
+                description: "A simple fishing pole",
+                image: "🎣",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    fishingPower: 5
+                }
+            },
+            basicRod: {
+                name: "Basic Fishing Rod",
+                description: "A standard fishing rod",
+                image: "🎣",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    fishingPower: 10
+                }
+            },
+            carbonRod: {
+                name: "Carbon Fiber Rod",
+                description: "A modern, flexible fishing rod",
+                image: "🎣",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    fishingPower: 20
+                }
+            },
+            masterRod: {
+                name: "Master's Fishing Rod",
+                description: "A legendary fishing rod",
+                image: "🎣",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    fishingPower: 40
+                }
+            },
+            // Equipment - Tools (Bows)
+            shortBow: {
+                name: "Short Bow",
+                description: "A basic hunting bow",
+                image: "🏹",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    huntingPower: 5,
+                    attackDamage: 8
+                }
+            },
+            longBow: {
+                name: "Long Bow",
+                description: "A sturdy long bow",
+                image: "🏹",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    huntingPower: 10,
+                    attackDamage: 14
+                }
+            },
+            compositeBow: {
+                name: "Composite Bow",
+                description: "A powerful composite bow",
+                image: "🏹",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    huntingPower: 20,
+                    attackDamage: 22
+                }
+            },
+            legendaryBow: {
+                name: "Legendary Hunter's Bow",
+                description: "A bow fit for the greatest hunters",
+                image: "🏹",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    huntingPower: 40,
+                    attackDamage: 35
+                }
+            },
+            // Fish Resources
+            minnow: {
+                name: "Minnow",
+                description: "A tiny fish",
+                image: "🐟",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "fish"
+            },
+            trout: {
+                name: "Trout",
+                description: "A common freshwater fish",
+                image: "🐟",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "fish"
+            },
+            bass: {
+                name: "Bass",
+                description: "A popular game fish",
+                image: "🐟",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "fish"
+            },
+            salmon: {
+                name: "Salmon",
+                description: "A prized fish known for swimming upstream",
+                image: "🐟",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "fish"
+            },
+            pike: {
+                name: "Pike",
+                description: "A fierce predatory fish",
+                image: "🐟",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "fish"
+            },
+            goldfish: {
+                name: "Golden Fish",
+                description: "A rare, shimmering fish",
+                image: "🐠",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "fish"
+            },
+            // Hunting Resources
+            rawMeat: {
+                name: "Raw Meat",
+                description: "Freshly hunted meat",
+                image: "🥩",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "meat"
+            },
+            hide: {
+                name: "Animal Hide",
+                description: "Leather for crafting",
+                image: "🦌",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "hide"
+            },
+            feather: {
+                name: "Feather",
+                description: "Bird feathers for crafting arrows",
+                image: "🪶",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "feather"
+            },
+            bone: {
+                name: "Bone",
+                description: "Animal bones for crafting",
+                image: "🦴",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "bone"
+            },
+            fang: {
+                name: "Beast Fang",
+                description: "Sharp fang from a predator",
+                image: "🦷",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "fang"
+            },
+            pelt: {
+                name: "Rare Pelt",
+                description: "A valuable animal pelt",
+                image: "🦊",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "pelt"
+            },
+            // Foraging Resources
+            mushroom: {
+                name: "Mushroom",
+                description: "Edible fungi from the forest",
+                image: "🍄",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "forage"
+            },
+            herb: {
+                name: "Herb",
+                description: "Medicinal plant",
+                image: "🌿",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "forage"
+            },
+            flower: {
+                name: "Flower",
+                description: "Colorful wildflower",
+                image: "🌸",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "forage"
+            },
+            berries: {
+                name: "Berries",
+                description: "Sweet wild berries",
+                image: "🫐",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "forage"
+            },
+            root: {
+                name: "Root",
+                description: "Edible plant root",
+                image: "🥕",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "forage"
+            },
+            seed: {
+                name: "Seeds",
+                description: "Plant seeds for farming",
+                image: "🌱",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "forage"
+            },
+            // Thieving Resources
+            coinPouch: {
+                name: "Coin Pouch",
+                description: "Stolen money",
+                image: "💰",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "stolen"
+            },
+            jewelry: {
+                name: "Jewelry",
+                description: "Valuable trinkets",
+                image: "💎",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "stolen"
+            },
+            computerPart: {
+                name: "Computer Part",
+                description: "Electronic component",
+                image: "🖥️",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "stolen"
+            },
+            wire: {
+                name: "Wire",
+                description: "Copper wiring",
+                image: "📎",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "stolen"
+            },
+            scrap: {
+                name: "Metal Scrap",
+                description: "Salvaged metal",
+                image: "🔩",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "stolen"
+            },
+            keycard: {
+                name: "Keycard",
+                description: "Access card",
+                image: "🎫",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "resources",
+                category: "stolen"
+            },
+            // Equipment - Tools (Foraging)
+            wickerBasket: {
+                name: "Wicker Basket",
+                description: "A simple foraging basket",
+                image: "🧺",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    foragingPower: 5
+                }
+            },
+            gatherersSatchel: {
+                name: "Gatherer's Satchel",
+                description: "A sturdy satchel for foraging",
+                image: "🎒",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    foragingPower: 10
+                }
+            },
+            herbalistKit: {
+                name: "Herbalist's Kit",
+                description: "Professional foraging tools",
+                image: "🧰",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    foragingPower: 20
+                }
+            },
+            masterGatherer: {
+                name: "Master Gatherer's Set",
+                description: "Expert foraging equipment",
+                image: "🎒",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    foragingPower: 40
+                }
+            },
+            // Equipment - Tools (Thieving)
+            lockpick: {
+                name: "Lockpick Set",
+                description: "Basic lockpicking tools",
+                image: "🔓",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    thievingPower: 5
+                }
+            },
+            crowbar: {
+                name: "Crowbar",
+                description: "For breaking and entering",
+                image: "🔨",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    thievingPower: 10
+                }
+            },
+            advancedLockpick: {
+                name: "Advanced Lockpick Set",
+                description: "Professional thieving tools",
+                image: "🔐",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    thievingPower: 20
+                }
+            },
+            masterThiefKit: {
+                name: "Master Thief's Kit",
+                description: "The best tools for stealing",
+                image: "🎭",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "tool",
+                equipSlot: "weapon",
+                stats: {
+                    thievingPower: 40
+                }
+            },
+            // Equipment - Weapons
+            dagger: {
+                name: "Rusty Dagger",
+                description: "A small, rusty blade",
+                image: "🗡️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "weapon",
+                equipSlot: "weapon",
+                stats: {
+                    attackDamage: 6,
+                    attackSpeed: 0.3,
+                    accuracy: 5
+                }
+            },
+            ironSword: {
+                name: "Iron Sword",
+                description: "A basic iron sword",
+                image: "⚔️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "weapon",
+                equipSlot: "weapon",
+                stats: {
+                    attackDamage: 12,
+                    attackSpeed: 0.2,
+                    accuracy: 5
+                }
+            },
+            steelSword: {
+                name: "Steel Sword",
+                description: "A sharp steel blade",
+                image: "🗡️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "weapon",
+                equipSlot: "weapon",
+                stats: {
+                    attackDamage: 20,
+                    attackSpeed: 0.3,
+                    accuracy: 10
+                }
+            },
+            shortBow: {
+                name: "Short Bow",
+                description: "A basic hunting bow",
+                image: "🏹",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "weapon",
+                equipSlot: "weapon",
+                stats: {
+                    attackDamage: 10,
+                    attackSpeed: 0.4,
+                    accuracy: 12
+                }
+            },
+            longBow: {
+                name: "Long Bow",
+                description: "A powerful ranged weapon",
+                image: "🏹",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "weapon",
+                equipSlot: "weapon",
+                stats: {
+                    attackDamage: 18,
+                    attackSpeed: 0.3,
+                    accuracy: 15
+                }
+            },
+            // Equipment - Shields
+            woodenShield: {
+                name: "Wooden Shield",
+                description: "A simple wooden shield",
+                image: "🛡️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "shield",
+                equipSlot: "shield",
+                stats: {
+                    maxHealth: 15,
+                    accuracy: -3
+                }
+            },
+            ironShield: {
+                name: "Iron Shield",
+                description: "A sturdy iron shield",
+                image: "🛡️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "shield",
+                equipSlot: "shield",
+                stats: {
+                    maxHealth: 30,
+                    accuracy: -5,
+                    attackSpeed: -0.1
+                }
+            },
+            // Equipment - Helmets
+            clothHood: {
+                name: "Cloth Hood",
+                description: "A simple cloth covering",
+                image: "🧢",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "helmet",
+                equipSlot: "helmet",
+                stats: {
+                    maxHealth: 5,
+                    accuracy: 1
+                }
+            },
+            leatherHelmet: {
+                name: "Leather Helmet",
+                description: "Basic head protection",
+                image: "🪖",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "helmet",
+                equipSlot: "helmet",
+                stats: {
+                    maxHealth: 12,
+                    accuracy: 2
+                }
+            },
+            ironHelmet: {
+                name: "Iron Helmet",
+                description: "Heavy metal helmet",
+                image: "⛑️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "helmet",
+                equipSlot: "helmet",
+                stats: {
+                    maxHealth: 20,
+                    attackSpeed: -0.05
+                }
+            },
+            // Equipment - Chest Armor
+            huntingJacket: {
+                name: "Hunting Jacket",
+                description: "A sturdy leather hunting jacket",
+                image: "🧥",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "chest",
+                equipSlot: "chest",
+                stats: {
+                    maxHealth: 25,
+                    accuracy: 3
+                }
+            },
+            leatherArmor: {
+                name: "Leather Armor",
+                description: "Basic leather protection",
+                image: "🦺",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "chest",
+                equipSlot: "chest",
+                stats: {
+                    maxHealth: 35,
+                    attackSpeed: -0.05
+                }
+            },
+            chainmail: {
+                name: "Chainmail Armor",
+                description: "Interlocking metal rings",
+                image: "🛡️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "chest",
+                equipSlot: "chest",
+                stats: {
+                    maxHealth: 50,
+                    attackSpeed: -0.15
+                }
+            },
+            ironArmor: {
+                name: "Iron Plate Armor",
+                description: "Heavy iron plating",
+                image: "🛡️",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "chest",
+                equipSlot: "chest",
+                stats: {
+                    maxHealth: 70,
+                    attackSpeed: -0.25,
+                    accuracy: -5
+                }
+            },
+            // Equipment - Legs
+            clothPants: {
+                name: "Cloth Pants",
+                description: "Basic cloth leg protection",
+                image: "👖",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "legs",
+                equipSlot: "legs",
+                stats: {
+                    maxHealth: 8
+                }
+            },
+            leatherPants: {
+                name: "Leather Pants",
+                description: "Reinforced leather leggings",
+                image: "👖",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "legs",
+                equipSlot: "legs",
+                stats: {
+                    maxHealth: 18,
+                    attackSpeed: -0.02
+                }
+            },
+            ironGreaves: {
+                name: "Iron Greaves",
+                description: "Heavy metal leg armor",
+                image: "🦿",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "legs",
+                equipSlot: "legs",
+                stats: {
+                    maxHealth: 30,
+                    attackSpeed: -0.1
+                }
+            },
+            // Equipment - Neck
+            bronzeAmulet: {
+                name: "Bronze Amulet",
+                description: "A simple bronze pendant",
+                image: "📿",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "neck",
+                equipSlot: "neck",
+                stats: {
+                    maxHealth: 10,
+                    attackDamage: 2
+                }
+            },
+            silverNecklace: {
+                name: "Silver Necklace",
+                description: "An elegant silver chain",
+                image: "📿",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "neck",
+                equipSlot: "neck",
+                stats: {
+                    maxHealth: 15,
+                    accuracy: 5
+                }
+            },
+            // Equipment - Ring
+            copperRing: {
+                name: "Copper Ring",
+                description: "A basic copper band",
+                image: "💍",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "ring",
+                equipSlot: "ring",
+                stats: {
+                    attackDamage: 3,
+                    accuracy: 2
+                }
+            },
+            silverRing: {
+                name: "Silver Ring",
+                description: "A polished silver ring",
+                image: "💍",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "ring",
+                equipSlot: "ring",
+                stats: {
+                    attackDamage: 5,
+                    attackSpeed: 0.05,
+                    accuracy: 3
+                }
+            },
+            // Equipment - Back
+            travelersCloak: {
+                name: "Traveler's Cloak",
+                description: "A worn but sturdy cloak",
+                image: "🧥",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "back",
+                equipSlot: "back",
+                stats: {
+                    maxHealth: 12,
+                    attackSpeed: 0.05
+                }
+            },
+            woovenCape: {
+                name: "Wooven Cape",
+                description: "A finely crafted cape",
+                image: "🦸",
+                stackLimit: 1,
+                devLimit: Infinity,
+                defaultTab: "equipment",
+                category: "back",
+                equipSlot: "back",
+                stats: {
+                    maxHealth: 20,
+                    accuracy: 5
+                }
+            },
+            // Consumables
+            healthPotion: {
+                name: "Health Potion",
+                description: "Restores 50 health",
+                image: "🧪",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "consumables",
+                category: "potion"
+            },
+            bread: {
+                name: "Bread",
+                description: "Basic food item",
+                image: "🍞",
+                stackLimit: 200,
+                devLimit: Infinity,
+                defaultTab: "consumables",
+                category: "food"
+            }
+        },
+
+        // Enemy definitions (Modern Military Theme)
+        enemies: {
+            scout: {
+                name: "Scout",
+                description: "Lightly armed patrol unit",
+                image: "🎯",
+                stats: {
+                    maxHealth: 40,
+                    attackDamage: 5,
+                    attackSpeed: 1.0,
+                    accuracy: 65
+                },
+                rewards: {
+                    gold: { min: 10, max: 20 },
+                    medals: { min: 1, max: 3 },
+                    exp: { combat: 10 }
+                },
+                lootTable: [
+                    { itemId: "ore", min: 1, max: 3, chance: 0.40 },
+                    { itemId: "wood", min: 2, max: 5, chance: 0.35 },
+                    { itemId: "cloth", min: 1, max: 3, chance: 0.30 },
+                    { itemId: "dagger", min: 1, max: 1, chance: 0.05 }
+                ],
+                respawnTime: 3000,
+                unlockRequirement: null
+            },
+            soldier: {
+                name: "Soldier",
+                description: "Standard military unit",
+                image: "🪖",
+                stats: {
+                    maxHealth: 80,
+                    attackDamage: 12,
+                    attackSpeed: 0.9,
+                    accuracy: 70
+                },
+                rewards: {
+                    gold: { min: 25, max: 50 },
+                    medals: { min: 3, max: 7 },
+                    exp: { combat: 25 }
+                },
+                lootTable: [
+                    { itemId: "ore", min: 2, max: 5, chance: 0.35 },
+                    { itemId: "wood", min: 3, max: 6, chance: 0.30 },
+                    { itemId: "cloth", min: 2, max: 4, chance: 0.25 },
+                    { itemId: "ironSword", min: 1, max: 1, chance: 0.08 },
+                    { itemId: "leatherHelmet", min: 1, max: 1, chance: 0.06 }
+                ],
+                respawnTime: 4000,
+                unlockRequirement: { combat: 3 }
+            },
+            operative: {
+                name: "Operative",
+                description: "Elite tactical unit",
+                image: "🕵️",
+                stats: {
+                    maxHealth: 120,
+                    attackDamage: 18,
+                    attackSpeed: 1.2,
+                    accuracy: 80
+                },
+                rewards: {
+                    gold: { min: 60, max: 120 },
+                    medals: { min: 8, max: 15 },
+                    exp: { combat: 50 }
+                },
+                lootTable: [
+                    { itemId: "ore", min: 4, max: 8, chance: 0.40 },
+                    { itemId: "wood", min: 5, max: 10, chance: 0.25 },
+                    { itemId: "cloth", min: 3, max: 6, chance: 0.30 },
+                    { itemId: "steelSword", min: 1, max: 1, chance: 0.12 },
+                    { itemId: "leatherArmor", min: 1, max: 1, chance: 0.10 },
+                    { itemId: "ironHelmet", min: 1, max: 1, chance: 0.08 }
+                ],
+                respawnTime: 5000,
+                unlockRequirement: { combat: 8 }
+            },
+            commander: {
+                name: "Commander",
+                description: "High-ranking military officer",
+                image: "⭐",
+                stats: {
+                    maxHealth: 200,
+                    attackDamage: 28,
+                    attackSpeed: 0.8,
+                    accuracy: 85
+                },
+                rewards: {
+                    gold: { min: 150, max: 300 },
+                    medals: { min: 15, max: 30 },
+                    exp: { combat: 100 }
+                },
+                lootTable: [
+                    { itemId: "ore", min: 8, max: 15, chance: 0.45 },
+                    { itemId: "wood", min: 8, max: 15, chance: 0.25 },
+                    { itemId: "cloth", min: 5, max: 10, chance: 0.30 },
+                    { itemId: "steelSword", min: 1, max: 1, chance: 0.20 },
+                    { itemId: "ironArmor", min: 1, max: 1, chance: 0.15 },
+                    { itemId: "chainmail", min: 1, max: 1, chance: 0.12 },
+                    { itemId: "silverRing", min: 1, max: 1, chance: 0.10 }
+                ],
+                respawnTime: 7000,
+                unlockRequirement: { combat: 15 }
+            }
+        },
+
+        // Crafting Recipe definitions
+        recipes: {
+            // === FORGING RECIPES ===
+            // Melee weapons and metal components
+            forgeSteelBar: {
+                name: "Steel Bar",
+                description: "A refined steel bar for crafting",
+                skill: "forging",
+                skillLevel: 5,
+                craftingTime: 3000, // ms
+                station: ["basicForge", "advancedForge", "masterForge"],
+                inputs: [
+                    { itemId: "ore", amount: 3 },
+                    { itemId: "coal", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "steelBar", amount: 1 }
+                ],
+                expReward: 10
+            },
+            forgeCombatKnife: {
+                name: "Combat Knife",
+                description: "A tactical combat knife",
+                skill: "forging",
+                skillLevel: 1,
+                craftingTime: 5000,
+                station: ["basicForge", "advancedForge", "masterForge"],
+                inputs: [
+                    { itemId: "ore", amount: 2 },
+                    { itemId: "wood", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "combatKnife", amount: 1 }
+                ],
+                expReward: 15
+            },
+            forgeWoodenShield: {
+                name: "Wooden Shield",
+                description: "Basic wooden shield for defense",
+                skill: "forging",
+                skillLevel: 1,
+                craftingTime: 2000,
+                station: ["basicForge", "advancedForge", "masterForge"],
+                inputs: [
+                    { itemId: "wood", amount: 4 },
+                    { itemId: "ore", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "woodenShield", amount: 1 }
+                ],
+                expReward: 8
+            },
+            forgeIronHelmet: {
+                name: "Iron Helmet",
+                description: "Sturdy iron helmet for head protection",
+                skill: "forging",
+                skillLevel: 3,
+                craftingTime: 3500,
+                station: ["basicForge", "advancedForge", "masterForge"],
+                inputs: [
+                    { itemId: "ore", amount: 5 },
+                    { itemId: "leather", amount: 2 }
+                ],
+                outputs: [
+                    { itemId: "ironHelmet", amount: 1 }
+                ],
+                expReward: 12
+            },
+            forgeIronArmor: {
+                name: "Iron Armor",
+                description: "Heavy iron chest armor",
+                skill: "forging",
+                skillLevel: 4,
+                craftingTime: 5000,
+                station: ["basicForge", "advancedForge", "masterForge"],
+                inputs: [
+                    { itemId: "ore", amount: 8 },
+                    { itemId: "leather", amount: 3 }
+                ],
+                outputs: [
+                    { itemId: "ironArmor", amount: 1 }
+                ],
+                expReward: 20
+            },
+            forgeBodyArmor: {
+                name: "Body Armor Plate",
+                description: "Metal armor plating for body armor",
+                skill: "forging",
+                skillLevel: 10,
+                craftingTime: 8000,
+                station: ["basicForge", "advancedForge", "masterForge"],
+                inputs: [
+                    { itemId: "steelBar", amount: 3 },
+                    { itemId: "scrap", amount: 2 }
+                ],
+                outputs: [
+                    { itemId: "armorPlate", amount: 1 }
+                ],
+                expReward: 25
+            },
+
+            // === MACHINING RECIPES ===
+            // Firearms and mechanical parts
+            machineReceiverPart: {
+                name: "Weapon Receiver",
+                description: "The main body of a firearm",
+                skill: "machining",
+                skillLevel: 10,
+                craftingTime: 10000,
+                station: ["basicWorkbench", "machineShop", "precisionLab"],
+                inputs: [
+                    { itemId: "steelBar", amount: 2 },
+                    { itemId: "scrap", amount: 3 }
+                ],
+                outputs: [
+                    { itemId: "weaponReceiver", amount: 1 }
+                ],
+                expReward: 30
+            },
+            machinePistol: {
+                name: "9mm Pistol",
+                description: "A standard 9mm sidearm",
+                skill: "machining",
+                skillLevel: 5,
+                craftingTime: 15000,
+                station: ["basicWorkbench", "machineShop", "precisionLab"],
+                inputs: [
+                    { itemId: "weaponReceiver", amount: 1 },
+                    { itemId: "steelBar", amount: 1 },
+                    { itemId: "spring", amount: 2 }
+                ],
+                outputs: [
+                    { itemId: "pistol9mm", amount: 1 }
+                ],
+                expReward: 50
+            },
+            machineOptic: {
+                name: "Weapon Optic",
+                description: "A precision aiming sight",
+                skill: "machining",
+                skillLevel: 15,
+                craftingTime: 12000,
+                station: ["machineShop", "precisionLab"],
+                inputs: [
+                    { itemId: "glass", amount: 2 },
+                    { itemId: "scrap", amount: 3 },
+                    { itemId: "wire", amount: 2 }
+                ],
+                outputs: [
+                    { itemId: "redDotSight", amount: 1 }
+                ],
+                expReward: 40
+            },
+
+            // === COOKING RECIPES ===
+            // Food and consumables with buffs
+            cookBread: {
+                name: "Bread",
+                description: "Simple bread that restores a small amount of health",
+                skill: "cooking",
+                skillLevel: 1,
+                craftingTime: 1500,
+                station: ["campfire", "fieldKitchen", "fullKitchen"],
+                inputs: [
+                    { itemId: "grain", amount: 2 }
+                ],
+                outputs: [
+                    { itemId: "bread", amount: 2 }
+                ],
+                expReward: 5
+            },
+            cookMeat: {
+                name: "Cooked Meat",
+                description: "Grilled meat that restores health",
+                skill: "cooking",
+                skillLevel: 1,
+                craftingTime: 1000,
+                station: ["campfire", "fieldKitchen", "fullKitchen"],
+                inputs: [
+                    { itemId: "meat", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "cookedMeat", amount: 1 }
+                ],
+                expReward: 4
+            },
+            cookStew: {
+                name: "Vegetable Stew",
+                description: "Hearty stew that restores health and provides a small buff",
+                skill: "cooking",
+                skillLevel: 2,
+                craftingTime: 2500,
+                station: ["campfire", "fieldKitchen", "fullKitchen"],
+                inputs: [
+                    { itemId: "vegetables", amount: 3 },
+                    { itemId: "meat", amount: 1 },
+                    { itemId: "water", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "vegetableStew", amount: 1 }
+                ],
+                expReward: 10
+            },
+            cookMRE: {
+                name: "MRE (Meal Ready to Eat)",
+                description: "Basic field ration that restores health",
+                skill: "cooking",
+                skillLevel: 1,
+                craftingTime: 2000,
+                station: ["campfire", "fieldKitchen", "fullKitchen"],
+                inputs: [
+                    { itemId: "meat", amount: 2 },
+                    { itemId: "berries", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "mre", amount: 1 }
+                ],
+                expReward: 8
+            },
+            cookEnergyBar: {
+                name: "Energy Bar",
+                description: "Provides a temporary stamina boost",
+                skill: "cooking",
+                skillLevel: 5,
+                craftingTime: 3000,
+                station: ["fieldKitchen", "fullKitchen"],
+                inputs: [
+                    { itemId: "grain", amount: 3 },
+                    { itemId: "honey", amount: 1 },
+                    { itemId: "nuts", amount: 2 }
+                ],
+                outputs: [
+                    { itemId: "energyBar", amount: 2 }
+                ],
+                expReward: 12
+            },
+            cookStimPack: {
+                name: "Combat Stim",
+                description: "Temporary combat effectiveness boost",
+                skill: "cooking",
+                skillLevel: 15,
+                craftingTime: 5000,
+                station: ["fullKitchen"],
+                inputs: [
+                    { itemId: "herb", amount: 4 },
+                    { itemId: "water", amount: 2 },
+                    { itemId: "salt", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "combatStim", amount: 1 }
+                ],
+                expReward: 25
+            },
+
+            // === CHEMISTRY RECIPES ===
+            // Medical supplies and explosives
+            chemHealthPotion: {
+                name: "Health Potion",
+                description: "Basic potion that restores health",
+                skill: "chemistry",
+                skillLevel: 1,
+                craftingTime: 2000,
+                station: ["chemTable", "chemLab", "researchLab"],
+                inputs: [
+                    { itemId: "herb", amount: 2 },
+                    { itemId: "water", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "healthPotion", amount: 1 }
+                ],
+                expReward: 6
+            },
+            chemStaminaPotion: {
+                name: "Stamina Potion",
+                description: "Weak potion that restores stamina",
+                skill: "chemistry",
+                skillLevel: 2,
+                craftingTime: 2500,
+                station: ["chemTable", "chemLab", "researchLab"],
+                inputs: [
+                    { itemId: "herb", amount: 2 },
+                    { itemId: "berries", amount: 2 },
+                    { itemId: "water", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "staminaPotion", amount: 1 }
+                ],
+                expReward: 8
+            },
+            chemAntidote: {
+                name: "Antidote",
+                description: "Cures poison and negative effects",
+                skill: "chemistry",
+                skillLevel: 3,
+                craftingTime: 3000,
+                station: ["chemTable", "chemLab", "researchLab"],
+                inputs: [
+                    { itemId: "herb", amount: 3 },
+                    { itemId: "flower", amount: 2 },
+                    { itemId: "alcohol", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "antidote", amount: 1 }
+                ],
+                expReward: 12
+            },
+            chemMedKit: {
+                name: "Medical Kit",
+                description: "Restores significant health",
+                skill: "chemistry",
+                skillLevel: 5,
+                craftingTime: 6000,
+                station: ["chemTable", "chemLab", "researchLab"],
+                inputs: [
+                    { itemId: "cloth", amount: 2 },
+                    { itemId: "alcohol", amount: 1 },
+                    { itemId: "herb", amount: 3 }
+                ],
+                outputs: [
+                    { itemId: "medKit", amount: 1 }
+                ],
+                expReward: 20
+            },
+            chemGrenade: {
+                name: "Frag Grenade",
+                description: "Explosive grenade for combat",
+                skill: "chemistry",
+                skillLevel: 10,
+                craftingTime: 8000,
+                station: ["chemTable", "chemLab", "researchLab"],
+                inputs: [
+                    { itemId: "explosivePowder", amount: 3 },
+                    { itemId: "scrap", amount: 2 },
+                    { itemId: "wire", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "fragGrenade", amount: 1 }
+                ],
+                expReward: 30
+            },
+            chemExplosive: {
+                name: "C4 Explosive",
+                description: "High-grade plastic explosive",
+                skill: "chemistry",
+                skillLevel: 20,
+                craftingTime: 15000,
+                station: ["chemLab", "researchLab"],
+                inputs: [
+                    { itemId: "explosivePowder", amount: 5 },
+                    { itemId: "plastic", amount: 3 },
+                    { itemId: "detonator", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "c4Explosive", amount: 1 }
+                ],
+                expReward: 50
+            },
+
+            // === TEXTILES RECIPES ===
+            // Clothing and tactical gear
+            textileCloth: {
+                name: "Processed Cloth",
+                description: "Clean, processed cloth for crafting",
+                skill: "textiles",
+                skillLevel: 1,
+                craftingTime: 2000,
+                station: ["sewingKit", "tailorShop", "fabricMill"],
+                inputs: [
+                    { itemId: "rawFiber", amount: 4 }
+                ],
+                outputs: [
+                    { itemId: "cloth", amount: 2 }
+                ],
+                expReward: 5
+            },
+            textileClothHood: {
+                name: "Cloth Hood",
+                description: "Simple cloth hood for basic protection",
+                skill: "textiles",
+                skillLevel: 1,
+                craftingTime: 1500,
+                station: ["sewingKit", "tailorShop", "fabricMill"],
+                inputs: [
+                    { itemId: "cloth", amount: 2 },
+                    { itemId: "thread", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "clothHood", amount: 1 }
+                ],
+                expReward: 6
+            },
+            textileClothPants: {
+                name: "Cloth Pants",
+                description: "Basic cloth pants",
+                skill: "textiles",
+                skillLevel: 1,
+                craftingTime: 1500,
+                station: ["sewingKit", "tailorShop", "fabricMill"],
+                inputs: [
+                    { itemId: "cloth", amount: 3 },
+                    { itemId: "thread", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "clothPants", amount: 1 }
+                ],
+                expReward: 6
+            },
+            textileLeatherArmor: {
+                name: "Leather Armor",
+                description: "Durable leather chest armor",
+                skill: "textiles",
+                skillLevel: 3,
+                craftingTime: 3000,
+                station: ["sewingKit", "tailorShop", "fabricMill"],
+                inputs: [
+                    { itemId: "leather", amount: 4 },
+                    { itemId: "thread", amount: 2 }
+                ],
+                outputs: [
+                    { itemId: "leatherArmor", amount: 1 }
+                ],
+                expReward: 15
+            },
+            textileHuntingJacket: {
+                name: "Hunting Jacket",
+                description: "Warm jacket with pockets",
+                skill: "textiles",
+                skillLevel: 2,
+                craftingTime: 2500,
+                station: ["sewingKit", "tailorShop", "fabricMill"],
+                inputs: [
+                    { itemId: "cloth", amount: 4 },
+                    { itemId: "leather", amount: 2 },
+                    { itemId: "thread", amount: 2 }
+                ],
+                outputs: [
+                    { itemId: "huntingJacket", amount: 1 }
+                ],
+                expReward: 12
+            },
+            textileTacticalVest: {
+                name: "Tactical Vest",
+                description: "Lightweight vest with pockets",
+                skill: "textiles",
+                skillLevel: 8,
+                craftingTime: 10000,
+                station: ["sewingKit", "tailorShop", "fabricMill"],
+                inputs: [
+                    { itemId: "cloth", amount: 5 },
+                    { itemId: "thread", amount: 3 },
+                    { itemId: "buckle", amount: 2 }
+                ],
+                outputs: [
+                    { itemId: "tacticalVest", amount: 1 }
+                ],
+                expReward: 30
+            },
+            textileCamo: {
+                name: "Camouflage Uniform",
+                description: "Stealth-enhancing camo clothing",
+                skill: "textiles",
+                skillLevel: 15,
+                craftingTime: 12000,
+                station: ["tailorShop", "fabricMill"],
+                inputs: [
+                    { itemId: "cloth", amount: 8 },
+                    { itemId: "dye", amount: 3 },
+                    { itemId: "thread", amount: 5 }
+                ],
+                outputs: [
+                    { itemId: "camoUniform", amount: 1 }
+                ],
+                expReward: 40
+            },
+
+            // === ENGINEERING RECIPES ===
+            // Tech items and tools
+            engineerCircuitBoard: {
+                name: "Circuit Board",
+                description: "Basic electronic component",
+                skill: "engineering",
+                skillLevel: 5,
+                craftingTime: 8000,
+                station: ["engineeringDesk", "techBench", "innovationCenter"],
+                inputs: [
+                    { itemId: "wire", amount: 4 },
+                    { itemId: "plastic", amount: 2 },
+                    { itemId: "solder", amount: 1 }
+                ],
+                outputs: [
+                    { itemId: "circuitBoard", amount: 1 }
+                ],
+                expReward: 25
+            },
+            engineerDrone: {
+                name: "Recon Drone",
+                description: "Small surveillance drone",
+                skill: "engineering",
+                skillLevel: 20,
+                craftingTime: 20000,
+                station: ["techBench", "innovationCenter"],
+                inputs: [
+                    { itemId: "circuitBoard", amount: 3 },
+                    { itemId: "motor", amount: 4 },
+                    { itemId: "battery", amount: 2 },
+                    { itemId: "plastic", amount: 5 }
+                ],
+                outputs: [
+                    { itemId: "reconDrone", amount: 1 }
+                ],
+                expReward: 75
+            },
+            engineerTool: {
+                name: "Multi-Tool",
+                description: "Versatile engineering tool",
+                skill: "engineering",
+                skillLevel: 10,
+                craftingTime: 10000,
+                station: ["engineeringDesk", "techBench", "innovationCenter"],
+                inputs: [
+                    { itemId: "steelBar", amount: 2 },
+                    { itemId: "scrap", amount: 3 },
+                    { itemId: "spring", amount: 2 }
+                ],
+                outputs: [
+                    { itemId: "multiTool", amount: 1 }
+                ],
+                expReward: 35
+            }
+        },
+
+        // Resource Node definitions
+        resourceNodes: {
+            // MINING NODES
+            copperVein: {
+                name: "Copper Vein",
+                description: "A small vein of copper ore",
+                image: "🟠",
+                skill: "mining",
+                skillLevel: 1,
+                maxHealth: 50,
+                failRate: 0.05, // 5% fail rate
+                availableIn: ["startingPlains", "darkForest"],
+                rewards: [
+                    { itemId: "copperOre", min: 1, max: 3, chance: 0.9 },
+                    { itemId: "stone", min: 1, max: 2, chance: 0.4 },
+                    { exp: { mining: 5 }, chance: 1.0 }
+                ]
+            },
+            tinRock: {
+                name: "Tin Rock",
+                description: "A deposit of tin ore",
+                image: "⚪",
+                skill: "mining",
+                skillLevel: 5,
+                maxHealth: 75,
+                failRate: 0.08,
+                availableIn: ["startingPlains", "darkForest"],
+                rewards: [
+                    { itemId: "tinOre", min: 1, max: 2, chance: 0.85 },
+                    { itemId: "stone", min: 1, max: 3, chance: 0.5 },
+                    { exp: { mining: 8 }, chance: 1.0 }
+                ]
+            },
+            coalDeposit: {
+                name: "Coal Deposit",
+                description: "A dark coal deposit",
+                image: "⚫",
+                skill: "mining",
+                skillLevel: 10,
+                maxHealth: 100,
+                failRate: 0.10,
+                availableIn: ["darkForest", "mountainPass"],
+                rewards: [
+                    { itemId: "coal", min: 2, max: 4, chance: 0.8 },
+                    { itemId: "stone", min: 2, max: 4, chance: 0.6 },
+                    { exp: { mining: 12 }, chance: 1.0 }
+                ]
+            },
+            ironVein: {
+                name: "Iron Vein",
+                description: "A rich vein of iron ore",
+                image: "⛏️",
+                skill: "mining",
+                skillLevel: 15,
+                maxHealth: 150,
+                failRate: 0.12,
+                availableIn: ["darkForest", "mountainPass"],
+                rewards: [
+                    { itemId: "ore", min: 2, max: 5, chance: 0.75 },
+                    { itemId: "coal", min: 1, max: 2, chance: 0.3 },
+                    { itemId: "stone", min: 2, max: 5, chance: 0.7 },
+                    { exp: { mining: 20 }, chance: 1.0 }
+                ]
+            },
+            silverVein: {
+                name: "Silver Vein",
+                description: "A shimmering silver vein",
+                image: "⚪",
+                skill: "mining",
+                skillLevel: 25,
+                maxHealth: 200,
+                failRate: 0.15,
+                availableIn: ["mountainPass"],
+                rewards: [
+                    { itemId: "silverOre", min: 1, max: 3, chance: 0.7 },
+                    { itemId: "ore", min: 1, max: 3, chance: 0.5 },
+                    { itemId: "stone", min: 3, max: 6, chance: 0.8 },
+                    { exp: { mining: 35 }, chance: 1.0 }
+                ]
+            },
+            goldVein: {
+                name: "Gold Vein",
+                description: "A precious gold vein",
+                image: "🟡",
+                skill: "mining",
+                skillLevel: 35,
+                maxHealth: 300,
+                failRate: 0.20,
+                availableIn: ["mountainPass"],
+                rewards: [
+                    { itemId: "goldOre", min: 1, max: 2, chance: 0.6 },
+                    { itemId: "silverOre", min: 1, max: 2, chance: 0.4 },
+                    { itemId: "ore", min: 2, max: 4, chance: 0.6 },
+                    { itemId: "stone", min: 4, max: 8, chance: 0.9 },
+                    { exp: { mining: 50 }, chance: 1.0 }
+                ]
+            },
+
+            // LOGGING NODES
+            oakTree: {
+                name: "Oak Tree",
+                description: "A sturdy oak tree",
+                image: "🌳",
+                skill: "logging",
+                skillLevel: 1,
+                maxHealth: 60,
+                failRate: 0.05,
+                availableIn: ["startingPlains", "darkForest"],
+                rewards: [
+                    { itemId: "wood", min: 2, max: 4, chance: 0.95 },
+                    { exp: { logging: 6 }, chance: 1.0 }
+                ]
+            },
+            pineTree: {
+                name: "Pine Tree",
+                description: "A tall pine tree",
+                image: "🌲",
+                skill: "logging",
+                skillLevel: 10,
+                maxHealth: 100,
+                failRate: 0.08,
+                availableIn: ["darkForest", "mountainPass"],
+                rewards: [
+                    { itemId: "wood", min: 3, max: 6, chance: 0.9 },
+                    { itemId: "stone", min: 1, max: 2, chance: 0.2 },
+                    { exp: { logging: 15 }, chance: 1.0 }
+                ]
+            },
+
+            // FISHING NODES
+            lake: {
+                name: "Lake",
+                description: "A calm lake teeming with fish",
+                image: "🌊",
+                skill: "fishing",
+                skillLevel: 1,
+                maxHealth: 40,
+                failRate: 0.15,
+                availableIn: ["startingPlains", "darkForest"],
+                rewards: [
+                    { itemId: "minnow", min: 1, max: 3, chance: 0.6 },
+                    { itemId: "trout", min: 1, max: 2, chance: 0.4 },
+                    { itemId: "bass", min: 1, max: 1, chance: 0.2 },
+                    { exp: { fishing: 5 }, chance: 1.0 }
+                ]
+            },
+            stream: {
+                name: "Stream",
+                description: "A flowing stream with clear water",
+                image: "💧",
+                skill: "fishing",
+                skillLevel: 5,
+                maxHealth: 50,
+                failRate: 0.18,
+                availableIn: ["startingPlains", "darkForest", "mountainPass"],
+                rewards: [
+                    { itemId: "trout", min: 1, max: 2, chance: 0.65 },
+                    { itemId: "bass", min: 1, max: 2, chance: 0.35 },
+                    { itemId: "minnow", min: 2, max: 4, chance: 0.4 },
+                    { exp: { fishing: 8 }, chance: 1.0 }
+                ]
+            },
+            river: {
+                name: "River",
+                description: "A wide river with strong currents",
+                image: "🌊",
+                skill: "fishing",
+                skillLevel: 15,
+                maxHealth: 70,
+                failRate: 0.22,
+                availableIn: ["darkForest"],
+                rewards: [
+                    { itemId: "bass", min: 1, max: 3, chance: 0.55 },
+                    { itemId: "pike", min: 1, max: 2, chance: 0.4 },
+                    { itemId: "salmon", min: 1, max: 1, chance: 0.25 },
+                    { itemId: "trout", min: 1, max: 2, chance: 0.5 },
+                    { exp: { fishing: 20 }, chance: 1.0 }
+                ]
+            },
+            waterfall: {
+                name: "Waterfall",
+                description: "A powerful waterfall where salmon leap",
+                image: "💦",
+                skill: "fishing",
+                skillLevel: 25,
+                maxHealth: 90,
+                failRate: 0.28,
+                availableIn: ["mountainPass"],
+                rewards: [
+                    { itemId: "salmon", min: 1, max: 3, chance: 0.65 },
+                    { itemId: "pike", min: 1, max: 2, chance: 0.45 },
+                    { itemId: "goldfish", min: 1, max: 1, chance: 0.15 },
+                    { itemId: "bass", min: 1, max: 3, chance: 0.6 },
+                    { exp: { fishing: 35 }, chance: 1.0 }
+                ]
+            },
+
+            // HUNTING NODES
+            plain: {
+                name: "Plain",
+                description: "Open grasslands with small game",
+                image: "🌾",
+                skill: "hunting",
+                skillLevel: 1,
+                maxHealth: 45,
+                failRate: 0.20,
+                availableIn: ["startingPlains"],
+                rewards: [
+                    { itemId: "rawMeat", min: 1, max: 2, chance: 0.65 },
+                    { itemId: "hide", min: 1, max: 1, chance: 0.45 },
+                    { itemId: "feather", min: 1, max: 3, chance: 0.5 },
+                    { itemId: "bone", min: 1, max: 1, chance: 0.3 },
+                    { exp: { hunting: 6 }, chance: 1.0 }
+                ]
+            },
+            hardwoodForest: {
+                name: "Hardwood Forest",
+                description: "Dense forest with deer and boar",
+                image: "🌳",
+                skill: "hunting",
+                skillLevel: 10,
+                maxHealth: 70,
+                failRate: 0.25,
+                availableIn: ["darkForest"],
+                rewards: [
+                    { itemId: "rawMeat", min: 2, max: 4, chance: 0.7 },
+                    { itemId: "hide", min: 1, max: 3, chance: 0.6 },
+                    { itemId: "bone", min: 1, max: 2, chance: 0.5 },
+                    { itemId: "fang", min: 1, max: 1, chance: 0.2 },
+                    { exp: { hunting: 15 }, chance: 1.0 }
+                ]
+            },
+            pineForest: {
+                name: "Pine Forest",
+                description: "Coniferous forest with elk and wolves",
+                image: "🌲",
+                skill: "hunting",
+                skillLevel: 20,
+                maxHealth: 90,
+                failRate: 0.28,
+                availableIn: ["mountainPass"],
+                rewards: [
+                    { itemId: "rawMeat", min: 2, max: 5, chance: 0.65 },
+                    { itemId: "hide", min: 2, max: 4, chance: 0.65 },
+                    { itemId: "fang", min: 1, max: 2, chance: 0.35 },
+                    { itemId: "bone", min: 2, max: 3, chance: 0.6 },
+                    { itemId: "pelt", min: 1, max: 1, chance: 0.15 },
+                    { exp: { hunting: 28 }, chance: 1.0 }
+                ]
+            },
+            mountain: {
+                name: "Mountain",
+                description: "Rocky peaks with rare mountain beasts",
+                image: "⛰️",
+                skill: "hunting",
+                skillLevel: 30,
+                maxHealth: 120,
+                failRate: 0.32,
+                availableIn: ["mountainPass"],
+                rewards: [
+                    { itemId: "rawMeat", min: 3, max: 6, chance: 0.6 },
+                    { itemId: "hide", min: 2, max: 5, chance: 0.7 },
+                    { itemId: "fang", min: 1, max: 3, chance: 0.5 },
+                    { itemId: "bone", min: 2, max: 4, chance: 0.65 },
+                    { itemId: "pelt", min: 1, max: 2, chance: 0.25 },
+                    { exp: { hunting: 45 }, chance: 1.0 }
+                ]
+            },
+
+            // FORAGING NODES
+            flowerPatch: {
+                name: "Flower Patch",
+                description: "Colorful wildflowers grow here",
+                image: "🌸",
+                skill: "foraging",
+                skillLevel: 1,
+                maxHealth: 30,
+                failRate: 0.10,
+                availableIn: ["startingPlains"],
+                rewards: [
+                    { itemId: "flower", min: 2, max: 4, chance: 0.8 },
+                    { itemId: "seed", min: 1, max: 2, chance: 0.4 },
+                    { exp: { foraging: 4 }, chance: 1.0 }
+                ]
+            },
+            berryBush: {
+                name: "Berry Bush",
+                description: "A bush laden with berries",
+                image: "🫐",
+                skill: "foraging",
+                skillLevel: 5,
+                maxHealth: 40,
+                failRate: 0.12,
+                availableIn: ["startingPlains", "darkForest"],
+                rewards: [
+                    { itemId: "berries", min: 2, max: 5, chance: 0.75 },
+                    { itemId: "seed", min: 1, max: 1, chance: 0.3 },
+                    { exp: { foraging: 7 }, chance: 1.0 }
+                ]
+            },
+            mushroomLog: {
+                name: "Mushroom Log",
+                description: "A fallen log covered in mushrooms",
+                image: "🍄",
+                skill: "foraging",
+                skillLevel: 10,
+                maxHealth: 50,
+                failRate: 0.15,
+                availableIn: ["darkForest"],
+                rewards: [
+                    { itemId: "mushroom", min: 1, max: 3, chance: 0.7 },
+                    { itemId: "root", min: 1, max: 2, chance: 0.4 },
+                    { exp: { foraging: 12 }, chance: 1.0 }
+                ]
+            },
+            herbGarden: {
+                name: "Herb Garden",
+                description: "Wild herbs growing naturally",
+                image: "🌿",
+                skill: "foraging",
+                skillLevel: 15,
+                maxHealth: 60,
+                failRate: 0.18,
+                availableIn: ["darkForest", "mountainPass"],
+                rewards: [
+                    { itemId: "herb", min: 2, max: 4, chance: 0.7 },
+                    { itemId: "flower", min: 1, max: 3, chance: 0.5 },
+                    { itemId: "seed", min: 1, max: 2, chance: 0.35 },
+                    { exp: { foraging: 18 }, chance: 1.0 }
+                ]
+            },
+            rootField: {
+                name: "Root Field",
+                description: "Ground rich with edible roots",
+                image: "🥕",
+                skill: "foraging",
+                skillLevel: 20,
+                maxHealth: 75,
+                failRate: 0.20,
+                availableIn: ["mountainPass"],
+                rewards: [
+                    { itemId: "root", min: 2, max: 5, chance: 0.75 },
+                    { itemId: "herb", min: 1, max: 2, chance: 0.4 },
+                    { itemId: "mushroom", min: 1, max: 2, chance: 0.3 },
+                    { exp: { foraging: 25 }, chance: 1.0 }
+                ]
+            },
+            alpineMeadow: {
+                name: "Alpine Meadow",
+                description: "High altitude plants and rare herbs",
+                image: "🌼",
+                skill: "foraging",
+                skillLevel: 30,
+                maxHealth: 100,
+                failRate: 0.25,
+                availableIn: ["mountainPass"],
+                rewards: [
+                    { itemId: "herb", min: 3, max: 6, chance: 0.65 },
+                    { itemId: "flower", min: 2, max: 5, chance: 0.7 },
+                    { itemId: "mushroom", min: 1, max: 3, chance: 0.45 },
+                    { itemId: "seed", min: 2, max: 4, chance: 0.5 },
+                    { exp: { foraging: 40 }, chance: 1.0 }
+                ]
+            },
+
+            // THIEVING NODES
+            abandonedCart: {
+                name: "Abandoned Cart",
+                description: "An old cart with forgotten goods",
+                image: "🛒",
+                skill: "thieving",
+                skillLevel: 1,
+                maxHealth: 40,
+                failRate: 0.25,
+                availableIn: ["startingPlains"],
+                rewards: [
+                    { itemId: "coinPouch", min: 1, max: 2, chance: 0.6 },
+                    { itemId: "scrap", min: 1, max: 3, chance: 0.5 },
+                    { exp: { thieving: 5 }, chance: 1.0 }
+                ]
+            },
+            merchantStall: {
+                name: "Merchant Stall",
+                description: "An unattended merchant stall",
+                image: "🏪",
+                skill: "thieving",
+                skillLevel: 8,
+                maxHealth: 60,
+                failRate: 0.30,
+                availableIn: ["startingPlains", "darkForest"],
+                rewards: [
+                    { itemId: "coinPouch", min: 2, max: 4, chance: 0.65 },
+                    { itemId: "jewelry", min: 1, max: 1, chance: 0.3 },
+                    { itemId: "wire", min: 1, max: 2, chance: 0.4 },
+                    { exp: { thieving: 10 }, chance: 1.0 }
+                ]
+            },
+            guardPost: {
+                name: "Guard Post",
+                description: "A lightly guarded checkpoint",
+                image: "🏛️",
+                skill: "thieving",
+                skillLevel: 15,
+                maxHealth: 80,
+                failRate: 0.35,
+                availableIn: ["darkForest"],
+                rewards: [
+                    { itemId: "coinPouch", min: 2, max: 5, chance: 0.6 },
+                    { itemId: "keycard", min: 1, max: 1, chance: 0.4 },
+                    { itemId: "scrap", min: 2, max: 4, chance: 0.55 },
+                    { exp: { thieving: 20 }, chance: 1.0 }
+                ]
+            },
+            techWarehouse: {
+                name: "Tech Warehouse",
+                description: "Storage for electronic components",
+                image: "🏭",
+                skill: "thieving",
+                skillLevel: 22,
+                maxHealth: 100,
+                failRate: 0.38,
+                availableIn: ["darkForest", "mountainPass"],
+                rewards: [
+                    { itemId: "computerPart", min: 1, max: 3, chance: 0.6 },
+                    { itemId: "wire", min: 2, max: 5, chance: 0.7 },
+                    { itemId: "scrap", min: 3, max: 6, chance: 0.65 },
+                    { exp: { thieving: 30 }, chance: 1.0 }
+                ]
+            },
+            mansion: {
+                name: "Wealthy Mansion",
+                description: "Home of the wealthy elite",
+                image: "🏰",
+                skill: "thieving",
+                skillLevel: 28,
+                maxHealth: 120,
+                failRate: 0.40,
+                availableIn: ["mountainPass"],
+                rewards: [
+                    { itemId: "coinPouch", min: 4, max: 8, chance: 0.7 },
+                    { itemId: "jewelry", min: 2, max: 4, chance: 0.6 },
+                    { itemId: "keycard", min: 1, max: 2, chance: 0.45 },
+                    { exp: { thieving: 45 }, chance: 1.0 }
+                ]
+            },
+            dataCenter: {
+                name: "Data Center",
+                description: "High security tech facility",
+                image: "🖥️",
+                skill: "thieving",
+                skillLevel: 35,
+                maxHealth: 150,
+                failRate: 0.45,
+                availableIn: ["mountainPass"],
+                rewards: [
+                    { itemId: "computerPart", min: 3, max: 6, chance: 0.7 },
+                    { itemId: "wire", min: 4, max: 8, chance: 0.75 },
+                    { itemId: "keycard", min: 2, max: 3, chance: 0.55 },
+                    { itemId: "scrap", min: 5, max: 10, chance: 0.8 },
+                    { exp: { thieving: 60 }, chance: 1.0 }
+                ]
+            }
+        },
+
+        // Crafting Node definitions (crafting stations)
+        craftingNodes: {
+            // FORGING STATIONS
+            basicForge: {
+                name: "Basic Forge",
+                description: "A simple forge for basic metalworking",
+                image: "🔥",
+                skill: "forging",
+                skillLevel: 1,
+                availableIn: ["startingPlains", "darkForest"],
+                requiresDiscovery: true
+            },
+            advancedForge: {
+                name: "Advanced Forge",
+                description: "A well-equipped forge for advanced metalwork",
+                image: "⚒️",
+                skill: "forging",
+                skillLevel: 15,
+                availableIn: ["darkForest", "mountainPass"],
+                requiresDiscovery: true
+            },
+            masterForge: {
+                name: "Master Forge",
+                description: "A state-of-the-art metalworking facility",
+                image: "🏭",
+                skill: "forging",
+                skillLevel: 30,
+                availableIn: ["mountainPass"],
+                requiresDiscovery: true
+            },
+
+            // MACHINING STATIONS
+            basicWorkbench: {
+                name: "Basic Workbench",
+                description: "A simple workbench for basic machining",
+                image: "🔧",
+                skill: "machining",
+                skillLevel: 1,
+                availableIn: ["startingPlains", "darkForest"],
+                requiresDiscovery: true
+            },
+            machineShop: {
+                name: "Machine Shop",
+                description: "A workshop with precision tools",
+                image: "⚙️",
+                skill: "machining",
+                skillLevel: 15,
+                availableIn: ["darkForest", "mountainPass"],
+                requiresDiscovery: true
+            },
+            precisionLab: {
+                name: "Precision Lab",
+                description: "High-tech machining facility",
+                image: "🏭",
+                skill: "machining",
+                skillLevel: 30,
+                availableIn: ["mountainPass"],
+                requiresDiscovery: true
+            },
+
+            // COOKING STATIONS
+            campfire: {
+                name: "Campfire",
+                description: "A simple fire for basic cooking",
+                image: "🔥",
+                skill: "cooking",
+                skillLevel: 1,
+                availableIn: ["startingPlains", "darkForest"],
+                requiresDiscovery: true
+            },
+            fieldKitchen: {
+                name: "Field Kitchen",
+                description: "A portable cooking station",
+                image: "🍳",
+                skill: "cooking",
+                skillLevel: 10,
+                availableIn: ["darkForest", "mountainPass"],
+                requiresDiscovery: true
+            },
+            fullKitchen: {
+                name: "Full Kitchen",
+                description: "A fully equipped professional kitchen",
+                image: "👨‍🍳",
+                skill: "cooking",
+                skillLevel: 25,
+                availableIn: ["mountainPass"],
+                requiresDiscovery: true
+            },
+
+            // CHEMISTRY STATIONS
+            chemTable: {
+                name: "Chemistry Table",
+                description: "Basic chemistry equipment",
+                image: "🧪",
+                skill: "chemistry",
+                skillLevel: 1,
+                availableIn: ["startingPlains", "darkForest"],
+                requiresDiscovery: true
+            },
+            chemLab: {
+                name: "Chemistry Lab",
+                description: "Advanced chemical synthesis facility",
+                image: "⚗️",
+                skill: "chemistry",
+                skillLevel: 15,
+                availableIn: ["darkForest", "mountainPass"],
+                requiresDiscovery: true
+            },
+            researchLab: {
+                name: "Research Lab",
+                description: "State-of-the-art research facility",
+                image: "🔬",
+                skill: "chemistry",
+                skillLevel: 30,
+                availableIn: ["mountainPass"],
+                requiresDiscovery: true
+            },
+
+            // TEXTILES STATIONS
+            sewingKit: {
+                name: "Sewing Kit",
+                description: "Basic sewing and textile tools",
+                image: "🧵",
+                skill: "textiles",
+                skillLevel: 1,
+                availableIn: ["startingPlains", "darkForest"],
+                requiresDiscovery: true
+            },
+            tailorShop: {
+                name: "Tailor Shop",
+                description: "Professional textile crafting station",
+                image: "🪡",
+                skill: "textiles",
+                skillLevel: 15,
+                availableIn: ["darkForest", "mountainPass"],
+                requiresDiscovery: true
+            },
+            fabricMill: {
+                name: "Fabric Mill",
+                description: "Industrial textile production facility",
+                image: "🏭",
+                skill: "textiles",
+                skillLevel: 30,
+                availableIn: ["mountainPass"],
+                requiresDiscovery: true
+            },
+
+            // ENGINEERING STATIONS
+            engineeringDesk: {
+                name: "Engineering Desk",
+                description: "Basic engineering and design station",
+                image: "📐",
+                skill: "engineering",
+                skillLevel: 1,
+                availableIn: ["startingPlains", "darkForest"],
+                requiresDiscovery: true
+            },
+            techBench: {
+                name: "Tech Bench",
+                description: "Advanced electronics and tech workspace",
+                image: "💻",
+                skill: "engineering",
+                skillLevel: 15,
+                availableIn: ["darkForest", "mountainPass"],
+                requiresDiscovery: true
+            },
+            innovationCenter: {
+                name: "Innovation Center",
+                description: "Cutting-edge R&D facility",
+                image: "🏢",
+                skill: "engineering",
+                skillLevel: 30,
+                availableIn: ["mountainPass"],
+                requiresDiscovery: true
+            }
+        },
+
+        // Generator definitions
+        generators: {
+            miner: {
+                name: "Miner",
+                description: "Mines ore automatically",
+                // Base production per second at level 1
+                baseProduction: 1,
+                // Resource produced
+                produces: "ore",
+                // Cost formula: baseCost * (costMultiplier ^ level)
+                baseCost: 10,
+                costMultiplier: 1.15,
+                costResource: "gold"
+            },
+            lumberjack: {
+                name: "Lumberjack",
+                description: "Chops wood automatically",
+                baseProduction: 1,
+                produces: "wood",
+                baseCost: 10,
+                costMultiplier: 1.15,
+                costResource: "gold"
+            },
+            merchant: {
+                name: "Merchant",
+                description: "Generates gold automatically",
+                baseProduction: 0.5,
+                produces: "gold",
+                baseCost: 50,
+                costMultiplier: 1.2,
+                costResource: "gold",
+                unlockRequirement: { gold: 25 }
+            }
+        },
+
+        // Upgrade definitions
+        upgrades: {
+            goldBoost1: {
+                name: "Basic Commerce",
+                description: "Increases gold generation",
+                // Effect formula: each level adds +10% to gold generation
+                effectPerLevel: 0.1,
+                affectsResource: "gold",
+                maxLevel: 10,
+                // Cost formula: baseCost * (costMultiplier ^ level)
+                baseCost: 25,
+                costMultiplier: 1.5,
+                costResource: "gold"
+            },
+            goldBoost2: {
+                name: "Advanced Trading",
+                description: "Further increases gold generation",
+                effectPerLevel: 0.15,
+                affectsResource: "gold",
+                maxLevel: 10,
+                baseCost: 500,
+                costMultiplier: 1.8,
+                costResource: "gold",
+                unlockRequirement: { goldBoost1: 5 } // Requires first upgrade at level 5
+            },
+            miningEfficiency: {
+                name: "Mining Efficiency",
+                description: "Miners produce more ore",
+                effectPerLevel: 0.2,
+                affectsResource: "ore",
+                maxLevel: 10,
+                baseCost: 50,
+                costMultiplier: 1.6,
+                costResource: "ore"
+            },
+            loggingEfficiency: {
+                name: "Logging Efficiency",
+                description: "Lumberjacks produce more wood",
+                effectPerLevel: 0.2,
+                affectsResource: "wood",
+                maxLevel: 10,
+                baseCost: 50,
+                costMultiplier: 1.6,
+                costResource: "wood"
+            },
+            merchantSkill: {
+                name: "Merchant Mastery",
+                description: "Merchants generate significantly more gold",
+                effectPerLevel: 0.25,
+                affectsResource: "gold",
+                maxLevel: 5,
+                baseCost: 200,
+                costMultiplier: 2.0,
+                costResource: "gold",
+                unlockRequirement: { gold: 100, merchant: 3 }
+            }
+        }
+    },

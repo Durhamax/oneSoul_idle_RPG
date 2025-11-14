@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start index.html)",
+      "Bash(taskkill:*)",
+      "Bash(nul)",
+      "Bash(\"C:\\Users\\durha\\idlegame\\src\\core\\definitions_temp.txt\")",
+      "Bash(\"C:\\Users\\durha\\idlegame\\src\\core\\definitions.js\")",
+      "Bash(node:*)",
+      "Bash(test:*)",
+      "Bash(dir:*)",
+      "Bash(powershell -Command \"(Get-Content ''C:\\Users\\durha\\idlegame\\src\\ui\\globalHandlers.js'' | Measure-Object -Line).Lines\")",
+      "Bash(echo:*)",
+      "Bash(\"C:\\Users\\durha\\idlegame\\src\\ui\\globalHandlers.js\")",
+      "Bash(powershell -Command \"(Get-Content ''C:\\Users\\durha\\idlegame\\src\\ui\\developerUI.js'' | Measure-Object -Line).Lines\")",
+      "Bash(powershell -Command \"$content = Get-Content ''C:\\Users\\durha\\idlegame\\src\\core\\definitions.js'' -Raw; if ($content -match ''items:\\s*\\{([^}]+(\\{[^}]*\\}[^}]*)*)\\}'') { $itemsSection = $matches[1]; $itemIds = [regex]::Matches($itemsSection, ''^\\s+(\\w+):\\s*\\{'', [System.Text.RegularExpressions.RegexOptions]::Multiline) | ForEach-Object { $_Groups[1].Value }; $itemIds -join '', '' }\")",
+      "Bash(powershell -Command \"(Get-Content ''C:\\Users\\durha\\idlegame\\src\\core\\definitions.js'' | Measure-Object -Line).Lines\")",
+      "Bash(powershell -Command \"(Get-Content ''C:\\Users\\durha\\idlegame\\src\\core\\definitions.js'' | Select-String -Pattern ''comprehensiveItems:'' -Context 2,5).Line\")",
+      "Bash(powershell -Command \"$content = Get-Content ''C:\\Users\\durha\\idlegame\\src\\core\\definitions.js'' -Raw; if ($content -match ''items:\\s*\\{'') { $matches[0] } else { ''Not found'' }\")",
+      "Bash(powershell -Command \"(Get-Content ''C:\\Users\\durha\\idlegame\\src\\core\\definitions.js'' | Select-String -Pattern ''comprehensiveItems:'' -SimpleMatch | Select-Object -First 1).LineNumber\")",
+      "Bash(powershell -Command \"(Get-Content ''C:\\Users\\durha\\idlegame\\index.html'' | Measure-Object -Line).Lines\")",
+      "Bash(start C:Usersdurhaidlegameindex.html)",
+      "Bash(start \"\" \"C:\\Users\\durha\\idlegame\\index.html\")",
+      "Bash(C:Usersdurhaidlegamedebug_state.js)",
+      "Bash(powershell -Command \"Get-Date -Format ''HH:mm:ss''\")",
+      "Bash(powershell -Command \"(Get-Content ''C:\\Users\\durha\\idlegame\\gameEngine.js'' | Select-String -Pattern ''equipment:'' -Context 0,12).Line\")",
+      "Bash(powershell -Command:*)",
+      "Bash(start \"\" \"C:\\Users\\durha\\idlegame\\diagnose-background.html\")",
+      "Bash(\"C:\\Users\\durha\\idlegame\\src\\ui\\perkGridUI.js\")",
+      "Bash(del \"C:\\Users\\durha\\idlegame\\temp_combat_handlers.js\")",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

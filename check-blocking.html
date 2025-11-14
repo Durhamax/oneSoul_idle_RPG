@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check for Blocking Elements</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        .error { color: #f00; font-weight: bold; }
+        .warning { color: #ff0; }
+        .ok { color: #0f0; }
+        pre { background: #000; padding: 10px; border: 1px solid #0f0; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Blocking Element Diagnostic</h1>
+    <div id="output"></div>
+
+    <script>
+        // Open the game in an iframe so we can inspect it
+        const iframe = document.createElement('iframe');
+        iframe.src = 'index.html';
+        iframe.style.width = '100%';
+        iframe.style.height = '600px';
+        iframe.style.border = '2px solid #0f0';
+        document.body.appendChild(iframe);
+
+        // Wait for game to load
+        setTimeout(() => {
+            const output = document.getElementById('output');
+            let html = '<h2>Diagnostic Results:</h2>';
+
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+                // Check for visible modal overlays
+                html += '<h3>1. Checking for Modal Overlays:</h3>';
+                const modals = doc.querySelectorAll('[id*="modal"], [class*="modal"], [id*="overlay"], [class*="overlay"]');
+                modals.forEach(modal => {
+                    const style = window.getComputedStyle(modal);
+                    if (style.display !== 'none') {
+                        html += `<pre class="warning">⚠️ Visible overlay found: ${modal.tagName}#${modal.id}.${modal.className}
+Display: ${style.display}
+Position: ${style.position}
+Z-index: ${style.zIndex}
+Pointer-events: ${style.pointerEvents}</pre>`;
+                    }
+                });
+
+                // Check for elements with high z-index
+                html += '<h3>2. Checking for High Z-Index Elements:</h3>';
+                const allElements = doc.querySelectorAll('*');
+                const highZElements = [];
+                allElements.forEach(el => {
+                    const style = window.getComputedStyle(el);
+                    const zIndex = parseInt(style.zIndex);
+                    if (zIndex > 100 && style.display !== 'none') {
+                        highZElements.push({
+                            tag: el.tagName,
+                            id: el.id,
+                            className: el.className,
+                            zIndex: zIndex,
+                            pointerEvents: style.pointerEvents,
+                            position: style.position,
+                            display: style.display
+                        });
+                    }
+                });
+
+                highZElements.sort((a, b) => b.zIndex - a.zIndex);
+                highZElements.forEach(el => {
+                    const className = el.pointerEvents === 'none' ? 'ok' : 'error';
+                    html += `<pre class="${className}">Z-index: ${el.zIndex} | ${el.tag}#${el.id}.${el.className}
+Position: ${el.position} | Display: ${el.display} | Pointer-events: ${el.pointerEvents}</pre>`;
+                });
+
+                // Check combat area specifically
+                html += '<h3>3. Checking Combat Area:</h3>';
+                const combatView = doc.getElementById('view-combat');
+                if (combatView) {
+                    const style = window.getComputedStyle(combatView);
+                    html += `<pre class="ok">Combat view found:
+Display: ${style.display}
+Position: ${style.position}
+Z-index: ${style.zIndex}
+Pointer-events: ${style.pointerEvents}</pre>`;
+
+                    const combatArea = doc.getElementById('combatArea');
+                    if (combatArea) {
+                        const areaStyle = window.getComputedStyle(combatArea);
+                        html += `<pre class="ok">Combat area found:
+Display: ${areaStyle.display}
+Pointer-events: ${areaStyle.pointerEvents}
+Child count: ${combatArea.children.length}</pre>`;
+                    }
+                }
+
+                // Check for JavaScript errors
+                html += '<h3>4. Console Errors (if any):</h3>';
+                html += '<pre>Check the browser console (F12) for JavaScript errors</pre>';
+
+                output.innerHTML = html;
+
+            } catch(e) {
+                output.innerHTML = `<pre class="error">Error accessing iframe: ${e.message}
+This might be due to CORS. Try opening index.html directly and run this in the console:
+
+console.log("Visible high z-index elements:");
+document.querySelectorAll('*').forEach(el => {
+    const style = window.getComputedStyle(el);
+    const zIndex = parseInt(style.zIndex);
+    if (zIndex > 100 && style.display !== 'none') {
+        console.log(el, "z-index:", zIndex, "pointer-events:", style.pointerEvents);
+    }
+});
+</pre>`;
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
