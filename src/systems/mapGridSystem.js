@@ -75,6 +75,29 @@ const MapGridSystem = {
     init(containerId) {
         console.log("🗺️ Initializing Map Grid System...");
 
+        // Add footsteps animation CSS if not already present
+        if (!document.getElementById('footstepsAnimationStyles')) {
+            const style = document.createElement('style');
+            style.id = 'footstepsAnimationStyles';
+            style.textContent = `
+                @keyframes footstepsFade {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.8);
+                    }
+                    50% {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: scale(0.8);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         this.createDOM(containerId);
         this.calculateViewportBounds();
         this.calculateMinZoom();
@@ -204,9 +227,10 @@ const MapGridSystem = {
         const effectiveHeight = this.hexHeight + this.hexGap;
 
         // Convert axial coordinates to pixel positions
-        // Axial coordinate system: q is horizontal, r is diagonal
+        // Note: r coordinates are negated during world generation so +r displays up, -r displays down
+        // Pixel Y increases downward, so we negate r here to match that pixel coordinates increase downward
         const x = this.originX + (effectiveWidth * 0.75 * q);
-        const y = this.originY + (effectiveHeight * (r + q * 0.5));
+        const y = this.originY + (effectiveHeight * (-r + q * 0.5));  // Negate r so positions match original map
 
         return { x, y };
     },
@@ -228,36 +252,17 @@ const MapGridSystem = {
         // Clear existing hexes
         this.hexContainer.innerHTML = '';
 
-        // Create hexes for each region
+        // Create hexes for each tile in the tilemap
         let hexCount = 0;
-        for (let regionId in worldMap) {
+        const tiles = WorldTilemap.getTiles();
+
+        for (let tile of tiles) {
+            const { q, r } = tile;
+            const regionId = WorldTilemap.getRegionId(q, r);
             const hex = worldMap[regionId];
-            if (!hex || !hex.hexCoords) continue;
 
-            const { q, r } = hex.hexCoords;
-
-            // Exclude specific columns (removed tiles)
-            if (q === 7) {
-                continue;
-            }
-
-            // Exclude specific tiles over water
-            // Note: Display shows (q, -r), but internally stored as (q, r)
-            const excludedTiles = [
-                [-7, 0], [-7, 2], [-7, 5], [-7, 6],
-                [-6, -1], [-6, 6],
-                [-5, 5],
-                [-4, 5],
-                [-1, 1],
-                [0, 0], [0, 1], [0, 2], [0, 3],
-                [2, -5], [2, 2],
-                [3, -5],
-                [4, -6], [4, 1],
-                [5, -6],
-                [6, -6], [6, -5], [6, -4], [6, -1], [6, 0]
-            ];
-
-            if (excludedTiles.some(([eq, er]) => eq === q && er === r)) {
+            if (!hex) {
+                console.warn(`⚠️ No region definition for tile (${q}, ${r})`);
                 continue;
             }
 
@@ -304,6 +309,19 @@ const MapGridSystem = {
         const discoveryProgress = regionState?.discoveryProgress || 0;
         const isFullyExplored = discoveryProgress >= 100;
 
+        // Debug logging for starting region
+        if (regionId === "region_-3_-4") {
+            console.log(`🔍 Creating starting tile (-3,-4):`, {
+                regionId,
+                coords: hexData.hexCoords,
+                currentRegion: state.currentRegion,
+                isCurrent,
+                isDiscovered,
+                regionState,
+                navReq: hexData.navigationRequirement
+            });
+        }
+
         // Check if explorable (path found from another region)
         let isExplorable = false;
         if (!isDiscovered) {
@@ -336,7 +354,8 @@ const MapGridSystem = {
 
         // Determine styling based on state - adjusted for larger hexes with gaps
         let fillColor = 'rgba(0, 0, 0, 0.7)'; // Locked - darker fog for larger tiles
-        let strokeColor = 'rgba(74, 158, 255, 0.4)'; // Increased opacity for visibility with gaps
+        let strokeColor = 'rgba(74, 158, 255, 0.4)'; // Default border
+        let strokeWidth = '2px'; // Border width
         let glow = 'none';
         let backdropBlur = '';
 
@@ -344,28 +363,36 @@ const MapGridSystem = {
             // Path found - golden tint
             fillColor = 'rgba(255, 200, 0, 0.25)';
             strokeColor = 'rgba(255, 200, 0, 0.6)';
+            strokeWidth = '2px';
             glow = 'inset 0 0 25px rgba(255, 200, 0, 0.3), 0 0 3px rgba(255, 200, 0, 0.4)';
-        } else if (isDiscovered) {
-            // Discovered - subtle overlay
-            fillColor = isFullyExplored ? 'rgba(0, 255, 100, 0.08)' : 'rgba(255, 255, 255, 0.05)';
-            strokeColor = isFullyExplored ? 'rgba(0, 255, 100, 0.5)' : 'rgba(74, 158, 255, 0.4)';
+        } else if (isDiscovered && !isCurrent) {
+            // Unlocked (discovered) - NO GRAY FILL, highlighted border in green/cyan
+            fillColor = 'rgba(0, 0, 0, 0)'; // Transparent fill to show map underneath
+            strokeColor = isFullyExplored ? 'rgba(0, 255, 150, 0.8)' : 'rgba(100, 200, 255, 0.7)';
+            strokeWidth = '3px'; // Thicker border for unlocked tiles
             glow = isFullyExplored
-                ? 'inset 0 0 25px rgba(0, 255, 100, 0.2), 0 0 3px rgba(0, 255, 100, 0.3)'
-                : 'inset 0 0 25px rgba(74, 158, 255, 0.1), 0 0 2px rgba(74, 158, 255, 0.2)';
-        } else {
-            // Undiscovered - add blur effect for fog of war
+                ? '0 0 6px rgba(0, 255, 150, 0.6)'
+                : '0 0 4px rgba(100, 200, 255, 0.5)';
+        } else if (!isDiscovered) {
+            // Locked (undiscovered) - gray filled with blur effect for fog of war
+            fillColor = 'rgba(0, 0, 0, 0.7)';
+            strokeColor = 'rgba(80, 80, 80, 0.5)';
+            strokeWidth = '2px';
             backdropBlur = 'blur(2px)';
         }
 
         if (isCurrent) {
-            fillColor = 'rgba(74, 158, 255, 0.15)';
-            strokeColor = 'rgba(74, 158, 255, 0.9)';
-            glow = 'inset 0 0 35px rgba(74, 158, 255, 0.4), 0 0 8px rgba(74, 158, 255, 0.6)';
+            // Current region - BLUE BOLD border with glow effect
+            fillColor = 'rgba(33, 150, 243, 0.12)'; // Blue tint
+            strokeColor = 'rgba(33, 150, 243, 1.0)'; // Pure blue (#2196F3)
+            strokeWidth = '4px'; // Bold/thick border
+            glow = 'inset 0 0 35px rgba(33, 150, 243, 0.4), 0 0 15px rgba(100, 181, 246, 0.9)'; // Blue glow
+            console.log(`🎯 Current region tile: ${regionId} at (${hexData.hexCoords.q},${hexData.hexCoords.r}) - Styling: fill=${fillColor}, stroke=${strokeColor}, width=${strokeWidth}`);
         }
 
         // Apply styling with stroke-like border effect using box-shadow
         hexDiv.style.backgroundColor = fillColor;
-        hexDiv.style.boxShadow = `${glow}${glow !== 'none' ? ', ' : ''}0 0 0 2px ${strokeColor}`;
+        hexDiv.style.boxShadow = `${glow}${glow !== 'none' ? ', ' : ''}0 0 0 ${strokeWidth} ${strokeColor}`;
         if (backdropBlur) {
             hexDiv.style.backdropFilter = backdropBlur;
         }
@@ -391,11 +418,15 @@ const MapGridSystem = {
             text-shadow: 0 0 4px #000, 0 0 8px #000, 2px 2px 3px #000;
             margin-bottom: 5px;
         `;
-        coordLabel.textContent = `${hexData.hexCoords.q},${-hexData.hexCoords.r}`;
+        // Display actual internal coordinates (no transformation)
+        const displayQ = hexData.hexCoords.q;
+        const displayR = hexData.hexCoords.r;
+        coordLabel.textContent = `${displayQ},${displayR}`;
+
         contentDiv.appendChild(coordLabel);
 
-        // Add biome icon or status indicator
-        if (isDiscovered) {
+        // Add biome icon or status indicator (not for current region)
+        if (isDiscovered && !isCurrent) {
             const icon = document.createElement('span');
             icon.style.cssText = `font-size: 42px; text-shadow: 0 0 10px #000, 0 0 15px #000;`;
             icon.textContent = biome.icon;
@@ -405,6 +436,36 @@ const MapGridSystem = {
             icon.style.cssText = `font-size: 54px; color: #ffcc00; text-shadow: 0 0 10px #000, 0 0 15px #000;`;
             icon.textContent = '?';
             contentDiv.appendChild(icon);
+        }
+
+        // Add animated footsteps for current region during active navigation
+        if (isCurrent && GameEngine.state.activeNavigation?.isNavigating) {
+            const footstepsContainer = document.createElement('div');
+            footstepsContainer.className = 'footsteps-container';
+            footstepsContainer.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                display: flex;
+                gap: 8px;
+                font-size: 32px;
+                animation: footstepsFade 2s ease-in-out infinite;
+            `;
+
+            // Create multiple footsteps with staggered animations
+            for (let i = 0; i < 3; i++) {
+                const footstep = document.createElement('span');
+                footstep.textContent = '👣';
+                footstep.style.cssText = `
+                    animation: footstepsFade 2s ease-in-out infinite;
+                    animation-delay: ${i * 0.4}s;
+                    text-shadow: 0 0 8px #64B5F6, 0 0 12px #2196F3;
+                `;
+                footstepsContainer.appendChild(footstep);
+            }
+
+            contentDiv.appendChild(footstepsContainer);
         }
 
         hexDiv.appendChild(contentDiv);

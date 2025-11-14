@@ -21,7 +21,7 @@ const RestRecoverySystem = {
 
     /**
      * Process rest resource consumption (called from game loop)
-     * Consumes 1 food and 1 log every 6 seconds during navigation
+     * Consumes 1 food and 1 log every 6 seconds ONLY during recovery mode
      */
     processRestConsumption(deltaTime) {
         // Only consume during active navigation
@@ -30,6 +30,11 @@ const RestRecoverySystem = {
         }
 
         if (!this.state.activeNavigation?.isNavigating) {
+            return;
+        }
+
+        // Only consume resources during recovery mode (not during exploration)
+        if (!this.state.activeNavigation?.isRecovering) {
             return;
         }
 
@@ -48,7 +53,7 @@ const RestRecoverySystem = {
 
             // Check if player has resources
             if (!this.hasRestResources()) {
-                console.log("🍖 Out of food or logs! Exploration stopped.");
+                console.log("🍖 Out of food or logs! Stopping navigation...");
                 this.stopNavigation();
                 return;
             }
@@ -64,12 +69,12 @@ const RestRecoverySystem = {
      */
     hasRestResources() {
         // Get food item from equipment slot
-        const foodSlot = this.state.equipment?.food;
+        const foodItemId = this.state.equipment?.food;
         let hasFood = false;
 
-        if (foodSlot && foodSlot.itemId) {
+        if (foodItemId) {
             // Check if we have this item in bank
-            const bankItem = this.state.bank.items[foodSlot.itemId];
+            const bankItem = this.state.bank.items[foodItemId];
             hasFood = bankItem && bankItem.quantity > 0;
         }
 
@@ -94,15 +99,20 @@ const RestRecoverySystem = {
      */
     consumeRestResources() {
         // Consume food from equipped slot
-        const foodSlot = this.state.equipment?.food;
-        if (foodSlot && foodSlot.itemId) {
-            const bankItem = this.state.bank.items[foodSlot.itemId];
+        const foodItemId = this.state.equipment?.food;
+        if (foodItemId) {
+            const bankItem = this.state.bank.items[foodItemId];
             if (bankItem && bankItem.quantity > 0) {
                 bankItem.quantity -= 1;
 
+                // Show consumption animation
+                if (typeof ItemConsumptionAnimation !== 'undefined') {
+                    ItemConsumptionAnimation.showItemConsumed(foodItemId, 1);
+                }
+
                 // Remove from bank if quantity reaches 0
                 if (bankItem.quantity <= 0) {
-                    delete this.state.bank.items[foodSlot.itemId];
+                    delete this.state.bank.items[foodItemId];
                     console.log("🍖 Food depleted!");
                 }
             }
@@ -114,6 +124,11 @@ const RestRecoverySystem = {
             const bankItem = this.state.bank.items[logId];
             if (bankItem && bankItem.quantity > 0) {
                 bankItem.quantity -= 1;
+
+                // Show consumption animation
+                if (typeof ItemConsumptionAnimation !== 'undefined') {
+                    ItemConsumptionAnimation.showItemConsumed(logId, 1);
+                }
 
                 // Remove from bank if quantity reaches 0
                 if (bankItem.quantity <= 0) {
@@ -136,9 +151,9 @@ const RestRecoverySystem = {
     getRestResourceCounts() {
         // Count food from equipped slot
         let foodCount = 0;
-        const foodSlot = this.state.equipment?.food;
-        if (foodSlot && foodSlot.itemId) {
-            const bankItem = this.state.bank.items[foodSlot.itemId];
+        const foodItemId = this.state.equipment?.food;
+        if (foodItemId) {
+            const bankItem = this.state.bank.items[foodItemId];
             if (bankItem) {
                 foodCount = bankItem.quantity || 0;
             }

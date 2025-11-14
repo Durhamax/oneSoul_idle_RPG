@@ -182,7 +182,10 @@ const NavigationSystem = {
 
     /**
      * Get player's navigation stats for discovery
-     * Uses new endurance-based system
+     * Uses attribute-based system:
+     * - Health: Max endurance, depletion/recovery rates
+     * - Perception: Discovery success chance vs region complication
+     * - Mobility: Discovery interval speed
      */
     getNavigationStats() {
         const navSkill = this.state.skills.navigation;
@@ -192,29 +195,33 @@ const NavigationSystem = {
         const balance = this.gameBalance;
 
         // Safety checks for attributes (default to 1 if undefined)
-        const strength = attributes.strength || 1;
+        const health = attributes.health || 1;
+        const perception = attributes.perception || 1;
         const mobility = attributes.mobility || 1;
-        const intellect = attributes.intellect || 1;
 
-        // Calculate max endurance from strength and mobility
-        // Formula: baseEndurance + (strength * strengthMult) + (mobility * mobilityMult)
-        const maxEndurance = (balance.baseEndurance || 100) +
-                            (strength * (balance.enduranceStrengthMult || 5)) +
-                            (mobility * (balance.enduranceMobilityMult || 3));
+        // ===== MAX ENDURANCE (Health only) =====
+        // Formula: baseEndurance + (health * healthMult)
+        const maxEndurance = (balance.baseEndurance || 50) + (health * (balance.enduranceHealthMult || 10));
 
-        // Calculate discovery chance from intellect vs region complication
-        // Formula: baseChance + (intellect * bonus) - (complication * penalty)
+        // ===== DISCOVERY CHANCE (Perception vs Region Complication) =====
+        // Formula: baseChance + (perception * bonus) - (complication * penalty)
         const regionComplication = regionDef?.complication || 1.0;
-        const intellectBonus = intellect * (balance.intellectDiscoveryBonus || 2);
-        const complicationPenalty = (regionComplication - 1.0) * 10; // Each point of complication reduces chance by 10%
+        const perceptionBonus = perception * (balance.perceptionDiscoveryBonus || 2.5);
+        const complicationPenalty = (regionComplication - 1.0) * 10; // 10% per complexity point
         const discoveryChance = Math.max(5, Math.min(95,
-            (balance.baseDiscoveryChance || 30) + intellectBonus - complicationPenalty
+            (balance.baseDiscoveryChance || 30) + perceptionBonus - complicationPenalty
         ));
 
-        // Discovery interval from game balance
-        const discoveryInterval = balance.navigationInterval || 3000;
+        // ===== DISCOVERY INTERVAL (Mobility-based speed) =====
+        // Formula: baseInterval - (mobility * reduction), capped at minimum
+        const baseInterval = balance.navigationInterval || 3000;
+        const mobilityReduction = mobility * (balance.mobilityIntervalReduction || 50);
+        const discoveryInterval = Math.max(
+            balance.minDiscoveryInterval || 1000,
+            baseInterval - mobilityReduction
+        );
 
-        // Endurance drain per attempt
+        // ===== ENDURANCE DRAIN (Base rate, refined by health in processNavigation) =====
         const enduranceDrain = balance.enduranceDrainPerAttempt || 5;
 
         return {
@@ -223,7 +230,11 @@ const NavigationSystem = {
             discoveryInterval: discoveryInterval,
             enduranceDrain: enduranceDrain,
             navLevel: navSkill.level,
-            regionComplication: regionComplication
+            regionComplication: regionComplication,
+            // Include raw attributes for reference
+            health: health,
+            perception: perception,
+            mobility: mobility
         };
     },
 
@@ -273,6 +284,7 @@ const NavigationSystem = {
     /**
      * Process navigation tick (called automatically when navigation is active)
      * Uses endurance-based system with intellect-based discovery chance
+     * When endurance depletes, enters recovery mode instead of stopping
      */
     processNavigation(deltaTime) {
         if (!this.state.activeNavigation.isNavigating) {
@@ -281,44 +293,90 @@ const NavigationSystem = {
 
         const now = Date.now();
         const stats = this.getNavigationStats();
+        const activeNav = this.state.activeNavigation;
 
         // Migration: Initialize endurance if it's undefined or NaN (old save data)
-        if (typeof this.state.activeNavigation.endurance !== 'number' || isNaN(this.state.activeNavigation.endurance)) {
-            this.state.activeNavigation.maxEndurance = stats.maxEndurance;
-            this.state.activeNavigation.endurance = stats.maxEndurance;
+        if (typeof activeNav.endurance !== 'number' || isNaN(activeNav.endurance)) {
+            activeNav.maxEndurance = stats.maxEndurance;
+            activeNav.endurance = stats.maxEndurance;
             console.log(`🔄 Migrated to endurance system: ${stats.maxEndurance} endurance`);
         }
 
+        // Migration: Initialize recovery state if undefined
+        if (typeof activeNav.isRecovering !== 'boolean') {
+            activeNav.isRecovering = false;
+            activeNav.lastRecoveryTick = 0;
+        }
+
+        // RECOVERY MODE: Regenerate endurance
+        if (activeNav.isRecovering) {
+            const recoveryInterval = 1000; // Check every 1 second
+            const timeSinceLastRecovery = now - activeNav.lastRecoveryTick;
+
+            if (timeSinceLastRecovery >= recoveryInterval) {
+                activeNav.lastRecoveryTick = now;
+
+                // Recovery rate based on health attribute
+                // Formula: base 2 + (health * 1.0) = faster recovery with higher health
+                const health = this.state.combatAttributes?.health || 1;
+                const balance = this.gameBalance;
+                const baseRecovery = balance.baseEnduranceRecovery || 2;
+                const healthRecoveryBonus = balance.healthRecoveryBonus || 1.0;
+                const recoveryRate = baseRecovery + (health * healthRecoveryBonus);
+
+                activeNav.endurance = Math.min(activeNav.maxEndurance, activeNav.endurance + recoveryRate);
+
+                console.log(`💤 Recovering endurance... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}) +${recoveryRate.toFixed(1)}/s`);
+
+                // Exit recovery when full
+                if (activeNav.endurance >= activeNav.maxEndurance) {
+                    activeNav.isRecovering = false;
+                    console.log(`✅ Endurance recovered! Resuming exploration...`);
+                }
+            }
+            return;
+        }
+
+        // EXPLORATION MODE: Make discovery attempts
         // Check if enough time has passed for next discovery attempt
-        const timeSinceLastAttempt = now - this.state.activeNavigation.lastNavigationTick;
+        const timeSinceLastAttempt = now - activeNav.lastNavigationTick;
         if (timeSinceLastAttempt < stats.discoveryInterval) {
             return;
         }
 
-        this.state.activeNavigation.lastNavigationTick = now;
+        activeNav.lastNavigationTick = now;
 
         // Check if player has endurance remaining
-        if (this.state.activeNavigation.endurance <= 0) {
-            console.log("🗺️ Out of endurance! Exploration stopped.");
-            this.stopNavigation();
+        if (activeNav.endurance <= 0) {
+            console.log("💤 Out of endurance! Entering recovery mode...");
+            activeNav.isRecovering = true;
+            activeNav.lastRecoveryTick = now;
             return;
         }
 
         // Drain endurance for the attempt (happens whether successful or not)
-        this.state.activeNavigation.endurance -= stats.enduranceDrain;
-        if (this.state.activeNavigation.endurance < 0) {
-            this.state.activeNavigation.endurance = 0;
+        // Depletion rate based on health
+        // Formula: base 5 - (health * 0.3) = slower depletion with higher health, min 1.5
+        const health = this.state.combatAttributes?.health || 1;
+        const balance = this.gameBalance;
+        const healthDepletionReduction = balance.healthDepletionReduction || 0.3;
+        const minDepletionRate = balance.minDepletionRate || 1.5;
+        const depletionRate = Math.max(minDepletionRate, stats.enduranceDrain - (health * healthDepletionReduction));
+
+        activeNav.endurance -= depletionRate;
+        if (activeNav.endurance < 0) {
+            activeNav.endurance = 0;
         }
 
         // Roll for discovery success (based on intellect vs region complication)
         const discoveryRoll = Math.random() * 100;
         if (discoveryRoll > stats.discoveryChance) {
-            console.log(`🔍 Exploring... (No discovery, ${this.state.activeNavigation.endurance}/${stats.maxEndurance} endurance remaining)`);
+            console.log(`🔍 Exploring... (No discovery, ${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance} endurance remaining)`);
             return;
         }
 
         // Success! Make a discovery
-        console.log(`✨ Discovery made! (${this.state.activeNavigation.endurance}/${stats.maxEndurance} endurance remaining)`);
+        console.log(`✨ Discovery made! (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance} endurance remaining)`);
         this.makeDiscovery();
     },
 

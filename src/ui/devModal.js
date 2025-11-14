@@ -74,6 +74,9 @@ const DevModal = {
                     <button onclick="DevModal.maxNavigation()" style="width: 100%; margin-bottom: 8px; padding: 10px; background: #3a3a3a; border: 1px solid #00d9ff; border-radius: 4px; color: white; cursor: pointer;">
                         🧭 Max Navigation Skill
                     </button>
+                    <button onclick="DevModal.addRestResources()" style="width: 100%; margin-bottom: 8px; padding: 10px; background: #3a3a3a; border: 1px solid #00d9ff; border-radius: 4px; color: white; cursor: pointer;">
+                        🔥🍖 Add Infinite Rest Resources
+                    </button>
                 </div>
 
                 <!-- Missions & Quests -->
@@ -274,6 +277,28 @@ const DevModal = {
             GameEngine.state.skills.navigation = 100;
             UICore.update();
             console.log('Navigation skill maxed');
+        }
+    },
+
+    addRestResources() {
+        if (typeof GameEngine !== 'undefined' && GameEngine.addItemToBank) {
+            // Add infinite pinewood (fuel)
+            GameEngine.addItemToBank('pinewood', 999999);
+
+            // Add infinite light rations (food)
+            GameEngine.addItemToBank('lightRations', 999999);
+
+            // Equip light rations in food slot using the equipment system
+            if (GameEngine.equipItem) {
+                GameEngine.equipItem('lightRations');
+            } else {
+                // Fallback: manually set equipment slot
+                GameEngine.state.equipment.food = 'lightRations';
+            }
+
+            UICore.update();
+            console.log('✅ Added infinite rest resources: 999999 pinewood, 999999 lightRations');
+            console.log('✅ Equipped lightRations in food slot');
         }
     },
 

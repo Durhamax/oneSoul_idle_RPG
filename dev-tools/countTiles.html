@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Count Tiles</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+        }
+        .result {
+            font-size: 24px;
+            color: #4CAF50;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tile Count Test</h1>
+    <div id="output"></div>
+
+    <script src="../src/data/worldTilemap.js"></script>
+    <script>
+        const tiles = WorldTilemap.getTiles();
+        const count = tiles.length;
+
+        document.getElementById('output').innerHTML = `
+            <div class="result">WorldTilemap.getTiles() returns: ${count} tiles</div>
+            <div>Expected: 80 tiles</div>
+            <div style="margin-top: 20px;">
+                <strong>Tile list:</strong><br>
+                <div style="max-height: 400px; overflow-y: auto; background: #2a2a2a; padding: 10px; margin-top: 10px;">
+                    ${tiles.map(t => `(${t.q}, ${t.r})`).join(', ')}
+                </div>
+            </div>
+        `;
+
+        console.log('WorldTilemap tile count:', count);
+        console.log('Tiles:', tiles);
+    </script>
+</body>
+</html>

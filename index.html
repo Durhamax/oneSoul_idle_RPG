@@ -6807,20 +6807,21 @@
 
     <!-- 2. DEFINITIONS (no dependencies) -->
     <script src="src/core/definitions.js"></script>
+    <script src="src/data/worldTilemap.js"></script>
 
     <!-- 2.5. STAT CALCULATOR (depends on definitions) -->
     <script src="src/core/statCalculator.js"></script>
 
     <!-- 3. GAME SYSTEMS (load in dependency order) -->
     <script src="src/systems/backgroundSystem.js"></script>
-    <script src="src/systems/migrationSystem.js"></script>
+    <script src="src/systems/migrationSystem.js?v=nav5"></script>
     <script src="src/systems/inventorySystem.js"></script>
     <script src="src/systems/skillSystem.js"></script>
     <script src="src/systems/equipmentSystem.js"></script>
     <script src="src/systems/typeEffectivenessSystem.js"></script>
     <script src="src/systems/resourceSystem.js"></script>
     <script src="src/systems/mapGenerationSystem.js"></script>
-    <script src="src/systems/mapGridSystem.js"></script>
+    <script src="src/systems/mapGridSystem.js?v=nav9"></script>
     <!-- Map renderer disabled - using static world map image instead -->
     <!-- <script src="src/ui/mapRenderer.js"></script> -->
     <script src="src/systems/navigationSystem.js"></script>
@@ -6848,7 +6849,7 @@
     <!-- Production Items (organized by category) -->
     <script src="src/data/items/production/equipment/equipment.js"></script>
     <script src="src/data/items/production/consumables/consumables.js"></script>
-    <script src="src/data/items/production/materials/materials.js"></script>
+    <script src="src/data/items/materials.js"></script>
     <script src="src/data/items/production/currencies/currencies.js"></script>
 
     <!-- Dev/Test/Legacy/Planned Items -->
@@ -6892,12 +6893,13 @@
     <script src="src/data/nodes/nodeInit.js"></script>
 
     <!-- 4. CORE GAME ENGINE (coordinates all systems) -->
-    <script src="src/core/gameEngine.js"></script>
+    <script src="src/core/gameEngine.js?v=nav7"></script>
 
     <!-- 5. UI MODULES -->
     <script src="src/ui/modal.js"></script>
     <script src="src/ui/devTools.js"></script>
     <script src="src/ui/animations.js"></script>
+    <script src="src/ui/itemConsumptionAnimation.js"></script>
     <script src="src/ui/uiCore.js"></script>
     <script src="src/ui/resourcesUI.js"></script>
     <script src="src/ui/nodeCollectionUI.js"></script>

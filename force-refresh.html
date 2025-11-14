@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Force Refresh Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 16px;
+            cursor: pointer;
+            background: #4a9eff;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background: #3a8eef;
+        }
+        .danger {
+            background: #f44336;
+        }
+        .danger:hover {
+            background: #d32f2f;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            background: #2a2a2a;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 Force Refresh Game</h1>
+    <p>This page helps clear cache and localStorage to see new changes.</p>
+
+    <div id="status" class="status">
+        <strong>Current Status:</strong><br>
+        localStorage size: <span id="storageSize">Calculating...</span>
+    </div>
+
+    <button class="btn danger" onclick="clearAll()">🗑️ Clear ALL Game Data (Reset to New Game)</button>
+    <button class="btn" onclick="clearCacheOnly()">🔄 Clear Cache & Refresh (Keep Save Data)</button>
+    <button class="btn" onclick="openGame()">🎮 Open Game (No Clear)</button>
+
+    <script>
+        function updateStatus() {
+            const keys = Object.keys(localStorage);
+            const gameKeys = keys.filter(k => k.includes('oneSoul') || k.includes('game'));
+            document.getElementById('storageSize').textContent =
+                `${gameKeys.length} game keys found (${keys.length} total)`;
+        }
+
+        function clearAll() {
+            if (confirm('⚠️ This will DELETE ALL save data! Continue?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                alert('✅ All data cleared! Opening game with fresh start...');
+                window.location.href = 'index.html';
+            }
+        }
+
+        function clearCacheOnly() {
+            // Clear session storage but keep localStorage
+            sessionStorage.clear();
+
+            // Force reload without cache
+            alert('🔄 Forcing refresh without cache...');
+            window.location.href = 'index.html?nocache=' + Date.now();
+        }
+
+        function openGame() {
+            window.location.href = 'index.html';
+        }
+
+        updateStatus();
+        setInterval(updateStatus, 1000);
+    </script>
+</body>
+</html>

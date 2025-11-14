@@ -106,7 +106,9 @@ const GameEngine = {
         // Active Navigation (discovery system)
         activeNavigation: {
             isNavigating: false,       // Currently exploring/discovering
+            isRecovering: false,       // Currently recovering endurance
             lastNavigationTick: 0,     // Last time progress was made
+            lastRecoveryTick: 0,       // Last time endurance was recovered
             endurance: 100,            // Current endurance for exploration
             maxEndurance: 100          // Max endurance (based on strength + mobility)
         },
@@ -376,16 +378,26 @@ const GameEngine = {
         nodeBaseHealth: 50,           // Base health for resource nodes
         gatherToolDamageMultiplier: 1.0, // Multiplier for tool damage
 
-        // Navigation/Exploration - Endurance System
-        navigationInterval: 3000,     // Time between discovery attempts (ms)
-        baseEndurance: 100,           // Base endurance pool
-        enduranceStrengthMult: 5,     // Endurance gained per strength point
-        enduranceMobilityMult: 3,     // Endurance gained per mobility point
-        enduranceDrainPerAttempt: 5,  // Endurance cost per discovery attempt
-        baseDiscoveryChance: 30,      // Base % chance to make discovery per attempt
-        intellectDiscoveryBonus: 2,   // % discovery chance gained per intellect point
-        baseComplicationFactor: 1.0,  // Base complication for all regions
-        complicationScaling: 0.1,     // Complication increase per distance from start
+        // Navigation/Exploration - Attribute-Based System
+        // Discovery Interval (Mobility)
+        navigationInterval: 3000,           // Base time between discovery attempts (ms)
+        mobilityIntervalReduction: 50,      // Interval reduction per mobility point (ms)
+        minDiscoveryInterval: 1000,         // Minimum interval cap (ms)
+
+        // Endurance System (Health)
+        baseEndurance: 50,                  // Base endurance pool
+        enduranceHealthMult: 10,            // Endurance gained per health point
+        enduranceDrainPerAttempt: 5,        // Base endurance cost per discovery attempt
+        healthDepletionReduction: 0.3,      // Depletion reduction per health point
+        minDepletionRate: 1.5,              // Minimum depletion rate
+        baseEnduranceRecovery: 2,           // Base recovery per second
+        healthRecoveryBonus: 1.0,           // Recovery bonus per health point
+
+        // Discovery Chance (Perception)
+        baseDiscoveryChance: 30,            // Base % chance to make discovery per attempt
+        perceptionDiscoveryBonus: 2.5,      // % discovery chance per perception point
+        baseComplicationFactor: 1.0,        // Base complication for all regions
+        complicationScaling: 0.1,           // Complication increase per distance from start
 
         // Crafting
         craftingTimeMultiplier: 1.0,  // Multiplier for all crafting times
@@ -522,7 +534,7 @@ const GameEngine = {
             this.definitions.worldMap = this.generateWorldMap(7);
             console.log(`✅ Generated ${Object.keys(this.definitions.worldMap).length} regions`);
 
-            // Verify starting region exists (new coordinate system: region_-3_-4)
+            // Verify starting region exists (region_-3_-4)
             if (this.definitions.worldMap["region_-3_-4"]) {
                 console.log("✅ Starting region (region_-3_-4) exists in world map");
 
@@ -536,6 +548,7 @@ const GameEngine = {
         }
 
         // ALWAYS ensure starting region is unlocked and set as current region
+        // Coordinates now match display: (-3, -4)
         const STARTING_REGION = "region_-3_-4";
 
         // Ensure current region is set to starting region if not set
@@ -1255,97 +1268,112 @@ const GameEngine = {
             return null;
         };
 
-        // Generate hexagonal grid with rectangular boundaries (wider than tall)
-        // This creates a more square-like shape while maintaining hex adjacency
+        // Generate regions only for tiles that exist in the tilemap
         const startQ = -3;
         const startR = -4;
 
-        // Generate hexes in a rectangular boundary (2:1 width to height ratio for square-ish appearance)
-        for (let q = -mapRadius; q <= mapRadius; q++) {
-            const r1 = Math.max(-mapRadius, -q - mapRadius);
-            const r2 = Math.min(mapRadius, -q + mapRadius);
+        // Get tiles from the tilemap (landmass shape)
+        const tiles = typeof WorldTilemap !== 'undefined' ? WorldTilemap.getTiles() : [];
 
-            for (let r = r1; r <= r2; r++) {
-                const regionId = `region_${q}_${r}`;
-                const biome = getBiome(q, r);
-                const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
-                // Starting region has nav requirement of 1, others scale based on distance
-                const navRequirement = (q === startQ && r === startR) ? 1 : Math.max(1, Math.floor(distanceFromStart / 2) + 1);
+        if (tiles.length === 0) {
+            console.error("❌ WorldTilemap not loaded! Cannot generate regions.");
+            return {};
+        }
 
-                // Get valid neighbors
-                const neighbors = getNeighbors(q, r);
-                const validNeighbors = neighbors.filter(n => {
-                    // Check if neighbor is within map bounds
-                    const nR1 = Math.max(-mapRadius, -n.q - mapRadius);
-                    const nR2 = Math.min(mapRadius, -n.q + mapRadius);
-                    return n.q >= -mapRadius && n.q <= mapRadius &&
-                           n.r >= nR1 && n.r <= nR2;
-                });
+        console.log(`🗺️ Generating regions for ${tiles.length} tiles from tilemap...`);
 
-                // Special description for The Scar (starting region)
-                const isStartingRegion = (q === startQ && r === startR);
-                const description = isStartingRegion
-                    ? "A massive crater, home to the Unity members long banished to this corner of the new planet. The Scar is heavily wooded and features a large lake of trapped freshwater. This is where your journey begins."
-                    : `A ${biome} region in the ${q > 0 ? 'eastern' : q < 0 ? 'western' : 'central'} ${r > 0 ? 'south' : r < 0 ? 'north' : 'lands'}`;
+        // Generate a region for each tile in the tilemap
+        for (let tile of tiles) {
+            const { q, r } = tile;
+            const regionId = `region_${q}_${r}`;
+            const biome = getBiome(q, r);
+            const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
 
-                const regionName = getRegionName(q, r, biome);
+            // Navigation requirement scales upward (north) then right (east)
+            // Starting region has nav requirement of 1
+            let navRequirement = 1;
+            if (q !== startQ || r !== startR) {
+                // Calculate steps upward (negative r direction) and right (positive q direction) from start
+                const stepsUp = Math.max(0, startR - r); // How many steps north (decreasing r)
+                const stepsRight = Math.max(0, q - startQ); // How many steps east (increasing q)
+                const stepsDown = Math.max(0, r - startR); // Steps south (increasing r)
+                const stepsLeft = Math.max(0, startQ - q); // Steps west (decreasing q)
 
-                // Get biome definition for nodes and enemies
-                const biomeDef = this.definitions.biomes[biome];
-
-                // Get discoverable nodes from biome
-                const discoverableNodes = [];
-                if (biomeDef && biomeDef.gatheringNodes) {
-                    for (let skill in biomeDef.gatheringNodes) {
-                        discoverableNodes.push(...biomeDef.gatheringNodes[skill]);
-                    }
-                }
-
-                // Get discoverable enemies based on region difficulty
-                const discoverableEnemies = [];
-                if (this.definitions.enemies) {
-                    // Filter enemies appropriate for this region's distance from start
-                    const maxEnemyLevel = Math.max(1, Math.floor(distanceFromStart * 1.5));
-                    for (let enemyId in this.definitions.enemies) {
-                        const enemy = this.definitions.enemies[enemyId];
-                        const enemyLevel = enemy.level || 1;
-                        // Include enemies at or below the region's max level
-                        if (enemyLevel <= maxEnemyLevel) {
-                            discoverableEnemies.push(enemyId);
-                        }
-                    }
-                }
-
-                // Get missions available in this region
-                const availableMissions = [];
-                if (this.definitions.missions) {
-                    for (let missionId in this.definitions.missions) {
-                        const mission = this.definitions.missions[missionId];
-                        // Include missions that are in this region
-                        if (mission.region === regionId || (isStartingRegion && mission.region === "region_0_0")) {
-                            availableMissions.push(missionId);
-                        }
-                    }
-                }
-
-                worldMap[regionId] = {
-                    name: regionName,
-                    description: description,
-                    biome: biome,
-                    backgroundImage: getBackgroundImage(q, r, regionName), // Region-specific background (null = use biome default)
-                    hexCoords: { q, r }, // Using axial coordinates
-                    navigationRequirement: navRequirement,
-                    complication: getComplicationFactor(q, r, biome), // Navigation complexity
-                    requiredMissionToLeave: null, // Mission ID that must be completed before leaving this region
-                    discoverableNodes: discoverableNodes,    // Array of node IDs that can be discovered here
-                    discoverableEnemies: discoverableEnemies, // Array of enemy IDs that can be discovered here
-                    availableMissions: availableMissions,     // Array of mission IDs available in this region
-                    adjacent: validNeighbors.reduce((obj, n) => {
-                        obj[n.dir] = `region_${n.q}_${n.r}`;
-                        return obj;
-                    }, {})
-                };
+                // Priority: Up > Right > Down > Left
+                // Each step up adds 2 levels, each step right adds 1 level
+                navRequirement = 1 + (stepsUp * 2) + stepsRight + Math.floor(stepsDown / 2) + Math.floor(stepsLeft / 2);
             }
+
+            // Get valid neighbors (only those that exist in the tilemap)
+            const neighbors = getNeighbors(q, r);
+            const validNeighbors = neighbors.filter(n => {
+                // Check if neighbor tile exists in the tilemap
+                return WorldTilemap.hasTile(n.q, n.r);
+            });
+
+            // Special description for The Scar (starting region)
+            const isStartingRegion = (q === startQ && r === startR);
+            const description = isStartingRegion
+                ? "A massive crater, home to the Unity members long banished to this corner of the new planet. The Scar is heavily wooded and features a large lake of trapped freshwater. This is where your journey begins."
+                : `A ${biome} region in the ${q > 0 ? 'eastern' : q < 0 ? 'western' : 'central'} ${r > 0 ? 'south' : r < 0 ? 'north' : 'lands'}`;
+
+            const regionName = getRegionName(q, r, biome);
+
+            // Get biome definition for nodes and enemies
+            const biomeDef = this.definitions.biomes[biome];
+
+            // Get discoverable nodes from biome
+            const discoverableNodes = [];
+            if (biomeDef && biomeDef.gatheringNodes) {
+                for (let skill in biomeDef.gatheringNodes) {
+                    discoverableNodes.push(...biomeDef.gatheringNodes[skill]);
+                }
+            }
+
+            // Get discoverable enemies based on region difficulty
+            const discoverableEnemies = [];
+            if (this.definitions.enemies) {
+                // Filter enemies appropriate for this region's distance from start
+                const maxEnemyLevel = Math.max(1, Math.floor(distanceFromStart * 1.5));
+                for (let enemyId in this.definitions.enemies) {
+                    const enemy = this.definitions.enemies[enemyId];
+                    const enemyLevel = enemy.level || 1;
+                    // Include enemies at or below the region's max level
+                    if (enemyLevel <= maxEnemyLevel) {
+                        discoverableEnemies.push(enemyId);
+                    }
+                }
+            }
+
+            // Get missions available in this region
+            const availableMissions = [];
+            if (this.definitions.missions) {
+                for (let missionId in this.definitions.missions) {
+                    const mission = this.definitions.missions[missionId];
+                    // Include missions that are in this region
+                    if (mission.region === regionId || (isStartingRegion && mission.region === "region_0_0")) {
+                        availableMissions.push(missionId);
+                    }
+                }
+            }
+
+            worldMap[regionId] = {
+                name: regionName,
+                description: description,
+                biome: biome,
+                backgroundImage: getBackgroundImage(q, r, regionName), // Region-specific background (null = use biome default)
+                hexCoords: { q, r }, // Using axial coordinates
+                navigationRequirement: navRequirement,
+                complication: getComplicationFactor(q, r, biome), // Navigation complexity
+                requiredMissionToLeave: null, // Mission ID that must be completed before leaving this region
+                discoverableNodes: discoverableNodes,    // Array of node IDs that can be discovered here
+                discoverableEnemies: discoverableEnemies, // Array of enemy IDs that can be discovered here
+                availableMissions: availableMissions,     // Array of mission IDs available in this region
+                adjacent: validNeighbors.reduce((obj, n) => {
+                    obj[n.dir] = `region_${n.q}_${n.r}`;
+                    return obj;
+                }, {})
+            };
         }
 
         return worldMap;

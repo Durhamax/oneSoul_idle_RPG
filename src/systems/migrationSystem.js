@@ -44,7 +44,8 @@ const MigrationSystem = {
             this.migrateEquipmentSlots,
             this.migrateInvalidEquipment,
             this.migrateCoordinateSystem,
-            this.migrateGlobalDiscovery
+            this.migrateGlobalDiscovery,
+            this.migrateNavigationRequirements
         ];
 
         let totalMigrations = 0;
@@ -990,6 +991,54 @@ const MigrationSystem = {
 
         if (changes > 0) {
             console.log(`  ✅ Migrated ${changes} node discoveries to global system`);
+        }
+
+        return changes;
+    },
+
+    /**
+     * Migrate navigation requirements to new scaling system
+     * Updates all regions to use upward-then-right scaling
+     */
+    migrateNavigationRequirements() {
+        let changes = 0;
+
+        // Check if worldMap exists
+        if (!GameEngine.definitions.worldMap) {
+            return 0;
+        }
+
+        const startQ = -3;
+        const startR = -4;
+
+        // Update navigation requirements for all regions
+        for (let regionId in GameEngine.definitions.worldMap) {
+            const region = GameEngine.definitions.worldMap[regionId];
+
+            if (!region.hexCoords) continue;
+
+            const { q, r } = region.hexCoords;
+
+            // Calculate new navigation requirement
+            let newNavRequirement = 1;
+            if (q !== startQ || r !== startR) {
+                const stepsUp = Math.max(0, startR - r);
+                const stepsRight = Math.max(0, q - startQ);
+                const stepsDown = Math.max(0, r - startR);
+                const stepsLeft = Math.max(0, startQ - q);
+
+                newNavRequirement = 1 + (stepsUp * 2) + stepsRight + Math.floor(stepsDown / 2) + Math.floor(stepsLeft / 2);
+            }
+
+            // Update if different
+            if (region.navigationRequirement !== newNavRequirement) {
+                region.navigationRequirement = newNavRequirement;
+                changes++;
+            }
+        }
+
+        if (changes > 0) {
+            console.log(`  ✅ Updated ${changes} region navigation requirements to new scaling system`);
         }
 
         return changes;

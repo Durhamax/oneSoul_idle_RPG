@@ -163,13 +163,14 @@ const MATERIAL_ITEMS = {
         description: 'Soft pine logs from young pine trees. Basic fuel for campfires and navigation.',
         icon: '🪵',
         category: 'material',
+        itemType: 'resource',
         rarity: 'common',
         stackLimit: 100,
         value: 2,
         resourceType: 'wood',
         gatherSkill: 'woodcutting',
         gatherLevel: 1,
-        tags: ['material', 'wood', 'logs', 'pine', 'woodcutting', 'fuel'],
+        tags: ['material', 'wood', 'logs', 'pine', 'woodcutting', 'fuel', 'navigation'],
     },
 
     normalLogs: {
@@ -242,11 +243,14 @@ const MATERIAL_ITEMS = {
         description: 'Simple preserved food rations. Restores 10 HP and used for navigation rest.',
         icon: '🍖',
         category: 'consumable',
+        itemType: 'consumable',
         rarity: 'common',
         stackLimit: 100,
         value: 5,
+        slot: 'food',  // Equippable in food slot for auto-consumption during navigation
         effectType: 'heal',
         effectValue: 10,
+        cooldown: 500,  // 0.5 second cooldown when used manually
         resourceType: 'food',
         tags: ['consumable', 'food', 'rations', 'healing', 'navigation'],
     },

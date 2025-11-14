@@ -540,17 +540,15 @@ const NavigationUI = {
             return;
         }
 
-        // Create state snapshot
+        // Create state snapshot - only track things that affect map display or major UI changes
         const currentState = {
             regionId: regionId,
             isNavigating: activeNav.isNavigating,
-            endurance: activeNav.endurance,
+            isRecovering: activeNav.isRecovering || false,
             currentActivity: state.currentActivity,
-            discoveredNodes: JSON.stringify(regionState.discoveredNodeTypes),
-            discoveredStations: JSON.stringify(regionState.discoveredCraftingStations),
-            discoveredPaths: JSON.stringify(regionState.discoveredExitPaths),
-            navigationLevel: state.skills.navigation.level,
-            navigationExp: state.skills.navigation.exp
+            discoveredPaths: JSON.stringify(regionState.discoveredExitPaths)
+            // Removed: discoveredNodes, discoveredStations (shown in Nodes tab, not map)
+            // Removed: navigationLevel, navigationExp (don't affect map display)
         };
 
         // Only re-render if state changed, but always update progress bars
@@ -562,6 +560,7 @@ const NavigationUI = {
         const stats = GameEngine.getNavigationStats();
         const endurancePercent = (activeNav.endurance / activeNav.maxEndurance) * 100;
         const isNavigating = activeNav.isNavigating && state.currentActivity === 'navigation';
+        const isRecovering = activeNav.isRecovering || false;
         const hasOtherActivity = state.currentActivity !== null && state.currentActivity !== 'navigation';
 
         let html = '';
@@ -584,27 +583,29 @@ const NavigationUI = {
             <!-- Endurance Bar -->
             <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px;">
                 <div style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
-                    💪 Endurance
+                    ${isRecovering ? '💤 Resting' : '💪 Endurance'}
                 </div>
                 <div class="health-bar" style="margin-bottom: 5px;">
-                    <div class="health-bar-fill" id="navigationHealthBar" style="width: ${endurancePercent}%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width 0.3s ease-out;"></div>
+                    <div class="health-bar-fill" id="navigationHealthBar" style="width: ${endurancePercent}%; background: linear-gradient(90deg, ${isRecovering ? '#FFC107, #FF9800' : '#4caf50, #8bc34a'}); transition: width 0.3s ease-out;"></div>
                     <div class="health-bar-text" id="navigationHealthText">${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}</div>
                 </div>
                 <div style="font-size: 0.75em; color: #888;">
-                    ${isNavigating ? 'Draining while exploring' : 'Regenerates when not exploring'}
+                    ${isRecovering ? '💤 Recovering endurance (consuming rest resources)' : isNavigating ? '⚡ Draining while exploring' : '🛑 Paused'}
                 </div>
             </div>
 
             <!-- Navigation Action Interval Bar -->
             <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px;">
                 <div style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
-                    ${isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action'}
+                    ${isRecovering ? '💤 Recovery Mode' : isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action'}
                 </div>
                 <div class="health-bar" style="margin-bottom: 8px;">
-                    <div class="health-bar-fill" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #FF9800, #FFC107); transition: width 0.3s ease-out;"></div>
-                    <div class="health-bar-text" id="navigationIntervalText">${isNavigating ? '0.0s' : 'Not Exploring'}</div>
+                    <div class="health-bar-fill" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #2196F3, #64B5F6); transition: width 0.3s ease-out;"></div>
+                    <div class="health-bar-text" id="navigationIntervalText">${isRecovering ? 'Resting' : isNavigating ? '0.0s' : 'Not Exploring'}</div>
                 </div>
-                ${isNavigating ? `
+                ${isRecovering ? `
+                    <div style="font-size: 0.75em; color: #888; margin-bottom: 8px;">Resting to recover endurance - Discovery paused</div>
+                ` : isNavigating ? `
                     <div style="font-size: 0.75em; color: #888; margin-bottom: 8px;">Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)</div>
                 ` : `
                     <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">
@@ -622,10 +623,10 @@ const NavigationUI = {
                 <div style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">🔥 Rest Resources</div>
                 <div class="health-bar" style="margin-bottom: 8px;">
                     <div class="health-bar-fill" id="restIntervalBar" style="width: 0%; background: linear-gradient(90deg, #FF9800, #d32f2f); transition: width 0.3s ease-out;"></div>
-                    <div class="health-bar-text" id="restIntervalText">${isNavigating ? '6.0s' : 'Not Active'}</div>
+                    <div class="health-bar-text" id="restIntervalText">${isRecovering ? '6.0s' : 'Not Active'}</div>
                 </div>
                 <div style="font-size: 0.75em; color: #888;">
-                    ${isNavigating ? 'Consuming 1 food + 1 log every 6 seconds' : 'Resources consumed while exploring'}
+                    ${isRecovering ? '💤 Consuming 1 food + 1 log every 6 seconds during recovery' : isNavigating ? '⚡ No consumption while exploring' : 'Resources consumed during recovery mode'}
                 </div>
             </div>
         `;
@@ -633,7 +634,7 @@ const NavigationUI = {
         container.innerHTML = html;
         this.lastNavigationState = currentState;
 
-        // Initialize map grid system if map is expanded
+        // Re-initialize map grid system after DOM update (since innerHTML destroys the canvas)
         if (typeof MapGridSystem !== 'undefined') {
             setTimeout(() => {
                 if (document.getElementById('hexMapContainer')) {

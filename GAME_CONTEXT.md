@@ -1,7 +1,7 @@
 # Idle RPG Prototype - Game Context Document
 
-**Last Updated:** 2025-01-11
-**Version:** 1.8
+**Last Updated:** 2025-01-14
+**Version:** 1.9
 **Purpose:** Comprehensive context document for development and AI assistance
 
 ---
@@ -1139,6 +1139,65 @@ const UIModuleName = {
 - Character level: slow progression (intentional idle game pacing)
 - Navigation endurance: Base 100, early game ~115-130 (1-3 attributes)
 - Discovery chance: ~30-40% base, scales well with intellect investment
+
+### Recent Changes (v1.9)
+
+**Navigation System Cosmetic Improvements:**
+- Endurance bar title changes to "💤 Resting" during recovery mode
+- Navigation action bar changed from yellow to blue gradient (standardized skill interval bars)
+- Current region border changed to blue with glow effect
+- Removed START label and biome icon from current region tile
+- Added animated footsteps (👣) to current region during active navigation
+- Footsteps use staggered fade-in/fade-out animation
+
+**Global Item Consumption Animation System:**
+- Created `src/ui/itemConsumptionAnimation.js` for visual feedback when items are consumed
+- Items drop from top header and fade over 1.5 seconds
+- Shows item icon, quantity consumed, and item name
+- Border colors match item categories (green=consumables, orange=resources)
+- Integrated with rest recovery system (triggers when food/logs consumed)
+
+**Region Schema Standardization:**
+- Created comprehensive region definition schema documentation (`docs/REGION_SCHEMA.md`)
+- Standardized region structure with all possible fields:
+  - Basic info (name, description, biome, background)
+  - Navigation (coordinates, requirements, complication)
+  - Discoverable content (nodes, stations, enemies, locations, missions)
+  - Experience rates (per discovery type, first-time bonuses)
+  - Environmental effects (movement speed, discovery modifiers, hazards)
+  - Progression gates (mission requirements, item requirements, level gates)
+  - Difficulty ratings (tier, recommended levels)
+  - Special features (safe zones, fast travel, settlements, dungeons, resource bonuses)
+- Created region definition template (`docs/REGION_TEMPLATE.js`) with examples
+
+**Tilemap Separation:**
+- Separated tilemap (which hex tiles exist) from region data (what's in each region)
+- Created `src/data/worldTilemap.js` defining the 80-tile landmass shape
+- Extracted hardcoded tile exclusions from MapGridSystem into data-driven structure
+- WorldTilemap provides methods: `getTiles()`, `hasTile(q, r)`, `getRegionId(q, r)`
+- Updated `MapGridSystem.createHexGrid()` to iterate through WorldTilemap tiles
+- Updated `generateWorldMap()` to only create regions for tiles in tilemap
+- Adjacent region filtering now checks WorldTilemap (only neighbors that exist)
+- Regions reduced from 169 (full radius-7 grid) to 80 (actual landmass)
+
+**Developer Tools:**
+- Created `dev-tools/exportRegions.html` for exporting procedurally generated regions to static file
+- Created `dev-tools/extractTilemap.html` for extracting tilemap from exclusion rules
+- Created `dev-tools/countTiles.html` for verifying tilemap tile count
+- Export tool updated to use WorldTilemap for region generation
+
+**Current Work In Progress:**
+- Attempting to export 80 procedurally generated regions to static `worldRegions.js` file
+- **ISSUE:** Export tool generating 135 regions instead of expected 80 (browser caching or logic issue)
+- Goal: Replace runtime procedural generation with static region definitions for better control
+
+**Technical Debt:**
+- Need to resolve region export tool discrepancy (135 vs 80 regions)
+- Once resolved, implement dual-mode loading (static + procedural fallback)
+- Test both loading methods produce identical results
+- Switch to static loading as default, keep procedural as backup
+
+---
 
 ### Recent Changes (v1.8)
 
