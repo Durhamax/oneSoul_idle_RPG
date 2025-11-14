@@ -157,6 +157,21 @@ const MATERIAL_ITEMS = {
     // WOOD & LOGS
     // =================================================================
 
+    pinewood: {
+        id: 'pinewood',
+        name: 'Pinewood',
+        description: 'Soft pine logs from young pine trees. Basic fuel for campfires and navigation.',
+        icon: '🪵',
+        category: 'material',
+        rarity: 'common',
+        stackLimit: 100,
+        value: 2,
+        resourceType: 'wood',
+        gatherSkill: 'woodcutting',
+        gatherLevel: 1,
+        tags: ['material', 'wood', 'logs', 'pine', 'woodcutting', 'fuel'],
+    },
+
     normalLogs: {
         id: 'normalLogs',
         name: 'Normal Logs',
@@ -215,6 +230,25 @@ const MATERIAL_ITEMS = {
         gatherSkill: 'woodcutting',
         gatherLevel: 25,
         tags: ['material', 'wood', 'logs', 'maple', 'woodcutting'],
+    },
+
+    // =================================================================
+    // FOOD & PROVISIONS
+    // =================================================================
+
+    lightRations: {
+        id: 'lightRations',
+        name: 'Light Rations',
+        description: 'Simple preserved food rations. Restores 10 HP and used for navigation rest.',
+        icon: '🍖',
+        category: 'consumable',
+        rarity: 'common',
+        stackLimit: 100,
+        value: 5,
+        effectType: 'heal',
+        effectValue: 10,
+        resourceType: 'food',
+        tags: ['consumable', 'food', 'rations', 'healing', 'navigation'],
     },
 
     // =================================================================

@@ -2561,3 +2561,54 @@ function toggleMobileColumn(column) {
         }
     });
 }
+
+// =================================================================
+// DEVELOPER FUNCTIONS
+// =================================================================
+
+/**
+ * DEV: Spawn navigation resources (food and logs) for testing
+ * Call from console: spawnNavResources()
+ */
+function spawnNavResources() {
+    if (!GameEngine || !GameEngine.state) {
+        console.error("❌ GameEngine not available");
+        return;
+    }
+
+    // Add 9999 Light Rations to bank
+    if (!GameEngine.state.bank.items['lightRations']) {
+        GameEngine.state.bank.items['lightRations'] = {
+            itemId: 'lightRations',
+            quantity: 0
+        };
+    }
+    GameEngine.state.bank.items['lightRations'].quantity += 9999;
+
+    // Add 9999 Pinewood to bank
+    if (!GameEngine.state.bank.items['pinewood']) {
+        GameEngine.state.bank.items['pinewood'] = {
+            itemId: 'pinewood',
+            quantity: 0
+        };
+    }
+    GameEngine.state.bank.items['pinewood'].quantity += 9999;
+
+    // Equip Light Rations in food slot
+    if (!GameEngine.state.equipment) {
+        GameEngine.state.equipment = {};
+    }
+    GameEngine.state.equipment.food = {
+        itemId: 'lightRations'
+    };
+
+    console.log("✅ Spawned navigation resources:");
+    console.log("   🍖 Light Rations: 9999 (equipped in food slot)");
+    console.log("   🪵 Pinewood: 9999");
+    console.log("   You can now navigate/explore regions!");
+
+    // Update UI
+    if (typeof UI !== 'undefined' && UI.updateAll) {
+        UI.updateAll();
+    }
+}
