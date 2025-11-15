@@ -519,7 +519,7 @@ const NavigationUI = {
                 <div style="color: #ff9800; padding: 20px;">
                     <h3>⚠️ Navigation System Initializing...</h3>
                     <p>Current Region ID: ${regionId}</p>
-                    <p>World Map Generated: ${worldMap ? `✓ (${Object.keys(worldMap).length} regions)` : '✗'}</p>
+                    <p>World Map Generated: ${GameEngine.definitions.worldMap ? `✓ (${Object.keys(GameEngine.definitions.worldMap).length} regions)` : '✗'}</p>
                     <p>Region Definition: ${hexDef ? '✓' : '✗ (not found in worldMap)'}</p>
                     <p>Biome Data: ${biomeDef ? '✓' : `✗ (biome: ${hexDef?.biome})`}</p>
                     <p>Region State: ${regionState ? '✓' : '✗ (not in state.regions)'}</p>
@@ -535,7 +535,7 @@ const NavigationUI = {
                 biomeDef,
                 regionState,
                 activeNav,
-                worldMapKeys: worldMap ? Object.keys(worldMap).slice(0, 5) : 'null'
+                worldMapKeys: GameEngine.definitions.worldMap ? Object.keys(GameEngine.definitions.worldMap).slice(0, 5) : 'null'
             });
             return;
         }
