@@ -544,9 +544,9 @@ const NavigationUI = {
         const currentState = {
             regionId: regionId,
             isNavigating: activeNav.isNavigating,
-            isRecovering: activeNav.isRecovering || false,
             currentActivity: state.currentActivity,
             discoveredPaths: JSON.stringify(regionState.discoveredExitPaths)
+            // Removed: isRecovering (progress bar state, doesn't require full rebuild)
             // Removed: discoveredNodes, discoveredStations (shown in Nodes tab, not map)
             // Removed: navigationLevel, navigationExp (don't affect map display)
         };
@@ -582,36 +582,30 @@ const NavigationUI = {
 
             <!-- Endurance Bar -->
             <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px;">
-                <div style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
+                <div id="navigationEnduranceLabel" style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
                     ${isRecovering ? '💤 Resting' : '💪 Endurance'}
                 </div>
                 <div class="health-bar" style="margin-bottom: 5px;">
                     <div class="health-bar-fill" id="navigationHealthBar" style="width: ${endurancePercent}%; background: linear-gradient(90deg, ${isRecovering ? '#FFC107, #FF9800' : '#4caf50, #8bc34a'}); transition: width 0.3s ease-out;"></div>
                     <div class="health-bar-text" id="navigationHealthText">${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}</div>
                 </div>
-                <div style="font-size: 0.75em; color: #888;">
+                <div id="navigationEnduranceDesc" style="font-size: 0.75em; color: #888;">
                     ${isRecovering ? '💤 Recovering endurance (consuming rest resources)' : isNavigating ? '⚡ Draining while exploring' : '🛑 Paused'}
                 </div>
             </div>
 
             <!-- Navigation Action Interval Bar -->
             <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px;">
-                <div style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
+                <div id="navigationIntervalLabel" style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
                     ${isRecovering ? '💤 Recovery Mode' : isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action'}
                 </div>
                 <div class="health-bar" style="margin-bottom: 8px;">
                     <div class="health-bar-fill" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #2196F3, #64B5F6); transition: width 0.3s ease-out;"></div>
                     <div class="health-bar-text" id="navigationIntervalText">${isRecovering ? 'Resting' : isNavigating ? '0.0s' : 'Not Exploring'}</div>
                 </div>
-                ${isRecovering ? `
-                    <div style="font-size: 0.75em; color: #888; margin-bottom: 8px;">Resting to recover endurance - Discovery paused</div>
-                ` : isNavigating ? `
-                    <div style="font-size: 0.75em; color: #888; margin-bottom: 8px;">Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)</div>
-                ` : `
-                    <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">
-                        Click Start Exploring to discover resources and enemies in this region
-                    </div>
-                `}
+                <div id="navigationIntervalDesc" style="font-size: 0.75em; color: #888; margin-bottom: 8px;">
+                ${isRecovering ? 'Resting to recover endurance - Discovery paused' : isNavigating ? `Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)` : 'Click Start Exploring to discover resources and enemies in this region'}
+                </div>
                 <button onclick="${isNavigating ? 'stopNavigating()' : 'startNavigating()'}"
                         style="width: 100%; background: ${isNavigating ? '#d32f2f' : '#4a9eff'}; margin-top: 5px;">
                     ${isNavigating ? '⏹️ Stop Exploring' : '🧭 Start Exploring'}
@@ -655,14 +649,51 @@ const NavigationUI = {
         if (!activeNav) return;
 
         const isNavigating = activeNav.isNavigating && GameEngine.state.currentActivity === 'navigation';
+        const isRecovering = activeNav.isRecovering || false;
 
         // Always update endurance bar (whether navigating or not)
         const healthBar = document.getElementById("navigationHealthBar");
         const healthText = document.getElementById("navigationHealthText");
+        const enduranceLabel = document.getElementById("navigationEnduranceLabel");
+        const enduranceDesc = document.getElementById("navigationEnduranceDesc");
+
         if (healthBar && healthText) {
             const endurancePercent = (activeNav.endurance / activeNav.maxEndurance) * 100;
             healthBar.style.width = `${endurancePercent}%`;
             healthText.textContent = `${Math.max(0, Math.floor(activeNav.endurance))}/${activeNav.maxEndurance}`;
+
+            // Update color based on recovery state
+            healthBar.style.background = isRecovering
+                ? 'linear-gradient(90deg, #FFC107, #FF9800)'
+                : 'linear-gradient(90deg, #4caf50, #8bc34a)';
+        }
+
+        // Update endurance label and description based on recovery state
+        if (enduranceLabel) {
+            enduranceLabel.textContent = isRecovering ? '💤 Resting' : '💪 Endurance';
+        }
+        if (enduranceDesc) {
+            enduranceDesc.textContent = isRecovering
+                ? '💤 Recovering endurance (consuming rest resources)'
+                : isNavigating ? '⚡ Draining while exploring' : '🛑 Paused';
+        }
+
+        // Update interval label and description
+        const intervalLabel = document.getElementById("navigationIntervalLabel");
+        const intervalDesc = document.getElementById("navigationIntervalDesc");
+
+        if (intervalLabel) {
+            intervalLabel.textContent = isRecovering
+                ? '💤 Recovery Mode'
+                : isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action';
+        }
+        if (intervalDesc) {
+            const stats = GameEngine.getNavigationStats();
+            intervalDesc.textContent = isRecovering
+                ? 'Resting to recover endurance - Discovery paused'
+                : isNavigating
+                    ? `Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)`
+                    : 'Click Start Exploring to discover resources and enemies in this region';
         }
 
         // Only update interval and rest bars if navigating
