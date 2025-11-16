@@ -308,32 +308,9 @@ const NavigationSystem = {
             activeNav.lastRecoveryTick = 0;
         }
 
-        // RECOVERY MODE: Regenerate endurance
+        // RECOVERY MODE: Endurance recovery now handled by consuming food/logs in RestRecoverySystem
+        // Just return early if in recovery mode - actual recovery happens via resource consumption
         if (activeNav.isRecovering) {
-            const recoveryInterval = 1000; // Check every 1 second
-            const timeSinceLastRecovery = now - activeNav.lastRecoveryTick;
-
-            if (timeSinceLastRecovery >= recoveryInterval) {
-                activeNav.lastRecoveryTick = now;
-
-                // Recovery rate based on health attribute
-                // Formula: base 2 + (health * 1.0) = faster recovery with higher health
-                const health = this.state.combatAttributes?.health || 1;
-                const balance = this.gameBalance;
-                const baseRecovery = balance.baseEnduranceRecovery || 2;
-                const healthRecoveryBonus = balance.healthRecoveryBonus || 1.0;
-                const recoveryRate = baseRecovery + (health * healthRecoveryBonus);
-
-                activeNav.endurance = Math.min(activeNav.maxEndurance, activeNav.endurance + recoveryRate);
-
-                console.log(`💤 Recovering endurance... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}) +${recoveryRate.toFixed(1)}/s`);
-
-                // Exit recovery when full
-                if (activeNav.endurance >= activeNav.maxEndurance) {
-                    activeNav.isRecovering = false;
-                    console.log(`✅ Endurance recovered! Resuming exploration...`);
-                }
-            }
             return;
         }
 

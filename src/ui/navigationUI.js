@@ -735,10 +735,15 @@ const NavigationUI = {
         }
 
         // Update rest resource consumption bar (when navigating)
-        const CONSUMPTION_INTERVAL = 6000; // 6 seconds
+        // Consumption interval based on health: base 3000ms + (health * 200ms)
+        const health = GameEngine.state.combatAttributes?.health || 1;
+        const BASE_INTERVAL = 3000;
+        const HEALTH_BONUS = 200;
+        const consumptionInterval = BASE_INTERVAL + (health * HEALTH_BONUS);
+
         const now = Date.now();
         const lastRestConsumption = activeNav.lastRestConsumption || now;
-        const nextRestConsumption = lastRestConsumption + CONSUMPTION_INTERVAL;
+        const nextRestConsumption = lastRestConsumption + consumptionInterval;
         const restProgress = ProgressBar.calculateIntervalProgress(lastRestConsumption, nextRestConsumption);
 
         const restBar = document.getElementById("restIntervalBar");

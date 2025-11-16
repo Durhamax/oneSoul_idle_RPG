@@ -21,7 +21,8 @@ const RestRecoverySystem = {
 
     /**
      * Process rest resource consumption (called from game loop)
-     * Consumes 1 food and 1 log every 6 seconds ONLY during recovery mode
+     * Consumes 1 food and 1 log at health-based intervals ONLY during recovery mode
+     * Each consumption restores endurance based on item tier
      */
     processRestConsumption(deltaTime) {
         // Only consume during active navigation
@@ -45,10 +46,16 @@ const RestRecoverySystem = {
 
         const now = Date.now();
         const timeSinceLastConsumption = now - this.state.activeNavigation.lastRestConsumption;
-        const CONSUMPTION_INTERVAL = 6000; // 6 seconds
+
+        // Calculate consumption interval based on health attribute
+        // Base 3000ms + (health * 200ms) = slower consumption with higher health
+        const health = this.state.combatAttributes?.health || 1;
+        const BASE_INTERVAL = 3000; // 3 seconds
+        const HEALTH_BONUS = 200; // ms per health point
+        const consumptionInterval = BASE_INTERVAL + (health * HEALTH_BONUS);
 
         // Check if it's time to consume resources
-        if (timeSinceLastConsumption >= CONSUMPTION_INTERVAL) {
+        if (timeSinceLastConsumption >= consumptionInterval) {
             this.state.activeNavigation.lastRestConsumption = now;
 
             // Check if player has resources
@@ -58,7 +65,7 @@ const RestRecoverySystem = {
                 return;
             }
 
-            // Consume resources
+            // Consume resources and restore endurance
             this.consumeRestResources();
         }
     },
@@ -94,16 +101,27 @@ const RestRecoverySystem = {
     },
 
     /**
-     * Consume rest resources (1 food + 1 log)
-     * Called every 6 seconds during navigation
+     * Consume rest resources (1 food + 1 log) and restore endurance based on item tiers
+     * Called at health-based intervals during navigation recovery mode
      */
     consumeRestResources() {
-        // Consume food from equipped slot
+        let totalEnduranceRecovery = 0;
+
+        // Consume food from equipped slot and get its recovery value
         const foodItemId = this.state.equipment?.food;
         if (foodItemId) {
             const bankItem = this.state.bank.items[foodItemId];
             if (bankItem && bankItem.quantity > 0) {
                 bankItem.quantity -= 1;
+
+                // Get food item definition and recovery value
+                // Try ItemDatabase first, then fall back to definitions.js
+                let foodDef = typeof ItemDatabase !== 'undefined' ? ItemDatabase.getItem(foodItemId) : null;
+                if (!foodDef && this.definitions?.items?.[foodItemId]) {
+                    foodDef = this.definitions.items[foodItemId];
+                }
+                const foodRecovery = foodDef?.enduranceRecovery || 10; // Default 10 if not specified
+                totalEnduranceRecovery += foodRecovery;
 
                 // Show consumption animation
                 if (typeof ItemConsumptionAnimation !== 'undefined') {
@@ -118,12 +136,22 @@ const RestRecoverySystem = {
             }
         }
 
-        // Consume 1 log (prioritize basic logs first)
-        const logItems = ['pinewood', 'log', 'normalLogs', 'oakLog', 'oakLogs', 'willowLog', 'willowLogs', 'birchLog', 'mapleLog', 'mapleLogs'];
+        // Consume 1 log (prioritize basic logs first) and get its recovery value
+        const logItems = ['pinewood', 'log', 'normalLogs', 'oakLogs', 'willowLogs', 'mapleLogs'];
+        let logRecovery = 0;
         for (let logId of logItems) {
             const bankItem = this.state.bank.items[logId];
             if (bankItem && bankItem.quantity > 0) {
                 bankItem.quantity -= 1;
+
+                // Get log item definition and recovery value
+                // Try ItemDatabase first, then fall back to definitions.js
+                let logDef = typeof ItemDatabase !== 'undefined' ? ItemDatabase.getItem(logId) : null;
+                if (!logDef && this.definitions?.items?.[logId]) {
+                    logDef = this.definitions.items[logId];
+                }
+                logRecovery = logDef?.enduranceRecovery || 5; // Default 5 if not specified
+                totalEnduranceRecovery += logRecovery;
 
                 // Show consumption animation
                 if (typeof ItemConsumptionAnimation !== 'undefined') {
@@ -140,8 +168,26 @@ const RestRecoverySystem = {
             }
         }
 
+        // Restore endurance based on consumed items
+        if (this.state.activeNavigation && totalEnduranceRecovery > 0) {
+            const activeNav = this.state.activeNavigation;
+            const previousEndurance = activeNav.endurance;
+            activeNav.endurance = Math.min(activeNav.maxEndurance, activeNav.endurance + totalEnduranceRecovery);
+            const actualRecovery = activeNav.endurance - previousEndurance;
+
+            console.log(`🔥 Consumed rest resources: +${actualRecovery.toFixed(1)} endurance (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance})`);
+
+            // Exit recovery when full
+            if (activeNav.endurance >= activeNav.maxEndurance) {
+                activeNav.isRecovering = false;
+                console.log(`✅ Endurance recovered! Resuming exploration...`);
+            }
+        }
+
         const { food, logs } = this.getRestResourceCounts();
-        console.log(`🔥 Consumed rest resources (${food} food, ${logs} logs remaining)`);
+        if (food > 0 && logs > 0) {
+            console.log(`   Remaining: ${food} food, ${logs} logs`);
+        }
     },
 
     /**

@@ -170,6 +170,7 @@ const MATERIAL_ITEMS = {
         resourceType: 'wood',
         gatherSkill: 'woodcutting',
         gatherLevel: 1,
+        enduranceRecovery: 5, // Endurance restored during rest
         tags: ['material', 'wood', 'logs', 'pine', 'woodcutting', 'fuel', 'navigation'],
     },
 
@@ -185,6 +186,7 @@ const MATERIAL_ITEMS = {
         resourceType: 'wood',
         gatherSkill: 'woodcutting',
         gatherLevel: 1,
+        enduranceRecovery: 5, // Endurance restored during rest
         tags: ['material', 'wood', 'logs', 'woodcutting'],
     },
 
@@ -200,6 +202,7 @@ const MATERIAL_ITEMS = {
         resourceType: 'wood',
         gatherSkill: 'woodcutting',
         gatherLevel: 10,
+        enduranceRecovery: 8, // Endurance restored during rest
         tags: ['material', 'wood', 'logs', 'oak', 'woodcutting'],
     },
 
@@ -215,6 +218,7 @@ const MATERIAL_ITEMS = {
         resourceType: 'wood',
         gatherSkill: 'woodcutting',
         gatherLevel: 15,
+        enduranceRecovery: 10, // Endurance restored during rest
         tags: ['material', 'wood', 'logs', 'willow', 'woodcutting'],
     },
 
@@ -230,6 +234,7 @@ const MATERIAL_ITEMS = {
         resourceType: 'wood',
         gatherSkill: 'woodcutting',
         gatherLevel: 25,
+        enduranceRecovery: 12, // Endurance restored during rest
         tags: ['material', 'wood', 'logs', 'maple', 'woodcutting'],
     },
 

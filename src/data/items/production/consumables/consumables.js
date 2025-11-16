@@ -149,6 +149,7 @@ const CONSUMABLE_ITEMS = {
         effectType: 'heal',
         effectValue: 50,
         cooldown: 500,
+        enduranceRecovery: 10, // Endurance restored during rest
         tags: ['consumable', 'food', 'healing'],
     },
 
@@ -169,6 +170,7 @@ const CONSUMABLE_ITEMS = {
             duration: 180000, // 3 minutes
         },
         cooldown: 1000,
+        enduranceRecovery: 20, // Endurance restored during rest
         tags: ['consumable', 'food', 'healing', 'buff'],
     },
 
@@ -189,6 +191,7 @@ const CONSUMABLE_ITEMS = {
             duration: 180000,
         },
         cooldown: 1000,
+        enduranceRecovery: 15, // Endurance restored during rest
         tags: ['consumable', 'food', 'healing', 'buff'],
     },
 
