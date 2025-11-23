@@ -17,6 +17,7 @@ const EQUIPMENT_ITEMS = {
         description: 'A worn dagger covered in rust. Better than nothing.',
         icon: '🗡️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 5,
@@ -36,6 +37,7 @@ const EQUIPMENT_ITEMS = {
         description: 'A simple wooden staff. Light and easy to handle.',
         icon: '🪵',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 10,
@@ -59,6 +61,7 @@ const EQUIPMENT_ITEMS = {
         description: 'A basic sword forged from bronze. Reliable for early adventures.',
         icon: '🗡️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 50,
@@ -84,6 +87,7 @@ const EQUIPMENT_ITEMS = {
         description: 'A sturdy sword forged from iron. A warrior\'s reliable companion.',
         icon: '🗡️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'uncommon',
         stackLimit: 1,
         value: 150,
@@ -109,6 +113,7 @@ const EQUIPMENT_ITEMS = {
         description: 'A finely crafted sword made of tempered steel. Sharp and deadly.',
         icon: '⚔️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'rare',
         stackLimit: 1,
         value: 400,
@@ -140,6 +145,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Simple leather headgear. Provides minimal protection.',
         icon: '🎩',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 30,
@@ -159,6 +165,7 @@ const EQUIPMENT_ITEMS = {
         description: 'A solid iron helmet. Protects the head from serious damage.',
         icon: '⛑️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'uncommon',
         stackLimit: 1,
         value: 180,
@@ -188,6 +195,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Simple cloth robes favored by scholars and mages.',
         icon: '👘',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 40,
@@ -210,6 +218,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Flexible leather armor. Good balance of protection and mobility.',
         icon: '🦺',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 100,
@@ -236,6 +245,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Heavy iron armor for the torso. Provides excellent protection.',
         icon: '🛡️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'uncommon',
         stackLimit: 1,
         value: 300,
@@ -266,6 +276,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Durable leather leg protection.',
         icon: '👖',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 60,
@@ -285,6 +296,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Iron leg armor. Heavy but protective.',
         icon: '🦵',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'uncommon',
         stackLimit: 1,
         value: 200,
@@ -314,6 +326,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Comfortable leather boots for long journeys.',
         icon: '👢',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 40,
@@ -333,6 +346,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Heavy iron boots. Difficult to move quickly but very protective.',
         icon: '🥾',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'uncommon',
         stackLimit: 1,
         value: 150,
@@ -362,6 +376,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Flexible leather gloves. Good grip and light protection.',
         icon: '🧤',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 35,
@@ -381,6 +396,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Heavy iron gauntlets. Increase punching power.',
         icon: '🥊',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'uncommon',
         stackLimit: 1,
         value: 120,
@@ -410,6 +426,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Basic wooden shield. Blocks some attacks.',
         icon: '🛡️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 50,
@@ -429,6 +446,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Sturdy iron shield. Provides solid protection.',
         icon: '🛡️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'uncommon',
         stackLimit: 1,
         value: 200,
@@ -459,6 +477,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Basic mining tool. Can mine copper and tin ores.',
         icon: '⛏️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 40,
@@ -477,6 +496,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Sturdy iron pickaxe. Can mine iron and coal.',
         icon: '⛏️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'uncommon',
         stackLimit: 1,
         value: 150,
@@ -495,6 +515,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Basic woodcutting tool. Can chop normal trees.',
         icon: '🪓',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 35,
@@ -513,6 +534,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Sharp iron axe. Can chop oak and willow trees.',
         icon: '🪓',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'uncommon',
         stackLimit: 1,
         value: 140,
@@ -535,6 +557,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Simple bronze ring. Provides minor stat boost.',
         icon: '💍',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 80,
@@ -553,6 +576,7 @@ const EQUIPMENT_ITEMS = {
         description: 'Heavy iron amulet. Increases constitution.',
         icon: '📿',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'uncommon',
         stackLimit: 1,
         value: 200,

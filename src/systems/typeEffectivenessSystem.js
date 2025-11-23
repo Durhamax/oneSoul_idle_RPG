@@ -10,12 +10,29 @@
 const TypeEffectivenessSystem = {
     /**
      * Initialize type effectiveness system on GameEngine
+     */    /**
+     * Get item definition from ItemRegistry (standardized access pattern)
+     * @param {string} itemId - Item ID to retrieve
+     * @returns {object|null} Item definition or null if not found
      */
+    _getItemDef(itemId) {
+        // Primary: Use ItemRegistry if available
+        if (typeof ItemRegistry !== 'undefined' && ItemRegistry.getItem) {
+            return ItemRegistry.getItem(itemId);
+        }
+
+        // Fallback: Use definitions.items (legacy support)
+        return this.definitions?.items?.[itemId] || null;
+    },
+
+
     init(engine) {
         engine.getPlayerArmorRatings = this.getPlayerArmorRatings.bind(engine);
         engine.getPlayerDominantArmorType = this.getPlayerDominantArmorType.bind(engine);
         engine.getWeaponDamageType = this.getWeaponDamageType.bind(engine);
         engine.calculateDamageMultiplier = this.calculateDamageMultiplier.bind(engine);
+        console.log('✅ TypeEffectivenessSystem initialized (ItemRegistry pattern)');
+
     },
 
     /**
@@ -35,7 +52,7 @@ const TypeEffectivenessSystem = {
         for (let slot in this.state.equipment) {
             const itemId = this.state.equipment[slot];
             if (itemId) {
-                const itemDef = this.definitions.items[itemId];
+                const itemDef = TypeEffectivenessSystem._getItemDef.call(this, itemId);
 
                 // Only count armor pieces (items with armorRatings)
                 if (itemDef && itemDef.stats && itemDef.stats.armorRatings) {
@@ -83,7 +100,7 @@ const TypeEffectivenessSystem = {
             return 'pierce'; // Default unarmed damage type
         }
 
-        const weaponDef = this.definitions.items[weaponId];
+        const weaponDef = TypeEffectivenessSystem._getItemDef.call(this, weaponId);
 
         if (!weaponDef || !weaponDef.stats || !weaponDef.stats.damageType) {
             return 'pierce'; // Default if no damage type defined

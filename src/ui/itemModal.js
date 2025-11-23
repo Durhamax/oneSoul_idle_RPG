@@ -17,9 +17,13 @@ const ItemModal = {
      * @param {string} itemId - The item ID to display
      */
     open(itemId) {
-        const itemDef = GameEngine.definitions.items[itemId];
+        // For weapon instances, use baseItemId to get definition
+        const bankItem = GameEngine.state.bank.items[itemId];
+        const lookupId = bankItem?.baseItemId || itemId;
+        const itemDef = ItemAccessHelper.getItem(lookupId);
+
         if (!itemDef) {
-            console.error(`Item ${itemId} not found`);
+            console.error(`Item ${itemId} not found (lookup: ${lookupId})`);
             return;
         }
 
@@ -62,18 +66,19 @@ const ItemModal = {
      * @param {object} itemDef - Item definition
      */
     populateModal(itemId, itemDef) {
-        // Get rarity information
-        const rarity = GameEngine.getItemRarity(itemId);
+        // Get rarity information (use baseItemId for instances)
+        const bankItem = GameEngine.state.bank.items[itemId];
+        const lookupId = bankItem?.baseItemId || itemId;
+        const rarity = GameEngine.getItemRarity(lookupId);
         const rarityColor = rarity ? rarity.color : '#9e9e9e';
         const rarityName = rarity ? rarity.name : 'Common';
         const rarityIcon = rarity ? rarity.icon : '⚪';
 
         // Get player's quantity
-        const bankItem = GameEngine.state.bank.items[itemId];
         const quantity = bankItem ? bankItem.quantity : 0;
 
         // Header section
-        document.getElementById('itemModalIcon').textContent = itemDef.image;
+        document.getElementById('itemModalIcon').innerHTML = IconHelper.getItemIconHTML(itemDef, {size: 64, className: 'modal-icon'});
         document.getElementById('itemModalName').textContent = itemDef.name;
         document.getElementById('itemModalName').style.color = rarityColor;
         document.getElementById('itemModalRarity').textContent = `${rarityIcon} ${rarityName}`;
@@ -190,7 +195,7 @@ const ItemModal = {
 
         let html = '<div class="recipe-list">';
         for (let recipe of usedInRecipes.slice(0, 5)) {  // Limit to 5 recipes
-            const outputItem = GameEngine.definitions.items[recipe.output];
+            const outputItem = ItemAccessHelper.getItem(recipe.output);
             html += `
                 <div class="recipe-card" onclick="ItemModal.viewRecipe('${recipe.id}')">
                     <div style="font-size: 1.5em;">${outputItem?.image || '📦'}</div>
@@ -219,7 +224,7 @@ const ItemModal = {
         if (enemies) {
             for (let enemyId in enemies) {
                 const enemy = enemies[enemyId];
-                if (enemy.lootTable) {
+                if (enemy.lootTable && Array.isArray(enemy.lootTable)) {
                     for (let loot of enemy.lootTable) {
                         if (loot.itemId === itemId) {
                             sources.push(`🗡️ Drop from ${enemy.name} (${(loot.chance * 100).toFixed(1)}%)`);
@@ -301,6 +306,25 @@ const ItemModal = {
             }
         }
 
+        // Attachment modification button for weapons with rarity > common
+        if (itemDef.equipSlot === 'weapon' && typeof AttachmentSystem !== 'undefined') {
+            // Use baseItemId for instances
+            const lookupId = bankItem?.baseItemId || itemId;
+            const rarity = GameEngine.getItemRarity(lookupId);
+            const rarityName = rarity ? rarity.id : 'common';
+
+            if (rarityName !== 'common') {
+                const attachmentSlots = AttachmentSystem.ATTACHMENT_SLOTS_BY_RARITY[rarityName];
+                const isInstance = bankItem.instanceId;
+                const currentAttachments = isInstance ? bankItem.attachments : {};
+                const attachmentCount = Object.values(currentAttachments || {}).filter(a => a).length;
+
+                html += `<button class="action-btn attachment-btn" onclick="ItemModal.openAttachmentModal('${itemId}')">
+                    ⚙️ Modify Attachments (${attachmentCount}/${attachmentSlots})
+                </button>`;
+            }
+        }
+
         // Use in Craft button
         html += `<button class="action-btn craft-btn" onclick="ItemModal.showCraftingOptions('${itemId}')">
             🔨 Use in Craft
@@ -357,7 +381,7 @@ const ItemModal = {
         const sellValue = 10; // Base sell value per item
         const totalValue = sellValue * bankItem.quantity;
 
-        if (confirm(`Sell all ${bankItem.quantity}x ${GameEngine.definitions.items[itemId].name} for ${totalValue} gold?`)) {
+        if (confirm(`Sell all ${bankItem.quantity}x ${ItemAccessHelper.getItem(itemId).name} for ${totalValue} gold?`)) {
             GameEngine.removeItemFromBank(itemId, bankItem.quantity);
             GameEngine.state.currencies.gold += totalValue;
             this.close();
@@ -373,7 +397,7 @@ const ItemModal = {
         const bankItem = GameEngine.state.bank.items[itemId];
         if (!bankItem) return;
 
-        if (confirm(`⚠️ Permanently destroy all ${bankItem.quantity}x ${GameEngine.definitions.items[itemId].name}? This cannot be undone!`)) {
+        if (confirm(`⚠️ Permanently destroy all ${bankItem.quantity}x ${ItemAccessHelper.getItem(itemId).name}? This cannot be undone!`)) {
             GameEngine.removeItemFromBank(itemId, bankItem.quantity);
             this.close();
             UICore.update();
@@ -388,6 +412,18 @@ const ItemModal = {
         this.close();
         switchView('crafting');
         // TODO: Open crafting view and highlight this recipe
+    },
+
+    /**
+     * Open attachment modal for weapon
+     */
+    openAttachmentModal(itemId) {
+        this.close();
+        if (typeof AttachmentModal !== 'undefined') {
+            AttachmentModal.open(itemId);
+        } else {
+            console.error('AttachmentModal not loaded');
+        }
     },
 
     /**

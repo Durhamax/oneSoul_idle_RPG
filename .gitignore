@@ -18,6 +18,7 @@ desktop.ini
 *.tmp
 *.bak
 temp/
+*_backup.html
 
 # Debug files
 debug_*.js
@@ -29,3 +30,26 @@ debug_*.html
 
 # Windows device files
 nul
+
+# =============================================================================
+# DATA WORKFLOW
+# =============================================================================
+
+# Excel source files (managed in OneDrive, not in repo)
+*.xlsx
+*.xls
+OneSoul_GameData/
+
+# CSV templates (one-time generation, not tracked)
+data/csv/
+*.csv
+
+# JSON data files (TRACKED - generated from Excel)
+# These are explicitly NOT ignored so they get committed:
+!data/json/*.json
+
+# Node modules
+node_modules/
+
+# npm package lock (optional - uncomment if you want to ignore)
+# package-lock.json

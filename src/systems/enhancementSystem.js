@@ -9,7 +9,22 @@ const EnhancementSystem = {
     /**
      * Initialize enhancement system functions on the GameEngine
      * @param {object} engine - Reference to GameEngine
+     */    /**
+     * Get item definition from ItemRegistry (standardized access pattern)
+     * @param {string} itemId - Item ID to retrieve
+     * @returns {object|null} Item definition or null if not found
      */
+    _getItemDef(itemId) {
+        // Primary: Use ItemRegistry if available
+        if (typeof ItemRegistry !== 'undefined' && ItemRegistry.getItem) {
+            return ItemRegistry.getItem(itemId);
+        }
+
+        // Fallback: Use definitions.items (legacy support)
+        return this.definitions?.items?.[itemId] || null;
+    },
+
+
     init(engine) {
         engine.enhanceEquipment = this.enhanceEquipment.bind(engine);
         engine.canEnhanceEquipment = this.canEnhanceEquipment.bind(engine);
@@ -17,6 +32,8 @@ const EnhancementSystem = {
         engine.upgradeTier = this.upgradeTier.bind(engine);
         engine.getEnhancementBonus = this.getEnhancementBonus.bind(engine);
         engine.calculateEnhancedStats = this.calculateEnhancedStats.bind(engine);
+        console.log('✅ EnhancementSystem initialized (ItemRegistry pattern)');
+
     },
 
     /**
@@ -48,7 +65,7 @@ const EnhancementSystem = {
         }
 
         // Check catalyst definition
-        const catalystDef = this.definitions.items[catalystId];
+        const catalystDef = EnhancementSystem._getItemDef.call(this, catalystId);
         if (!catalystDef || catalystDef.category !== 'catalyst') {
             return { canEnhance: false, reason: "Invalid catalyst" };
         }
@@ -70,7 +87,7 @@ const EnhancementSystem = {
 
         // Get equipment instance
         const instance = this.getEquipmentInstance?.(instanceId);
-        const catalystDef = this.definitions.items[catalystId];
+        const catalystDef = EnhancementSystem._getItemDef.call(this, catalystId);
 
         // Consume catalyst
         this.removeItem(catalystId, 1);

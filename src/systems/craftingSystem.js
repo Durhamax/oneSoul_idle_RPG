@@ -6,6 +6,34 @@
 
 const CraftingSystem = {
     /**
+     * Helper: Get recipe definition from RecipeRegistry first, fallback to definitions
+     */
+    _getRecipeDef(recipeId, engine) {
+        let recipeDef = null;
+        if (typeof RecipeRegistry !== 'undefined') {
+            recipeDef = RecipeRegistry.getAllActive()[recipeId];
+        }
+        if (!recipeDef && engine.definitions) {
+            recipeDef = engine.definitions.recipes?.[recipeId];
+        }
+        return recipeDef;
+    },
+
+    /**
+     * Helper: Get item definition from ItemRegistry first, fallback to definitions
+     */
+    _getItemDef(itemId, engine) {
+        let itemDef = null;
+        if (typeof ItemRegistry !== 'undefined') {
+            itemDef = ItemRegistry.getItem(itemId);
+        }
+        if (!itemDef && engine.definitions) {
+            itemDef = engine.definitions.items?.[itemId];
+        }
+        return itemDef;
+    },
+
+    /**
      * Initialize crafting system functions on the GameEngine
      * @param {object} engine - Reference to GameEngine
      */
@@ -20,8 +48,11 @@ const CraftingSystem = {
         engine.discoverCraftingStation = this.discoverCraftingStation.bind(engine);
         engine.getAvailableRecipes = this.getAvailableRecipes.bind(engine);
         engine.rollItemRarity = this.rollItemRarity.bind(engine);
+        engine.setCraftingSkillFilter = this.setCraftingSkillFilter.bind(engine);
         engine.rollItemStats = this.rollItemStats.bind(engine);
         engine.createEquipmentInstance = this.createEquipmentInstance.bind(engine);
+
+        console.log('✅ CraftingSystem initialized (ItemRegistry pattern)');
     },
 
     /**
@@ -30,7 +61,7 @@ const CraftingSystem = {
      * @returns {object} - {canCraft: boolean, reason: string}
      */
     canCraft(recipeId) {
-        const recipe = this.definitions.recipes[recipeId];
+        const recipe = CraftingSystem._getRecipeDef(recipeId, this);
         if (!recipe) {
             return { canCraft: false, reason: "Recipe not found" };
         }
@@ -53,7 +84,8 @@ const CraftingSystem = {
         for (let input of recipe.inputs) {
             const itemCount = this.getItemCount(input.itemId);
             if (itemCount < input.amount) {
-                return { canCraft: false, reason: `Need ${input.amount}x ${this.definitions.items[input.itemId]?.name || input.itemId}` };
+                const inputItemDef = CraftingSystem._getItemDef(input.itemId, this);
+                return { canCraft: false, reason: `Need ${input.amount}x ${inputItemDef?.name || input.itemId}` };
             }
         }
 
@@ -71,7 +103,7 @@ const CraftingSystem = {
             return { success: false, reason: canCraftResult.reason };
         }
 
-        const recipe = this.definitions.recipes[recipeId];
+        const recipe = CraftingSystem._getRecipeDef(recipeId, this);
 
         // Stop any other activity first (including current craft)
         this.stopAllActivities();
@@ -140,11 +172,11 @@ const CraftingSystem = {
         const craft = this.state.crafting.activeCrafts[craftIndex];
         if (!craft) return;
 
-        const recipe = this.definitions.recipes[craft.recipeId];
+        const recipe = CraftingSystem._getRecipeDef(craft.recipeId, this);
 
         // Give output items
         for (let output of recipe.outputs) {
-            const itemDef = this.definitions.items[output.itemId];
+            const itemDef = CraftingSystem._getItemDef(output.itemId, this);
 
             // Check if this is equipment (has equipSlot or category is equipment)
             const isEquipment = itemDef.equipSlot ||
@@ -234,7 +266,7 @@ const CraftingSystem = {
             return { success: false, reason: "Craft not found" };
         }
 
-        const recipe = this.definitions.recipes[craft.recipeId];
+        const recipe = CraftingSystem._getRecipeDef(craft.recipeId, this);
 
         // Refund 50% of materials
         for (let input of recipe.inputs) {
@@ -276,6 +308,17 @@ const CraftingSystem = {
     },
 
     /**
+     * Set the crafting skill filter (for UI filtering)
+     * @param {string|null} skillId - Skill to filter by, or null for all
+     * @returns {object} - {success: boolean}
+     */
+    setCraftingSkillFilter(skillId) {
+        this.state.crafting.selectedSkill = skillId;
+        console.log(`🔧 Crafting filter set to: ${skillId || 'All'}`);
+        return { success: true };
+    },
+
+    /**
      * Discover a crafting station
      * @param {string} stationId - Crafting station ID
      */
@@ -304,7 +347,7 @@ const CraftingSystem = {
         const recipes = [];
 
         for (let recipeId in this.definitions.recipes) {
-            const recipe = this.definitions.recipes[recipeId];
+            const recipe = CraftingSystem._getRecipeDef(recipeId, this);
 
             // Apply skill filter
             if (skillFilter && recipe.skill !== skillFilter) {
@@ -411,7 +454,7 @@ const CraftingSystem = {
         // Generate unique instance ID
         const instanceId = `${itemId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        const itemDef = this.definitions.items[itemId];
+        const itemDef = CraftingSystem._getItemDef(itemId, this);
         const rarityData = this.definitions.EQUIPMENT_RARITY_CHANCES[rarity];
 
         // Create equipment instance data

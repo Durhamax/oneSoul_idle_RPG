@@ -6,6 +6,144 @@
 
 // === TIER 1: STARTER ORES ===
 
+NodeRegistry.production.riverbed = {
+    id: "riverbed",
+    name: "Riverbed",
+    description: "A shallow riverbed rich with clay, flint, and occasional gold flakes",
+    icon: "💎",
+
+    nodeType: "mining",
+    category: "ore_deposit",
+
+    tier: 1,
+    requiredSkillLevel: 1,
+    recommendedLevel: 1,
+
+    baseHealth: 10,
+    minHealth: 8,
+    maxHealth: 12,
+    harvestTime: 3.0,
+    respawnTime: 30,
+
+    resourceTable: [
+        {
+            itemId: "clay",
+            weight: 60,
+            minYield: 1,
+            maxYield: 3,
+            skillScaling: true,
+            itemDef: {
+                id: 'clay',
+                name: 'Clay',
+                description: 'Soft, moldable clay. Used in pottery and construction.',
+                icon: '🧱',
+                iconPath: 'assets/icons/materials/clay.png',
+                category: 'resource',
+                rarity: 'common',
+                stackLimit: 100,
+                value: 2,
+                resourceType: 'mineral',
+                gatherSkill: 'mining',
+                tags: ['resource', 'mineral', 'crafting', 'construction']
+            }
+        },
+        {
+            itemId: "flint",
+            weight: 39,
+            minYield: 1,
+            maxYield: 2,
+            skillScaling: true,
+            itemDef: {
+                id: 'flint',
+                name: 'Flint',
+                description: 'Sharp flint stone. Used for tools and starting fires.',
+                icon: '🪨',
+                iconPath: 'assets/icons/materials/flint.png',
+                category: 'resource',
+                rarity: 'common',
+                stackLimit: 100,
+                value: 3,
+                resourceType: 'stone',
+                gatherSkill: 'mining',
+                tags: ['resource', 'stone', 'crafting', 'tools']
+            }
+        },
+        {
+            itemId: "goldFlakes",
+            weight: 1,
+            minYield: 1,
+            maxYield: 1,
+            skillScaling: false,
+            itemDef: {
+                id: 'goldFlakes',
+                name: 'Gold Flakes',
+                description: 'Tiny flakes of gold found in riverbeds. Can be refined.',
+                icon: '✨',
+                iconPath: 'assets/icons/materials/gold-flakes.png',
+                category: 'resource',
+                rarity: 'uncommon',
+                stackLimit: 100,
+                value: 25,
+                resourceType: 'precious_metal',
+                gatherSkill: 'mining',
+                tags: ['resource', 'metal', 'precious', 'valuable']
+            }
+        }
+    ],
+
+    rareDropTable: null,
+    rareDropChance: 0,
+
+    yieldBonusPerLevel: 0.05,
+    rareBonusPerLevel: 0.02,
+    speedBonusPerLevel: 0.02,
+
+    baseXP: 25,
+    xpScaling: "linear",
+    xpMultiplier: 1.0,
+
+    rarity: "common",
+    color: "#8B7355",
+    harvestSound: "mining",
+    particleEffect: "ore_sparkle",
+
+    biomes: ["plains", "river", "starting_region"],
+    spawnWeight: 100,
+
+    discoveryWeight: 100,
+    upgradeChance: 30,
+    upgradeAmount: 2,
+
+    requirements: {
+        skill: "mining",
+        skillLevel: 1,
+        characterLevel: 0,
+        quests: [],
+        tools: ["pickaxe"],
+        toolTier: 1
+    },
+
+    isRenewable: true,
+    isExhaustible: false,
+    exhaustionThreshold: null,
+    multiHarvest: false,
+    instancedLoot: true,
+    weatherDependent: false,
+    timeDependent: false,
+    seasonalAvailability: null,
+
+    progressionPath: "basic_materials",
+    nextTier: null,
+    previousTier: null,
+    unlockMessage: "You've discovered a riverbed!",
+
+    status: "production",
+    implemented: true,
+    version: "1.0",
+    developmentNotes: "",
+    customData: {}
+};
+
 NodeRegistry.production.copper_vein = {
     id: "copper_vein",
     name: "Copper Vein",

@@ -7,6 +7,21 @@
 
 const EquipmentSystem = {
     /**
+     * Get item definition from ItemRegistry (standardized access pattern)
+     * @param {string} itemId - Item ID to retrieve
+     * @returns {object|null} Item definition or null if not found
+     */
+    _getItemDef(itemId) {
+        // Primary: Use ItemRegistry if available
+        if (typeof ItemRegistry !== 'undefined' && ItemRegistry.getItem) {
+            return ItemRegistry.getItem(itemId);
+        }
+
+        // Fallback: Use definitions.items (legacy support)
+        return this.definitions?.items?.[itemId] || null;
+    },
+
+    /**
      * Initialize equipment system functions on the GameEngine
      * @param {object} engine - Reference to GameEngine
      */
@@ -15,6 +30,8 @@ const EquipmentSystem = {
         engine.equipItem = this.equipItem.bind(engine);
         engine.unequipItem = this.unequipItem.bind(engine);
         engine.getPlayerCombatStats = this.getPlayerCombatStats.bind(engine);
+        engine.getPlayerCombatStatsUsingCalculator = this.getPlayerCombatStatsUsingCalculator.bind(engine);
+        engine.getPlayerCombatStatsLegacy = this.getPlayerCombatStatsLegacy.bind(engine);
         engine.recalculatePlayerStats = this.recalculatePlayerStats.bind(engine);
         engine.getTotalEquippedWeight = this.getTotalEquippedWeight.bind(engine);
         engine.getMaxEquipmentWeight = this.getMaxEquipmentWeight.bind(engine);
@@ -23,6 +40,8 @@ const EquipmentSystem = {
         engine.isTechSlotUnlocked = this.isTechSlotUnlocked.bind(engine);
         engine.getTechSlotRequirement = this.getTechSlotRequirement.bind(engine);
         engine.getEquipmentSlotType = this.getEquipmentSlotType.bind(engine);
+
+        console.log('✅ EquipmentSystem initialized (ItemRegistry pattern)');
     },
 
     /**
@@ -65,7 +84,8 @@ const EquipmentSystem = {
      * Equip an item from the bank
      */
     equipItem(itemId) {
-        const itemDef = this.definitions.items[itemId];
+        // Use standardized item access pattern
+        const itemDef = EquipmentSystem._getItemDef.call(this, itemId);
         const bankItem = this.state.bank.items[itemId];
 
         if (!itemDef) {
@@ -76,13 +96,41 @@ const EquipmentSystem = {
             return { success: false, reason: "Item not in bank" };
         }
 
-        if (!itemDef.equipSlot) {
+        // Check both 'equipSlot' and 'slot' properties for compatibility
+        const slot = itemDef.equipSlot || itemDef.slot;
+
+        if (!slot) {
             return { success: false, reason: "Item cannot be equipped" };
         }
 
-        const slot = itemDef.equipSlot;
+        // === VALIDATION LAYER ===
 
-        // Check if technology slot is unlocked
+        // 1. Check level requirements
+        if (itemDef.level && itemDef.level > this.state.characterLevel.level) {
+            return {
+                success: false,
+                reason: `Requires character level ${itemDef.level}`
+            };
+        }
+
+        // 2. Check attribute requirements
+        if (itemDef.requirements) {
+            const attributes = this.state.combatAttributes;
+
+            for (let attr in itemDef.requirements) {
+                const required = itemDef.requirements[attr];
+                const current = attributes[attr] || 0;
+
+                if (current < required) {
+                    return {
+                        success: false,
+                        reason: `Requires ${required} ${attr} (you have ${current})`
+                    };
+                }
+            }
+        }
+
+        // 3. Check if technology slot is unlocked
         const slotType = this.getEquipmentSlotType(slot);
         if (slotType === 'technology' && !this.isTechSlotUnlocked(slot)) {
             const requirement = this.getTechSlotRequirement(slot);
@@ -91,6 +139,29 @@ const EquipmentSystem = {
                 reason: `Technology slot requires ${requirement} Intellect`
             };
         }
+
+        // 4. Check weight capacity BEFORE equipping
+        const itemWeight = (itemDef.stats && itemDef.stats.weight) || 0;
+        const currentWeight = this.getTotalEquippedWeight();
+        const maxWeight = this.getMaxEquipmentWeight();
+
+        // If there's an item already in the slot, subtract its weight first
+        let weightAfterEquip = currentWeight + itemWeight;
+        const currentItemInSlot = this.state.equipment[slot];
+        if (currentItemInSlot) {
+            const currentItemDef = EquipmentSystem._getItemDef.call(this, currentItemInSlot);
+            const currentItemWeight = (currentItemDef && currentItemDef.stats && currentItemDef.stats.weight) || 0;
+            weightAfterEquip -= currentItemWeight;
+        }
+
+        if (weightAfterEquip > maxWeight) {
+            return {
+                success: false,
+                reason: `Too heavy! (${weightAfterEquip.toFixed(1)}/${maxWeight} capacity)`
+            };
+        }
+
+        // === EQUIP ITEM ===
 
         // Unequip current item in slot if any
         if (this.state.equipment[slot]) {
@@ -121,7 +192,7 @@ const EquipmentSystem = {
             return { success: false, reason: "Nothing equipped in that slot" };
         }
 
-        const itemDef = this.definitions.items[itemId];
+        const itemDef = EquipmentSystem._getItemDef.call(this, itemId);
 
         // Return to bank
         this.addItemToBank(itemId, 1);
@@ -139,9 +210,197 @@ const EquipmentSystem = {
 
     /**
      * Calculate comprehensive player combat stats
-     * Includes all hidden attributes derived from base attributes, equipment, and perks
+     * NOW USES STATCALCULATOR FOR MODULAR 5-LAYER STAT PIPELINE
+     *
+     * This method is a facade that uses StatCalculator for all calculations,
+     * then formats the results to match the old API for backward compatibility.
      */
     getPlayerCombatStats() {
+        // Build context for StatCalculator
+        const context = this.buildStatContext ? this.buildStatContext() : {
+            combatAttributes: this.state.combatAttributes,
+            equipment: this.state.equipment,
+            definitions: this.definitions,
+            skills: this.state.skills,
+            stance: this.state.combat.currentStance || 'offensive',
+            state: this.state
+        };
+
+        // Use StatCalculator if available
+        if (typeof StatCalculator !== 'undefined') {
+            return this.getPlayerCombatStatsUsingCalculator(context);
+        }
+
+        // Fallback to legacy calculation if StatCalculator not loaded
+        console.warn('[EquipmentSystem] StatCalculator not found, using legacy calculation');
+        return this.getPlayerCombatStatsLegacy();
+    },
+
+    /**
+     * NEW: Calculate stats using StatCalculator system
+     */
+    getPlayerCombatStatsUsingCalculator(context) {
+        // Calculate all combat stats using StatCalculator
+        const attackDamage = StatCalculator.calculateStat('attackDamage', context);
+        const maxHealth = StatCalculator.calculateStat('maxHealth', context);
+        const healthRegen = StatCalculator.calculateStat('healthRegen', context);
+        const attackSpeed = StatCalculator.calculateStat('attackSpeed', context);
+        const accuracy = StatCalculator.calculateStat('accuracy', context);
+        const evasion = StatCalculator.calculateStat('evasion', context);
+        const criticalChance = StatCalculator.calculateStat('criticalChance', context);
+        const criticalDamage = StatCalculator.calculateStat('criticalDamage', context);
+        const damageReduction = StatCalculator.calculateStat('damageReduction', context);
+        const blockChance = StatCalculator.calculateStat('blockChance', context);
+
+        // Get weapon-specific stats
+        const weaponId = this.state.equipment.weapon;
+        const weapon = weaponId ? EquipmentSystem._getItemDef.call(this, weaponId) : null;
+
+        let damageType = 'ballistic';
+        let reloadInterval = 0;
+        let reloadTime = 0;
+        let grenadeInterval = 0;
+        let grenadeDamage = 0;
+
+        if (weapon && weapon.combatStats) {
+            damageType = weapon.combatStats.damageType || 'ballistic';
+            reloadInterval = weapon.combatStats.reloadInterval || 0;
+            reloadTime = weapon.combatStats.reloadTime || 0;
+            grenadeInterval = weapon.combatStats.grenadeInterval || 0;
+            grenadeDamage = weapon.combatStats.grenadeDamage || 0;
+        }
+
+        // Get attributes for derived calculations
+        const attributes = this.state.combatAttributes;
+        const baseStats = this.state.combat.player;
+        const currentHealth = this.state.combat.player.currentHealth;
+
+        // Get stance modifiers
+        const currentStance = this.state.combat.currentStance || "offensive";
+        let stanceDamageMultiplier = 1.0;
+        let stanceSpeedMultiplier = 1.0;
+        let stanceDamageReductionBonus = 0;
+        let stanceBlockChance = 0;
+
+        if (currentStance === "defensive") {
+            stanceDamageMultiplier = 0.60;
+            stanceSpeedMultiplier = 0.75;
+            stanceDamageReductionBonus = 0.30;
+            stanceBlockChance = 20;
+        }
+
+        // Calculate damage variance (based on attributes)
+        const maxHitOffset = attributes.strength * 0.5;
+        const minHitOffset = attributes.strength * 0.2;
+        const maxHitMultiplier = 1.2 + (attributes.strength * 0.01);
+        const minHitMultiplier = 0.8 + (attributes.strength * 0.005);
+
+        const maxHit = attackDamage.final * maxHitMultiplier + maxHitOffset;
+        const minHit = attackDamage.final * minHitMultiplier + minHitOffset;
+        const avgDamagePerHit = (maxHit + minHit) / 2;
+
+        // Damage roll weights
+        const damageRollWeightAbove = 50 + (attributes.strength * 0.5);
+        const damageRollWeightBelow = 50 - (attributes.strength * 0.5);
+
+        // Derived attribute bonuses
+        const reloadTimeReduction = attributes.strength * 0.01;
+        const autoEatThresholdBonus = attributes.health * 0.02;
+        const dotResistance = attributes.health * 0.005;
+        const specialAttackBlockChance = Math.min(50, attributes.defense * 0.3);
+        const firstStrikeBonusDamage = attributes.stealth * 0.01;
+        const enemyAccuracyReduction = attributes.stealth * 0.005;
+        const specialAttackChanceBonus = attributes.intellect * 0.002;
+        const consumableEfficiency = attributes.intellect * 0.005;
+
+        // Return comprehensive stats object (matching old API format)
+        return {
+            // Display stats (for UI)
+            maxHealth: maxHealth.final,
+            currentHealth: currentHealth,
+            attackDamage: attackDamage.final,
+            attackSpeed: 1000 / attackSpeed.final,
+            accuracy: accuracy.final,
+
+            // Damage system (hidden)
+            damage: attackDamage.final,
+            maxHitOffset: maxHitOffset,
+            minHitOffset: minHitOffset,
+            maxHitMultiplier: maxHitMultiplier,
+            minHitMultiplier: minHitMultiplier,
+            maxHit: maxHit,
+            minHit: minHit,
+            avgDamagePerHit: avgDamagePerHit,
+            damageRollWeightAbove: damageRollWeightAbove,
+            damageRollWeightBelow: damageRollWeightBelow,
+
+            // Attack speed system (hidden)
+            characterAttackInterval: attackSpeed.final,
+            weaponAttackInterval: 0,
+            effectiveAttackInterval: attackSpeed.final,
+
+            // Hit chance system (hidden)
+            characterHitChance: accuracy.final,
+            weaponHitChance: 0,
+            effectiveHitChance: accuracy.final,
+
+            // Critical system (hidden)
+            criticalChance: criticalChance.final,
+            criticalImpact: criticalDamage.final,
+
+            // Special attacks (hidden)
+            grenadeInterval: grenadeInterval,
+            grenadeDamage: grenadeDamage,
+
+            // Weapon mechanics (hidden)
+            reloadInterval: reloadInterval,
+            reloadTime: reloadTime,
+            damageType: damageType,
+
+            // Defense system (hidden)
+            evasionRating: evasion.final,
+            damageReductionRate: damageReduction.final / 100,
+            absoluteDamageReduction: 0,
+
+            // Regeneration (hidden)
+            hpRegenerationRate: healthRegen.final,
+            lifestealPercent: attributes.strength * 0.1,
+
+            // Damage typing (hidden)
+            strongTyping: 1.5,
+            neutralTyping: 1.0,
+            weakTyping: 0.75,
+
+            // Enemy mechanics (hidden)
+            enemyRespawnTimer: 1.0,
+
+            // NEW ATTRIBUTE BONUSES
+            reloadTimeReduction: reloadTimeReduction,
+            autoEatThresholdBonus: autoEatThresholdBonus,
+            dotResistance: dotResistance,
+            specialAttackBlockChance: specialAttackBlockChance,
+            firstStrikeBonusDamage: firstStrikeBonusDamage,
+            enemyAccuracyReduction: enemyAccuracyReduction,
+            specialAttackChanceBonus: specialAttackChanceBonus,
+            consumableEfficiency: consumableEfficiency,
+
+            // STANCE
+            currentStance: currentStance,
+            stanceDamageMultiplier: stanceDamageMultiplier,
+            stanceSpeedMultiplier: stanceSpeedMultiplier,
+            stanceDamageReductionBonus: stanceDamageReductionBonus,
+            stanceBlockChance: stanceBlockChance,
+
+            // Legacy compatibility
+            damageReduction: damageReduction.final / 100
+        };
+    },
+
+    /**
+     * LEGACY: Old manual calculation (kept for fallback)
+     * This should never be used if StatCalculator is loaded
+     */
+    getPlayerCombatStatsLegacy() {
         const baseStats = this.state.combat.player;
         const perks = this.state.perks;
         const attributes = this.state.combatAttributes;
@@ -158,7 +417,7 @@ const EquipmentSystem = {
 
         // === WEAPON STATS ===
         const weaponId = this.state.equipment.weapon;
-        const weapon = weaponId ? this.definitions.items[weaponId] : null;
+        const weapon = weaponId ? EquipmentSystem._getItemDef.call(this, weaponId) : null;
 
         let weaponDamage = 0;
         let weaponHitChance = 0;
@@ -195,7 +454,7 @@ const EquipmentSystem = {
             const itemId = this.state.equipment[slot];
             if (!itemId || slot === 'weapon') continue;
 
-            const itemDef = this.definitions.items[itemId];
+            const itemDef = EquipmentSystem._getItemDef.call(this, itemId);
             if (!itemDef || !itemDef.combatStats) continue;
 
             equipmentDefense += itemDef.combatStats.damageReduction || 0;
@@ -407,7 +666,7 @@ const EquipmentSystem = {
         for (let slot in this.state.equipment) {
             const itemId = this.state.equipment[slot];
             if (itemId) {
-                const itemDef = this.definitions.items[itemId];
+                const itemDef = EquipmentSystem._getItemDef.call(this, itemId);
                 if (itemDef && itemDef.stats && itemDef.stats.weight) {
                     totalWeight += itemDef.stats.weight;
                 }

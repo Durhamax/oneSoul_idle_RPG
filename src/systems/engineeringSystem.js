@@ -9,7 +9,22 @@ const EngineeringSystem = {
     /**
      * Initialize engineering system functions on the GameEngine
      * @param {object} engine - Reference to GameEngine
+     */    /**
+     * Get item definition from ItemRegistry (standardized access pattern)
+     * @param {string} itemId - Item ID to retrieve
+     * @returns {object|null} Item definition or null if not found
      */
+    _getItemDef(itemId) {
+        // Primary: Use ItemRegistry if available
+        if (typeof ItemRegistry !== 'undefined' && ItemRegistry.getItem) {
+            return ItemRegistry.getItem(itemId);
+        }
+
+        // Fallback: Use definitions.items (legacy support)
+        return this.definitions?.items?.[itemId] || null;
+    },
+
+
     init(engine) {
         engine.upgradeWorkshop = this.upgradeWorkshop.bind(engine);
         engine.reverseEngineerItem = this.reverseEngineerItem.bind(engine);
@@ -18,6 +33,8 @@ const EngineeringSystem = {
         engine.getWorkshopBonus = this.getWorkshopBonus.bind(engine);
         engine.canAffordWorkshopUpgrade = this.canAffordWorkshopUpgrade.bind(engine);
         engine.awardEngineeringTokens = this.awardEngineeringTokens.bind(engine);
+        console.log('✅ EngineeringSystem initialized (ItemRegistry pattern)');
+
     },
 
     /**
@@ -125,7 +142,7 @@ const EngineeringSystem = {
      * @returns {object} Result object
      */
     reverseEngineerItem(itemId) {
-        const itemDef = this.definitions.items[itemId];
+        const itemDef = EngineeringSystem._getItemDef.call(this, itemId);
         if (!itemDef) {
             return { success: false, reason: "Invalid item" };
         }
@@ -194,7 +211,7 @@ const EngineeringSystem = {
             const required = projectDef.components[componentId];
             const owned = this.getItemCount(componentId);
             if (owned < required) {
-                const componentDef = this.definitions.items[componentId];
+                const componentDef = EngineeringSystem._getItemDef.call(this, componentId);
                 return { success: false, reason: `Need ${required}x ${componentDef.name} (have ${owned})` };
             }
         }
@@ -207,14 +224,14 @@ const EngineeringSystem = {
         // Create product
         this.addItem(projectDef.output, 1);
 
-        console.log(`🔧 Assembled ${this.definitions.items[projectDef.output].name}!`);
+        console.log(`🔧 Assembled ${EngineeringSystem._getItemDef.call(this, projectDef.output).name}!`);
 
         // Gain engineering XP
         this.gainSkillExp('engineering', projectDef.expReward || 100);
 
         // Show notification
         if (typeof Animations !== 'undefined') {
-            Animations.showNotification(`Assembled: ${this.definitions.items[projectDef.output].name}`, 'success', 3000);
+            Animations.showNotification(`Assembled: ${EngineeringSystem._getItemDef.call(this, projectDef.output).name}`, 'success', 3000);
         }
 
         return { success: true, output: projectDef.output };

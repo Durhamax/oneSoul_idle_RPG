@@ -4,7 +4,22 @@
  * Handles node harvesting mechanics, loot rolling, and respawn timers
  */
 
-const HarvestSystem = {
+const HarvestSystem = {    /**
+     * Get item definition from ItemRegistry (standardized access pattern)
+     * @param {string} itemId - Item ID to retrieve
+     * @returns {object|null} Item definition or null if not found
+     */
+    _getItemDef(itemId) {
+        // Primary: Use ItemRegistry if available
+        if (typeof ItemRegistry !== 'undefined' && ItemRegistry.getItem) {
+            return ItemRegistry.getItem(itemId);
+        }
+
+        // Fallback: Use definitions.items (legacy support)
+        return this.definitions?.items?.[itemId] || null;
+    },
+
+
     init(engine) {
         engine.canHarvestNode = this.canHarvestNode.bind(engine);
         engine.startHarvest = this.startHarvest.bind(engine);
@@ -13,10 +28,13 @@ const HarvestSystem = {
         engine.updateNodeRespawns = this.updateNodeRespawns.bind(engine);
         engine.getNodeState = this.getNodeState.bind(engine);
         engine.getAvailableNodesInRegion = this.getAvailableNodesInRegion.bind(engine);
+        console.log('✅ HarvestSystem initialized (ItemRegistry pattern)');
+
     },
 
     /**
      * Check if player can harvest a node
+     * NEW SYSTEM: Uses nodeHealth and global discovery
      */
     canHarvestNode(nodeId) {
         const node = NodeRegistry.getAllActive()[nodeId];
@@ -24,20 +42,34 @@ const HarvestSystem = {
             return { canHarvest: false, reason: "Node not found" };
         }
 
-        const currentRegion = this.state.currentRegion;
-        const regionData = this.state.regions[currentRegion];
-        const nodeState = regionData?.availableNodes?.[nodeId];
-
-        if (!nodeState || !nodeState.discovered) {
+        // Check if discovered globally
+        const globalNode = this.state.globalNodes?.[nodeId];
+        if (!globalNode || !globalNode.discovered) {
             return { canHarvest: false, reason: "Node not discovered" };
         }
 
         // Check if depleted
-        if (nodeState.currentHealth <= 0) {
-            const timeUntilRespawn = this.getTimeUntilRespawn(nodeId);
+        // For mining nodes, check nodeHealth if it exists, otherwise check globalNodes
+        let currentHP;
+        if (node.nodeType === 'mining') {
+            const nodeHealth = this.state.nodeHealth?.[nodeId];
+            if (nodeHealth) {
+                currentHP = nodeHealth.currentHP;
+            } else {
+                // Node hasn't been mined yet, use discovery HP
+                const globalNode = this.state.globalNodes?.[nodeId];
+                currentHP = globalNode?.totalHealthBonus || 10;
+            }
+        } else {
+            // Non-mining nodes use global discovery HP
+            const globalNode = this.state.globalNodes?.[nodeId];
+            currentHP = globalNode?.totalHealthBonus || 10;
+        }
+
+        if (currentHP <= 0) {
             return {
                 canHarvest: false,
-                reason: `Depleted. Respawns in ${Math.ceil(timeUntilRespawn)}s`
+                reason: "Depleted"
             };
         }
 
@@ -50,42 +82,9 @@ const HarvestSystem = {
             };
         }
 
-        // Check character level requirement
-        const charLevel = this.state.characterLevel.level;
-        if (charLevel < node.requirements.characterLevel) {
-            return {
-                canHarvest: false,
-                reason: `Requires character level ${node.requirements.characterLevel}`
-            };
-        }
-
-        // Check tool requirement
-        if (node.requirements.tools && node.requirements.tools.length > 0) {
-            const hasTool = this.hasRequiredTool(node.requirements.tools, node.requirements.toolTier);
-            if (!hasTool) {
-                return {
-                    canHarvest: false,
-                    reason: `Requires ${node.requirements.tools[0]} (tier ${node.requirements.toolTier}+)`
-                };
-            }
-        }
-
-        // Check quest requirements
-        if (node.requirements.quests && node.requirements.quests.length > 0) {
-            const hasQuests = node.requirements.quests.every(questId =>
-                this.state.completedQuests?.includes(questId)
-            );
-            if (!hasQuests) {
-                return {
-                    canHarvest: false,
-                    reason: "Requires quest completion"
-                };
-            }
-        }
-
-        // Check if already harvesting
-        if (this.state.currentActivity === 'nodeCollection' && this.state.nodeCollection?.activeNode) {
-            return { canHarvest: false, reason: "Already harvesting" };
+        // Check if already mining/harvesting
+        if (this.state.currentActivity === 'mining' && this.state.miningState?.activeNode) {
+            return { canHarvest: false, reason: "Already mining" };
         }
 
         return { canHarvest: true };
@@ -280,28 +279,60 @@ const HarvestSystem = {
 
     /**
      * Get all available nodes in current region
+     * NEW: Uses mining system (state.nodeHealth) for ALL nodes
      */
     getAvailableNodesInRegion() {
-        const currentRegion = this.state.currentRegion;
-        const regionData = this.state.regions[currentRegion];
-
-        if (!regionData?.availableNodes) {
-            return [];
-        }
-
+        // Get ALL globally discovered nodes (not region-specific)
+        const globalNodes = this.state.globalNodes || {};
         const availableNodes = [];
 
-        for (const nodeId in regionData.availableNodes) {
-            const nodeState = regionData.availableNodes[nodeId];
-            const node = NodeRegistry.getAllActive()[nodeId];
+        for (const nodeId in globalNodes) {
+            const globalNode = globalNodes[nodeId];
 
-            if (node && nodeState.discovered) {
-                availableNodes.push({
-                    node: node,
-                    state: nodeState,
-                    canHarvest: this.canHarvestNode(nodeId)
-                });
+            // Skip if not discovered
+            if (!globalNode?.discovered) continue;
+
+            // Get node definition from NodeRegistry
+            const node = NodeRegistry.getAllActive()[nodeId];
+            if (!node) continue;
+
+            // For mining nodes, read HP from mining system's nodeHealth if it exists
+            // Otherwise fall back to globalNodes totalHealthBonus
+            // For other nodes, use totalHealthBonus from global discovery
+            let currentHealth, maxHealth;
+
+            if (node.nodeType === 'mining') {
+                // Mining nodes use the mining system's HP tracking
+                const nodeHealth = this.state.nodeHealth?.[nodeId];
+
+                if (nodeHealth) {
+                    // Node health has been initialized by mining system
+                    currentHealth = nodeHealth.currentHP;
+                    maxHealth = nodeHealth.maxHP;
+                } else {
+                    // Node hasn't been mined yet, show discovery HP
+                    const discoveryHP = globalNode.totalHealthBonus || 10;
+                    currentHealth = discoveryHP;
+                    maxHealth = discoveryHP;
+                }
+            } else {
+                // Non-mining nodes just show total health bonus directly
+                currentHealth = globalNode.totalHealthBonus || 10;
+                maxHealth = globalNode.totalHealthBonus || 10;
             }
+
+            // Create unified state object
+            const state = {
+                currentHealth: currentHealth,
+                maxHealth: maxHealth,
+                discovered: true
+            };
+
+            availableNodes.push({
+                node: node,
+                state: state,
+                canHarvest: this.canHarvestNode(nodeId)
+            });
         }
 
         return availableNodes;
@@ -320,7 +351,7 @@ const HarvestSystem = {
             const equippedItemId = this.state.equipment[slot];
             if (!equippedItemId) continue;
 
-            const itemDef = this.definitions.items[equippedItemId];
+            const itemDef = HarvestSystem._getItemDef.call(this, equippedItemId);
             if (!itemDef) continue;
 
             // Check if this is a tool of required type and tier

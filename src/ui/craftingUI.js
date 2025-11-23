@@ -353,7 +353,7 @@ const CraftingUI = {
                         <div>
                             <div style="color: #aaa; margin-bottom: 3px;">Materials:</div>
                             ${recipe.inputs.map(input => {
-                                const item = GameEngine.definitions.items[input.itemId];
+                                const item = ItemAccessHelper.getItem(input.itemId);
                                 const hasAmount = GameEngine.getItemCount(input.itemId);
                                 const hasEnough = hasAmount >= input.amount;
                                 return `<div style="color: ${hasEnough ? '#4caf50' : '#f44336'};">
@@ -364,7 +364,7 @@ const CraftingUI = {
                         <div>
                             <div style="color: #aaa; margin-bottom: 3px;">Produces:</div>
                             ${recipe.outputs.map(output => {
-                                const item = GameEngine.definitions.items[output.itemId];
+                                const item = ItemAccessHelper.getItem(output.itemId);
                                 return `<div style="color: #4a9eff;">
                                     ${output.amount}x ${item?.name || output.itemId}
                                 </div>`;

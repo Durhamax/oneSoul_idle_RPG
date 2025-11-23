@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Icon Test - OneSoul RPG</title>
+    <style>
+        body {
+            background: #0a0a0f;
+            color: #ffffff;
+            font-family: 'Rajdhani', sans-serif;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #00d9ff;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .icon-card {
+            background: #14141e;
+            border: 2px solid rgba(0, 217, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .icon-card:hover {
+            border-color: #00d9ff;
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .icon-display {
+            width: 128px;
+            height: 128px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .icon-display img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .icon-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #00d9ff;
+            margin-bottom: 5px;
+        }
+
+        .icon-category {
+            font-size: 14px;
+            color: #808090;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .section-title {
+            color: #ff6b35;
+            font-size: 24px;
+            margin: 40px 0 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+    </style>
+</head>
+<body>
+    <h1>OneSoul RPG - SVG Icon Showcase</h1>
+
+    <h2 class="section-title">🔧 Tools</h2>
+    <div class="icon-grid">
+        <div class="icon-card">
+            <div class="icon-display">
+                <img src="assets/icons/tools/plasma_pickaxe.svg" alt="Plasma Pickaxe">
+            </div>
+            <div class="icon-name">Plasma Pickaxe</div>
+            <div class="icon-category">Tool - Tier 5 (Stylized)</div>
+        </div>
+        <div class="icon-card">
+            <div class="icon-display">
+                <img src="assets/icons/tools/iron_pickaxe.svg" alt="Iron Pickaxe">
+            </div>
+            <div class="icon-name">Iron Pickaxe</div>
+            <div class="icon-category">Tool - Tier 2 (Realistic)</div>
+        </div>
+    </div>
+
+    <h2 class="section-title">⛰️ Mining Nodes</h2>
+    <div class="icon-grid">
+        <div class="icon-card">
+            <div class="icon-display">
+                <img src="assets/icons/nodes/crystal_vein.svg" alt="Crystal Vein">
+            </div>
+            <div class="icon-name">Crystal Vein</div>
+            <div class="icon-category">Mining Node (Stylized)</div>
+        </div>
+        <div class="icon-card">
+            <div class="icon-display">
+                <img src="assets/icons/nodes/iron_deposit.svg" alt="Iron Deposit">
+            </div>
+            <div class="icon-name">Iron Deposit</div>
+            <div class="icon-category">Mining Node (Realistic)</div>
+        </div>
+    </div>
+
+    <h2 class="section-title">📦 Materials</h2>
+    <div class="icon-grid">
+        <div class="icon-card">
+            <div class="icon-display">
+                <img src="assets/icons/materials/iron_ore.svg" alt="Iron Ore">
+            </div>
+            <div class="icon-name">Iron Ore</div>
+            <div class="icon-category">Material (Stylized)</div>
+        </div>
+        <div class="icon-card">
+            <div class="icon-display">
+                <img src="assets/icons/materials/copper_ore_realistic.svg" alt="Copper Ore">
+            </div>
+            <div class="icon-name">Copper Ore</div>
+            <div class="icon-category">Material (Realistic)</div>
+        </div>
+    </div>
+</body>
+</html>

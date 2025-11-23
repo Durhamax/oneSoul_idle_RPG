@@ -6,6 +6,131 @@
 
 // === TIER 1: COMMON PLANTS ===
 
+NodeRegistry.production.fallen_timber = {
+    id: "fallen_timber",
+    name: "Fallen Timber",
+    description: "Decaying logs covered in mushrooms and flexible saplings",
+    icon: "🪵",
+
+    nodeType: "foraging",
+    category: "woodland_debris",
+
+    tier: 1,
+    requiredSkillLevel: 1,
+    recommendedLevel: 1,
+
+    baseHealth: 18,
+    minHealth: 15,
+    maxHealth: 25,
+    harvestTime: 2.8,
+    respawnTime: 28,
+
+    resourceTable: [
+        {
+            itemId: "sweetcap_mushroom",
+            weight: 50,
+            minYield: 1,
+            maxYield: 3,
+            skillScaling: true,
+            itemDef: {
+                id: "sweetcap_mushroom",
+                name: "Sweetcap Mushroom",
+                description: "A sweet-tasting mushroom found on fallen logs. Used in cooking and potion-making.",
+                icon: "🍄",
+                iconPath: "assets/icons/materials/sweetcap-mushroom.png",
+                category: "material",
+                subcategory: "mushroom",
+                itemType: "resource",
+                rarity: "common",
+                stackLimit: 100,
+                value: 4,
+                resourceType: "fungus",
+                gatherSkill: "foraging",
+                gatherLevel: 1,
+                tags: ["material", "mushroom", "cooking", "alchemy", "foraging"]
+            }
+        },
+        {
+            itemId: "flexible_limb",
+            weight: 50,
+            minYield: 1,
+            maxYield: 2,
+            skillScaling: true,
+            itemDef: {
+                id: "flexible_limb",
+                name: "Flexible Limb",
+                description: "A young, flexible branch perfect for crafting bows and other mechanical devices.",
+                icon: "🪵",
+                iconPath: "assets/icons/materials/flexible-limb.png",
+                category: "material",
+                subcategory: "wood_component",
+                itemType: "resource",
+                rarity: "common",
+                stackLimit: 100,
+                value: 6,
+                resourceType: "wood",
+                gatherSkill: "foraging",
+                gatherLevel: 1,
+                craftingUse: "mechanics",
+                tags: ["material", "wood", "mechanics", "bow_making", "foraging", "crafting"]
+            }
+        }
+    ],
+
+    rareDropTable: null,
+    rareDropChance: 8,
+
+    yieldBonusPerLevel: 0.05,
+    rareBonusPerLevel: 0.02,
+    speedBonusPerLevel: 0.03,
+
+    baseXP: 16,
+    xpScaling: "linear",
+    xpMultiplier: 1.0,
+
+    rarity: "common",
+    color: "#795548",
+    harvestSound: "foraging",
+    particleEffect: "leaves",
+
+    biomes: ["forest", "plains"],
+    spawnWeight: 100,
+    spawnConditions: null,
+
+    discoveryWeight: 95,
+    upgradeChance: 40,
+    upgradeAmount: 3,
+
+    requirements: {
+        skill: "foraging",
+        skillLevel: 1,
+        characterLevel: 0,
+        quests: [],
+        tools: [],
+        toolTier: 0
+    },
+
+    isRenewable: true,
+    isExhaustible: false,
+    exhaustionThreshold: null,
+    multiHarvest: false,
+    instancedLoot: true,
+    weatherDependent: false,
+    timeDependent: false,
+    seasonalAvailability: ["spring", "summer", "fall", "winter"],
+
+    progressionPath: "basic_foraging",
+    nextTier: "berry_bush",
+    previousTier: null,
+    unlockMessage: "You've found fallen timber covered in useful resources!",
+
+    status: "production",
+    implemented: true,
+    version: "1.0",
+    developmentNotes: "Region 1 lvl 1 foraging node for early-game resource gathering",
+    customData: {}
+};
+
 NodeRegistry.production.berry_bush = {
     id: "berry_bush",
     name: "Berry Bush",

@@ -15,6 +15,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Restores 125 health points instantly. A lifesaver in tight spots.',
         icon: '🧪',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 20,
         value: 15,
@@ -30,6 +31,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Restores 250 health points instantly. Standard healing potion.',
         icon: '🧪',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 20,
         value: 30,
@@ -45,6 +47,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Restores 500 health points instantly. Powerful healing.',
         icon: '🧪',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 15,
         value: 75,
@@ -60,6 +63,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Restores 1000 health points instantly. Exceptional healing power.',
         icon: '🧪',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 10,
         value: 180,
@@ -79,6 +83,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Temporarily increases strength by 5 for 5 minutes. Feel the power!',
         icon: '💪',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 10,
         value: 80,
@@ -99,6 +104,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Temporarily increases dexterity by 5 for 5 minutes. Move like the wind!',
         icon: '🏃',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 10,
         value: 80,
@@ -119,6 +125,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Temporarily increases intelligence by 5 for 5 minutes. Think sharper!',
         icon: '🧠',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 10,
         value: 80,
@@ -143,6 +150,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Fresh baked bread. Restores 50 health over time.',
         icon: '🍞',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 50,
         value: 5,
@@ -159,6 +167,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Hearty cooked meat. Restores 125 health and provides small strength buff.',
         icon: '🍖',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 30,
         value: 12,
@@ -180,6 +189,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Freshly cooked fish. Restores 100 health and boosts dexterity.',
         icon: '🐟',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 30,
         value: 10,
@@ -205,6 +215,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Ancient scroll that teleports you to a safe location.',
         icon: '📜',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 5,
         value: 100,
@@ -226,6 +237,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Mystical tome containing ancient knowledge. Grants 100 experience.',
         icon: '📚',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 10,
         value: 200,
@@ -240,6 +252,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Small tome with basic knowledge. Grants 25 experience.',
         icon: '📖',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 20,
         value: 50,
@@ -258,6 +271,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Increases gathering speed by 20% for 10 minutes.',
         icon: '⚗️',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 10,
         value: 120,
@@ -278,6 +292,7 @@ const CONSUMABLE_ITEMS = {
         description: 'Increases luck by 10 for 5 minutes. Better loot drops!',
         icon: '🍀',
         category: 'consumable',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 5,
         value: 250,

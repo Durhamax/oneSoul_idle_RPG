@@ -82,11 +82,16 @@ const NodeCollectionUI = {
         const { state, canHarvest } = nodeData;
         const playerSkillLevel = GameEngine.state.skills[node.nodeType]?.level || 0;
 
+        // NEW SYSTEM ONLY: All node HP comes from state (which reads from nodeHealth)
+        const currentHealth = state.currentHealth;
+        const maxHealth = state.maxHealth;
+        const isMiningNode = node.nodeType === 'mining';
+
         // Calculate node status
-        const healthPercent = (state.currentHealth / state.maxHealth) * 100;
+        const healthPercent = maxHealth > 0 ? (currentHealth / maxHealth) * 100 : 0;
         let statusColor, statusText, statusIcon;
 
-        if (state.currentHealth === 0) {
+        if (currentHealth === 0) {
             statusColor = '#f44336';
             statusText = 'Depleted';
             statusIcon = '💤';
@@ -167,15 +172,15 @@ const NodeCollectionUI = {
                             <span style="font-weight: bold;">${statusText}</span>
                         </div>
                         <div style="font-size: 0.75em; color: #aaa;">
-                            ${state.currentHealth === 0 ? 'Respawning...' : `${state.currentHealth}/${state.maxHealth} harvests`}
+                            ${currentHealth === 0 ? 'Respawning...' : `${currentHealth}/${maxHealth} ${isMiningNode ? 'HP' : 'harvests'}`}
                         </div>
                     </div>
 
                     <!-- Health Bar -->
-                    ${this.renderHealthBar(state, statusColor)}
+                    ${this.renderHealthBar({ currentHealth, maxHealth }, statusColor)}
 
                     <!-- Respawn Timer -->
-                    ${state.currentHealth === 0 ? this.renderRespawnTimer(node) : ''}
+                    ${currentHealth === 0 ? this.renderRespawnTimer(node) : ''}
                 </div>
 
                 <!-- Resource Preview -->
@@ -328,6 +333,31 @@ const NodeCollectionUI = {
      * Render harvest button
      */
     renderHarvestButton(node, canHarvest, isActiveHarvest, harvestTime) {
+        // Check if this is an active mining node
+        const isMiningNode = node.nodeType === 'mining';
+        const isActiveMining = GameEngine.state.currentActivity === 'mining' &&
+                               GameEngine.state.miningState?.activeNode === node.id;
+
+        // Active mining - show stop button
+        if (isMiningNode && isActiveMining) {
+            return `
+                <button onclick="GameEngine.stopMining()" style="
+                    width: 100%;
+                    padding: 10px;
+                    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 0.9em;
+                ">
+                    🛑 Stop Mining
+                </button>
+            `;
+        }
+
+        // Legacy harvest system - show cancel button
         if (isActiveHarvest) {
             return `
                 <button onclick="GameEngine.cancelHarvest()" style="
@@ -346,6 +376,7 @@ const NodeCollectionUI = {
             `;
         }
 
+        // Can't harvest/mine - show locked button
         if (!canHarvest.canHarvest) {
             return `
                 <button disabled style="
@@ -363,6 +394,27 @@ const NodeCollectionUI = {
             `;
         }
 
+        // Mining node - use new mining system
+        if (isMiningNode) {
+            return `
+                <button onclick="GameEngine.startMining('${node.id}')" style="
+                    width: 100%;
+                    padding: 10px;
+                    background: linear-gradient(135deg, #4a9eff 0%, #2979ff 100%);
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 0.9em;
+                    transition: transform 0.2s;
+                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    ⛏️ Start Mining
+                </button>
+            `;
+        }
+
+        // Non-mining node - use legacy harvest system
         return `
             <button onclick="window.harvestNode('${node.id}')" style="
                 width: 100%;

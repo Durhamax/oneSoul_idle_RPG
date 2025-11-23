@@ -125,7 +125,7 @@ const EquipmentComponent = {
         for (let row of slots) {
             for (let slot of row) {
                 const equippedItemId = GameEngine.state.equipment[slot];
-                const itemDef = equippedItemId ? GameEngine.definitions.items[equippedItemId] : null;
+                const itemDef = equippedItemId ? ItemAccessHelper.getItem(equippedItemId) : null;
 
                 // Check if item definition exists (might be null if item was removed/renamed)
                 const isEquipped = equippedItemId !== null && itemDef !== null;
@@ -141,10 +141,10 @@ const EquipmentComponent = {
                 html += `
                     <div class="equipment-slot ${isEquipped ? 'equipped' : ''} ${interactive ? 'clickable' : ''}"
                          style="${rarityColor ? `border-color: ${rarityColor};` : ''} ${rarityGlow ? `box-shadow: 0 0 8px ${rarityColor};` : ''}"
-                         ${interactive ? `onclick="openEquipModal('${slot}')"` : ''}>
+                         ${interactive ? `onclick="openEquipModal('${slot}', event)"` : ''}>
                         ${showLabels ? `<div class="equipment-slot-label">${slotLabels[slot]}</div>` : ''}
                         ${isEquipped ? `
-                            <div class="equipment-slot-icon">${itemDef.image}</div>
+                            <div class="equipment-slot-icon">${IconHelper.getItemIconHTML(itemDef, {size: 48, className: 'equipment-icon'})}</div>
                             <div class="equipment-slot-item" style="${rarityColor ? `color: ${rarityColor};` : ''}">${itemDef.name}</div>
                             ${this.renderItemStats(itemDef)}
                             ${isGunEquipped ? `
@@ -179,7 +179,7 @@ const EquipmentComponent = {
 
         for (let slot of slots) {
             const equippedItemId = GameEngine.state.equipment[slot];
-            const itemDef = equippedItemId ? GameEngine.definitions.items[equippedItemId] : null;
+            const itemDef = equippedItemId ? ItemAccessHelper.getItem(equippedItemId) : null;
 
             // Check if item definition exists (might be null if item was removed/renamed)
             const isEquipped = equippedItemId !== null && itemDef !== null;
@@ -192,11 +192,11 @@ const EquipmentComponent = {
 
             html += `
                 <div class="consumable-slot ${isEquipped ? 'equipped' : ''} ${interactive ? 'clickable' : ''}"
-                     ${interactive ? `onclick="openEquipModal('${slot}')"` : ''}>
+                     ${interactive ? `onclick="openEquipModal('${slot}', event)"` : ''}>
                     ${showLabels ? `<div class="equipment-slot-label">${slotLabels[slot]}</div>` : ''}
                     ${isEquipped ? `
                         <div class="consumable-quantity">${quantity}x</div>
-                        <div class="equipment-slot-icon">${itemDef.image}</div>
+                        <div class="equipment-slot-icon">${IconHelper.getItemIconHTML(itemDef, {size: 32, className: 'consumable-icon'})}</div>
                         <div class="equipment-slot-item">${itemDef.name}</div>
                     ` : `
                         <div class="equipment-slot-empty">📦</div>
@@ -227,14 +227,14 @@ const EquipmentComponent = {
             const isUnlocked = GameEngine.isTechSlotUnlocked(slot);
             const requirement = GameEngine.getTechSlotRequirement(slot);
             const equippedItemId = GameEngine.state.equipment[slot];
-            const itemDef = equippedItemId ? GameEngine.definitions.items[equippedItemId] : null;
+            const itemDef = equippedItemId ? ItemAccessHelper.getItem(equippedItemId) : null;
 
             // Check if item definition exists (might be null if item was removed/renamed)
             const isEquipped = equippedItemId !== null && itemDef !== null;
 
             html += `
                 <div class="technology-slot ${isEquipped ? 'equipped' : ''} ${!isUnlocked ? 'locked' : ''} ${interactive && isUnlocked ? 'clickable' : ''}"
-                     ${interactive && isUnlocked ? `onclick="openEquipModal('${slot}')"` : ''}
+                     ${interactive && isUnlocked ? `onclick="openEquipModal('${slot}', event)"` : ''}
                      title="${isUnlocked ? 'Technology Slot' : `Requires ${requirement} Intellect`}">
                     ${showLabels && isUnlocked ? `<div class="equipment-slot-label">${slotLabels[slot]}</div>` : ''}
 
@@ -246,7 +246,7 @@ const EquipmentComponent = {
                             </div>
                         </div>
                     ` : isEquipped ? `
-                        <div class="equipment-slot-icon">${itemDef.image}</div>
+                        <div class="equipment-slot-icon">${IconHelper.getItemIconHTML(itemDef, {size: 40, className: 'tech-icon'})}</div>
                         <div class="equipment-slot-item">${itemDef.name}</div>
                         ${this.renderItemStats(itemDef)}
                     ` : `

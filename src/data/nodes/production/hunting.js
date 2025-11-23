@@ -6,6 +6,155 @@
 
 // === TIER 1: SMALL GAME ===
 
+NodeRegistry.production.cradle_woodlands = {
+    id: "cradle_woodlands",
+    name: "Cradle Woodlands",
+    description: "A peaceful woodland area inhabited by hexapod alcapas and wild birds",
+    icon: "🌳",
+
+    nodeType: "hunting",
+    category: "small_game",
+
+    tier: 1,
+    requiredSkillLevel: 1,
+    recommendedLevel: 1,
+
+    baseHealth: 18,
+    minHealth: 15,
+    maxHealth: 25,
+    harvestTime: 3.2,
+    respawnTime: 32,
+
+    resourceTable: [
+        {
+            itemId: "wild_chicken_feathers",
+            weight: 75,
+            minYield: 10,
+            maxYield: 10,
+            skillScaling: false,
+            itemDef: {
+                id: "wild_chicken_feathers",
+                name: "Wild Chicken Feathers",
+                description: "Wing feathers from wild birds. Found in bunches, useful for fletching arrows.",
+                icon: "🪶",
+                category: "material",
+                subcategory: "animal_part",
+                itemType: "resource",
+                rarity: "common",
+                stackLimit: 100,
+                value: 2,
+                resourceType: "feather",
+                gatherSkill: "hunting",
+                gatherLevel: 1,
+                craftingUse: "fletching",
+                tags: ["material", "feather", "hunting", "fletching", "arrows", "crafting"]
+            }
+        },
+        {
+            itemId: "alcapa_hide",
+            weight: 15,
+            minYield: 1,
+            maxYield: 2,
+            skillScaling: true,
+            itemDef: {
+                id: "alcapa_hide",
+                name: "Alcapa Hide",
+                description: "Soft, furred hide from a hexapod alcapa. Perfect for crafting leather clothing.",
+                icon: "🦙",
+                category: "material",
+                subcategory: "leather",
+                itemType: "resource",
+                rarity: "common",
+                stackLimit: 100,
+                value: 8,
+                resourceType: "hide",
+                gatherSkill: "hunting",
+                gatherLevel: 1,
+                craftingUse: "leatherworking",
+                tags: ["material", "hide", "leather", "hunting", "clothing", "crafting"]
+            }
+        },
+        {
+            itemId: "sinew",
+            weight: 10,
+            minYield: 1,
+            maxYield: 2,
+            skillScaling: true,
+            itemDef: {
+                id: "sinew",
+                name: "Sinew",
+                description: "Tough animal ligaments. Essential for crafting bowstrings and reinforced seams.",
+                icon: "🧵",
+                iconPath: "assets/icons/materials/sinew.png",
+                category: "material",
+                subcategory: "animal_part",
+                itemType: "resource",
+                rarity: "common",
+                stackLimit: 100,
+                value: 5,
+                resourceType: "sinew",
+                gatherSkill: "hunting",
+                gatherLevel: 1,
+                craftingUse: "bowstrings_sewing",
+                tags: ["material", "sinew", "hunting", "bowstrings", "sewing", "crafting"]
+            }
+        }
+    ],
+
+    rareDropTable: null,
+    rareDropChance: 5,
+
+    yieldBonusPerLevel: 0.04,
+    rareBonusPerLevel: 0.02,
+    speedBonusPerLevel: 0.03,
+
+    baseXP: 20,
+    xpScaling: "linear",
+    xpMultiplier: 1.0,
+
+    rarity: "common",
+    color: "#558b2f",
+    harvestSound: "hunting",
+    particleEffect: "feathers",
+
+    biomes: ["plains", "forest"],
+    spawnWeight: 105,
+    spawnConditions: null,
+
+    discoveryWeight: 100,
+    upgradeChance: 38,
+    upgradeAmount: 3,
+
+    requirements: {
+        skill: "hunting",
+        skillLevel: 1,
+        characterLevel: 0,
+        quests: [],
+        tools: [],
+        toolTier: 0
+    },
+
+    isRenewable: true,
+    isExhaustible: false,
+    exhaustionThreshold: null,
+    multiHarvest: false,
+    instancedLoot: true,
+    weatherDependent: false,
+    timeDependent: false,
+    seasonalAvailability: null,
+
+    progressionPath: "small_game",
+    nextTier: "rabbit_burrow",
+    previousTier: null,
+    unlockMessage: "You've found the Cradle Woodlands, home to alcapas and wild birds!",
+
+    status: "production",
+    implemented: true,
+    version: "1.0",
+    developmentNotes: "Region 1 lvl 1 hunting node - primary source of feathers, hide, and sinew",
+    customData: {}
+};
+
 NodeRegistry.production.rabbit_burrow = {
     id: "rabbit_burrow",
     name: "Rabbit Burrow",

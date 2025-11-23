@@ -95,6 +95,10 @@ const UICore = {
                 break;
             case 'skills':
                 SkillsUI.updateSkills();
+                // Render gathering activity display if active
+                if (typeof GatheringUI !== 'undefined') {
+                    GatheringUI.render();
+                }
                 break;
             case 'bank':
                 EquipmentUI.updateBank();
@@ -114,9 +118,6 @@ const UICore = {
                 if (typeof MapRenderer !== 'undefined' && MapRenderer.ctx) {
                     MapRenderer.render();
                 }
-                break;
-            case 'nodes':
-                NavigationUI.updateNodes();
                 break;
             case 'regions':
                 NavigationUI.updateCurrentRegion();
@@ -347,6 +348,83 @@ const UICore = {
         this.lastActivityBarProgress = progress;
         activityBar.style.background = barColor;
         activityProgress.textContent = progressText;
+    },
+
+    /**
+     * Switch to a different view
+     * @param {string} viewName - The view to switch to (e.g., 'skills', 'bank', 'combat')
+     */
+    switchView(viewName) {
+        // Update current view
+        this.currentView = viewName;
+
+        // Hide all views
+        const views = document.querySelectorAll('.view');
+        views.forEach(view => view.classList.remove('active'));
+
+        // Show selected view
+        const selectedView = document.getElementById(`view-${viewName}`);
+        if (selectedView) {
+            selectedView.classList.add('active');
+
+            // Trigger fade-in animation
+            if (typeof Animations !== 'undefined') {
+                Animations.fadeInView(selectedView);
+            }
+        }
+
+        // Update navigation menu active state (both horizontal nav and sidebar)
+        const navItems = document.querySelectorAll('.nav-item, .sidebar-item');
+        navItems.forEach(item => {
+            if (item.getAttribute('data-view') === viewName) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+
+        // Special handling for bank view - clear new items notification
+        if (viewName === 'bank') {
+            // Clear all new item flags when visiting bank
+            GameEngine.state.bank.newItems = [];
+
+            // Clear isNew flag on all bank items
+            for (let itemId in GameEngine.state.bank.items) {
+                if (GameEngine.state.bank.items[itemId].isNew) {
+                    GameEngine.state.bank.items[itemId].isNew = false;
+                }
+            }
+        }
+
+        // Special handling for crafting view - ensure stations are synced
+        if (viewName === 'crafting') {
+            if (typeof CraftingUI !== 'undefined' && CraftingUI.syncCraftingStations) {
+                CraftingUI.syncCraftingStations();
+            }
+        }
+
+        // Special handling for perks view - render perk grid
+        if (viewName === 'perks') {
+            if (typeof PerkGridUI !== 'undefined' && PerkGridUI.render) {
+                PerkGridUI.render();
+            }
+        }
+
+        // Special handling for developer view - render medal crafting simulator
+        if (viewName === 'developer') {
+            const container = document.getElementById('medalCraftingSimulator');
+            if (container && typeof MedalCraftingUI !== 'undefined') {
+                container.innerHTML = MedalCraftingUI.render();
+            }
+        }
+
+        // Update developer stats panel for the new view
+        if (typeof DevStatsPanel !== 'undefined') {
+            DevStatsPanel.update(viewName);
+        }
+
+        // Force update of the new view
+        this.update();
     },
 
     /**

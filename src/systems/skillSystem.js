@@ -80,6 +80,16 @@ const SkillSystem = {
         const skill = this.state.skills[skillId];
         skill.exp += amount;
 
+        // Emit event for UI update (SkillCard component)
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('skill-xp-gained', {
+                skillId: skillId,
+                amount: amount,
+                currentExp: skill.exp,
+                level: skill.level
+            });
+        }
+
         // Check for level up
         const expRequired = this.getSkillExpRequired(skillId);
         if (skill.exp >= expRequired) {
@@ -87,6 +97,14 @@ const SkillSystem = {
             skill.level++;
             const def = this.definitions.skills[skillId];
             console.log(`⬆️ ${def.name} leveled up to ${skill.level}!`);
+
+            // Emit level-up event
+            if (typeof EventBus !== 'undefined') {
+                EventBus.emit('skill-level-up', {
+                    skillId: skillId,
+                    newLevel: skill.level
+                });
+            }
         }
 
         // Also grant character XP at reduced rate

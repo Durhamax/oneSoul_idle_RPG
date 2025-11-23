@@ -1,0 +1,114 @@
+{
+  "navigation": {
+    "name": "Navigation",
+    "description": "Explore regions and discover new locations",
+    "explorationSpeed": 0.1
+  },
+  "mining": {
+    "name": "Mining",
+    "description": "Increases ore gathering efficiency",
+    "bonusPerLevel": 0.05
+  },
+  "logging": {
+    "name": "Logging",
+    "description": "Increases wood gathering efficiency",
+    "bonusPerLevel": 0.05
+  },
+  "fishing": {
+    "name": "Fishing",
+    "description": "Catch fish from lakes",
+    "bonusPerLevel": " and streams",
+    "consumesResources": 0.05
+  },
+  "hunting": {
+    "name": "Hunting",
+    "description": "Track and hunt animals for meat and materials",
+    "bonusPerLevel": 0.05
+  },
+  "foraging": {
+    "name": "Foraging",
+    "description": "Gather mushrooms",
+    "bonusPerLevel": " flowers",
+    "category": " and plants",
+    "enhancesSkills": 0.05
+  },
+  "thieving": {
+    "name": "Thieving",
+    "description": "Steal valuables from locations and NPCs",
+    "bonusPerLevel": 0.05
+  },
+  "combat": {
+    "name": "Combat",
+    "description": "Increases combat effectiveness",
+    "bonusPerLevel": 0.1
+  },
+  "cooking": {
+    "name": "Cooking",
+    "description": "Produces food",
+    "bonusPerLevel": " healing consumables. Consumes fish",
+    "category": " meat",
+    "consumesResources": " plants",
+    "enhancesSkills": " herbs.",
+    "explorationSpeed": 0.05,
+    "producesTypes": "crafting"
+  },
+  "chemistry": {
+    "name": "Chemistry",
+    "description": "Produces potions",
+    "bonusPerLevel": " ammo",
+    "category": " processed materials. Consumes herbs",
+    "consumesResources": " minerals",
+    "enhancesSkills": " compounds.",
+    "explorationSpeed": 0.04,
+    "producesTypes": "crafting"
+  },
+  "smithing": {
+    "name": "Smithing",
+    "description": "Produces melee weapons",
+    "bonusPerLevel": " metal tools. Consumes ores",
+    "category": " alloys",
+    "consumesResources": " fuel.",
+    "equipSlots": 0.03,
+    "explorationSpeed": "crafting",
+    "producesTypes": "[\"ore\""
+  },
+  "mechanics": {
+    "name": "Mechanics",
+    "description": "Produces ranged weapons",
+    "bonusPerLevel": " drones. Consumes metals",
+    "category": " parts",
+    "consumesResources": " fuel.",
+    "equipSlots": 0.03,
+    "explorationSpeed": "crafting",
+    "producesTypes": "[\"metal\""
+  },
+  "electronics": {
+    "name": "Electronics",
+    "description": "Produces energy weapons",
+    "bonusPerLevel": " augments. Consumes circuits",
+    "category": " batteries",
+    "consumesResources": " rare materials.",
+    "equipSlots": 0.025,
+    "explorationSpeed": "crafting",
+    "producesTypes": "[\"circuits\""
+  },
+  "textiles": {
+    "name": "Textiles",
+    "description": "Produces cloth armor",
+    "bonusPerLevel": " cloaks. Consumes fibers",
+    "category": " leather",
+    "consumesResources": " thread.",
+    "equipSlots": 0.03,
+    "explorationSpeed": "crafting",
+    "producesTypes": "[\"fiber\""
+  },
+  "engineering": {
+    "name": "Engineering",
+    "description": "Unlocks workshop upgrades",
+    "bonusPerLevel": " and advanced assembly. Enhances all crafting skills.",
+    "consumesResources": 0.02,
+    "enhancesSkills": "vertical",
+    "explorationSpeed": "[\"cooking\"",
+    "producesTypes": "chemistry"
+  }
+}

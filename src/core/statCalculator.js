@@ -52,6 +52,7 @@ const StatCalculator = {
             'reloadSpeed': 'SPEED',           // Milliseconds to reload
             'miningSpeed': 'SPEED',           // Milliseconds per resource
             'woodcuttingSpeed': 'SPEED',      // Milliseconds per log
+            'loggingSpeed': 'SPEED',          // Milliseconds per log (same as woodcutting)
             'fishingSpeed': 'SPEED',          // Milliseconds per fish
             'huntingSpeed': 'SPEED',          // Milliseconds per hunt
             'foragingSpeed': 'SPEED',         // Milliseconds per forage
@@ -65,6 +66,7 @@ const StatCalculator = {
             'healthRegen': 'POWER',           // HP regeneration per second
             'miningPower': 'POWER',           // Mining yield bonus
             'woodcuttingPower': 'POWER',      // Woodcutting yield bonus
+            'loggingPower': 'POWER',          // Logging yield bonus (same as woodcutting)
             'fishingPower': 'POWER',          // Fishing yield bonus
             'huntingPower': 'POWER',          // Hunting yield bonus
             'foragingPower': 'POWER',         // Foraging yield bonus
@@ -80,6 +82,7 @@ const StatCalculator = {
             // Harvesting success chances
             'miningChance': 'PERCENTAGE',     // Mining success chance %
             'woodcuttingChance': 'PERCENTAGE', // Woodcutting success chance %
+            'loggingChance': 'PERCENTAGE',    // Logging success chance % (same as woodcutting)
             'fishingChance': 'PERCENTAGE',    // Fishing success chance %
             'huntingChance': 'PERCENTAGE',    // Hunting success chance %
             'foragingChance': 'PERCENTAGE',   // Foraging success chance %
@@ -88,6 +91,7 @@ const StatCalculator = {
             // Harvesting crit chances
             'miningCritChance': 'PERCENTAGE', // Mining crit chance %
             'woodcuttingCritChance': 'PERCENTAGE', // Woodcutting crit chance %
+            'loggingCritChance': 'PERCENTAGE', // Logging crit chance % (same as woodcutting)
             'fishingCritChance': 'PERCENTAGE', // Fishing crit chance %
             'huntingCritChance': 'PERCENTAGE', // Hunting crit chance %
             'foragingCritChance': 'PERCENTAGE', // Foraging crit chance %
@@ -96,6 +100,7 @@ const StatCalculator = {
             // Harvesting rare chances
             'miningRareChance': 'PERCENTAGE', // Mining rare drop chance %
             'woodcuttingRareChance': 'PERCENTAGE', // Woodcutting rare drop chance %
+            'loggingRareChance': 'PERCENTAGE', // Logging rare drop chance % (same as woodcutting)
             'fishingRareChance': 'PERCENTAGE', // Fishing rare drop chance %
             'huntingRareChance': 'PERCENTAGE', // Hunting rare drop chance %
             'foragingRareChance': 'PERCENTAGE', // Foraging rare drop chance %
@@ -109,6 +114,7 @@ const StatCalculator = {
             // Harvesting crit multipliers
             'miningCritMultiplier': 'MULTIPLIER', // Mining crit yield multiplier
             'woodcuttingCritMultiplier': 'MULTIPLIER', // Woodcutting crit yield multiplier
+            'loggingCritMultiplier': 'MULTIPLIER', // Logging crit yield multiplier (same as woodcutting)
             'fishingCritMultiplier': 'MULTIPLIER', // Fishing crit yield multiplier
             'huntingCritMultiplier': 'MULTIPLIER', // Hunting crit yield multiplier
             'foragingCritMultiplier': 'MULTIPLIER', // Foraging crit yield multiplier
@@ -117,6 +123,7 @@ const StatCalculator = {
             // Harvesting rare multipliers
             'miningRareMultiplier': 'MULTIPLIER', // Mining rare yield multiplier
             'woodcuttingRareMultiplier': 'MULTIPLIER', // Woodcutting rare yield multiplier
+            'loggingRareMultiplier': 'MULTIPLIER', // Logging rare yield multiplier (same as woodcutting)
             'fishingRareMultiplier': 'MULTIPLIER', // Fishing rare yield multiplier
             'huntingRareMultiplier': 'MULTIPLIER', // Hunting rare yield multiplier
             'foragingRareMultiplier': 'MULTIPLIER', // Foraging rare yield multiplier
@@ -137,6 +144,7 @@ const StatCalculator = {
             // Harvesting success chance caps
             'miningChance': 95,       // Max 95% mining success
             'woodcuttingChance': 95,  // Max 95% woodcutting success
+            'loggingChance': 95,      // Max 95% logging success
             'fishingChance': 95,      // Max 95% fishing success
             'huntingChance': 95,      // Max 95% hunting success
             'foragingChance': 95,     // Max 95% foraging success
@@ -145,6 +153,7 @@ const StatCalculator = {
             // Harvesting crit chance caps
             'miningCritChance': 50,   // Max 50% mining crit
             'woodcuttingCritChance': 50, // Max 50% woodcutting crit
+            'loggingCritChance': 50,  // Max 50% logging crit
             'fishingCritChance': 50,  // Max 50% fishing crit
             'huntingCritChance': 50,  // Max 50% hunting crit
             'foragingCritChance': 50, // Max 50% foraging crit
@@ -153,6 +162,7 @@ const StatCalculator = {
             // Harvesting rare chance caps
             'miningRareChance': 25,   // Max 25% rare drops
             'woodcuttingRareChance': 25, // Max 25% rare drops
+            'loggingRareChance': 25,  // Max 25% logging rare drops
             'fishingRareChance': 25,  // Max 25% rare drops
             'huntingRareChance': 25,  // Max 25% rare drops
             'foragingRareChance': 25, // Max 25% rare drops
@@ -262,6 +272,8 @@ const StatCalculator = {
         // Woodcutting/Logging - Steady and reliable
         woodcuttingSpeed: 5000,         // Base 5 seconds per log
         woodcuttingPower: 1,            // Base woodcutting yield
+        loggingSpeed: 5000,             // Base 5 seconds per log (same as woodcutting)
+        loggingPower: 1,                // Base logging yield
 
         // Fishing - Slower, less reliable, but high crit/rare
         fishingSpeed: 8000,             // Base 8 seconds per fish
@@ -290,6 +302,7 @@ const StatCalculator = {
         // ===== HARVESTING SUCCESS CHANCES =====
         miningChance: 100,              // Base 100% mining success
         woodcuttingChance: 100,         // Base 100% woodcutting success
+        loggingChance: 100,             // Base 100% logging success (same as woodcutting)
         fishingChance: 80,              // Base 80% fishing success (less reliable)
         huntingChance: 85,              // Base 85% hunting success
         foragingChance: 90,             // Base 90% foraging success
@@ -298,6 +311,7 @@ const StatCalculator = {
         // ===== HARVESTING CRIT CHANCES =====
         miningCritChance: 15,           // Base 15% mining crit
         woodcuttingCritChance: 15,      // Base 15% woodcutting crit
+        loggingCritChance: 15,          // Base 15% logging crit (same as woodcutting)
         fishingCritChance: 20,          // Base 20% fishing crit (higher)
         huntingCritChance: 25,          // Base 25% hunting crit (highest)
         foragingCritChance: 10,         // Base 10% foraging crit (lower)
@@ -306,6 +320,7 @@ const StatCalculator = {
         // ===== HARVESTING RARE CHANCES =====
         miningRareChance: 2,            // Base 2% rare ore
         woodcuttingRareChance: 2,       // Base 2% rare wood
+        loggingRareChance: 2,           // Base 2% rare wood (same as woodcutting)
         fishingRareChance: 5,           // Base 5% rare fish (higher)
         huntingRareChance: 1,           // Base 1% rare drops (low but huge multiplier)
         foragingRareChance: 3,          // Base 3% rare finds
@@ -314,6 +329,7 @@ const StatCalculator = {
         // ===== HARVESTING CRIT MULTIPLIERS =====
         miningCritMultiplier: 2.0,      // 2x yield on crit
         woodcuttingCritMultiplier: 2.0, // 2x yield on crit
+        loggingCritMultiplier: 2.0,     // 2x yield on crit (same as woodcutting)
         fishingCritMultiplier: 2.5,     // 2.5x yield on crit (higher)
         huntingCritMultiplier: 3.0,     // 3x yield on crit (highest)
         foragingCritMultiplier: 1.5,    // 1.5x yield on crit (lower)
@@ -322,10 +338,20 @@ const StatCalculator = {
         // ===== HARVESTING RARE MULTIPLIERS =====
         miningRareMultiplier: 2.0,      // 2x quantity for rare items
         woodcuttingRareMultiplier: 2.0, // 2x quantity for rare items
+        loggingRareMultiplier: 2.0,     // 2x quantity for rare items (same as woodcutting)
         fishingRareMultiplier: 3.0,     // 3x quantity for rare items
         huntingRareMultiplier: 5.0,     // 5x quantity for rare items (huge!)
         foragingRareMultiplier: 2.0,    // 2x quantity for rare items
         thievingRareMultiplier: 2.0,    // 2x quantity for rare items
+
+        // ===== NODE DEFENSIVE STATS (TIER 1 BASE) =====
+        // These are base values for tier 1 nodes. Higher tiers scale by 1.2x per tier.
+        nodeResistance: 1000,           // Base 1 second added to harvest time
+        nodeEvasion: 5,                 // Base 5% dodge/evasion (reduces hit chance)
+        nodeCritEvasion: 2,             // Base 2% crit evasion (reduces crit chance)
+        nodeCritResistance: 0.2,        // Base 0.2x crit resistance (reduces crit multiplier)
+        nodeRareEvasion: 0.5,           // Base 0.5% rare evasion (reduces rare chance)
+        nodeRareResistance: 0.5,        // Base 0.5x rare resistance (reduces rare multiplier)
     },
 
     /**
@@ -985,11 +1011,8 @@ const StatCalculator = {
             multiplicative: 0
         };
 
-        // Example: Combat skill level provides damage bonus
-        if (statName === 'attackDamage' && skills.combat) {
-            const combatLevel = skills.combat.level || 1;
-            modifiers.additive += combatLevel * 0.5; // +0.5 damage per level
-        }
+        // Combat damage is determined by attributes and equipment only
+        // No combat skill level bonus
 
         // Mining skill provides speed bonus
         if (statName === 'miningSpeed' && skills.mining) {
@@ -1110,6 +1133,38 @@ const StatCalculator = {
      */
 
     /**
+     * Get node defensive stats by tier
+     * @param {number} tier - The node tier (1, 2, 3, etc.)
+     * @returns {object} Node defensive stats (resistance, evasion, critEvasion, etc.)
+     */
+    getNodeDefensiveStatsByTier(tier = 1) {
+        // Get base stats from baseGameValues
+        const baseStats = {
+            resistance: this.baseGameValues.nodeResistance,
+            evasion: this.baseGameValues.nodeEvasion,
+            critEvasion: this.baseGameValues.nodeCritEvasion,
+            critResistance: this.baseGameValues.nodeCritResistance,
+            rareEvasion: this.baseGameValues.nodeRareEvasion,
+            rareResistance: this.baseGameValues.nodeRareResistance
+        };
+
+        // Scale by tier (each tier adds 20% more difficulty)
+        const tierMultiplier = Math.pow(1.2, tier - 1);
+
+        const result = {
+            resistance: Math.floor(baseStats.resistance * tierMultiplier),
+            evasion: Math.round(baseStats.evasion * tierMultiplier * 10) / 10, // Round to 1 decimal
+            critEvasion: Math.round(baseStats.critEvasion * tierMultiplier * 10) / 10,
+            critResistance: Math.round(baseStats.critResistance * tierMultiplier * 100) / 100, // Round to 2 decimals
+            rareEvasion: Math.round(baseStats.rareEvasion * tierMultiplier * 10) / 10,
+            rareResistance: Math.round(baseStats.rareResistance * tierMultiplier * 100) / 100
+        };
+
+        console.log(`[StatCalculator] Node defensive stats for tier ${tier}:`, result);
+        return result;
+    },
+
+    /**
      * Calculate harvest stats versus node defensive stats
      * @param {string} skill - The skill name (e.g., 'mining', 'woodcutting')
      * @param {string} nodeId - The node ID from definitions
@@ -1125,13 +1180,30 @@ const StatCalculator = {
         }
 
         // Get player's harvest stats for this skill
+        const speedResult = this.calculateStat(`${skill}Speed`, context);
+        const chanceResult = this.calculateStat(`${skill}Chance`, context);
+        const critChanceResult = this.calculateStat(`${skill}CritChance`, context);
+        const critMultiplierResult = this.calculateStat(`${skill}CritMultiplier`, context);
+        const rareChanceResult = this.calculateStat(`${skill}RareChance`, context);
+        const rareMultiplierResult = this.calculateStat(`${skill}RareMultiplier`, context);
+
+        // Debug logging
+        console.log(`[StatCalculator] Harvest stats for ${skill}:`, {
+            speed: speedResult.final,
+            chance: chanceResult.final,
+            critChance: critChanceResult.final,
+            critMultiplier: critMultiplierResult.final,
+            rareChance: rareChanceResult.final,
+            rareMultiplier: rareMultiplierResult.final
+        });
+
         const playerStats = {
-            speed: this.calculateStat(`${skill}Speed`, context).final,
-            chance: this.calculateStat(`${skill}Chance`, context).final,
-            critChance: this.calculateStat(`${skill}CritChance`, context).final,
-            critMultiplier: this.calculateStat(`${skill}CritMultiplier`, context).final,
-            rareChance: this.calculateStat(`${skill}RareChance`, context).final,
-            rareMultiplier: this.calculateStat(`${skill}RareMultiplier`, context).final
+            speed: speedResult.final,
+            chance: chanceResult.final,
+            critChance: critChanceResult.final,
+            critMultiplier: critMultiplierResult.final,
+            rareChance: rareChanceResult.final,
+            rareMultiplier: rareMultiplierResult.final
         };
 
         // Get node's defensive stats

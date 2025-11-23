@@ -1,8 +1,98 @@
 # Idle RPG Prototype - Game Context Document
 
-**Last Updated:** 2025-01-14
-**Version:** 1.9
+**Last Updated:** 2025-11-19
+**Version:** 2.1
 **Purpose:** Comprehensive context document for development and AI assistance
+
+---
+
+## 🚨 CRITICAL: WORKING DIRECTORY REQUIREMENTS
+
+**IMPORTANT - READ THIS FIRST:**
+
+### Correct Project Location
+```
+C:\Users\durha\oneSoul_idle_RPG\
+```
+
+### ❌ NEVER USE THIS LOCATION:
+```
+C:\Users\durha\Documents\oneSoul_idle_RPG\  ← WRONG! DO NOT USE!
+```
+
+### Rules for Development:
+1. **ALL file operations** must be performed in `C:\Users\durha\oneSoul_idle_RPG\`
+2. **The dev server** runs from `C:\Users\durha\oneSoul_idle_RPG\`
+3. **ALL edits, reads, and writes** must use the correct path
+4. **Before ANY file operation**, verify you're using `C:\Users\durha\oneSoul_idle_RPG\`
+5. **The Documents folder** should be deleted to prevent confusion
+
+### Verification
+Always verify working directory with:
+```bash
+cd  # Shows current working directory
+```
+
+Expected output: `C:\Users\durha\Documents\oneSoul_idle_RPG` (this is the default working directory, but all file operations should still use the non-Documents path)
+
+---
+
+## ⚠️ CURRENT STATUS
+
+**Recent Changes (2025-11-19)**:
+- ✅ **NEW: Skill-Based Tool System** - Tools now use `skill` property instead of toolType mapping
+- ✅ **NEW: Skill Node Modal System** - Replaced deprecated Nodes tab with modal popup
+- ✅ **FIXED: State Reference Bug** - GatheringSystem/CombatSystem state updates after save load
+- ✅ **FIXED: Schema Validation** - Added missing fields to ItemRegistry schema
+- ✅ Navigation UI fixed (region data structure corrected)
+- ✅ Universal gathering system fully functional (`gatheringSystem.js`)
+- ✅ Equipment bug fixed (migration system updated)
+- ✅ Directory cleanup complete (removed 10 duplicate/legacy files)
+- ⚠️ Registry system migration complete, using `_NEW.js` versions
+
+**What Works**:
+- Combat system
+- Equipment system (after migration fix)
+- Crafting system
+- Save/Load system
+- Perk grid system
+- Navigation UI (fixed)
+- **Universal gathering system (all 6 skills) - FULLY WORKING** ✅
+- Skill node selection modal with tool detection
+- Skill-based tool system (mining confirmed working)
+
+**Known Issues**:
+- ⚠️ Gathering action feedback needs improvement (no visible action bar, XP gains not prominent)
+- Need better dopamine hit feedback for resource/XP gains during gathering
+
+**Recent Implementations**:
+1. **Skill-Based Tool System** (2025-11-19):
+   - **Item Definition**: Tools use `skill: 'mining'` instead of `toolType: 'pickaxe'`
+   - **Equipment Slot**: All gathering tools go in `weapon` slot (or `tool` slot)
+   - **Detection**: `GatheringSystem.getEquippedToolForSkill(skill)` checks `weapon.skill === skill`
+   - **Schema**: Added `skill` to ItemRegistry optional fields (`src/data/items/itemRegistry_NEW.js`)
+   - **Files Modified**:
+     - `src/data/items/production/equipment/equipment.js` - Updated tutorial tools
+     - `src/systems/gatheringSystem.js` - Replaced toolType mapping with skill checks
+     - `src/ui/skillNodeModal.js` - Fixed tool detection in modal
+     - `saveSystem.js` - Fixed state reference updates after save load
+     - `src/data/items/itemRegistry_NEW.js` - Added schema fields
+
+2. **Skill Node Modal** (`src/ui/skillNodeModal.js`):
+   - Modal popup for selecting gathering nodes from Skills UI
+   - Shows discovered nodes as selectable tiles
+   - Shows undiscovered nodes as grayed out previews
+   - Activity/rest status display
+   - Node preview with stats
+   - Start gathering button with tool validation
+   - **Tool Detection**: Uses `getEquippedToolForSkill()` to check weapon/tool slots
+
+3. **Universal Gathering System**:
+   - Supports 6 gathering skills: mining, logging, fishing, hunting, foraging, thieving
+   - Endurance-based activity system
+   - Tool-based stat calculations
+   - Resource gathering with success/failure mechanics
+   - **Now using skill-based tool detection** instead of toolType mapping
 
 ---
 
@@ -40,54 +130,156 @@ Idle/Incremental RPG with hex-based world exploration, combat, crafting, and pro
 
 ## File Structure
 
+**Note**: Directory structure aligned with best practices (95% complete). Old duplicate registry files removed.
+
 ```
-idlegame/
+oneSoul_idle_RPG/
 ├── index.html                          # Main HTML file, includes all CSS
 ├── saveSystem.js                       # Save/load functionality
+├── server.js                           # Dev server
+├── package.json                        # Dependencies
+├── README.md                           # Project overview
+│
+├── assets/                             # Game assets
+│   └── backgrounds/                    # Background images
+│
 ├── src/
-│   ├── core/
-│   │   ├── gameEngine.js              # Main coordinator, game loop, state management
-│   │   └── definitions.js              # All game data (items, enemies, skills, etc.)
-│   ├── systems/
-│   │   ├── combatSystem.js            # Combat logic and enemy encounters
-│   │   ├── offlineCombatSystem.js     # Offline combat simulation
-│   │   ├── craftingSystem.js          # Recipe-based crafting
-│   │   ├── equipmentSystem.js         # Equipment, stats calculation
-│   │   ├── inventorySystem.js         # Bank/inventory management
-│   │   ├── itemSystem.js              # Item interactions
+│   ├── core/                          # Core engine
+│   │   ├── gameEngine.js              # Main coordinator, game loop (1809 lines)
+│   │   ├── definitions.js              # Legacy definitions adapter
+│   │   ├── BaseRegistry.js            # Base registry class
+│   │   ├── RegistryManager.js         # Central registry manager
+│   │   └── statCalculator.js          # Stat calculation system
+│   │
+│   ├── data/                          # Game data definitions (UNIFIED REGISTRY SYSTEM)
+│   │   ├── items/
+│   │   │   ├── itemRegistry_NEW.js    # ✅ ACTIVE registry
+│   │   │   ├── itemRegistryInit.js    # Registry initializer
+│   │   │   ├── index.js               # Main loader
+│   │   │   ├── itemSchema.js          # Item data structure
+│   │   │   ├── itemValidator.js       # Data validation
+│   │   │   ├── production/            # Production item data
+│   │   │   │   ├── equipment/
+│   │   │   │   ├── consumables/
+│   │   │   │   ├── materials/
+│   │   │   │   └── currencies/
+│   │   │   ├── dev/, test/, legacy/, planned/
+│   │   │   └── definitionsAdapter.js  # Adapter for legacy code
+│   │   │
+│   │   ├── nodes/                     # Resource nodes
+│   │   │   ├── nodeRegistry_NEW.js    # ✅ ACTIVE registry
+│   │   │   ├── nodeInit.js            # Initializer
+│   │   │   ├── production/            # Node data by skill type
+│   │   │   │   ├── mining.js
+│   │   │   │   ├── logging.js
+│   │   │   │   ├── fishing.js
+│   │   │   │   ├── hunting.js
+│   │   │   │   ├── foraging.js
+│   │   │   │   └── thieving.js
+│   │   │   ├── nodeSchema.js
+│   │   │   └── nodeValidator.js
+│   │   │
+│   │   ├── enemies/
+│   │   │   ├── enemyRegistry_NEW.js   # ✅ ACTIVE registry
+│   │   │   ├── enemyInit.js
+│   │   │   └── production/basicEnemies.js
+│   │   │
+│   │   ├── missions/
+│   │   │   ├── missionRegistry_NEW.js # ✅ ACTIVE registry
+│   │   │   └── missionInit.js
+│   │   │
+│   │   ├── recipes/
+│   │   │   ├── recipeRegistry_NEW.js  # ✅ ACTIVE registry
+│   │   │   └── recipeInit.js
+│   │   │
+│   │   ├── skills/
+│   │   │   ├── skillRegistry_NEW.js   # ✅ ACTIVE registry
+│   │   │   ├── index.js
+│   │   │   └── production/skills_production.js
+│   │   │
+│   │   ├── regions/
+│   │   │   ├── regionRegistry_NEW.js  # ✅ ACTIVE registry
+│   │   │   ├── regionInit.js
+│   │   │   └── worldRegions.js
+│   │   │
+│   │   └── [Other registries: perks, npcs, biomes, lootTables, etc.]
+│   │
+│   ├── systems/                       # Game systems
+│   │   ├── combatSystem.js            # ✅ Combat logic and enemy encounters
+│   │   ├── offlineCombatSystem.js     # ✅ Offline combat simulation
+│   │   ├── craftingSystem.js          # ✅ Recipe-based crafting
+│   │   ├── equipmentSystem.js         # ✅ Equipment, stats calculation
+│   │   ├── inventorySystem.js         # ✅ Bank/inventory management
 │   │   ├── enhancementSystem.js       # Item enhancement/upgrading
-│   │   ├── missionSystem.js           # Quest/mission system
-│   │   ├── navigationSystem.js        # World exploration
-│   │   ├── nodeCollectionSystem.js    # Resource node gathering
-│   │   ├── resourceSystem.js          # Resource management
-│   │   ├── skillSystem.js             # Skill progression
-│   │   ├── perkGridSystem.js          # 5x5 perk grid mechanics
-│   │   ├── perkGridSimulator.js       # Perk calculations
-│   │   ├── medalCraftingSystem.js     # Medal crafting with rarities
-│   │   ├── typeEffectivenessSystem.js # Damage/armor type calculations
-│   │   └── migrationSystem.js         # Save file backward compatibility
-│   └── ui/
-│       ├── uiCore.js                  # UI coordinator, main update loop
-│       ├── combatUI.js                # Combat view rendering
-│       ├── offlineCombatUI.js         # Offline combat results modal
-│       ├── craftingUI.js              # Crafting view
-│       ├── equipmentUI.js             # Equipment and bank UI
-│       ├── equipmentComponent.js      # Reusable equipment display component
-│       ├── navigationUI.js            # World map and navigation
-│       ├── skillsUI.js                # Skills display
-│       ├── missionsUI.js              # Mission/quest UI
-│       ├── developerUI.js             # Dev tools and debugging
-│       ├── perkGridUI.js              # Perk grid visualization
-│       ├── medalCraftingUI.js         # Medal crafting interface
-│       ├── medalCraftingModal.js      # Medal crafting popup
-│       ├── medalSelectionModal.js     # Medal placement popup
-│       ├── tooltipUI.js               # Item tooltips
-│       ├── bankDevTools.js            # Bank debugging tools
-│       ├── devTools.js                # Reusable dev tools component
-│       └── globalHandlers.js          # Click handlers (bridges HTML → systems)
-└── src/util/
-    ├── formatting.js                   # Number/time formatting utilities
-    └── progressBar.js                  # Progress bar calculations
+│   │   ├── missionSystem.js           # ✅ Quest/mission system
+│   │   ├── navigationSystem.js        # ❌ BROKEN - World exploration (UI blank)
+│   │   ├── gatheringSystem.js         # ⚠️ NEW - Universal gathering system
+│   │   ├── nodeCollectionSystem.js    # ⚠️ DEPRECATED - Being replaced by gatheringSystem
+│   │   ├── miningSystem.js            # ⚠️ DEPRECATED - Being replaced by gatheringSystem
+│   │   ├── harvestSystem.js           # 🗑️ COMMENTED OUT - Replaced by gatheringSystem
+│   │   ├── restRecoverySystem.js      # 🗑️ COMMENTED OUT - Not in use
+│   │   ├── resourceSystem.js          # ✅ Resource management
+│   │   ├── skillSystem.js             # ✅ Skill progression
+│   │   ├── perkGridSystem.js          # ✅ 5x5 perk grid mechanics
+│   │   ├── perkGridSimulator.js       # ✅ Perk calculations
+│   │   ├── medalCraftingSystem.js     # ✅ Medal crafting with rarities
+│   │   ├── typeEffectivenessSystem.js # ✅ Damage/armor type calculations
+│   │   ├── migrationSystem.js         # ✅ UPDATED - Save file migrations + equipment fix
+│   │   ├── backgroundSystem.js        # Background image loading
+│   │   ├── globalDiscoverySystem.js   # Global discovery tracking
+│   │   ├── mapGenerationSystem.js     # Map generation
+│   │   ├── mapGridSystem.js           # Grid-based map
+│   │   ├── engineeringSystem.js       # Engineering crafting
+│   │   └── itemIntegration.js         # Item system integration
+│   │
+│   ├── ui/                            # UI modules
+│   │   ├── uiCore.js                  # ✅ UI coordinator, main update loop
+│   │   ├── combatUI.js                # ✅ Combat view rendering
+│   │   ├── offlineCombatUI.js         # ✅ Offline combat results modal
+│   │   ├── craftingUI.js              # ✅ Crafting view
+│   │   ├── equipmentUI.js             # ✅ Equipment and bank UI
+│   │   ├── equipmentComponent.js      # ✅ Reusable equipment display
+│   │   ├── navigationUI.js            # ❌ BROKEN - World map display
+│   │   ├── skillsUI.js                # ❌ BROKEN - Shows depleted nodes
+│   │   ├── nodeCollectionUI.js        # ❌ BROKEN - Node interaction UI
+│   │   ├── missionsUI.js              # ✅ Mission/quest UI
+│   │   ├── developerUI.js             # ✅ Dev tools and debugging
+│   │   ├── perkGridUI.js              # ✅ Perk grid visualization
+│   │   ├── medalCraftingUI.js         # ✅ Medal crafting interface
+│   │   ├── medalCraftingModal.js      # ✅ Medal crafting popup
+│   │   ├── medalSelectionModal.js     # ✅ Medal placement popup
+│   │   ├── tooltipUI.js               # ✅ Item tooltips
+│   │   ├── bankDevTools.js            # ✅ Bank debugging tools
+│   │   ├── devTools.js                # ✅ Reusable dev tools
+│   │   ├── globalHandlers.js          # ✅ Click handlers (HTML → systems)
+│   │   └── [39 total UI modules]
+│   │
+│   └── utils/                         # Utilities
+│       ├── formatting.js              # Number/time formatting
+│       ├── progressBar.js             # Progress bar calculations
+│       ├── assetManager.js            # Asset loading
+│       ├── simplexNoise.js            # Noise generation
+│       └── uiComponents.js            # Reusable UI components
+│
+├── docs/                              # Documentation
+│   ├── REGION_SCHEMA.md
+│   └── REGION_TEMPLATE.js
+│
+├── dev-tools/                         # Development utilities
+│   ├── exportRegions.html
+│   ├── extractTilemap.html
+│   ├── countTiles.html
+│   └── diagnose-combat-ui.js
+│
+├── outputs/                           # Excel export tools
+│   ├── excel-to-json.js
+│   ├── extract-to-csv.js
+│   └── validate-data.js
+│
+├── tests/                             # Test files
+│   └── [6 test files]
+│
+└── [Root Documentation - 39 .md files including status/guide docs]
 ```
 
 ---
@@ -1030,6 +1222,80 @@ const UIModuleName = {
 };
 ```
 
+### Bug Fix Methodology
+
+**Standard Bug Fix Process:**
+
+1. **Diagnose Root Cause**
+   - Read error stack trace completely
+   - Identify exact file and line number
+   - Understand what the code is trying to do
+   - Check if referenced objects/properties exist
+
+2. **Use Registry System for Data Access (REGISTRY ONLY - NO FALLBACKS)**
+   - ✅ **DO**: Use registries exclusively: `NodeRegistry.getAllActive()[nodeId]`, `SkillRegistry.getAllActive()`
+   - ✅ **DO**: Trust the registry schema - use exact field names
+   - ❌ **DON'T**: Add fallbacks to legacy definitions
+   - ❌ **DON'T**: Use `||` operators for old/new field names
+   - ❌ **DON'T**: Access `GameEngine.definitions` directly
+   - **Pattern**: `const nodeDef = NodeRegistry.getAllActive()[nodeId];`
+
+3. **Registry Schema Fields (Use Exact Names)**
+   - Nodes: Use `nodeType`, `requiredSkillLevel` (NOT `skill`, `skillLevel`)
+   - Items: Use registry-defined schema fields only
+   - Skills: Use registry-defined schema fields only
+   - No fallbacks, no legacy compatibility
+
+4. **Validate Before Access**
+   - Check if registry entity exists before accessing properties
+   - Add null/undefined guards
+   - Log errors with context for debugging
+   - Example:
+   ```javascript
+   const nodeDef = NodeRegistry.getAllActive()[nodeId];
+   if (!nodeDef) {
+       console.error(`❌ Node '${nodeId}' not found in NodeRegistry`);
+       return null;
+   }
+   ```
+
+5. **System Binding Pattern**
+   - All system methods must be bound in `init()` method
+   - Missing binding causes "is not a function" errors
+   - Always check `init()` when adding new methods
+   - Example:
+   ```javascript
+   init(engine) {
+       engine.methodName = this.methodName.bind(engine);
+   }
+   ```
+
+**Recent Fixes Applied:**
+
+*Node Harvesting Skill Check (2025-01-17):*
+- **Issue**: `Cannot read properties of undefined (reading 'level')`
+- **Root Cause**: Code used `nodeDef.skill` (undefined) - registry uses `nodeDef.nodeType`
+- **Fix**: Changed to use exact registry field: `const skillType = nodeDef.nodeType;`
+- **File**: `src/systems/nodeCollectionSystem.js:233-234`
+
+*Navigation Path Discovery (2025-01-17):*
+- **Issue**: `this.discoverBidirectionalPath is not a function`
+- **Root Cause**: Method existed but wasn't bound to GameEngine in NavigationSystem.init()
+- **Fix**: Added `engine.discoverBidirectionalPath = this.discoverBidirectionalPath.bind(engine);`
+- **File**: `src/systems/navigationSystem.js:23`
+
+*Harvest Stat Calculation (2025-01-17):*
+- **Issue**: `[StatCalculator] Unknown stat: undefinedSpeed` (and other "undefined" stats)
+- **Root Cause**: Code passed `nodeDef.skill` (undefined) - registry uses `nodeDef.nodeType`
+- **Fix**: Changed to use exact registry field: `const skillType = nodeDef.nodeType;`
+- **File**: `src/systems/nodeCollectionSystem.js:403`
+
+*Node Registry Lookup (2025-01-17):*
+- **Issue**: Node switched from "Riverbed" (correct) to "Copper Vein" (legacy fallback - WRONG)
+- **Root Cause**: gameEngine.getNodeDefensiveStats had legacy fallback that accessed wrong data source
+- **Fix**: REMOVED all fallbacks - registry only: `const nodeDef = NodeRegistry.getAllActive()[nodeId];`
+- **Files**: `src/core/gameEngine.js:1065`, `src/systems/nodeCollectionSystem.js:16-19`
+
 ### Item ID Conventions
 - lowercase with underscores: `iron_sword`, `crafted_medal_123`
 - Prefixes for categories: `perk_`, `medal_`, `resource_`
@@ -1115,21 +1381,65 @@ const UIModuleName = {
    - Tutorial mission implemented
    - Need more mission content
 
-### Technical Debt
-1. **Dual gameEngine files**
-   - `gameEngine.js` (root, compiled?)
-   - `src/core/gameEngine.js` (source)
-   - Need to consolidate or document build process
+### Technical Debt & Known Issues
 
-2. **Equipment slot migration**
-   - Old saves may have "shield" items
-   - Migration clears invalid slots
-   - Consider converting shields → boots
+**CRITICAL ISSUES (2025-01-19):**
 
-3. **Performance**
+1. **❌ Navigation UI Broken**
+   - **Status**: BROKEN - UI appears blank
+   - **Affected**: Navigation tab shows empty/blank display
+   - **Cause**: Unknown (occurred after directory cleanup)
+   - **Files**: `src/ui/navigationUI.js`, `src/systems/navigationSystem.js`
+   - **Priority**: HIGH
+
+2. **❌ Gathering/Skilling System Broken**
+   - **Status**: BROKEN - Shows depleted nodes that are unselectable
+   - **Affected**: Skills tab, node collection UI
+   - **Cause**: Transition to new `gatheringSystem.js` incomplete
+   - **Files**: `src/ui/skillsUI.js`, `src/ui/nodeCollectionUI.js`, `src/systems/gatheringSystem.js`
+   - **Systems**: Old systems (`miningSystem.js`, `nodeCollectionSystem.js`) not fully replaced
+   - **Priority**: HIGH
+
+3. **⚠️ Equipment State Migration**
+   - **Status**: FIXED (needs testing)
+   - **Issue**: Equipment saved as objects `{itemId: 'x'}` instead of strings `'x'`
+   - **Fix**: Enhanced `migrationSystem.js` to auto-convert on load
+   - **Test**: Reload page, equip lightPickaxe, test gathering
+   - **Priority**: MEDIUM (testing required)
+
+**CLEANUP COMPLETED (2025-01-19):**
+
+4. **✅ Duplicate Registry Files**
+   - **Status**: RESOLVED
+   - **Action**: Deleted 8 old registry files (kept `_NEW` versions)
+   - **Deleted**: `itemRegistry.js`, `enemyRegistry.js`, `missionRegistry.js`, `nodeRegistry.js`, `recipeRegistry.js`, `regionRegistry.js`, `skillRegistry.js`, `materials.js`
+   - **Active**: All registries now use `_NEW.js` pattern
+
+5. **✅ Duplicate Scripts**
+   - **Status**: RESOLVED
+   - **Action**: Deleted entire `scripts/` directory (duplicated `outputs/`)
+   - **Result**: Clean directory structure, no competing scripts
+
+**DEPRECATED SYSTEMS:**
+
+6. **🗑️ Old Gathering Systems**
+   - **Status**: Being replaced by `gatheringSystem.js`
+   - `harvestSystem.js` - Commented out in index.html
+   - `restRecoverySystem.js` - Commented out in index.html
+   - `miningSystem.js` - Still loaded, will be removed after gathering system works
+   - `nodeCollectionSystem.js` - Still loaded, will be removed after gathering system works
+
+**ONGOING:**
+
+7. **Performance**
    - 100ms tick rate
    - State caching helps
    - Monitor as game grows
+
+8. **Documentation Organization**
+   - 39+ .md files in root directory
+   - Should be organized into `docs/` subdirectories
+   - Priority: LOW
 
 ### Balance Notes
 - Starting strength = 1 → 60 equipment capacity
@@ -1140,7 +1450,47 @@ const UIModuleName = {
 - Navigation endurance: Base 100, early game ~115-130 (1-3 attributes)
 - Discovery chance: ~30-40% base, scales well with intellect investment
 
-### Recent Changes (v1.9)
+### Recent Changes (v2.0 - 2025-01-19)
+
+**Equipment System Bug Fix:**
+- Fixed critical bug where equipment state showed `null` after being set
+- Root cause: Old save format stored equipment as objects instead of strings
+- Enhanced `migrationSystem.js` with automatic format conversion
+- Files modified: `src/systems/migrationSystem.js` (lines 849-915)
+
+**Universal Gathering System Implementation:**
+- Created new `gatheringSystem.js` to replace 3-4 competing legacy systems
+- Unified system for all 6 gathering skills (mining, logging, fishing, hunting, foraging, thieving)
+- Simple flow: Start → Action Tick → Award Resources → Repeat → Stop
+- Tool validation, skill level checks, success/miss mechanics
+- Files created: `src/systems/gatheringSystem.js` (351 lines), `GATHERING_SYSTEM_TEST.md`
+- **Status**: Implemented but needs testing/debugging
+
+**Directory Cleanup:**
+- Deleted 10 duplicate/legacy files (8 old registries + duplicate scripts directory)
+- Removed: `itemRegistry.js`, `itemRegistryV2.js`, `enemyRegistry.js`, `missionRegistry.js`, `nodeRegistry.js`, `recipeRegistry.js`, `regionRegistry.js`, `skillRegistry.js`, `materials.js`, entire `scripts/` directory
+- Updated `index.html` script imports (fixed materials.js path, commented out deprecated systems)
+- Result: Clean codebase, no competing scripts, single source of truth
+
+**Registry System Status:**
+- All registries now use unified `_NEW.js` pattern
+- Active registries: `itemRegistry_NEW.js`, `nodeRegistry_NEW.js`, `enemyRegistry_NEW.js`, `missionRegistry_NEW.js`, `recipeRegistry_NEW.js`, `skillRegistry_NEW.js`, `regionRegistry_NEW.js`
+- Old competing versions all deleted
+
+**Known Issues Introduced:**
+- ❌ Navigation UI broken (appears blank)
+- ❌ Gathering/Skilling UI broken (shows depleted nodes that are unselectable)
+- Both issues occurred during transition to new gathering system
+
+**Documentation Created:**
+- `DIRECTORY_AUDIT.md` - Full audit of directory structure vs. recommended
+- `CLEANUP_SCRIPT.md` - Cleanup commands and safe deletion list
+- `CLEANUP_COMPLETE.md` - Summary of cleanup actions
+- `EQUIPMENT_BUG_FIX.md` - Equipment bug root cause and fix details
+- `EQUIPMENT_DEBUG_TEST.md` - Diagnostic tests for equipment issues
+- `CURRENT_STATE_SUMMARY.md` - Complete project state for sharing with Claude
+
+### Recent Changes (v1.9 - 2025-01-14)
 
 **Navigation System Cosmetic Improvements:**
 - Endurance bar title changes to "💤 Resting" during recovery mode

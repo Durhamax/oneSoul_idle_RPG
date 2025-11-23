@@ -15,13 +15,8 @@
  */
 const ITEM_CATEGORIES = {
     EQUIPMENT: 'equipment',        // Equippable items (weapons, armor, tools)
-    CONSUMABLE: 'consumable',      // Single-use items (potions, food, scrolls)
-    MATERIAL: 'material',          // Crafting materials (ores, wood, textiles)
-    RESOURCE: 'resource',          // Gathered resources (similar to material)
-    CURRENCY: 'currency',          // Special currency items (gold, medals, gems)
-    QUEST: 'quest',                // Quest-related items
-    KEY: 'key',                    // Keys and access items
-    SPECIAL: 'special',            // Unique/special items that don't fit other categories
+    CONSUMABLE: 'consumable',      // Items that go in consumable slots (ammo, food, potions)
+    MATERIAL: 'material',          // Raw resources from nodes, not yet processed
 };
 
 /**
@@ -41,20 +36,38 @@ const ITEM_RARITIES = {
 /**
  * Equipment Slots
  *
- * Valid slots for equippable items
+ * Valid slots for items
  *
- * DEPRECATED: 'shield' - Use 'offhand' instead
+ * EQUIPMENT (category: 'equipment'):
+ *   - tool: Skilling items (pickaxes, axes, fishing rods) → Tools tab
+ *   - weapon: Combat weapons → Weapons tab
+ *   - head/body/legs/feet/hands/offhand/accessory: Combat armor → Armor tab
+ *
+ * CONSUMABLES (category: 'consumable'):
+ *   - ammo/food/potion: Consumable slots → Consumables tab
+ *
+ * MATERIALS (category: 'material'):
+ *   - resource: Raw materials → Resources tab
  */
 const EQUIPMENT_SLOTS = {
-    HEAD: 'head',
-    BODY: 'body',
-    LEGS: 'legs',
-    FEET: 'feet',
-    HANDS: 'hands',
-    WEAPON: 'weapon',
-    OFFHAND: 'offhand',           // Replaces deprecated 'shield'
-    ACCESSORY: 'accessory',
-    TOOL: 'tool',
+    // Equipment slots
+    TOOL: 'tool',                 // Skilling equipment (any slot)
+    WEAPON: 'weapon',             // Combat weapons
+    HEAD: 'head',                 // Armor
+    BODY: 'body',                 // Armor
+    LEGS: 'legs',                 // Armor
+    FEET: 'feet',                 // Armor
+    HANDS: 'hands',               // Armor
+    OFFHAND: 'offhand',           // Armor/shields
+    ACCESSORY: 'accessory',       // Armor/accessories
+
+    // Consumable slots
+    AMMO: 'ammo',                 // Ammo consumable
+    FOOD: 'food',                 // Food consumable
+    POTION: 'potion',             // Potion consumable
+
+    // Material slot
+    RESOURCE: 'resource',         // Raw materials
 };
 
 /**
@@ -133,12 +146,28 @@ const ITEM_SCHEMA = {
     icon: '',
 
     /**
+     * Path to PNG icon image (optional, falls back to emoji icon)
+     * @type {string}
+     * @optional
+     * @example "assets/icons/tools/light-pickaxe.png"
+     */
+    iconPath: '',
+
+    /**
      * Primary category of the item
      * @type {string}
      * @required
      * @see ITEM_CATEGORIES
      */
     category: '',
+
+    /**
+     * Whether this item is instanced (unique) or stackable
+     * @type {boolean}
+     * @required
+     * @default false for resources/consumables, true for equipment/mods
+     */
+    instanced: false,
 
     /**
      * Item rarity level
@@ -227,6 +256,15 @@ const ITEM_SCHEMA = {
     tier: '',
 
     /**
+     * Skill this equipment is associated with
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "mining", "logging", "fishing", "combat"
+     */
+    skill: '',
+
+    /**
      * Combat attributes bonuses
      * @type {Object}
      * @category equipment
@@ -288,6 +326,48 @@ const ITEM_SCHEMA = {
      * @example "ironWarrior", "arcaneScholar"
      */
     setId: null,
+
+    // =================================================================
+    // ATTACHMENT PROPERTIES (slot: 'attachment')
+    // =================================================================
+
+    /**
+     * Item type (used for filtering attachments)
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "attachment"
+     */
+    itemType: '',
+
+    /**
+     * Which attachment slot this fits into (legacy: attachmentSlot)
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "muzzle", "scope", "grip", "stock"
+     */
+    attachmentSlot: '',
+    modType: '',  // Alias for attachmentSlot
+
+    /**
+     * Which stat this attachment boosts (legacy: bonusStat)
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "attackDamage", "accuracy", "criticalChance"
+     */
+    bonusStat: '',
+    modStat: '',  // Alias for bonusStat
+
+    /**
+     * The magnitude of the stat bonus (multiplicative)
+     * @type {number}
+     * @category equipment
+     * @optional
+     * @example 0.02 (2% increase), 0.10 (10% increase)
+     */
+    bonusValue: 0,
 
     // =================================================================
     // CONSUMABLE PROPERTIES (category: 'consumable')

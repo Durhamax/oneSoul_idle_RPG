@@ -53,7 +53,6 @@ const GameEngine = {
             hunting: { level: 1, exp: 0, unlocked: true },
             foraging: { level: 1, exp: 0, unlocked: true },
             thieving: { level: 1, exp: 0, unlocked: true },
-            combat: { level: 1, exp: 0, unlocked: true },
 
             // Crafting Skills (6 core + 1 vertical)
             cooking: { level: 1, exp: 0, unlocked: true },
@@ -87,7 +86,7 @@ const GameEngine = {
         // Regions & Exploration
         currentRegion: "region_-3_-4",  // Active region ID (starting position)
         regions: {
-            "region_-3_-4": {  // Starting region (The Scar)
+            "region_-3_-4": {  // Starting region (The Cradle)
                 discovered: true,
                 discoveryProgress: 0,  // 0-100%, increases through navigation
                 discoveredLocations: [],
@@ -110,7 +109,11 @@ const GameEngine = {
             lastNavigationTick: 0,     // Last time progress was made
             lastRecoveryTick: 0,       // Last time endurance was recovered
             endurance: 100,            // Current endurance for exploration
-            maxEndurance: 100          // Max endurance (based on strength + mobility)
+            maxEndurance: 100,         // Max endurance (based on strength + mobility)
+            restEquipment: {           // Equipment for camping/recovery
+                food: null,            // Food item with healing value
+                wood: null             // Wood item (log type)
+            }
         },
 
         // Bank/Inventory System
@@ -167,10 +170,15 @@ const GameEngine = {
                     icon: "🏅",
                     order: 9
                 },
+                attachment: {
+                    name: "Attachments",
+                    icon: "⚙️",
+                    order: 10
+                },
                 quest: {
                     name: "Quest Items",
                     icon: "📜",
-                    order: 10
+                    order: 11
                 }
             },
             items: {
@@ -207,6 +215,15 @@ const GameEngine = {
             tech2: null,       // Unlocked at 25 intellect
             tech3: null,       // Unlocked at 50 intellect
             tech4: null        // Unlocked at 100 intellect
+        },
+
+        // Equipment Presets - Save and quickly switch between builds
+        equipmentPresets: {
+            presets: [
+                null, null, null, null, null,  // Presets 1-5
+                null, null, null, null, null   // Presets 6-10
+            ],
+            activePreset: null  // Index of currently active preset (0-9), or null if custom
         },
 
         // Combat System
@@ -469,12 +486,28 @@ const GameEngine = {
     },
 
     /**
+     * Get item definition (STANDARDIZED ACCESS PATTERN)
+     * This is the single source of truth for item access across all systems.
+     * @param {string} itemId - Item ID
+     * @returns {object|null} Item definition or null if not found
+     */
+    getItem(itemId) {
+        // Primary: Use ItemRegistry if available
+        if (typeof ItemRegistry !== 'undefined' && ItemRegistry.getItem) {
+            return ItemRegistry.getItem(itemId);
+        }
+
+        // Fallback: Use definitions.items (legacy support)
+        return this.definitions?.items?.[itemId] || null;
+    },
+
+    /**
      * Get rarity data for an item
      * @param {string} itemId - Item ID
      * @returns {object|null} Rarity definition or null if not found
      */
     getItemRarity(itemId) {
-        const item = this.definitions.items[itemId];
+        const item = this.getItem(itemId);
         if (!item) return null;
 
         const rarity = item.rarity || 'common';
@@ -482,13 +515,88 @@ const GameEngine = {
     },
 
     /**
-     * Initialize the game engine
+     * Load game data from JSON files (async)
+     * Falls back to GameDefinitions if JSON files not available
      */
-    init() {
+    async loadGameData() {
+        console.log("📦 Loading game data...");
+
+        try {
+            // Try to load JSON data
+            const jsonPath = 'data/json/';
+            const response = await fetch(jsonPath + 'definitions.json');
+
+            if (response.ok) {
+                const jsonData = await response.json();
+                console.log("✅ Loaded data from JSON files");
+
+                // Merge JSON data with GameDefinitions (keep RARITY_TIERS, ITEM_CATEGORIES, etc. from code)
+                this.definitions = {
+                    ...GameDefinitions,  // Keep system definitions
+                    ...jsonData          // Override with JSON data
+                };
+
+                // IMPORTANT: Re-apply dynamic getters to preserve Registry integrations
+                Object.defineProperty(this.definitions, 'items', {
+                    get() {
+                        // Delegate to GameDefinitions.items getter (which uses ItemRegistry)
+                        return GameDefinitions.items;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+
+                Object.defineProperty(this.definitions, 'enemies', {
+                    get() {
+                        return GameDefinitions.enemies;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+
+                Object.defineProperty(this.definitions, 'missions', {
+                    get() {
+                        return GameDefinitions.missions;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+
+                Object.defineProperty(this.definitions, 'recipes', {
+                    get() {
+                        return GameDefinitions.recipes;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+
+                Object.defineProperty(this.definitions, 'skills', {
+                    get() {
+                        return GameDefinitions.skills;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+
+                return true;
+            } else {
+                throw new Error('JSON files not found');
+            }
+        } catch (error) {
+            console.log("⚠️  JSON data not available, using GameDefinitions fallback");
+            this.definitions = GameDefinitions;
+            return false;
+        }
+    },
+
+    /**
+     * Initialize the game engine (now async to support JSON loading)
+     */
+    async init() {
         console.log("🎮 Game Engine Initializing...");
 
-        // Load definitions
-        this.definitions = GameDefinitions;
+        // Load definitions (try JSON first, fallback to code)
+        await this.loadGameData();
 
         // Apply default rarities to all items that don't have one
         this.applyDefaultRarities();
@@ -497,13 +605,18 @@ const GameEngine = {
         InventorySystem.init(this);
         SkillSystem.init(this);
         EquipmentSystem.init(this);
+        EquipmentPresetSystem.init(this);
+        AttachmentSystem.init(this);
         TypeEffectivenessSystem.init(this);
         ResourceSystem.init(this);
+        GatheringSystem.init(this);  // New universal gathering system
+        MiningSystem.init(this);  // Initialize mining system before GlobalDiscoverySystem
         GlobalDiscoverySystem.init(this);
-        RestRecoverySystem.init(this);
+        // RestRecoverySystem.init(this);  // DEPRECATED - System removed
+        WorldMapSystem.init(this);  // Initialize world map system
         NavigationSystem.init(this);
         NodeCollectionSystem.init(this);
-        HarvestSystem.init(this);
+        // HarvestSystem.init(this);  // DEPRECATED - Replaced by gatheringSystem.js
         CombatSystem.init(this);
         OfflineCombatSystem.init(this);
         CraftingSystem.init(this);
@@ -518,29 +631,25 @@ const GameEngine = {
             ItemIntegration.init(this);
         }
 
-        // Initialize procedural map generation (keeps region data for navigation)
-        if (typeof MapGenerationSystem !== 'undefined') {
-            MapGenerationSystem.init();
+        // Initialize WorldMapSystem
+        if (typeof WorldMapSystem !== 'undefined') {
+            WorldMapSystem.init(this);
         }
-
-        // Map renderer disabled - using static world map image instead
-        // if (typeof MapRenderer !== 'undefined') {
-        //     MapRenderer.init('worldMapCanvas');
-        // }
 
         // Generate the world map if not already generated
         if (!this.definitions.worldMap) {
             console.log("🗺️ Generating hexagonal world map (radius 7)...");
-            this.definitions.worldMap = this.generateWorldMap(7);
+            this.definitions.worldMap = WorldMapSystem.generateWorldMap(7);
             console.log(`✅ Generated ${Object.keys(this.definitions.worldMap).length} regions`);
 
             // Verify starting region exists (region_-3_-4)
             if (this.definitions.worldMap["region_-3_-4"]) {
                 console.log("✅ Starting region (region_-3_-4) exists in world map");
 
-                // Set tutorial mission requirement for starting region
-                this.definitions.worldMap["region_-3_-4"].requiredMissionToLeave = "tutorial_elder";
-                console.log("🗺️ Starting region requires 'tutorial_elder' mission to leave");
+                // TEMPORARILY DISABLED: Mission requirements for testing
+                // TODO: Re-enable after mission system refactor
+                // WorldMapSystem.setRegionMissionRequirement(this.definitions.worldMap, "region_-3_-4", "tutorial_elder");
+                // console.log("🗺️ Starting region requires 'tutorial_elder' mission to leave");
             } else {
                 console.error("❌ Starting region (region_-3_-4) NOT found in world map!");
                 console.log("Available regions (first 10):", Object.keys(this.definitions.worldMap).slice(0, 10));
@@ -581,6 +690,20 @@ const GameEngine = {
         if (!startRegion.discoveredCraftingStations) startRegion.discoveredCraftingStations = [];
         if (!startRegion.discoveredExitPaths) startRegion.discoveredExitPaths = [];
         if (!startRegion.nodeHealthBonuses) startRegion.nodeHealthBonuses = {};
+
+        // Auto-discover nodes in starting region on new game
+        if (typeof WorldRegions !== 'undefined' && WorldRegions[STARTING_REGION]) {
+            const startRegionDef = WorldRegions[STARTING_REGION];
+            if (startRegionDef.discoverableNodes && startRegionDef.discoverableNodes.length > 0) {
+                for (const nodeId of startRegionDef.discoverableNodes) {
+                    // Only auto-discover if not already discovered
+                    if (!this.state.globalNodes[nodeId] || !this.state.globalNodes[nodeId].discovered) {
+                        this.discoverNodeGlobally(nodeId, STARTING_REGION);
+                        console.log(`✅ Auto-discovered starting node: ${nodeId}`);
+                    }
+                }
+            }
+        }
 
         // Initialize background system AFTER world map is guaranteed to exist
         if (typeof BackgroundSystem !== 'undefined') {
@@ -985,12 +1108,14 @@ const GameEngine = {
 
     /**
      * Get node defensive stats (explicit or calculated from tier)
+     * Delegates to StatCalculator for actual values (follows foundation spec)
      */
     getNodeDefensiveStats(nodeId) {
-        const nodeDef = this.definitions.resourceNodes?.[nodeId];
+        // REGISTRY ONLY - No legacy fallbacks
+        const nodeDef = NodeRegistry.getAllActive()[nodeId];
         if (!nodeDef) {
-            console.warn(`[NodeStats] Unknown node: ${nodeId}`);
-            return this.getDefaultNodeStats(1); // Return tier 1 defaults
+            console.error(`❌ Node '${nodeId}' not found in NodeRegistry`);
+            return StatCalculator.getNodeDefensiveStatsByTier(1); // Return tier 1 defaults
         }
 
         // If node has explicit defensive stats, use them
@@ -1005,35 +1130,8 @@ const GameEngine = {
             };
         }
 
-        // Otherwise, calculate from tier
-        return this.getDefaultNodeStats(nodeDef.tier || 1);
-    },
-
-    /**
-     * Get default node stats based on tier
-     */
-    getDefaultNodeStats(tier) {
-        // Base stats for tier 1
-        const baseStats = {
-            resistance: 3000,      // 3 seconds
-            evasion: 30,           // 30%
-            critEvasion: 5,        // 5%
-            critResistance: 0.5,   // 0.5x
-            rareEvasion: 0.5,      // 0.5%
-            rareResistance: 0.5    // 0.5x
-        };
-
-        // Scale by tier (each tier adds 20% more difficulty)
-        const tierMultiplier = Math.pow(1.2, tier - 1);
-
-        return {
-            resistance: Math.floor(baseStats.resistance * tierMultiplier),
-            evasion: Math.min(70, baseStats.evasion * tierMultiplier), // Cap at 70%
-            critEvasion: Math.min(25, baseStats.critEvasion * tierMultiplier), // Cap at 25%
-            critResistance: baseStats.critResistance * tierMultiplier,
-            rareEvasion: Math.min(5, baseStats.rareEvasion * tierMultiplier), // Cap at 5%
-            rareResistance: baseStats.rareResistance * tierMultiplier
-        };
+        // Otherwise, get default stats from StatCalculator based on tier
+        return StatCalculator.getNodeDefensiveStatsByTier(nodeDef.tier || 1);
     },
 
     /**
@@ -1097,10 +1195,43 @@ const GameEngine = {
             }
         }
 
-        // Process node harvesting if active (delegated to NodeCollectionSystem)
-        if (this.state.nodeCollection && this.state.nodeCollection.activeNode) {
+        // GATHERING SYSTEM (Universal for all gathering skills: mining, logging, fishing, etc.)
+        // GatheringSystem handles all gathering logic - no other systems should process gathering
+        if (this.state.currentActivity === 'gathering') {
+            if (this.processGatheringTick) {
+                this.processGatheringTick();
+            }
+        }
+
+        // DEPRECATED SYSTEMS BELOW - Kept for backward compatibility with old save files only
+        // These should NOT run if GatheringSystem is active (prevents double-processing)
+
+        // OLD: NodeCollectionSystem (DEPRECATED - replaced by GatheringSystem)
+        // Only runs if NOT using new gathering system
+        if (!this.state.gatheringSession && this.state.nodeCollection && this.state.nodeCollection.activeNode) {
             if (this.processNodeHarvesting) {
                 this.processNodeHarvesting(deltaTime);
+            }
+        }
+
+        // OLD: MiningSystem (DEPRECATED - replaced by GatheringSystem)
+        // Only runs if NOT using new gathering system
+        if (!this.state.gatheringSession && this.state.currentActivity === 'mining') {
+            if (this.state.miningState && this.state.miningState.isResting) {
+                // Process rest state
+                if (this.processMiningRestTick) {
+                    this.processMiningRestTick();
+                }
+            } else {
+                // Process mining action
+                if (this.processMiningTick) {
+                    this.processMiningTick();
+                }
+            }
+
+            // Update mining UI every tick
+            if (typeof renderMiningUI === 'function') {
+                renderMiningUI();
             }
         }
 
@@ -1110,11 +1241,11 @@ const GameEngine = {
         }
 
         // Process navigation/discovery (delegated to NavigationSystem)
-        if (this.state.activeNavigation) {
-            // Process rest resource consumption (food + logs every 6s)
-            if (this.processRestConsumption) {
-                this.processRestConsumption(deltaTime);
-            }
+        if (this.state.activeNavigation && this.state.activeNavigation.isNavigating) {
+            // Process rest resource consumption (food + logs every 6s) - DEPRECATED
+            // if (this.processRestConsumption) {
+            //     this.processRestConsumption(deltaTime);
+            // }
 
             if (this.processNavigation) {
                 this.processNavigation(deltaTime);
@@ -1129,269 +1260,6 @@ const GameEngine = {
         }
     },
 
-    /**
-     * Generate a hex grid world map
-     * Creates a hexagonal-shaped map using axial coordinates (more square-like than rectangle)
-     */
-    generateWorldMap(mapRadius = 10) {
-        const worldMap = {};
-        const biomeTypes = ['plains', 'forest', 'mountains', 'tundra', 'desert', 'swamp', 'coast'];
-
-        // Helper: Get hex neighbors in axial coordinates
-        const getNeighbors = (q, r) => {
-            return [
-                { q: q + 1, r: r, dir: "E" },      // East
-                { q: q + 1, r: r - 1, dir: "NE" }, // Northeast
-                { q: q, r: r - 1, dir: "NW" },     // Northwest
-                { q: q - 1, r: r, dir: "W" },      // West
-                { q: q - 1, r: r + 1, dir: "SW" }, // Southwest
-                { q: q, r: r + 1, dir: "SE" }      // Southeast
-            ];
-        };
-
-        // Helper: Get biome based on position (simple pattern)
-        // Starting position is at (-3, -4)
-        const getBiome = (q, r) => {
-            const startQ = -3;
-            const startR = -4;
-
-            // Starting region is plains
-            if (q === startQ && r === startR) return 'plains';
-
-            // Simple procedural biome assignment based on position
-            const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
-
-            // Close to start: plains
-            if (distanceFromStart < 2) return 'plains';
-
-            // Biome zones based on position
-            // Left side (near start): plains and forest
-            if (q < -mapRadius * 0.4) {
-                return r < 0 ? 'forest' : 'plains';
-            }
-
-            // Upper regions: mountains and tundra
-            if (r < -mapRadius * 0.4) {
-                return q > 0 ? 'tundra' : 'mountains';
-            }
-
-            // Lower regions: swamp and coast
-            if (r > mapRadius * 0.4) {
-                return q > 0 ? 'coast' : 'swamp';
-            }
-
-            // Middle-right: desert and forest
-            if (q > mapRadius * 0.4) {
-                return r > 0 ? 'desert' : 'forest';
-            }
-
-            // Default: varied biomes
-            const hash = Math.abs(q * 73 + r * 37) % biomeTypes.length;
-            return biomeTypes[hash];
-        };
-
-        // Helper: Calculate region complication factor
-        // Higher complication = harder to discover things (requires more intellect)
-        const getComplicationFactor = (q, r, biome) => {
-            const startQ = -3;
-            const startR = -4;
-            const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
-
-            // Biome difficulty modifiers
-            const biomeDifficulty = {
-                'plains': 1.0,    // Easy (starting biome)
-                'forest': 1.2,    // Slightly harder (dense vegetation)
-                'coast': 1.1,     // Slightly harder (water navigation)
-                'desert': 1.3,    // Moderate (harsh conditions)
-                'swamp': 1.4,     // Hard (confusing terrain)
-                'mountains': 1.5, // Very hard (complex terrain)
-                'tundra': 1.6     // Hardest (extreme conditions)
-            };
-
-            // Base complication from biome
-            const baseComplication = biomeDifficulty[biome] || 1.0;
-
-            // Add distance-based complication
-            // Each unit of distance adds complicationScaling to difficulty
-            const distanceComplication = distanceFromStart * this.gameBalance.complicationScaling;
-
-            return parseFloat((baseComplication + distanceComplication).toFixed(2));
-        };
-
-        // Helper: Generate region name
-        const getRegionName = (q, r, biome) => {
-            const startQ = -3;
-            const startR = -4;
-
-            // The Scar - Starting region (home of Unity members)
-            if (q === startQ && r === startR) return "The Scar";
-
-            const prefixes = {
-                plains: ["Green", "Sunny", "Peaceful", "Rolling", "Golden"],
-                forest: ["Dark", "Deep", "Ancient", "Verdant", "Misty"],
-                mountains: ["Highland", "Snowy", "Rocky", "Towering", "Peak"],
-                tundra: ["Frozen", "Icy", "Bitter", "Arctic", "Frost"],
-                desert: ["Arid", "Burning", "Dry", "Sandy", "Scorched"],
-                swamp: ["Murky", "Foggy", "Dank", "Mossy", "Fetid"],
-                coast: ["Coastal", "Sandy", "Windy", "Harbor", "Tidal"]
-            };
-
-            const suffixes = {
-                plains: ["Plains", "Meadows", "Fields", "Grassland", "Valley"],
-                forest: ["Woods", "Forest", "Grove", "Thicket", "Woodland"],
-                mountains: ["Ridge", "Peak", "Mountains", "Summit", "Heights"],
-                tundra: ["Tundra", "Wastes", "Expanse", "Barrens", "Flats"],
-                desert: ["Desert", "Wastes", "Dunes", "Sands", "Expanse"],
-                swamp: ["Swamp", "Marsh", "Bog", "Fen", "Mire"],
-                coast: ["Shores", "Coast", "Beach", "Bay", "Cove"]
-            };
-
-            const prefix = prefixes[biome][Math.abs(q + r * 3) % prefixes[biome].length];
-            const suffix = suffixes[biome][Math.abs(q * 2 + r) % suffixes[biome].length];
-
-            return `${prefix} ${suffix}`;
-        };
-
-        // Helper: Get background image for region
-        // Returns region-specific image path or null to use biome default
-        const getBackgroundImage = (q, r, regionName) => {
-            const startQ = -3;
-            const startR = -4;
-
-            // The Scar - Starting region has a specific background
-            if (q === startQ && r === startR) {
-                return 'assets/backgrounds/regions/region_the_scar_01.png';
-            }
-
-            // Future regions can have their own backgrounds added here
-            // Return null to use the biome's default background
-            return null;
-        };
-
-        // Generate regions only for tiles that exist in the tilemap
-        const startQ = -3;
-        const startR = -4;
-
-        // Get tiles from the tilemap (landmass shape)
-        const tiles = typeof WorldTilemap !== 'undefined' ? WorldTilemap.getTiles() : [];
-
-        if (tiles.length === 0) {
-            console.error("❌ WorldTilemap not loaded! Cannot generate regions.");
-            return {};
-        }
-
-        console.log(`🗺️ Generating regions for ${tiles.length} tiles from tilemap...`);
-
-        // Generate a region for each tile in the tilemap
-        for (let tile of tiles) {
-            const { q, r } = tile;
-            const regionId = `region_${q}_${r}`;
-            const biome = getBiome(q, r);
-            const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
-
-            // Navigation requirement scales upward (north) then right (east)
-            // Starting region has nav requirement of 1
-            let navRequirement = 1;
-            if (q !== startQ || r !== startR) {
-                // Calculate steps upward (negative r direction) and right (positive q direction) from start
-                const stepsUp = Math.max(0, startR - r); // How many steps north (decreasing r)
-                const stepsRight = Math.max(0, q - startQ); // How many steps east (increasing q)
-                const stepsDown = Math.max(0, r - startR); // Steps south (increasing r)
-                const stepsLeft = Math.max(0, startQ - q); // Steps west (decreasing q)
-
-                // Priority: Up > Right > Down > Left
-                // Each step up adds 2 levels, each step right adds 1 level
-                navRequirement = 1 + (stepsUp * 2) + stepsRight + Math.floor(stepsDown / 2) + Math.floor(stepsLeft / 2);
-            }
-
-            // Get valid neighbors (only those that exist in the tilemap)
-            const neighbors = getNeighbors(q, r);
-            const validNeighbors = neighbors.filter(n => {
-                // Check if neighbor tile exists in the tilemap
-                return WorldTilemap.hasTile(n.q, n.r);
-            });
-
-            // Special description for The Scar (starting region)
-            const isStartingRegion = (q === startQ && r === startR);
-            const description = isStartingRegion
-                ? "A massive crater, home to the Unity members long banished to this corner of the new planet. The Scar is heavily wooded and features a large lake of trapped freshwater. This is where your journey begins."
-                : `A ${biome} region in the ${q > 0 ? 'eastern' : q < 0 ? 'western' : 'central'} ${r > 0 ? 'south' : r < 0 ? 'north' : 'lands'}`;
-
-            const regionName = getRegionName(q, r, biome);
-
-            // Get biome definition for nodes and enemies
-            const biomeDef = this.definitions.biomes[biome];
-
-            // Get discoverable nodes from biome
-            const discoverableNodes = [];
-            if (biomeDef && biomeDef.gatheringNodes) {
-                for (let skill in biomeDef.gatheringNodes) {
-                    discoverableNodes.push(...biomeDef.gatheringNodes[skill]);
-                }
-            }
-
-            // Get discoverable enemies based on region difficulty
-            const discoverableEnemies = [];
-            if (this.definitions.enemies) {
-                // Filter enemies appropriate for this region's distance from start
-                const maxEnemyLevel = Math.max(1, Math.floor(distanceFromStart * 1.5));
-                for (let enemyId in this.definitions.enemies) {
-                    const enemy = this.definitions.enemies[enemyId];
-                    const enemyLevel = enemy.level || 1;
-                    // Include enemies at or below the region's max level
-                    if (enemyLevel <= maxEnemyLevel) {
-                        discoverableEnemies.push(enemyId);
-                    }
-                }
-            }
-
-            // Get missions available in this region
-            const availableMissions = [];
-            if (this.definitions.missions) {
-                for (let missionId in this.definitions.missions) {
-                    const mission = this.definitions.missions[missionId];
-                    // Include missions that are in this region
-                    if (mission.region === regionId || (isStartingRegion && mission.region === "region_0_0")) {
-                        availableMissions.push(missionId);
-                    }
-                }
-            }
-
-            worldMap[regionId] = {
-                name: regionName,
-                description: description,
-                biome: biome,
-                backgroundImage: getBackgroundImage(q, r, regionName), // Region-specific background (null = use biome default)
-                hexCoords: { q, r }, // Using axial coordinates
-                navigationRequirement: navRequirement,
-                complication: getComplicationFactor(q, r, biome), // Navigation complexity
-                requiredMissionToLeave: null, // Mission ID that must be completed before leaving this region
-                discoverableNodes: discoverableNodes,    // Array of node IDs that can be discovered here
-                discoverableEnemies: discoverableEnemies, // Array of enemy IDs that can be discovered here
-                availableMissions: availableMissions,     // Array of mission IDs available in this region
-                adjacent: validNeighbors.reduce((obj, n) => {
-                    obj[n.dir] = `region_${n.q}_${n.r}`;
-                    return obj;
-                }, {})
-            };
-        }
-
-        return worldMap;
-    },
-
-    /**
-     * Set mission requirement for leaving a region
-     * @param {string} regionId - The region ID
-     * @param {string} missionId - The mission ID that must be completed
-     */
-    setRegionMissionRequirement(regionId, missionId) {
-        if (this.definitions.worldMap && this.definitions.worldMap[regionId]) {
-            this.definitions.worldMap[regionId].requiredMissionToLeave = missionId;
-            console.log(`🗺️ Region ${regionId} now requires mission '${missionId}' to leave`);
-        } else {
-            console.error(`❌ Cannot set mission requirement: Region ${regionId} not found`);
-        }
-    },
 
     /**
      * Check and unlock content based on requirements
@@ -1557,7 +1425,6 @@ const GameEngine = {
                 hunting: { level: 1, exp: 0, unlocked: true },
                 foraging: { level: 1, exp: 0, unlocked: true },
                 thieving: { level: 1, exp: 0, unlocked: true },
-                combat: { level: 1, exp: 0, unlocked: true },
                 forging: { level: 1, exp: 0, unlocked: true },
                 machining: { level: 1, exp: 0, unlocked: true },
                 cooking: { level: 1, exp: 0, unlocked: true },

@@ -492,8 +492,9 @@ const GameDefinitions = {
         ]
     },
 
-        // Skills definitions
-        skills: {
+        // Legacy skill definitions (will be migrated to SkillRegistry)
+        // DO NOT ACCESS DIRECTLY - use GameDefinitions.skills instead
+        _legacySkills: {
             navigation: {
                 name: "Navigation",
                 description: "Explore regions and discover new locations",
@@ -529,11 +530,6 @@ const GameDefinitions = {
                 name: "Thieving",
                 description: "Steal valuables from locations and NPCs",
                 bonusPerLevel: 0.05  // +5% thieving success per level
-            },
-            combat: {
-                name: "Combat",
-                description: "Increases combat effectiveness",
-                bonusPerLevel: 0.1  // +10% damage per level
             },
 
             // Crafting Skills - 6 Core Production Skills
@@ -1109,8 +1105,9 @@ const GameDefinitions = {
             }
         },
 
-        // Item definitions
-        items: {
+        // Legacy item definitions (will be migrated to ItemRegistry)
+        // DO NOT ACCESS DIRECTLY - use GameDefinitions.items instead
+        _legacyItems: {
             // Resources
             gold: {
                 name: "Gold Coins",
@@ -1855,95 +1852,8 @@ const GameDefinitions = {
                     damageType: "pierce"
                 }
             },
-            // Equipment - Weapons
-            dagger: {
-                name: "Rusty Dagger",
-                description: "A small, rusty blade",
-                image: "🗡️",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "equipment",
-                category: "weapon",
-                equipSlot: "weapon",
-                rarity: "common",
-                stats: {
-                    attackDamage: 6,
-                    attackSpeed: 0.3,
-                    accuracy: 5,
-                    weight: 5,
-                    damageType: "pierce"
-                }
-            },
-            ironSword: {
-                name: "Iron Sword",
-                description: "A basic iron sword",
-                image: "⚔️",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "equipment",
-                category: "weapon",
-                equipSlot: "weapon",
-                rarity: "uncommon",
-                stats: {
-                    attackDamage: 12,
-                    attackSpeed: 0.2,
-                    accuracy: 5,
-                    weight: 10,
-                    damageType: "incendiary"
-                }
-            },
-            steelSword: {
-                name: "Steel Sword",
-                description: "A sharp steel blade",
-                image: "🗡️",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "equipment",
-                category: "weapon",
-                equipSlot: "weapon",
-                rarity: "rare",
-                stats: {
-                    attackDamage: 20,
-                    attackSpeed: 0.3,
-                    accuracy: 10,
-                    weight: 11,
-                    damageType: "incendiary"
-                }
-            },
-            shortBow: {
-                name: "Short Bow",
-                description: "A basic hunting bow",
-                image: "🏹",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "equipment",
-                category: "weapon",
-                equipSlot: "weapon",
-                stats: {
-                    attackDamage: 10,
-                    attackSpeed: 0.4,
-                    accuracy: 12,
-                    weight: 6,
-                    damageType: "pierce"
-                }
-            },
-            longBow: {
-                name: "Long Bow",
-                description: "A powerful ranged weapon",
-                image: "🏹",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "equipment",
-                category: "weapon",
-                equipSlot: "weapon",
-                stats: {
-                    attackDamage: 18,
-                    attackSpeed: 0.3,
-                    accuracy: 15,
-                    weight: 8,
-                    damageType: "pierce"
-                }
-            },
+
+            // ========================================
             // Equipment - Shields
             woodenShield: {
                 name: "Wooden Shield",
@@ -2433,62 +2343,6 @@ const GameDefinitions = {
                 value: 18
             },
 
-            // WEAPONS
-            pipe_weapon: {
-                name: "Lead Pipe",
-                description: "A sturdy metal pipe that makes a decent improvised weapon",
-                image: "🔧",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                itemType: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 20,
-                stats: {
-                    attackDamage: 8,
-                    attackSpeed: 0.6,
-                    weight: 6,
-                    damageType: "pierce"
-                }
-            },
-            stun_baton: {
-                name: "Stun Baton",
-                description: "Electric baton for close combat",
-                image: "⚡",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                itemType: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 35,
-                stats: {
-                    attackDamage: 10,
-                    attackSpeed: 0.7,
-                    weight: 5,
-                    damageType: "shock"
-                }
-            },
-            crowbar_weapon: {
-                name: "Crowbar",
-                description: "Heavy prying tool, effective as a weapon",
-                image: "🪛",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                itemType: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 25,
-                stats: {
-                    attackDamage: 12,
-                    attackSpeed: 0.5,
-                    weight: 7,
-                    damageType: "pierce"
-                }
-            },
-
             // ARMOR
             leather_jacket: {
                 name: "Worn Leather Jacket",
@@ -2596,41 +2450,6 @@ const GameDefinitions = {
                 itemType: "technology",
                 category: "tool",
                 value: 40
-            },
-
-            // MODS
-            scope_attachment: {
-                name: "Basic Scope",
-                description: "Improves weapon accuracy",
-                image: "🔭",
-                stackLimit: 5,
-                devLimit: Infinity,
-                defaultTab: "mod",
-                itemType: "mod",
-                category: "enhancement",
-                value: 50
-            },
-            reinforced_plating: {
-                name: "Reinforced Plating",
-                description: "Additional armor protection",
-                image: "🛡️",
-                stackLimit: 5,
-                devLimit: Infinity,
-                defaultTab: "mod",
-                itemType: "mod",
-                category: "enhancement",
-                value: 60
-            },
-            energy_cell: {
-                name: "Energy Cell",
-                description: "Powers energy weapons and devices",
-                image: "⚡",
-                stackLimit: 20,
-                devLimit: Infinity,
-                defaultTab: "mod",
-                itemType: "mod",
-                category: "consumable",
-                value: 30
             },
 
             // HEALING
@@ -2872,290 +2691,6 @@ const GameDefinitions = {
                     skinningBonus: 5,
                     weight: 4,
                     damageType: "pierce"
-                }
-            },
-
-            // MORE WEAPONS - Swords
-            broadsword: {
-                name: "Broadsword",
-                description: "Heavy two-handed sword",
-                image: "⚔️",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 80,
-                stats: {
-                    attackDamage: 25,
-                    attackSpeed: 0.1,
-                    accuracy: 8,
-                    weight: 12,
-                    damageType: "incendiary"
-                }
-            },
-            katana: {
-                name: "Katana",
-                description: "Razor-sharp curved blade",
-                image: "🗡️",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 120,
-                stats: {
-                    attackDamage: 22,
-                    attackSpeed: 0.4,
-                    accuracy: 15,
-                    weight: 8,
-                    damageType: "incendiary"
-                },
-                specialAttack: {
-                    name: "Bleeding Edge",
-                    chance: 0.3,
-                    damageMultiplier: 1.2,
-                    effect: {
-                        type: "bleed",
-                        duration: 5000,
-                        damagePerTick: 3,
-                        tickInterval: 1000
-                    },
-                    description: "Razor-sharp cuts cause bleeding over time"
-                }
-            },
-            longsword: {
-                name: "Longsword",
-                description: "Balanced sword for combat",
-                image: "⚔️",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 100,
-                stats: {
-                    attackDamage: 20,
-                    attackSpeed: 0.25,
-                    accuracy: 12,
-                    weight: 8,
-                    damageType: "incendiary"
-                }
-            },
-
-            // MORE WEAPONS - Axes & Maces
-            battleaxe: {
-                name: "Battle Axe",
-                description: "Heavy axe for crushing blows",
-                image: "🪓",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 85,
-                stats: {
-                    attackDamage: 28,
-                    attackSpeed: 0.05,
-                    accuracy: 6,
-                    weight: 13,
-                    damageType: "incendiary"
-                }
-            },
-            mace_iron: {
-                name: "Iron Mace",
-                description: "Blunt weapon that crushes armor",
-                image: "🔨",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 70,
-                stats: {
-                    attackDamage: 18,
-                    attackSpeed: 0.15,
-                    armorPenetration: 5,
-                    weight: 12,
-                    damageType: "incendiary"
-                }
-            },
-            warhammer: {
-                name: "Warhammer",
-                description: "Massive two-handed hammer",
-                image: "🔨",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 110,
-                stats: {
-                    attackDamage: 35,
-                    attackSpeed: 0.0,
-                    armorPenetration: 10,
-                    weight: 15,
-                    damageType: "incendiary"
-                }
-            },
-
-            // MORE WEAPONS - Spears & Polearms
-            spear_wooden: {
-                name: "Wooden Spear",
-                description: "Basic pointed stick",
-                image: "🗡️",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 15,
-                stats: {
-                    attackDamage: 8,
-                    attackSpeed: 0.2,
-                    accuracy: 10,
-                    range: 2,
-                    weight: 7,
-                    damageType: "pierce"
-                }
-            },
-            spear_iron: {
-                name: "Iron Spear",
-                description: "Metal-tipped spear",
-                image: "🗡️",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 50,
-                stats: {
-                    attackDamage: 16,
-                    attackSpeed: 0.25,
-                    accuracy: 12,
-                    range: 2,
-                    weight: 9,
-                    damageType: "pierce"
-                }
-            },
-            halberd: {
-                name: "Halberd",
-                description: "Axe-spear hybrid weapon",
-                image: "🗡️",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 95,
-                stats: {
-                    attackDamage: 24,
-                    attackSpeed: 0.1,
-                    accuracy: 8,
-                    range: 3,
-                    weight: 12,
-                    damageType: "pierce"
-                }
-            },
-
-            // MORE WEAPONS - Ranged
-            crossbow_light: {
-                name: "Light Crossbow",
-                description: "Easy to load crossbow",
-                image: "🏹",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 75,
-                stats: {
-                    attackDamage: 20,
-                    attackSpeed: 0.2,
-                    accuracy: 18,
-                    weight: 10,
-                    damageType: "pierce"
-                }
-            },
-            crossbow_heavy: {
-                name: "Heavy Crossbow",
-                description: "Powerful but slow crossbow",
-                image: "🏹",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 130,
-                stats: {
-                    attackDamage: 40,
-                    attackSpeed: 0.05,
-                    accuracy: 20,
-                    weight: 14,
-                    damageType: "pierce"
-                },
-                specialAttack: {
-                    name: "Piercing Shot",
-                    chance: 0.2,
-                    damageMultiplier: 2.0,
-                    effect: {
-                        type: "armor_break",
-                        duration: 4000,
-                        defenseLoss: 0.25
-                    },
-                    description: "Bolts pierce through armor, reducing enemy defense by 25%"
-                }
-            },
-            pistol_basic: {
-                name: "Basic Pistol",
-                description: "Simple firearm",
-                image: "🔫",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 150,
-                stats: {
-                    attackDamage: 25,
-                    attackSpeed: 0.5,
-                    accuracy: 15,
-                    weight: 8,
-                    damageType: "shock"
-                },
-                magazineSize: 9,
-                reloadTime: 2000
-            },
-            rifle_hunting: {
-                name: "Hunting Rifle",
-                description: "Long-range rifle",
-                image: "🔫",
-                stackLimit: 1,
-                devLimit: Infinity,
-                defaultTab: "weapon",
-                category: "weapon",
-                equipSlot: "weapon",
-                value: 250,
-                stats: {
-                    attackDamage: 50,
-                    attackSpeed: 0.2,
-                    accuracy: 25,
-                    weight: 12,
-                    damageType: "shock"
-                },
-                magazineSize: 5,
-                reloadTime: 3000,
-                specialAttack: {
-                    name: "Crackling Lead",
-                    chance: 0.25,
-                    damageMultiplier: 1.5,
-                    effect: {
-                        type: "shock",
-                        duration: 3000,
-                        damagePerTick: 5,
-                        tickInterval: 1000
-                    },
-                    description: "Electrified rounds deal shock damage over time"
                 }
             },
 
@@ -3813,38 +3348,6 @@ const GameDefinitions = {
                 value: 120
             },
 
-            // MORE MODS
-            damage_upgrade: {
-                name: "Damage Upgrade Kit",
-                description: "Increases weapon damage",
-                image: "⚔️",
-                stackLimit: 10,
-                devLimit: Infinity,
-                defaultTab: "mod",
-                category: "mod",
-                value: 100
-            },
-            speed_upgrade: {
-                name: "Speed Upgrade Kit",
-                description: "Increases attack speed",
-                image: "⚡",
-                stackLimit: 10,
-                devLimit: Infinity,
-                defaultTab: "mod",
-                category: "mod",
-                value: 100
-            },
-            armor_upgrade: {
-                name: "Armor Plating Kit",
-                description: "Increases armor defense",
-                image: "🛡️",
-                stackLimit: 10,
-                devLimit: Infinity,
-                defaultTab: "mod",
-                category: "mod",
-                value: 100
-            },
-
             // MORE HEALING
             medical_kit_advanced: {
                 name: "Advanced Medical Kit",
@@ -4114,8 +3617,9 @@ const GameDefinitions = {
             }
         },
 
-        // Enemy definitions (Modern Military Theme)
-        enemies: {
+        // Legacy enemy definitions (will be migrated to EnemyRegistry)
+        // DO NOT ACCESS DIRECTLY - use GameDefinitions.enemies instead
+        _legacyEnemies: {
             scout: {
                 name: "Scout",
                 description: "Lightly armed patrol unit",
@@ -4618,8 +4122,9 @@ const GameDefinitions = {
             }
         },
 
-        // Crafting Recipe definitions
-        recipes: {
+        // Legacy recipe definitions (will be migrated to RecipeRegistry)
+        // DO NOT ACCESS DIRECTLY - use GameDefinitions.recipes instead
+        _legacyRecipes: {
             // === FORGING RECIPES ===
             // Melee weapons and metal components
             forgeSteelBar: {
@@ -6274,8 +5779,9 @@ const GameDefinitions = {
             }
         },
 
-        // Missions - Standardized flexible structure
-        missions: {
+        // Legacy mission definitions (will be migrated to MissionRegistry)
+        // DO NOT ACCESS DIRECTLY - use GameDefinitions.missions instead
+        _legacyMissions: {
             "tutorial_elder": {
                 id: "tutorial_elder",
                 name: "Speak with the Elder",
@@ -6612,56 +6118,6 @@ const GameDefinitions = {
                 tier: 6,
                 repairCost: { gold: 1000, "mythril_ore": 5 },
                 bonusYield: 25
-            },
-
-            // WEAPON ITEMS
-            "dragons_fang_sword": {
-                id: "dragons_fang_sword",
-                name: "Dragon's Fang",
-                description: "A blade forged from a dragon's tooth, still burning with inner fire",
-                icon: "⚔️",
-                rarity: 7,
-                stackSize: 1,
-                value: 10000,
-                level: 60,
-                bindType: "equip",
-                quality: 1.0,
-                itemType: "weapon",
-                damage: 250,
-                attackSpeed: 1.4,
-                critChance: 15,
-                damageType: "fire",
-                range: "melee",
-                scalingStat: "strength",
-                socketSlots: 3,
-                sockets: [],
-                durability: 300,
-                maxDurability: 300,
-                lore: "Forged in dragonfire, this blade hungers for battle."
-            },
-
-            "frost_staff": {
-                id: "frost_staff",
-                name: "Staff of Eternal Frost",
-                description: "A staff that radiates freezing magical energy",
-                icon: "🔮",
-                rarity: 5,
-                stackSize: 1,
-                value: 6000,
-                level: 45,
-                bindType: "equip",
-                quality: 1.0,
-                itemType: "weapon",
-                damage: 180,
-                attackSpeed: 0.8,
-                critChance: 12,
-                damageType: "ice",
-                range: "ranged",
-                scalingStat: "intelligence",
-                socketSlots: 2,
-                sockets: [],
-                durability: 200,
-                maxDurability: 200
             },
 
             // ARMOR ITEMS
@@ -7132,80 +6588,6 @@ const GameDefinitions = {
                 bonusYield: 8
             },
 
-            // WEAPONS (Modern, Low Level)
-            "pipe_weapon": {
-                id: "pipe_weapon",
-                name: "Lead Pipe",
-                description: "A sturdy metal pipe that makes a decent improvised weapon",
-                icon: "🔧",
-                rarity: 1,
-                stackSize: 1,
-                value: 30,
-                level: 1,
-                bindType: "none",
-                quality: 1.0,
-                itemType: "weapon",
-                damage: 8,
-                attackSpeed: 1.2,
-                critChance: 3,
-                damageType: "physical",
-                range: "melee",
-                scalingStat: "strength",
-                socketSlots: 0,
-                sockets: [],
-                durability: 120,
-                maxDurability: 120,
-                lore: "Simple, effective, and easy to find."
-            },
-
-            "stun_baton": {
-                id: "stun_baton",
-                name: "Makeshift Stun Baton",
-                description: "A police baton retrofitted with a weak electrical charge",
-                icon: "⚡",
-                rarity: 2,
-                stackSize: 1,
-                value: 75,
-                level: 3,
-                bindType: "none",
-                quality: 1.0,
-                itemType: "weapon",
-                damage: 12,
-                attackSpeed: 1.5,
-                critChance: 5,
-                damageType: "lightning",
-                range: "melee",
-                scalingStat: "dexterity",
-                socketSlots: 1,
-                sockets: [],
-                durability: 100,
-                maxDurability: 100
-            },
-
-            "crowbar_weapon": {
-                id: "crowbar_weapon",
-                name: "Heavy Crowbar",
-                description: "A solid steel crowbar, useful for prying and fighting",
-                icon: "🪛",
-                rarity: 1,
-                stackSize: 1,
-                value: 40,
-                level: 2,
-                bindType: "none",
-                quality: 1.0,
-                itemType: "weapon",
-                damage: 10,
-                attackSpeed: 1.0,
-                critChance: 4,
-                damageType: "physical",
-                range: "melee",
-                scalingStat: "strength",
-                socketSlots: 0,
-                sockets: [],
-                durability: 150,
-                maxDurability: 150
-            },
-
             // ARMOR (Modern, Low Level)
             "leather_jacket": {
                 id: "leather_jacket",
@@ -7362,72 +6744,6 @@ const GameDefinitions = {
                 effects: [
                     { type: "communication", rate: 1, description: "Receive transmissions" }
                 ]
-            },
-
-            // MOD ITEMS (Modern, Low Level)
-            "scope_attachment": {
-                id: "scope_attachment",
-                name: "Basic Scope",
-                description: "A simple magnifying scope for ranged weapons",
-                icon: "🔭",
-                rarity: 2,
-                stackSize: 3,
-                value: 45,
-                level: 2,
-                bindType: "none",
-                quality: 1.0,
-                itemType: "mod",
-                targetSlot: "weapon",
-                statModifiers: [
-                    { stat: "critChance", value: 3, type: "flat" },
-                    { stat: "attackSpeed", value: -0.1, type: "flat" }
-                ],
-                incompatibleWith: [],
-                tier: 1,
-                installed: false
-            },
-
-            "reinforced_plating": {
-                id: "reinforced_plating",
-                name: "Metal Plating",
-                description: "Additional armor plating for extra protection",
-                icon: "🛡️",
-                rarity: 1,
-                stackSize: 5,
-                value: 30,
-                level: 1,
-                bindType: "none",
-                quality: 1.0,
-                itemType: "mod",
-                targetSlot: "armor",
-                statModifiers: [
-                    { stat: "defense", value: 5, type: "flat" },
-                    { stat: "resistance.physical", value: 2, type: "flat" }
-                ],
-                incompatibleWith: [],
-                tier: 1,
-                installed: false
-            },
-
-            "energy_cell": {
-                id: "energy_cell",
-                name: "Power Cell",
-                description: "A small energy cell that boosts tool efficiency",
-                icon: "⚡",
-                rarity: 2,
-                stackSize: 10,
-                value: 35,
-                level: 3,
-                bindType: "none",
-                quality: 1.0,
-                itemType: "mod",
-                targetSlot: "tool",
-                statModifiers: [
-                    { stat: "efficiency", value: 15, type: "percent" }
-                ],
-                incompatibleWith: [],
-                tier: 2,
-                installed: false
             },
 
             // HEALING ITEMS (Modern, Low Level)
@@ -8373,3 +7689,317 @@ const GameDefinitions = {
             }
         }
 };
+
+/**
+ * DYNAMIC ITEM GETTER SYSTEM
+ *
+ * Makes GameDefinitions.items a dynamic getter that pulls from ItemRegistry.
+ * This ensures ItemRegistry is the single source of truth for all items.
+ */
+
+// Track if legacy items have been migrated
+let _legacyItemsMigrated = false;
+
+// Define dynamic getter for items property
+Object.defineProperty(GameDefinitions, 'items', {
+    get() {
+        // On first access, migrate legacy items to ItemRegistry
+        if (!_legacyItemsMigrated && typeof ItemRegistry !== 'undefined') {
+            console.log('🔄 Migrating legacy items from GameDefinitions to ItemRegistry...');
+
+            let migratedCount = 0;
+            for (let itemId in this._legacyItems) {
+                // Only add to legacy if not already in production
+                if (!ItemRegistry.production[itemId]) {
+                    ItemRegistry.legacy[itemId] = this._legacyItems[itemId];
+                    migratedCount++;
+                }
+            }
+
+            _legacyItemsMigrated = true;
+            console.log(`✅ Migrated ${migratedCount} legacy items to ItemRegistry.legacy`);
+        }
+
+        // Return all active items from ItemRegistry
+        if (typeof ItemRegistry !== 'undefined') {
+            return ItemRegistry.getAllActive();
+        }
+
+        // Fallback: return legacy items if ItemRegistry not loaded yet
+        console.warn('⚠️  ItemRegistry not available, using legacy items');
+        return this._legacyItems;
+    },
+
+    // Allow setting (for backwards compatibility, but log a warning)
+    set(value) {
+        console.warn('⚠️  Direct assignment to GameDefinitions.items is deprecated.');
+        console.warn('   Use ItemRegistry.production[itemId] = {...} instead');
+    },
+
+    enumerable: true,
+    configurable: false
+});
+
+/**
+ * DYNAMIC ENEMY GETTER SYSTEM
+ *
+ * Makes GameDefinitions.enemies a dynamic getter that pulls from EnemyRegistry.
+ * This ensures EnemyRegistry is the single source of truth for all enemies.
+ */
+
+// Track if legacy enemies have been migrated
+let _legacyEnemiesMigrated = false;
+
+// Define dynamic getter for enemies property
+Object.defineProperty(GameDefinitions, 'enemies', {
+    get() {
+        // On first access, migrate legacy enemies to EnemyRegistry
+        if (!_legacyEnemiesMigrated && typeof EnemyRegistry !== 'undefined') {
+            console.log('🔄 Migrating legacy enemies from GameDefinitions to EnemyRegistry...');
+
+            let migratedCount = 0;
+            for (let enemyId in this._legacyEnemies) {
+                // Only add to legacy if not already in production
+                if (!EnemyRegistry.production[enemyId]) {
+                    EnemyRegistry.legacy[enemyId] = this._legacyEnemies[enemyId];
+                    migratedCount++;
+                }
+            }
+
+            _legacyEnemiesMigrated = true;
+            console.log(`✅ Migrated ${migratedCount} legacy enemies to EnemyRegistry.legacy`);
+        }
+
+        // Return all active enemies from EnemyRegistry
+        if (typeof EnemyRegistry !== 'undefined') {
+            return EnemyRegistry.getAllActive();
+        }
+
+        // Fallback: return legacy enemies if EnemyRegistry not loaded yet
+        console.warn('⚠️  EnemyRegistry not available, using legacy enemies');
+        return this._legacyEnemies;
+    },
+
+    // Allow setting (for backwards compatibility, but log a warning)
+    set(value) {
+        console.warn('⚠️  Direct assignment to GameDefinitions.enemies is deprecated.');
+        console.warn('   Use EnemyRegistry.production[enemyId] = {...} instead');
+    },
+
+    enumerable: true,
+    configurable: false
+});
+
+// MISSION GETTER
+let _legacyMissionsMigrated = false;
+Object.defineProperty(GameDefinitions, 'missions', {
+    get() {
+        if (!_legacyMissionsMigrated && typeof MissionRegistry !== 'undefined') {
+            console.log('🔄 Migrating legacy missions from GameDefinitions to MissionRegistry...');
+            let migratedCount = 0;
+            for (let missionId in this._legacyMissions) {
+                if (!MissionRegistry.production[missionId]) {
+                    MissionRegistry.legacy[missionId] = this._legacyMissions[missionId];
+                    migratedCount++;
+                }
+            }
+            _legacyMissionsMigrated = true;
+            console.log(`✅ Migrated ${migratedCount} legacy missions to MissionRegistry.legacy`);
+        }
+        if (typeof MissionRegistry !== 'undefined') {
+            return MissionRegistry.getAllActive();
+        }
+        console.warn('⚠️  MissionRegistry not available, using legacy missions');
+        return this._legacyMissions;
+    },
+    set(value) {
+        console.warn('⚠️  Direct assignment to GameDefinitions.missions is deprecated.');
+        console.warn('   Use MissionRegistry.production[missionId] = {...} instead');
+    },
+    enumerable: true,
+    configurable: false
+});
+
+// RECIPE GETTER
+let _legacyRecipesMigrated = false;
+Object.defineProperty(GameDefinitions, 'recipes', {
+    get() {
+        if (!_legacyRecipesMigrated && typeof RecipeRegistry !== 'undefined') {
+            console.log('🔄 Migrating legacy recipes from GameDefinitions to RecipeRegistry...');
+            let migratedCount = 0;
+            for (let recipeId in this._legacyRecipes) {
+                if (!RecipeRegistry.production[recipeId]) {
+                    RecipeRegistry.legacy[recipeId] = this._legacyRecipes[recipeId];
+                    migratedCount++;
+                }
+            }
+            _legacyRecipesMigrated = true;
+            console.log(`✅ Migrated ${migratedCount} legacy recipes to RecipeRegistry.legacy`);
+        }
+        if (typeof RecipeRegistry !== 'undefined') {
+            return RecipeRegistry.getAllActive();
+        }
+        console.warn('⚠️  RecipeRegistry not available, using legacy recipes');
+        return this._legacyRecipes;
+    },
+    set(value) {
+        console.warn('⚠️  Direct assignment to GameDefinitions.recipes is deprecated.');
+        console.warn('   Use RecipeRegistry.production[recipeId] = {...} instead');
+    },
+    enumerable: true,
+    configurable: false
+});
+
+// SKILL GETTER
+Object.defineProperty(GameDefinitions, 'skills', {
+    get() {
+        if (typeof SkillRegistry !== 'undefined') {
+            return SkillRegistry.getAllActive();
+        }
+        console.warn('⚠️  SkillRegistry not available, using legacy skills');
+        return this._legacySkills;
+    },
+    set(value) {
+        console.warn('⚠️  Direct assignment to GameDefinitions.skills is deprecated.');
+        console.warn('   Use SkillRegistry.production[skillId] = {...} instead');
+    },
+    enumerable: true,
+    configurable: false
+});
+
+
+/**
+ * DYNAMIC GETTERS FOR NEW ENTITY TYPES (Phase 1)
+ *
+ * These getters connect to the new registries created in Phase 1.
+ */
+
+// Perk Registry Getter
+Object.defineProperty(GameDefinitions, 'perks', {
+    get() {
+        if (typeof PerkRegistry !== 'undefined') {
+            return PerkRegistry.getAllActive();
+        }
+        console.warn('??  PerkRegistry not available');
+        return {};
+    },
+    enumerable: true,
+    configurable: false
+});
+
+// NPC Registry Getter
+Object.defineProperty(GameDefinitions, 'npcs', {
+    get() {
+        if (typeof NPCRegistry !== 'undefined') {
+            return NPCRegistry.getAllActive();
+        }
+        console.warn('??  NPCRegistry not available');
+        return {};
+    },
+    enumerable: true,
+    configurable: false
+});
+
+// Biome Registry Getter
+Object.defineProperty(GameDefinitions, 'biomes', {
+    get() {
+        if (typeof BiomeRegistry !== 'undefined') {
+            return BiomeRegistry.getAllActive();
+        }
+        console.warn('??  BiomeRegistry not available');
+        return {};
+    },
+    enumerable: true,
+    configurable: false
+});
+
+// Loot Table Registry Getter
+Object.defineProperty(GameDefinitions, 'lootTables', {
+    get() {
+        if (typeof LootTableRegistry !== 'undefined') {
+            return LootTableRegistry.getAllActive();
+        }
+        console.warn('??  LootTableRegistry not available');
+        return {};
+    },
+    enumerable: true,
+    configurable: false
+});
+
+// Crafting Station Registry Getter
+Object.defineProperty(GameDefinitions, 'craftingStations', {
+    get() {
+        if (typeof CraftingStationRegistry !== 'undefined') {
+            return CraftingStationRegistry.getAllActive();
+        }
+        console.warn('??  CraftingStationRegistry not available');
+        return {};
+    },
+    enumerable: true,
+    configurable: false
+});
+
+// Technology Registry Getter
+Object.defineProperty(GameDefinitions, 'technologies', {
+    get() {
+        if (typeof TechnologyRegistry !== 'undefined') {
+            return TechnologyRegistry.getAllActive();
+        }
+        console.warn('??  TechnologyRegistry not available');
+        return {};
+    },
+    enumerable: true,
+    configurable: false
+});
+
+// Incursion Registry Getter
+Object.defineProperty(GameDefinitions, 'incursions', {
+    get() {
+        if (typeof IncursionRegistry !== 'undefined') {
+            return IncursionRegistry.getAllActive();
+        }
+        console.warn('??  IncursionRegistry not available');
+        return {};
+    },
+    enumerable: true,
+    configurable: false
+});
+
+// Attribute Registry Getter
+Object.defineProperty(GameDefinitions, 'attributes', {
+    get() {
+        if (typeof AttributeRegistry !== 'undefined') {
+            return AttributeRegistry.getAllActive();
+        }
+        console.warn('??  AttributeRegistry not available');
+        return {};
+    },
+    enumerable: true,
+    configurable: false
+});
+
+// Currency Registry Getter
+Object.defineProperty(GameDefinitions, 'currencies', {
+    get() {
+        if (typeof CurrencyRegistry !== 'undefined') {
+            return CurrencyRegistry.getAllActive();
+        }
+        console.warn('??  CurrencyRegistry not available');
+        return {};
+    },
+    enumerable: true,
+    configurable: false
+});
+
+// Stance Registry Getter
+Object.defineProperty(GameDefinitions, 'stances', {
+    get() {
+        if (typeof StanceRegistry !== 'undefined') {
+            return StanceRegistry.getAllActive();
+        }
+        console.warn('??  StanceRegistry not available');
+        return {};
+    },
+    enumerable: true,
+    configurable: false
+});

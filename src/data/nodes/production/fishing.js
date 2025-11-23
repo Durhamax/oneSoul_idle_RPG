@@ -6,6 +6,103 @@
 
 // === TIER 1: COMMON SPOTS ===
 
+NodeRegistry.production.cradle_lake_shallows = {
+    id: "cradle_lake_shallows",
+    name: "Cradle Lake Shallows",
+    description: "Shallow waters of Cradle Lake, teeming with solfish",
+    icon: "🎣",
+
+    nodeType: "fishing",
+    category: "fish_spot",
+
+    tier: 1,
+    requiredSkillLevel: 1,
+    recommendedLevel: 1,
+
+    baseHealth: 8,
+    minHealth: 6,
+    maxHealth: 10,
+    harvestTime: 2.5,
+    respawnTime: 25,
+
+    resourceTable: [
+        {
+            itemId: "solfish",
+            weight: 100,
+            minYield: 1,
+            maxYield: 2,
+            skillScaling: true,
+            itemDef: {
+                id: 'solfish',
+                name: 'Solfish',
+                description: 'Small freshwater fish found in shallow waters. Can be cooked or sold.',
+                icon: '🐟',
+                iconPath: 'assets/icons/materials/solfish.png',
+                category: 'resource',
+                rarity: 'common',
+                stackLimit: 100,
+                value: 4,
+                resourceType: 'fish',
+                gatherSkill: 'fishing',
+                tags: ['resource', 'fish', 'food', 'cooking']
+            }
+        }
+    ],
+
+    rareDropTable: null,
+    rareDropChance: 0,
+
+    yieldBonusPerLevel: 0.05,
+    rareBonusPerLevel: 0.02,
+    speedBonusPerLevel: 0.02,
+
+    baseXP: 20,
+    xpScaling: "linear",
+    xpMultiplier: 1.0,
+
+    rarity: "common",
+    color: "#4FC3F7",
+    harvestSound: "fishing",
+    particleEffect: "water_splash",
+
+    biomes: ["plains", "lake", "starting_region"],
+    spawnWeight: 100,
+    spawnConditions: null,
+
+    discoveryWeight: 100,
+    upgradeChance: 35,
+    upgradeAmount: 3,
+
+    requirements: {
+        skill: "fishing",
+        skillLevel: 1,
+        characterLevel: 0,
+        quests: [],
+        tools: ["fishing_rod"],
+        toolTier: 1
+    },
+
+    isRenewable: true,
+    isExhaustible: false,
+    exhaustionThreshold: null,
+    multiHarvest: false,
+    instancedLoot: true,
+    weatherDependent: false,
+    timeDependent: false,
+    seasonalAvailability: null,
+
+    progressionPath: "freshwater_fishing",
+    nextTier: null,
+    previousTier: null,
+    unlockMessage: "You've discovered the Cradle Lake Shallows!",
+
+    status: "production",
+    implemented: true,
+    version: "1.0",
+    developmentNotes: "",
+    customData: {}
+};
+
 NodeRegistry.production.pond_fishing_spot = {
     id: "pond_fishing_spot",
     name: "Calm Pond",

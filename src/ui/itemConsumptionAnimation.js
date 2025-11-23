@@ -13,7 +13,7 @@ const ItemConsumptionAnimation = {
      */
     showItemConsumed(itemId, quantity) {
         // Get item definition
-        const item = GameDefinitions.items[itemId];
+        const item = ItemAccessHelper.getItem(itemId);
         if (!item) {
             console.warn(`Item ${itemId} not found in definitions`);
             return;

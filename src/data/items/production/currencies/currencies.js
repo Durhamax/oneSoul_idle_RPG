@@ -15,6 +15,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Standard currency used throughout the realm. Accepted everywhere.',
         icon: '🪙',
         category: 'currency',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 999999,
         value: 1,
@@ -29,6 +30,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Prestigious medals earned through accomplishments. Can be used for special purchases.',
         icon: '🏅',
         category: 'currency',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 999999,
         value: 100,
@@ -43,6 +45,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Ancient tomes containing powerful knowledge. Rare and valuable.',
         icon: '📕',
         category: 'currency',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 999999,
         value: 1000,
@@ -57,6 +60,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Rare crystalline gems with magical properties. Premium currency.',
         icon: '💎',
         category: 'currency',
+        instanced: false,  // Stackable resource
         rarity: 'epic',
         stackLimit: 999999,
         value: 10000,
@@ -75,6 +79,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'A sealed letter with an unknown sender. Smells faintly of lavender.',
         icon: '💌',
         category: 'quest',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 1,
         value: 0,
@@ -90,6 +95,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'A mysterious artifact from a forgotten age. Pulses with dormant power.',
         icon: '🗿',
         category: 'quest',
+        instanced: false,  // Stackable resource
         rarity: 'legendary',
         stackLimit: 1,
         value: 0,
@@ -109,6 +115,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Simple bronze key. Opens bronze chests.',
         icon: '🗝️',
         category: 'key',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 10,
         value: 20,
@@ -121,6 +128,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Ornate silver key. Opens silver chests.',
         icon: '🗝️',
         category: 'key',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 5,
         value: 50,
@@ -133,6 +141,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Precious gold key. Opens gold chests.',
         icon: '🗝️',
         category: 'key',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 3,
         value: 150,
@@ -145,6 +154,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Legendary master key. Can open any chest.',
         icon: '🔑',
         category: 'key',
+        instanced: false,  // Stackable resource
         rarity: 'legendary',
         stackLimit: 1,
         value: 1000,
@@ -162,6 +172,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'A small charm said to bring good fortune. Increases luck permanently.',
         icon: '🍀',
         category: 'special',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 1,
         value: 500,
@@ -180,6 +191,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Mysterious egg that will hatch into a companion. Handle with care!',
         icon: '🥚',
         category: 'special',
+        instanced: false,  // Stackable resource
         rarity: 'epic',
         stackLimit: 1,
         value: 0,
@@ -198,6 +210,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Powerful potion that allows you to reset your character attributes.',
         icon: '⚗️',
         category: 'special',
+        instanced: false,  // Stackable resource
         rarity: 'legendary',
         stackLimit: 1,
         value: 10000,
@@ -214,6 +227,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Magical expansion that increases your inventory capacity by 10 slots.',
         icon: '🎒',
         category: 'special',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 1,
         value: 5000,
@@ -231,6 +245,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Adds an additional bank tab for storage.',
         icon: '🏦',
         category: 'special',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 1,
         value: 10000,
@@ -248,6 +263,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Doubles experience gains for 1 hour. Time to level up!',
         icon: '⏫',
         category: 'special',
+        instanced: false,  // Stackable resource
         rarity: 'epic',
         stackLimit: 5,
         value: 2000,
@@ -265,6 +281,7 @@ const CURRENCY_AND_SPECIAL_ITEMS = {
         description: 'Increases drop rates by 50% for 30 minutes. Find rare items!',
         icon: '🎁',
         category: 'special',
+        instanced: false,  // Stackable resource
         rarity: 'epic',
         stackLimit: 5,
         value: 1500,

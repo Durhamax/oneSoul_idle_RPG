@@ -1,0 +1,21 @@
+// ROLLBACK SCRIPT - Restore old bank structure temporarily
+// Run this in console if you need to see your items again
+
+console.log('🔄 Rolling back dual-bank migration...');
+
+// Restore old structure from backup
+if (GameEngine.state.bank.items_backup) {
+    GameEngine.state.bank.items = GameEngine.state.bank.items_backup;
+    console.log(`✅ Restored ${Object.keys(GameEngine.state.bank.items).length} items from backup`);
+
+    // Clear dual-bank structure
+    GameEngine.state.bank.stackable = {};
+    GameEngine.state.bank.instanced = {};
+
+    // Save the game
+    SaveSystem.save();
+
+    console.log('✅ Rollback complete - reload page to see items');
+} else {
+    console.error('❌ No backup found!');
+}

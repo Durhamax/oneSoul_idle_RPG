@@ -946,4 +946,196 @@ const DevItemTools = {
             </div>
         `);
     },
+
+    /**
+     * Grant all tutorial tools to player
+     * Quick dev function to get all starting gathering tools
+     *
+     * @param {boolean} waitForEngine - If true, waits for game engine to be ready (default: true)
+     * @returns {Promise<object>|object} - Results object with granted and failed arrays
+     */
+    grantTutorialTools(waitForEngine = true) {
+        // Check if GameEngine exists and is ready
+        if (typeof GameEngine === 'undefined') {
+            console.error('❌ GameEngine not found');
+            return { granted: [], failed: ['GameEngine not found'] };
+        }
+
+        if (!GameEngine.addItemToBank) {
+            console.error('❌ addItemToBank not found on GameEngine');
+            return { granted: [], failed: ['addItemToBank function not found'] };
+        }
+
+        // If engine isn't ready and we should wait, return a promise that waits
+        if (waitForEngine && (!GameEngine || !GameEngine.addItemToBank)) {
+            console.log('⏳ Game engine not ready yet. Waiting for initialization...');
+
+            return new Promise((resolve) => {
+                const checkReady = setInterval(() => {
+                    if (GameEngine && GameEngine.addItemToBank) {
+                        clearInterval(checkReady);
+                        console.log('✅ Game engine ready! Granting tools...\n');
+                        resolve(this._performToolGrant());
+                    }
+                }, 100); // Check every 100ms
+
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    clearInterval(checkReady);
+                    console.error('❌ Timeout waiting for game engine. Try calling DevItemTools.grantTutorialTools() after game loads.');
+                    resolve({ granted: [], failed: ['Timeout - game engine not ready after 10 seconds'] });
+                }, 10000);
+            });
+        }
+
+        // Engine is ready, grant immediately
+        return this._performToolGrant();
+    },
+
+    /**
+     * Internal function that performs the actual tool granting
+     * @private
+     */
+    _performToolGrant() {
+        console.log('🎁 Granting all tutorial tools...\n');
+
+        const tutorialTools = [
+            'caneRod',         // Fishing
+            'lightPickaxe',    // Mining
+            'utilityHatchet',  // Logging
+            'wovenBasket',     // Foraging
+            'huntingBlade',    // Hunting
+            'compass'          // Navigation
+        ];
+
+        const granted = [];
+        const failed = [];
+
+        tutorialTools.forEach(toolId => {
+            try {
+                // Check if item exists
+                const item = ItemRegistry.getItem(toolId);
+                if (!item) {
+                    failed.push(`${toolId} - not found in registry`);
+                    return;
+                }
+
+                // Add to bank (Items tab)
+                if (GameEngine && GameEngine.addItemToBank) {
+                    const result = GameEngine.addItemToBank(toolId, 1);
+                    if (result.success !== false) {
+                        granted.push(`${item.icon} ${item.name}`);
+                        console.log(`✅ Granted: ${item.icon} ${item.name}`);
+                    } else {
+                        failed.push(`${toolId} - ${result.reason || 'failed to add'}`);
+                    }
+                } else {
+                    failed.push(`${toolId} - game engine not ready`);
+                }
+            } catch (error) {
+                failed.push(`${toolId} - ${error.message}`);
+            }
+        });
+
+        // Show summary
+        console.log('\n' + '='.repeat(50));
+        console.log('📦 TUTORIAL TOOLS GRANT SUMMARY');
+        console.log('='.repeat(50));
+        console.log(`✅ Granted: ${granted.length} tools`);
+        console.log(`❌ Failed: ${failed.length} tools`);
+
+        if (granted.length > 0) {
+            console.log('\n✅ Successfully granted:');
+            granted.forEach(tool => console.log(`   ${tool}`));
+        }
+
+        if (failed.length > 0) {
+            console.warn('\n❌ Failed to grant:');
+            failed.forEach(err => console.warn(`   ${err}`));
+        }
+
+        console.log('\n💡 TIP: Equip these tools in your weapon slot to gather resources!');
+        console.log('   Skills: Fishing, Mining, Logging, Foraging, Hunting, Navigation\n');
+
+        // Show in UI
+        this.showResults(`
+            <div style="padding: 20px;">
+                <h3 style="color: #4a9eff; margin-top: 0;">🎁 Tutorial Tools Granted</h3>
+                <div style="background: rgba(74, 158, 255, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 10px;">
+                        ✅ ${granted.length}/${tutorialTools.length} tools added to bank
+                    </div>
+                    ${granted.map(tool => `<div style="padding: 5px 0;">   ${tool}</div>`).join('')}
+                </div>
+                ${failed.length > 0 ? `
+                    <div style="background: rgba(255, 0, 0, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="font-weight: bold; margin-bottom: 10px; color: #ff6b6b;">❌ Failed: ${failed.length}</div>
+                        ${failed.map(err => `<div style="padding: 3px 0; color: #ff6b6b;">   ${err}</div>`).join('')}
+                    </div>
+                ` : ''}
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                    <div style="font-weight: bold; margin-bottom: 8px;">💡 Next Steps:</div>
+                    <ol style="margin: 5px 0; padding-left: 20px;">
+                        <li>Go to Items tab to find your new tools</li>
+                        <li>Equip a tool in your weapon slot (Loadout)</li>
+                        <li>Navigate to Skills tab</li>
+                        <li>Select the matching skill (e.g., Fishing for Cane Rod)</li>
+                        <li>Start gathering resources!</li>
+                    </ol>
+                </div>
+            </div>
+        `);
+
+        return { granted, failed };
+    },
+
+    /**
+     * Discover all nodes in the current region for testing
+     */
+    discoverAllNodesInRegion() {
+        if (typeof GameEngine === 'undefined') {
+            console.error('❌ GameEngine not found');
+            return { discovered: [], failed: ['GameEngine not found'] };
+        }
+
+        const currentRegion = GameEngine.state.currentRegion;
+        const regionData = GameEngine.state.regions[currentRegion];
+
+        if (!regionData) {
+            console.error('❌ Current region not found');
+            return { discovered: [], failed: ['Region not found'] };
+        }
+
+        console.log(`🔍 Discovering all nodes in ${currentRegion}...`);
+
+        const discovered = [];
+        const failed = [];
+
+        // Get all available nodes from the region
+        if (regionData.availableNodes) {
+            for (let nodeId in regionData.availableNodes) {
+                const nodeState = regionData.availableNodes[nodeId];
+                if (!nodeState.discovered) {
+                    nodeState.discovered = true;
+
+                    // Get node definition from NodeRegistry only
+                    if (typeof NodeRegistry !== 'undefined') {
+                        const nodeDef = NodeRegistry.getAllActive()[nodeId];
+                        if (nodeDef) {
+                            discovered.push(`${nodeDef.icon || '📦'} ${nodeDef.name || nodeId}`);
+                            console.log(`✅ Discovered: ${nodeDef.name || nodeId}`);
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log(`\n✅ Discovered ${discovered.length} nodes in ${currentRegion}`);
+
+        if (discovered.length === 0) {
+            console.log('💡 No undiscovered nodes found. Nodes may already be discovered or region has no nodes.');
+        }
+
+        return { discovered, failed };
+    }
 };

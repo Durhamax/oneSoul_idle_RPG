@@ -25,6 +25,9 @@ const SaveSystem = {
             // Run all migrations on the loaded save (centralized in MigrationSystem)
             MigrationSystem.runAllMigrations();
 
+            // Initialize Dual-Bank System (after migrations, creates new bank structure if needed)
+            DualBankSystem.initialize();
+
             // Ensure perk grid unlock order exists (legacy compatibility)
             if (!GameEngine.state.perkGrid.unlockOrder) {
                 GameEngine.state.perkGrid.unlockOrder = [];
@@ -36,8 +39,16 @@ const SaveSystem = {
                 GameEngine.updateEquipmentCells();
                 console.log("✅ Updated perk grid equipment cells after save load");
             }
+
+            // Emit save-loaded event for UI components (EventBus communication)
+            if (typeof EventBus !== 'undefined') {
+                EventBus.emit('save-loaded');
+            }
         } else {
             console.log("📝 Starting new game");
+
+            // Initialize Dual-Bank System for new game
+            DualBankSystem.initialize();
         }
 
         // Start auto-save
@@ -94,6 +105,14 @@ const SaveSystem = {
 
             // Load the saved state
             GameEngine.state = saveData.state;
+
+            // Update system references to new state object
+            if (GatheringSystem) {
+                GatheringSystem.state = GameEngine.state;
+            }
+            if (CombatSystem) {
+                CombatSystem.state = GameEngine.state;
+            }
 
             // Process offline time
             if (offlineTime > 5000) { // Only if offline for more than 5 seconds

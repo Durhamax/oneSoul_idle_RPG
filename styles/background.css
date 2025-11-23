@@ -1,0 +1,126 @@
+/* DYNAMIC BACKGROUND SYSTEM */
+/* =================================================================== */
+
+.background-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.background-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    transition: all 2s ease-in-out;
+}
+
+.background-layer.transitioning {
+    transition: all 2s ease-in-out;
+}
+
+.gradient-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: all 2s ease-in-out;
+    pointer-events: none;
+}
+
+.gradient-layer.transitioning {
+    transition: all 2s ease-in-out;
+}
+
+.particle-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.dark-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+}
+
+/* Particle animations */
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: particleFall linear forwards;
+    pointer-events: none;
+}
+
+@keyframes particleFall {
+    0% {
+        transform: translateY(0) translateX(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.8;
+    }
+    90% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(110vh) translateX(var(--drift, 0)) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Specific particle types */
+.particle-leaves {
+    border-radius: 50% 0;
+}
+
+.particle-snow {
+    border-radius: 50%;
+}
+
+.particle-dust {
+    border-radius: 50%;
+    opacity: 0.6;
+}
+
+.particle-mist {
+    border-radius: 50%;
+    filter: blur(8px);
+    opacity: 0.4;
+}
+
+.particle-fog {
+    border-radius: 50%;
+    filter: blur(15px);
+    opacity: 0.3;
+}
+
+.particle-embers {
+    border-radius: 50%;
+    box-shadow: 0 0 10px currentColor;
+}
+
+.particle-smoke {
+    border-radius: 50%;
+    filter: blur(10px);
+    opacity: 0.5;
+}
+
+/* =================================================================== */

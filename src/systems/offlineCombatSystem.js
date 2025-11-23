@@ -12,10 +12,27 @@ const OfflineCombatSystem = {
 
     /**
      * Initialize the offline combat system
+     */    /**
+     * Get item definition from ItemRegistry (standardized access pattern)
+     * @param {string} itemId - Item ID to retrieve
+     * @returns {object|null} Item definition or null if not found
      */
+    _getItemDef(itemId) {
+        // Primary: Use ItemRegistry if available
+        if (typeof ItemRegistry !== 'undefined' && ItemRegistry.getItem) {
+            return ItemRegistry.getItem(itemId);
+        }
+
+        // Fallback: Use definitions.items (legacy support)
+        return this.definitions?.items?.[itemId] || null;
+    },
+
+
     init(engine) {
         engine.simulateOfflineCombat = this.simulateOfflineCombat.bind(engine);
         console.log('✅ Offline Combat System initialized');
+        console.log('✅ OfflineCombatSystem initialized (ItemRegistry pattern)');
+
     },
 
     /**
@@ -150,7 +167,7 @@ const OfflineCombatSystem = {
         // Check if player has a gun
         const equippedWeapon = this.state.equipment.weapon;
         if (equippedWeapon) {
-            const weaponDef = this.definitions.items[equippedWeapon];
+            const weaponDef = OfflineCombatSystem._getItemDef.call(this, equippedWeapon);
             if (weaponDef?.magazineSize) {
                 playerMaxAmmo = weaponDef.magazineSize;
                 playerAmmo = playerMaxAmmo;
@@ -159,7 +176,7 @@ const OfflineCombatSystem = {
 
         // Get equipped food for healing
         const equippedFood = this.state.equipment.food;
-        const foodDef = equippedFood ? this.definitions.items[equippedFood] : null;
+        const foodDef = equippedFood ? OfflineCombatSystem._getItemDef.call(this, equippedFood) : null;
         const foodHealAmount = foodDef ? Math.floor(foodDef.healAmount * (1 + playerStats.consumableEfficiency)) : 0;
         const autoEatThreshold = Math.min(0.95, this.state.combat.autoEatThreshold + playerStats.autoEatThresholdBonus);
         let lastFoodUse = 0;
@@ -191,7 +208,7 @@ const OfflineCombatSystem = {
             // Handle player reload
             if (playerMaxAmmo > 0) {
                 const equippedWeapon = this.state.equipment.weapon;
-                const weaponDef = this.definitions.items[equippedWeapon];
+                const weaponDef = OfflineCombatSystem._getItemDef.call(this, equippedWeapon);
                 const baseReloadTime = weaponDef?.reloadTime || 2000;
                 const reloadReduction = 1 - playerStats.reloadTimeReduction;
                 const effectiveReloadTime = Math.max(500, baseReloadTime * reloadReduction);

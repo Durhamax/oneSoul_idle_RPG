@@ -1,0 +1,26 @@
+// Run this in console to see what's actually in your bank
+
+console.group('🔍 BANK DEBUG');
+
+console.log('Old structure (bank.items):', GameEngine.state.bank.items);
+console.log('Old item count:', Object.keys(GameEngine.state.bank.items || {}).length);
+
+console.log('New stackable:', GameEngine.state.bank.stackable);
+console.log('Stackable count:', Object.keys(GameEngine.state.bank.stackable || {}).length);
+
+console.log('New instanced:', GameEngine.state.bank.instanced);
+console.log('Instanced count:', Object.keys(GameEngine.state.bank.instanced || {}).length);
+
+console.log('Backup:', GameEngine.state.bank.items_backup);
+console.log('Backup count:', Object.keys(GameEngine.state.bank.items_backup || {}).length);
+
+console.groupEnd();
+
+// List all items in backup to see what we're working with
+console.group('📦 BACKUP CONTENTS');
+if (GameEngine.state.bank.items_backup) {
+    for (let [itemId, itemData] of Object.entries(GameEngine.state.bank.items_backup)) {
+        console.log(`${itemId}:`, itemData);
+    }
+}
+console.groupEnd();

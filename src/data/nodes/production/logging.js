@@ -6,53 +6,114 @@
 
 // === TIER 1: BASIC TREES ===
 
-NodeRegistry.production.oak_tree = {
-    id: "oak_tree",
-    name: "Oak Tree",
-    description: "A sturdy oak tree with strong, versatile wood",
-    icon: "🌳",
+NodeRegistry.production.evergreen_forest = {
+    id: "evergreen_forest",
+    name: "Evergreen Forest",
+    description: "A dense forest of evergreen trees. Rich with pinewood, sap, and pinecones.",
+    icon: "🌲",
 
     nodeType: "logging",
-    category: "hardwood_tree",
+    category: "forest",
 
     tier: 1,
     requiredSkillLevel: 1,
     recommendedLevel: 1,
 
-    baseHealth: 12,
-    minHealth: 10,
-    maxHealth: 18,
-    harvestTime: 3.5,
-    respawnTime: 45,
+    baseHealth: 10,
+    minHealth: 8,
+    maxHealth: 15,
+    harvestTime: 3.0,
+    respawnTime: 30,
 
     resourceTable: [
-        { itemId: "wood", weight: 85, minYield: 2, maxYield: 5, skillScaling: true },
-        { itemId: "stick", weight: 15, minYield: 1, maxYield: 3, skillScaling: false }
+        {
+            itemId: "pinewood",
+            weight: 50,
+            minYield: 1,
+            maxYield: 3,
+            skillScaling: true,
+            itemDef: {
+                id: 'pinewood',
+                name: 'Pinewood',
+                description: 'Soft pine logs from young pine trees. Basic fuel for campfires and navigation.',
+                icon: '🪵',
+                iconPath: 'assets/icons/materials/pinewood.png',
+                category: 'resource',
+                rarity: 'common',
+                stackLimit: 100,
+                value: 2,
+                resourceType: 'wood',
+                gatherSkill: 'logging',
+                tags: ['resource', 'wood', 'logs', 'fuel', 'navigation', 'crafting']
+            }
+        },
+        {
+            itemId: "sap",
+            weight: 25,
+            minYield: 1,
+            maxYield: 2,
+            skillScaling: true,
+            itemDef: {
+                id: 'sap',
+                name: 'Sap',
+                description: 'Sticky tree sap. Used in crafting adhesives and potions.',
+                icon: '🍯',
+                iconPath: 'assets/icons/materials/sap.png',
+                category: 'resource',
+                rarity: 'common',
+                stackLimit: 100,
+                value: 3,
+                resourceType: 'misc',
+                gatherSkill: 'logging',
+                tags: ['resource', 'misc', 'crafting', 'alchemy']
+            }
+        },
+        {
+            itemId: "pinecone",
+            weight: 25,
+            minYield: 1,
+            maxYield: 2,
+            skillScaling: true,
+            itemDef: {
+                id: 'pinecone',
+                name: 'Pinecone',
+                description: 'A pine cone. Can be used for kindling or decoration.',
+                icon: '🌰',
+                iconPath: 'assets/icons/materials/pinecone.png',
+                category: 'resource',
+                rarity: 'common',
+                stackLimit: 100,
+                value: 1,
+                resourceType: 'misc',
+                gatherSkill: 'logging',
+                tags: ['resource', 'misc', 'kindling', 'crafting']
+            }
+        }
     ],
 
     rareDropTable: null,
-    rareDropChance: 8,
+    rareDropChance: 0,
 
     yieldBonusPerLevel: 0.05,
     rareBonusPerLevel: 0.02,
     speedBonusPerLevel: 0.02,
 
-    baseXP: 30,
+    baseXP: 25,
     xpScaling: "linear",
     xpMultiplier: 1.0,
 
     rarity: "common",
-    color: "#8b4513",
+    color: "#2e7d32",
     harvestSound: "logging",
     particleEffect: "wood_chips",
 
-    biomes: ["forest", "plains", "hills"],
-    spawnWeight: 120,
+    biomes: ["forest", "plains", "starting_region"],
+    spawnWeight: 100,
     spawnConditions: null,
 
     discoveryWeight: 100,
-    upgradeChance: 35,
-    upgradeAmount: 3,
+    upgradeChance: 30,
+    upgradeAmount: 2,
 
     requirements: {
         skill: "logging",
@@ -73,9 +134,9 @@ NodeRegistry.production.oak_tree = {
     seasonalAvailability: null,
 
     progressionPath: "basic_lumber",
-    nextTier: "willow_tree",
+    nextTier: null,
     previousTier: null,
-    unlockMessage: "You've found an oak tree!",
+    unlockMessage: "You've discovered an Evergreen Forest!",
 
     status: "production",
     implemented: true,
@@ -104,8 +165,48 @@ NodeRegistry.production.pine_tree = {
     respawnTime: 40,
 
     resourceTable: [
-        { itemId: "wood", weight: 90, minYield: 3, maxYield: 6, skillScaling: true },
-        { itemId: "pinecone", weight: 10, minYield: 1, maxYield: 2, skillScaling: false }
+        {
+            itemId: "pinewood",
+            weight: 90,
+            minYield: 3,
+            maxYield: 6,
+            skillScaling: true,
+            itemDef: {
+                id: 'pinewood',
+                name: 'Pinewood',
+                description: 'Soft pine logs from young pine trees. Basic fuel for campfires and navigation.',
+                icon: '🪵',
+                iconPath: 'assets/icons/materials/pinewood.png',
+                category: 'resource',
+                rarity: 'common',
+                stackLimit: 100,
+                value: 2,
+                resourceType: 'wood',
+                gatherSkill: 'logging',
+                tags: ['resource', 'wood', 'logs', 'fuel', 'navigation', 'crafting']
+            }
+        },
+        {
+            itemId: "pinecone",
+            weight: 10,
+            minYield: 1,
+            maxYield: 2,
+            skillScaling: false,
+            itemDef: {
+                id: 'pinecone',
+                name: 'Pinecone',
+                description: 'A pine cone. Can be used for kindling or decoration.',
+                icon: '🌰',
+                iconPath: 'assets/icons/materials/pinecone.png',
+                category: 'resource',
+                rarity: 'common',
+                stackLimit: 100,
+                value: 1,
+                resourceType: 'misc',
+                gatherSkill: 'logging',
+                tags: ['resource', 'misc', 'kindling', 'crafting']
+            }
+        }
     ],
 
     rareDropTable: null,
@@ -184,9 +285,53 @@ NodeRegistry.production.willow_tree = {
     respawnTime: 50,
 
     resourceTable: [
-        { itemId: "willow_wood", weight: 80, minYield: 2, maxYield: 5, skillScaling: true },
-        { itemId: "wood", weight: 15, minYield: 1, maxYield: 3, skillScaling: true },
-        { itemId: "willow_branch", weight: 5, minYield: 1, maxYield: 2, skillScaling: false }
+        {
+            itemId: "willow_wood",
+            weight: 80,
+            minYield: 2,
+            maxYield: 5,
+            skillScaling: true,
+            itemDef: {
+                id: 'willow_wood',
+                name: 'Willow Wood',
+                description: 'Flexible willow branches. Excellent for weaving and crafting.',
+                icon: '🪵',
+                category: 'resource',
+                rarity: 'uncommon',
+                stackLimit: 100,
+                value: 8,
+                resourceType: 'wood',
+                gatherSkill: 'logging',
+                tags: ['resource', 'wood', 'flexible', 'crafting']
+            }
+        },
+        {
+            itemId: "pinewood",
+            weight: 15,
+            minYield: 1,
+            maxYield: 3,
+            skillScaling: true
+        },
+        {
+            itemId: "willow_branch",
+            weight: 5,
+            minYield: 1,
+            maxYield: 2,
+            skillScaling: false,
+            itemDef: {
+                id: 'willow_branch',
+                name: 'Willow Branch',
+                description: 'Thin, flexible willow branches. Perfect for basket weaving.',
+                icon: '🌿',
+                category: 'resource',
+                rarity: 'common',
+                stackLimit: 100,
+                value: 3,
+                resourceType: 'misc',
+                gatherSkill: 'logging',
+                tags: ['resource', 'misc', 'flexible', 'crafting', 'weaving']
+            }
+        }
     ],
 
     rareDropTable: null,
@@ -263,9 +408,53 @@ NodeRegistry.production.maple_tree = {
     respawnTime: 60,
 
     resourceTable: [
-        { itemId: "maple_wood", weight: 75, minYield: 2, maxYield: 5, skillScaling: true },
-        { itemId: "wood", weight: 20, minYield: 1, maxYield: 3, skillScaling: true },
-        { itemId: "maple_sap", weight: 5, minYield: 1, maxYield: 1, skillScaling: false }
+        {
+            itemId: "maple_wood",
+            weight: 75,
+            minYield: 2,
+            maxYield: 5,
+            skillScaling: true,
+            itemDef: {
+                id: 'maple_wood',
+                name: 'Maple Wood',
+                description: 'Beautiful hardwood from maple trees. Prized for furniture and construction.',
+                icon: '🪵',
+                category: 'resource',
+                rarity: 'rare',
+                stackLimit: 100,
+                value: 15,
+                resourceType: 'wood',
+                gatherSkill: 'logging',
+                tags: ['resource', 'wood', 'hardwood', 'crafting', 'valuable']
+            }
+        },
+        {
+            itemId: "pinewood",
+            weight: 20,
+            minYield: 1,
+            maxYield: 3,
+            skillScaling: true
+        },
+        {
+            itemId: "maple_sap",
+            weight: 5,
+            minYield: 1,
+            maxYield: 1,
+            skillScaling: false,
+            itemDef: {
+                id: 'maple_sap',
+                name: 'Maple Sap',
+                description: 'Sweet maple sap. Can be processed into syrup or used in alchemy.',
+                icon: '🍯',
+                category: 'resource',
+                rarity: 'uncommon',
+                stackLimit: 100,
+                value: 12,
+                resourceType: 'misc',
+                gatherSkill: 'logging',
+                tags: ['resource', 'misc', 'sweet', 'alchemy', 'cooking']
+            }
+        }
     ],
 
     rareDropTable: null,

@@ -10,13 +10,30 @@ const RestRecoverySystem = {
     /**
      * Initialize rest/recovery system on the GameEngine
      * @param {object} engine - Reference to GameEngine
+     */    /**
+     * Get item definition from ItemRegistry (standardized access pattern)
+     * @param {string} itemId - Item ID to retrieve
+     * @returns {object|null} Item definition or null if not found
      */
+    _getItemDef(itemId) {
+        // Primary: Use ItemRegistry if available
+        if (typeof ItemRegistry !== 'undefined' && ItemRegistry.getItem) {
+            return ItemRegistry.getItem(itemId);
+        }
+
+        // Fallback: Use definitions.items (legacy support)
+        return this.definitions?.items?.[itemId] || null;
+    },
+
+
     init(engine) {
         // Attach functions to engine
         engine.processRestConsumption = this.processRestConsumption.bind(engine);
         engine.hasRestResources = this.hasRestResources.bind(engine);
         engine.consumeRestResources = this.consumeRestResources.bind(engine);
         engine.getRestResourceCounts = this.getRestResourceCounts.bind(engine);
+        console.log('✅ RestRecoverySystem initialized (ItemRegistry pattern)');
+
     },
 
     /**
@@ -83,18 +100,26 @@ const RestRecoverySystem = {
             // Check if we have this item in bank
             const bankItem = this.state.bank.items[foodItemId];
             hasFood = bankItem && bankItem.quantity > 0;
+            console.log(`🍖 Food check: ${foodItemId} - ${hasFood ? 'Available (' + bankItem.quantity + ')' : 'Not available'}`);
+        } else {
+            console.log('🍖 No food equipped in food slot');
         }
 
         // Check for logs in bank (any basic log item will work)
-        const logItems = ['pinewood', 'log', 'normalLogs', 'oakLog', 'oakLogs', 'willowLog', 'willowLogs', 'birchLog', 'mapleLog', 'mapleLogs'];
+        const logItems = ['pinewood', 'log', 'normalLogs', 'oakLog', 'oakLogs', 'willowLog', 'willowLogs', 'birchLog', 'mapleLog', 'mapleLogs', 'wood'];
         let hasLogs = false;
 
         for (let logId of logItems) {
             const bankItem = this.state.bank.items[logId];
             if (bankItem && bankItem.quantity > 0) {
                 hasLogs = true;
+                console.log(`🪵 Found logs: ${logId} (${bankItem.quantity})`);
                 break;
             }
+        }
+
+        if (!hasLogs) {
+            console.log('🪵 No logs found in bank');
         }
 
         return hasFood && hasLogs;
@@ -118,7 +143,7 @@ const RestRecoverySystem = {
                 // Try ItemDatabase first, then fall back to definitions.js
                 let foodDef = typeof ItemDatabase !== 'undefined' ? ItemDatabase.getItem(foodItemId) : null;
                 if (!foodDef && this.definitions?.items?.[foodItemId]) {
-                    foodDef = this.definitions.items[foodItemId];
+                    foodDef = RestRecoverySystem._getItemDef.call(this, foodItemId);
                 }
                 const foodRecovery = foodDef?.enduranceRecovery || 10; // Default 10 if not specified
                 totalEnduranceRecovery += foodRecovery;
@@ -148,7 +173,7 @@ const RestRecoverySystem = {
                 // Try ItemDatabase first, then fall back to definitions.js
                 let logDef = typeof ItemDatabase !== 'undefined' ? ItemDatabase.getItem(logId) : null;
                 if (!logDef && this.definitions?.items?.[logId]) {
-                    logDef = this.definitions.items[logId];
+                    logDef = RestRecoverySystem._getItemDef.call(this, logId);
                 }
                 logRecovery = logDef?.enduranceRecovery || 5; // Default 5 if not specified
                 totalEnduranceRecovery += logRecovery;

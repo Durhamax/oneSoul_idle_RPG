@@ -14,6 +14,10 @@ const SkillsUI = {
      */
     updateSkills() {
         const container = document.getElementById("skillsDisplay");
+
+        // If skillsDisplay doesn't exist, skip (new SkillCard UI is being used)
+        if (!container) return;
+
         const skills = GameEngine.state.skills;
 
         // Create state snapshot (include character level and attributes for proper updates)
@@ -30,6 +34,16 @@ const SkillsUI = {
         const charLevel = GameEngine.state.characterLevel;
         const attributes = GameEngine.state.combatAttributes;
         const attributeDefs = GameEngine.definitions.combatAttributes;
+
+        // Debug logging
+        console.log('🔍 SkillsUI Debug:', {
+            skillsCount: Object.keys(skills).length,
+            skillDefsCount: Object.keys(skillDefs || {}).length,
+            attributesCount: Object.keys(attributes).length,
+            attributeDefsCount: Object.keys(attributeDefs || {}).length,
+            sampleSkillIds: Object.keys(skills).slice(0, 5),
+            sampleSkillDefIds: Object.keys(skillDefs || {}).slice(0, 5)
+        });
 
         let html = `<div class="dashboard-grid">`;
 
@@ -76,7 +90,7 @@ const SkillsUI = {
             const skill = skills[skillId];
             const def = skillDefs[skillId];
 
-            if (!skill || !skill.unlocked) return '';
+            if (!skill || !skill.unlocked || !def) return '';
 
             const expRequired = GameEngine.getSkillExpRequired(skillId);
             const expPercent = (skill.exp / expRequired) * 100;
@@ -198,6 +212,9 @@ const SkillsUI = {
         const value = attributes[attrId];
         const def = attributeDefs[attrId];
         const hasPoints = unassignedPoints > 0;
+
+        // Skip if attribute or definition is missing
+        if (value === undefined || !def) return '';
 
         return `
             <div style="background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);">

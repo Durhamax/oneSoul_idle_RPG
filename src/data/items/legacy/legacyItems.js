@@ -17,6 +17,7 @@ const LEGACY_ITEMS = {
         description: 'Old item format. Replaced by bronzeSword.',
         icon: '🗡️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 1,
         value: 15,
@@ -42,6 +43,7 @@ const LEGACY_ITEMS = {
         description: 'Old item format. Replaced by minorHealthPotion.',
         icon: '🧪',
         category: 'consumable',
+        instanced: true,  // Unique instance
         rarity: 'common',
         stackLimit: 20,
         value: 10,
@@ -62,6 +64,7 @@ const LEGACY_ITEMS = {
         description: 'This item was removed from the game. Kept for save compatibility.',
         icon: '🔮',
         category: 'special',
+        instanced: true,  // Unique instance
         rarity: 'rare',
         stackLimit: 1,
         value: 0,

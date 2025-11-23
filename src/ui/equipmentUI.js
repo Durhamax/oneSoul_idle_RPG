@@ -11,6 +11,29 @@ const EquipmentUI = {
     lastEquipmentState: null,
 
     /**
+     * Initialize event listeners for instant updates
+     */
+    init() {
+        // Listen to inventory events for instant bank updates
+        if (typeof EventBus !== 'undefined') {
+            EventBus.on('item-added', (data) => this.handleItemChanged(data));
+            EventBus.on('item-removed', (data) => this.handleItemChanged(data));
+            EventBus.on('equipment-instance-added', (data) => this.handleItemChanged(data));
+            console.log('✅ EquipmentUI event listeners registered');
+        }
+    },
+
+    /**
+     * Handle inventory change events for instant UI updates
+     */
+    handleItemChanged(data) {
+        // Only update if we're currently viewing the bank tab
+        if (UICore.currentView === 'bank') {
+            this.updateBank();
+        }
+    },
+
+    /**
      * Update bank display
      */
     updateBank() {
@@ -48,8 +71,15 @@ const EquipmentUI = {
 
         const bank = GameEngine.state.bank;
 
-        const totalItems = Object.keys(bank.items).length;
-        const totalQuantity = Object.values(bank.items).reduce((sum, item) => sum + item.quantity, 0);
+        // DUAL-BANK: Calculate stats from both storages
+        const stackableTypes = Object.keys(bank.stackable || {}).length;
+        const stackableQuantity = Object.values(bank.stackable || {}).reduce((sum, qty) => sum + qty, 0);
+
+        const instancedTypes = Object.keys(bank.instanced || {}).length;
+
+        const totalTypes = stackableTypes + instancedTypes;
+        const totalQuantity = stackableQuantity + instancedTypes; // Instances count as 1 each
+
         const newItemCount = bank.newItems.length;
 
         // Add medals to total count
@@ -61,7 +91,7 @@ const EquipmentUI = {
 
         html += `
             <div style="background: #2a2a2a; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px;">
-                <strong>Total Items:</strong> ${totalItems} types |
+                <strong>Total Items:</strong> ${totalTypes} types |
                 <strong>Total Quantity:</strong> ${totalQuantity} |
                 <strong>Medals:</strong> ${medalCount} |
                 <strong>New Items:</strong> <span style="color: #ffeb3b;">${newItemCount}</span>
@@ -126,12 +156,15 @@ const EquipmentUI = {
 
         const items = GameEngine.getItemsInTab(activeTab);
 
+        console.log(`[Bank] Active tab: ${activeTab}, Items found: ${items.length}`);
+
         if (items.length === 0) {
             container.innerHTML = '<div class="bank-empty">No items in this tab yet...<br><br>💡 Use debug buttons to add items!</div>';
             return;
         }
 
         let html = "";
+        let renderedCount = 0;
 
         for (let item of items) {
             const def = item.definition;
@@ -142,13 +175,22 @@ const EquipmentUI = {
                 continue;
             }
 
-            // Use the standardized ItemCard component
-            html += ItemCard.create(item.itemId, 'bank', {
+            // Use the ItemCard component
+            const cardHtml = ItemCard.create(item.itemId, 'bank', {
                 quantity: item.quantity,
                 isNew: item.isNew
+                // onClick defaults to inspectItem() for bank context
             });
+
+            if (cardHtml) {
+                html += cardHtml;
+                renderedCount++;
+            } else {
+                console.warn(`⚠️ ItemCard.create returned empty for ${item.itemId}`);
+            }
         }
 
+        console.log(`[Bank] Rendered ${renderedCount} item cards, HTML length: ${html.length}`);
         container.innerHTML = html;
     },
 
@@ -266,8 +308,10 @@ const EquipmentUI = {
         // Determine weight color based on capacity
         let weightColor = "#4a9eff"; // Default blue
         const weightPercent = (currentWeight / maxWeight) * 100;
-        if (weightPercent >= 100) {
-            weightColor = "#f44336"; // Red when at/over capacity
+        const isOverCapacity = currentWeight > maxWeight;
+
+        if (isOverCapacity) {
+            weightColor = "#f44336"; // Red when over capacity
         } else if (weightPercent >= 80) {
             weightColor = "#ff9800"; // Orange when near capacity
         }
@@ -275,7 +319,25 @@ const EquipmentUI = {
         let html = `
             <div class="stat-row">
                 <span class="stat-label">⚖️ Equipment Weight:</span>
-                <span class="stat-value" style="color: ${weightColor};">${currentWeight} / ${maxWeight}</span>
+                <span class="stat-value" style="color: ${weightColor};">
+                    ${currentWeight.toFixed(1)} / ${maxWeight}
+                    ${isOverCapacity ? ' ⚠️' : ''}
+                </span>
+            </div>
+            ${isOverCapacity ? `
+                <div class="stat-row" style="background: rgba(244, 67, 54, 0.1); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
+                    <span style="color: #f44336; font-size: 0.85em;">
+                        ⚠️ Over capacity! Cannot equip more items.
+                    </span>
+                </div>
+            ` : ''}
+            <div style="margin-bottom: 15px;">
+                <div style="background: #1a1a1a; border-radius: 4px; overflow: hidden; height: 8px;">
+                    <div style="background: ${weightColor}; width: ${Math.min(100, weightPercent)}%; height: 100%; transition: width 0.3s ease;"></div>
+                </div>
+                <div style="font-size: 0.75em; color: #888; margin-top: 4px; text-align: right;">
+                    ${weightPercent.toFixed(0)}% capacity used
+                </div>
             </div>
             <div class="stat-row">
                 <span class="stat-label">${weaponTypeDef.icon} Weapon Type:</span>
@@ -316,11 +378,27 @@ const EquipmentUI = {
             return;
         }
 
-        // Use EquipmentComponent with horizontal layout mode (3 containers side-by-side)
-        container.innerHTML = EquipmentComponent.render({
+        let html = '';
+
+        // Add equipment display using EquipmentComponent
+        html += EquipmentComponent.render({
             mode: 'horizontal',
             showLabels: true,
             interactive: true
         });
+
+        // Add equipment presets section at the bottom (if EquipmentPresetsUI is available)
+        if (typeof EquipmentPresetsUI !== 'undefined') {
+            html += `
+                <div class="equipment-presets-section" style="margin-top: var(--space-xl);">
+                    <h3 style="font-family: var(--font-display); font-size: var(--font-size-lg); color: var(--color-primary); margin: 0 0 var(--space-md) 0; text-transform: uppercase; letter-spacing: var(--letter-spacing-wider);">
+                        💾 Equipment Presets
+                    </h3>
+                    ${EquipmentPresetsUI.render()}
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
     }
 };

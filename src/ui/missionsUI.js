@@ -797,7 +797,7 @@ const MissionsUI = {
         // Items - Highlighted
         if (rewards.base && rewards.base.items) {
             for (let itemReward of rewards.base.items) {
-                const itemDef = GameEngine.definitions.items[itemReward.itemId];
+                const itemDef = ItemAccessHelper.getItem(itemReward.itemId);
                 if (itemDef) {
                     html += `
                         <div style="background: linear-gradient(135deg, #2a2a3a, #1a1a2a); border: 2px solid #4caf50; border-radius: 6px; padding: 12px; text-align: center; min-width: 90px; box-shadow: 0 2px 8px rgba(76,175,80,0.3);">

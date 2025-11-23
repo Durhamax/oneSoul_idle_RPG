@@ -20,6 +20,7 @@ const NavigationSystem = {
         engine.discoverResourceNode = this.discoverResourceNode.bind(engine);
         engine.discoverEnemyInRegion = this.discoverEnemyInRegion.bind(engine);
         engine.tryDiscoverExitPath = this.tryDiscoverExitPath.bind(engine);
+        engine.discoverBidirectionalPath = this.discoverBidirectionalPath.bind(engine);
         engine.canTravelToRegion = this.canTravelToRegion.bind(engine);
         engine.travelToRegion = this.travelToRegion.bind(engine);
         engine.changeRegion = this.changeRegion.bind(engine);
@@ -308,9 +309,77 @@ const NavigationSystem = {
             activeNav.lastRecoveryTick = 0;
         }
 
-        // RECOVERY MODE: Endurance recovery now handled by consuming food/logs in RestRecoverySystem
-        // Just return early if in recovery mode - actual recovery happens via resource consumption
+        // RECOVERY MODE: Camping system with resource consumption
         if (activeNav.isRecovering) {
+            const timeSinceRecovery = now - (activeNav.lastRecoveryTick || now);
+            const recoveryInterval = 1000; // Recover every 1 second
+            const consumptionInterval = 6000; // Consume resources every 6 seconds
+
+            if (timeSinceRecovery >= recoveryInterval) {
+                activeNav.lastRecoveryTick = now;
+
+                // Check if it's time to consume resources (every 6 seconds)
+                if (!activeNav.lastConsumptionTime) {
+                    activeNav.lastConsumptionTime = now;
+                }
+                const timeSinceConsumption = now - activeNav.lastConsumptionTime;
+
+                if (timeSinceConsumption >= consumptionInterval) {
+                    activeNav.lastConsumptionTime = now;
+
+                    // Try to consume equipped food and wood
+                    const foodId = activeNav.restEquipment?.food;
+                    const woodId = activeNav.restEquipment?.wood;
+
+                    let canConsume = true;
+
+                    // Check if we have the resources
+                    if (!foodId || !woodId) {
+                        console.warn('⚠️ Missing camping resources! Recovery paused.');
+                        canConsume = false;
+                    } else {
+                        const foodQty = this.state.bank.items[foodId]?.quantity || 0;
+                        const woodQty = this.state.bank.items[woodId]?.quantity || 0;
+
+                        if (foodQty < 1 || woodQty < 1) {
+                            console.warn('⚠️ Out of camping resources! Recovery paused.');
+                            canConsume = false;
+                        }
+                    }
+
+                    if (canConsume) {
+                        // Consume 1 food and 1 wood
+                        this.removeItem(foodId, 1);
+                        this.removeItem(woodId, 1);
+
+                        const foodDef = ItemRegistry.getItem(foodId);
+                        const woodDef = ItemRegistry.getItem(woodId);
+                        console.log(`🔥 Camping: Consumed 1 ${foodDef?.name} + 1 ${woodDef?.name}`);
+                    } else {
+                        // No resources = no recovery
+                        return;
+                    }
+                }
+
+                // Recover endurance over time
+                // Formula: base 3 + (health * 0.5) = faster recovery with higher health
+                const health = this.state.combatAttributes?.health || 1;
+                const balance = this.gameBalance;
+                const recoveryRate = (balance.baseRecoveryRate || 3) + (health * (balance.healthRecoveryMult || 0.5));
+
+                activeNav.endurance += recoveryRate;
+
+                // Check if fully recovered
+                if (activeNav.endurance >= activeNav.maxEndurance) {
+                    activeNav.endurance = activeNav.maxEndurance;
+                    activeNav.isRecovering = false;
+                    activeNav.lastConsumptionTime = null;
+                    console.log(`✅ Endurance restored! Resuming exploration... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance})`);
+                } else {
+                    // Still recovering
+                    console.log(`⏳ Recovering endurance... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance})`);
+                }
+            }
             return;
         }
 
@@ -418,13 +487,27 @@ const NavigationSystem = {
 
         // Filter to nodes the player can access (skill level requirement)
         const accessibleNodes = [];
+
+        if (typeof NodeRegistry === 'undefined') {
+            console.error('❌ NodeRegistry not available');
+            return;
+        }
+
         for (let nodeId of discoverableNodes) {
-            const nodeDef = this.definitions.resourceNodes[nodeId];
+            // Get node from NodeRegistry only
+            const nodeDef = NodeRegistry.getAllActive()[nodeId];
+
             if (nodeDef) {
-                const playerSkillLevel = this.state.skills[nodeDef.skill]?.level || 0;
-                if (playerSkillLevel >= nodeDef.skillLevel) {
+                // Use nodeType as skill and requiredSkillLevel for level requirement
+                const nodeSkill = nodeDef.nodeType;
+                const nodeSkillLevel = nodeDef.requiredSkillLevel || 1;
+                const playerSkillLevel = this.state.skills[nodeSkill]?.level || 0;
+
+                if (playerSkillLevel >= nodeSkillLevel) {
                     accessibleNodes.push(nodeId);
                 }
+            } else {
+                console.warn(`⚠️ Node ${nodeId} not found in NodeRegistry`);
             }
         }
 
@@ -637,23 +720,24 @@ const NavigationSystem = {
             return { success: false, reason: "Exit path not discovered" };
         }
 
-        // Check if current region has a mission requirement to leave
-        if (currentRegionDef && currentRegionDef.requiredMissionToLeave) {
-            const missionId = currentRegionDef.requiredMissionToLeave;
-            const missionDef = this.definitions.missions[missionId];
-
-            // Check if mission is completed (missions are stored in completed array)
-            const isCompleted = this.state.missions.completed && this.state.missions.completed.includes(missionId);
-
-            if (!isCompleted) {
-                const missionName = missionDef ? missionDef.name : missionId;
-                return {
-                    success: false,
-                    reason: `Must complete mission "${missionName}" before leaving this region`,
-                    blockedByMission: missionId
-                };
-            }
-        }
+        // TEMPORARILY DISABLED: Mission requirements for region travel
+        // TODO: Refactor mission system to align with FOUNDATION_SPECIFICATION.md
+        // if (currentRegionDef && currentRegionDef.requiredMissionToLeave) {
+        //     const missionId = currentRegionDef.requiredMissionToLeave;
+        //     const missionDef = this.definitions.missions[missionId];
+        //
+        //     // Check if mission is completed (missions are stored in completed array)
+        //     const isCompleted = this.state.missions.completed && this.state.missions.completed.includes(missionId);
+        //
+        //     if (!isCompleted) {
+        //         const missionName = missionDef ? missionDef.name : missionId;
+        //         return {
+        //             success: false,
+        //             reason: `Must complete mission "${missionName}" before leaving this region`,
+        //             blockedByMission: missionId
+        //         };
+        //     }
+        // }
 
         const targetHexDef = this.definitions.worldMap[targetRegionId];
 

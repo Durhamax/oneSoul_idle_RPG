@@ -200,9 +200,9 @@ const OverviewUI = {
 
         let html = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">`;
 
-        // All skills in order (including combat, total 15 skills)
+        // All skills in order (14 skills - no combat skill)
         const skillOrder = [
-            'navigation', 'combat',
+            'navigation',
             'mining', 'logging',
             'fishing', 'hunting',
             'foraging', 'thieving',

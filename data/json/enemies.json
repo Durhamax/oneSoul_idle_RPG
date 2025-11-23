@@ -1,0 +1,315 @@
+{
+  "scout": {
+    "name": "Scout",
+    "description": "Lightly armed patrol unit",
+    "image": "🎯",
+    "lootTable": "[{\"itemId\":\"ore\"",
+    "respawnTime": "\"min\":1",
+    "rewards": {
+      "exp": {
+        "combat": "\"max\":3"
+      },
+      "gold": {
+        "max": "\"chance\":0.4}",
+        "min": "{\"itemId\":\"wood\""
+      },
+      "medals": {
+        "max": "\"min\":2",
+        "min": "\"max\":5"
+      }
+    },
+    "stats": {
+      "accuracy": "\"chance\":0.35}",
+      "armorType": "{\"itemId\":\"cloth\"",
+      "attackDamage": "\"min\":1",
+      "attackSpeed": "\"max\":3",
+      "damageType": "\"chance\":0.3}",
+      "maxHealth": "{\"itemId\":\"dagger\""
+    },
+    "unlockRequirement": "\"min\":1"
+  },
+  "soldier": {
+    "name": "Soldier",
+    "description": "Standard military unit",
+    "image": "🪖",
+    "lootTable": "[{\"itemId\":\"ore\"",
+    "respawnTime": "\"min\":2",
+    "rewards": {
+      "exp": {
+        "combat": "\"max\":5"
+      },
+      "gold": {
+        "max": "\"chance\":0.35}",
+        "min": "{\"itemId\":\"wood\""
+      },
+      "medals": {
+        "max": "\"min\":3",
+        "min": "\"max\":6"
+      }
+    },
+    "stats": {
+      "accuracy": "\"chance\":0.3}",
+      "armorType": "{\"itemId\":\"cloth\"",
+      "attackDamage": "\"min\":2",
+      "attackSpeed": "\"max\":4",
+      "damageType": "\"chance\":0.25}",
+      "maxHealth": "{\"itemId\":\"ironSword\""
+    },
+    "unlockRequirement": "\"min\":1"
+  },
+  "operative": {
+    "name": "Operative",
+    "description": "Elite tactical unit",
+    "image": "🕵️",
+    "lootTable": "[{\"itemId\":\"ore\"",
+    "respawnTime": "\"min\":4",
+    "rewards": {
+      "exp": {
+        "combat": "\"max\":8"
+      },
+      "gold": {
+        "max": "\"chance\":0.4}",
+        "min": "{\"itemId\":\"wood\""
+      },
+      "medals": {
+        "max": "\"min\":5",
+        "min": "\"max\":10"
+      }
+    },
+    "stats": {
+      "accuracy": "\"chance\":0.25}",
+      "armorType": "{\"itemId\":\"cloth\"",
+      "attackDamage": "\"min\":3",
+      "attackSpeed": "\"max\":6",
+      "damageType": "\"chance\":0.3}",
+      "maxHealth": "{\"itemId\":\"steelSword\""
+    },
+    "unlockRequirement": "\"min\":1"
+  },
+  "commander": {
+    "name": "Commander",
+    "description": "High-ranking military officer",
+    "image": "⭐",
+    "lootTable": "[{\"itemId\":\"ore\"",
+    "respawnTime": "\"min\":8",
+    "rewards": {
+      "exp": {
+        "combat": "\"max\":15"
+      },
+      "gold": {
+        "max": "\"chance\":0.45}",
+        "min": "{\"itemId\":\"wood\""
+      },
+      "medals": {
+        "max": "\"min\":8",
+        "min": "\"max\":15"
+      }
+    },
+    "stats": {
+      "accuracy": "\"chance\":0.25}",
+      "armorType": "{\"itemId\":\"cloth\"",
+      "attackDamage": "\"min\":5",
+      "attackSpeed": "\"max\":10",
+      "damageType": "\"chance\":0.3}",
+      "maxHealth": "{\"itemId\":\"steelSword\""
+    },
+    "unlockRequirement": "\"min\":1"
+  },
+  "elite_scout": {
+    "name": "Elite Scout",
+    "description": "Veteran reconnaissance specialist with enhanced abilities",
+    "elite": {
+      "abilities": "[{\"id\":\"evasive_maneuver\"",
+      "behavior": {
+        "aggroRange": "name\":\"Evasive Maneuver",
+        "enrageMultiplier": "description\":\"Temporarily increases dodge chance",
+        "enrageThreshold": "\"triggerChance\":0.2",
+        "fleeThreshold": "triggerCondition\":\"health_below_50",
+        "noFlee": "\"cooldown\":10000",
+        "phaseTransitions": "\"duration\":5000"
+      },
+      "isElite": "effect\":{\"type\":\"self_buff",
+      "loot": {
+        "dropRateBonus": "\"evasionBonus\":50",
+        "expMultiplier": "\"icon\":\"💨\"}}]",
+        "goldMultiplier": 1.5,
+        "guaranteedDrops": 1.5,
+        "medalMultiplier": 0.25,
+        "specialDrops": 0.1
+      },
+      "modifiers": {
+        "critMultiplier": true,
+        "damageMultiplier": 0.25,
+        "defenseBonus": 3,
+        "healthMultiplier": 3,
+        "speedMultiplier": []
+      },
+      "passives": 3,
+      "tier": "[{\"itemId\":\"eliteToken_bronze\"",
+      "visual": {
+        "aura": "\"min\":1",
+        "combatMusic": "\"max\":1",
+        "glowColor": "\"chance\":0.5}]",
+        "icon": 15,
+        "nameColor": 15,
+        "particles": 1.5
+      }
+    },
+    "image": 2,
+    "lootTable": 0.1,
+    "respawnTime": 2,
+    "rewards": {
+      "exp": {
+        "combat": 1.3
+      },
+      "gold": {
+        "max": "[{\"id\":\"keen_eye\"",
+        "min": "name\":\"Keen Eye"
+      },
+      "medals": {
+        "max": "description\":\"Never misses attacks below 50% health",
+        "min": "effect\":{\"type\":\"conditional_accuracy"
+      }
+    },
+    "stats": {
+      "accuracy": "condition\":\"health_below_50",
+      "armorType": "\"accuracyOverride\":100}}]",
+      "attackDamage": 1,
+      "attackSpeed": "golden_shimmer",
+      "damageType": "elite_battle_theme_1",
+      "maxHealth": "#FFD700"
+    },
+    "unlockRequirement": "✨"
+  },
+  "elite_soldier": {
+    "name": "Elite Soldier",
+    "description": "Battle-hardened veteran with advanced combat training",
+    "elite": {
+      "abilities": "[{\"id\":\"shield_wall\"",
+      "behavior": {
+        "aggroRange": "name\":\"Shield Wall",
+        "enrageMultiplier": "description\":\"Reduces incoming damage significantly",
+        "enrageThreshold": "\"triggerChance\":0.25",
+        "fleeThreshold": "triggerCondition\":\"on_hit_taken",
+        "noFlee": "\"cooldown\":15000",
+        "phaseTransitions": "\"duration\":6000"
+      },
+      "isElite": "effect\":{\"type\":\"self_buff",
+      "loot": {
+        "dropRateBonus": "\"damageReduction\":0.6",
+        "expMultiplier": "\"icon\":\"🛡️\"}}",
+        "goldMultiplier": "{\"id\":\"power_strike\"",
+        "guaranteedDrops": "name\":\"Power Strike",
+        "medalMultiplier": "description\":\"Next attack deals massive damage",
+        "specialDrops": "\"triggerChance\":0.15"
+      },
+      "modifiers": {
+        "accuracyBonus": "triggerCondition\":\"random",
+        "critChance": "\"cooldown\":12000",
+        "critMultiplier": "effect\":{\"type\":\"next_attack_buff",
+        "damageMultiplier": "\"damageMultiplier\":3",
+        "defenseBonus": "\"icon\":\"⚡\"}}]",
+        "healthMultiplier": 1.5,
+        "speedMultiplier": 2
+      },
+      "passives": 0.2,
+      "visual": {
+        "glowColor": true,
+        "icon": 0.3,
+        "nameColor": 3,
+        "particles": 3
+      }
+    },
+    "lootTable": 3,
+    "respawnTime": "[{\"itemId\":\"eliteToken_silver\"",
+    "rewards": {
+      "exp": {
+        "combat": "\"min\":1"
+      },
+      "gold": {
+        "max": "\"max\":1",
+        "min": "\"chance\":0.4}]"
+      },
+      "medals": {
+        "max": 15,
+        "min": 20
+      }
+    },
+    "stats": {
+      "accuracy": 1.75,
+      "armorType": 2,
+      "attackDamage": 0.2,
+      "attackSpeed": 2,
+      "damageType": 1.2,
+      "maxHealth": "[{\"id\":\"combat_veteran\""
+    },
+    "unlockRequirement": "name\":\"Combat Veteran"
+  },
+  "elite_commander": {
+    "name": "Elite Commander",
+    "description": "Legendary military leader with overwhelming power",
+    "elite": {
+      "abilities": "[{\"id\":\"tactical_strike\"",
+      "behavior": {
+        "aggroRange": "name\":\"Tactical Strike",
+        "enrageMultiplier": "description\":\"Calls in a devastating attack that bypasses armor",
+        "enrageThreshold": "\"triggerChance\":0.2",
+        "fleeThreshold": "triggerCondition\":\"random",
+        "noFlee": "\"cooldown\":20000",
+        "phaseTransitions": "effect\":{\"type\":\"special_attack"
+      },
+      "isElite": "\"damageMultiplier\":2.5",
+      "loot": {
+        "dropRateBonus": "\"bypassArmor\":true",
+        "expMultiplier": "applyEffect\":{\"type\":\"armor_break",
+        "goldMultiplier": "\"duration\":8000",
+        "guaranteedDrops": "\"defenseLoss\":0.5}",
+        "medalMultiplier": "\"icon\":\"💥\"}}",
+        "specialDrops": "{\"id\":\"battle_command\""
+      },
+      "modifiers": {
+        "accuracyBonus": "name\":\"Battle Command",
+        "critChance": "description\":\"Boosts own combat effectiveness",
+        "critMultiplier": "\"triggerChance\":0.3",
+        "damageMultiplier": "triggerCondition\":\"health_below_50",
+        "defenseBonus": "\"cooldown\":25000",
+        "healthMultiplier": "\"duration\":10000",
+        "speedMultiplier": "effect\":{\"type\":\"self_buff_multi"
+      },
+      "passives": "\"damageBonus\":0.5",
+      "tier": "\"speedBonus\":0.3",
+      "visual": {
+        "aura": "\"accuracyBonus\":20",
+        "combatMusic": "\"icon\":\"📣\"}}",
+        "glowColor": "{\"id\":\"emergency_heal\"",
+        "icon": "name\":\"Combat Stim",
+        "nameColor": "description\":\"Heals for 30% max health",
+        "particles": "\"triggerChance\":1"
+      }
+    },
+    "image": "triggerCondition\":\"health_below_25",
+    "lootTable": "\"cooldown\":60000",
+    "respawnTime": "effect\":{\"type\":\"self_heal",
+    "rewards": {
+      "exp": {
+        "combat": "\"healPercent\":0.3"
+      },
+      "gold": {
+        "max": "\"icon\":\"💊\"}}]",
+        "min": 2
+      },
+      "medals": {
+        "max": 2.5,
+        "min": 0.15
+      }
+    },
+    "stats": {
+      "armorType": true,
+      "attackDamage": "[{\"healthThreshold\":0.5",
+      "attackSpeed": "\"changeStats\":{\"speedMultiplier\":1.3",
+      "damageType": "\"damageMultiplier\":1.2}",
+      "maxHealth": "\"message\":\"💢 Elite Commander enters aggressive stance!\"}"
+    },
+    "unlockRequirement": "{\"healthThreshold\":0.25"
+  }
+}

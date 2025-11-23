@@ -1,0 +1,86 @@
+{
+  "riverbed": {
+    "name": "Riverbed",
+    "icon": "💎",
+    "tier": 1,
+    "nodeType": "mining",
+    "category": "ore_deposit",
+    "description": "A shallow riverbed rich with clay, flint, and occasional gold flakes",
+    "baseHealth": 10,
+    "harvestTime": 3,
+    "respawnTime": 30,
+    "baseXP": 25,
+    "requiredSkillLevel": 1,
+    "requirements": {
+      "skill": "mining",
+      "toolTier": 1,
+      "tools": [
+        "pickaxe"
+      ]
+    },
+    "resourceTable": [
+      {
+        "itemId": "clay",
+        "weight": 60,
+        "minYield": 1,
+        "maxYield": 3,
+        "skillScaling": true
+      },
+      {
+        "itemId": "flint",
+        "weight": 39,
+        "minYield": 1,
+        "maxYield": 2,
+        "skillScaling": true
+      },
+      {
+        "itemId": "goldFlakes",
+        "weight": 1,
+        "minYield": 1,
+        "maxYield": 1,
+        "skillScaling": false
+      }
+    ],
+    "biomes": [
+      "plains",
+      "river",
+      "starting_region"
+    ],
+    "rarity": "common"
+  },
+  "cradle_lake_shallows": {
+    "name": "Cradle Lake Shallows",
+    "icon": "🎣",
+    "tier": 1,
+    "nodeType": "fishing",
+    "category": "fish_spot",
+    "description": "Shallow waters of Cradle Lake, teeming with solfish",
+    "baseHealth": 8,
+    "harvestTime": 2.5,
+    "respawnTime": 25,
+    "baseXP": 20,
+    "requiredSkillLevel": 1,
+    "requirements": {
+      "skill": "fishing",
+      "toolTier": 1,
+      "tools": [
+        "fishing_rod"
+      ]
+    },
+    "resourceTable": [
+      {
+        "itemId": "solfish",
+        "weight": 100,
+        "minYield": 1,
+        "maxYield": 2,
+        "skillScaling": true
+      }
+    ],
+    "biomes": [
+      "plains",
+      "lake",
+      "starting_region"
+    ],
+    "rarity": "common"
+  }
+}

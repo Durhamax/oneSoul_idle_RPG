@@ -34,17 +34,18 @@ const _PLANNED = (typeof PLANNED_ITEMS !== 'undefined' ? PLANNED_ITEMS : {});
 
 // Register items to their respective registries
 if (ItemRegistry) {
-    ItemRegistry.register('production', {
+    // Use registerBatch with new signature (items, environment)
+    ItemRegistry.registerBatch({
         ..._EQUIPMENT,
         ..._CONSUMABLE,
         ..._MATERIAL,
         ..._CURRENCY,
-    });
+    }, 'production');
 
-    ItemRegistry.register('dev', _DEV);
-    ItemRegistry.register('test', _TEST);
-    ItemRegistry.register('legacy', _LEGACY);
-    ItemRegistry.register('planned', _PLANNED);
+    ItemRegistry.registerBatch(_DEV, 'dev');
+    ItemRegistry.registerBatch(_TEST, 'test');
+    ItemRegistry.registerBatch(_LEGACY, 'legacy');
+    ItemRegistry.registerBatch(_PLANNED, 'planned');
 }
 
 /**

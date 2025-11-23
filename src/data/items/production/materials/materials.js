@@ -15,6 +15,8 @@ const MATERIAL_ITEMS = {
         description: 'Raw copper ore mined from copper deposits. Used in basic smithing.',
         icon: '🪨',
         category: 'material',
+        instanced: false,  // Stackable resource
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 5,
@@ -30,6 +32,7 @@ const MATERIAL_ITEMS = {
         description: 'Raw tin ore from tin deposits. Combines with copper to make bronze.',
         icon: '🪨',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 5,
@@ -45,6 +48,7 @@ const MATERIAL_ITEMS = {
         description: 'Raw iron ore extracted from iron deposits. Essential for smithing.',
         icon: '🪨',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 15,
@@ -60,6 +64,7 @@ const MATERIAL_ITEMS = {
         description: 'Black coal used as fuel for smelting. Burns hot and long.',
         icon: '⚫',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 8,
@@ -75,6 +80,7 @@ const MATERIAL_ITEMS = {
         description: 'Precious gold ore. Can be smelted into gold bars.',
         icon: '🪨',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 50,
         value: 50,
@@ -94,6 +100,7 @@ const MATERIAL_ITEMS = {
         description: 'Refined copper bar. Ready for crafting.',
         icon: '🟫',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 12,
@@ -107,6 +114,7 @@ const MATERIAL_ITEMS = {
         description: 'Bronze alloy bar made from copper and tin. Durable and versatile.',
         icon: '🟫',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 25,
@@ -120,6 +128,7 @@ const MATERIAL_ITEMS = {
         description: 'Refined iron bar. Strong and reliable crafting material.',
         icon: '⬛',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 100,
         value: 40,
@@ -133,6 +142,7 @@ const MATERIAL_ITEMS = {
         description: 'Tempered steel bar. Superior strength and quality.',
         icon: '⬛',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 75,
         value: 100,
@@ -146,6 +156,7 @@ const MATERIAL_ITEMS = {
         description: 'Pure gold bar. Valuable and malleable.',
         icon: '🟨',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 50,
         value: 150,
@@ -157,12 +168,31 @@ const MATERIAL_ITEMS = {
     // WOOD & LOGS
     // =================================================================
 
+    pinewood: {
+        id: 'pinewood',
+        name: 'Pinewood',
+        description: 'Soft pine logs from young pine trees. Basic fuel for campfires and navigation.',
+        icon: '🪵',
+        iconPath: 'assets/icons/materials/pinewood.png',
+        category: 'material',
+        instanced: false,  // Stackable resource
+        itemType: 'resource',
+        rarity: 'common',
+        stackLimit: 100,
+        value: 2,
+        resourceType: 'wood',
+        gatherSkill: 'woodcutting',
+        gatherLevel: 1,
+        tags: ['material', 'wood', 'logs', 'woodcutting', 'fuel', 'navigation'],
+    },
+
     normalLogs: {
         id: 'normalLogs',
         name: 'Normal Logs',
         description: 'Basic logs from common trees. Used in crafting and construction.',
         icon: '🪵',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 3,
@@ -178,6 +208,7 @@ const MATERIAL_ITEMS = {
         description: 'Sturdy oak logs. Better quality than normal wood.',
         icon: '🪵',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 10,
@@ -193,6 +224,7 @@ const MATERIAL_ITEMS = {
         description: 'Flexible willow logs. Excellent for crafting bows and tools.',
         icon: '🪵',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 100,
         value: 18,
@@ -208,6 +240,7 @@ const MATERIAL_ITEMS = {
         description: 'Hard maple logs. Dense and durable.',
         icon: '🪵',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 100,
         value: 30,
@@ -227,6 +260,7 @@ const MATERIAL_ITEMS = {
         description: 'Soft wool fiber. Can be spun into thread.',
         icon: '🧶',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 4,
@@ -240,6 +274,7 @@ const MATERIAL_ITEMS = {
         description: 'Spun thread for sewing and crafting cloth items.',
         icon: '🧵',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 8,
@@ -253,6 +288,7 @@ const MATERIAL_ITEMS = {
         description: 'Tanned leather hide. Essential for leatherworking.',
         icon: '🦴',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 50,
         value: 15,
@@ -266,6 +302,7 @@ const MATERIAL_ITEMS = {
         description: 'Hardened leather. More durable than regular leather.',
         icon: '🦴',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 50,
         value: 35,
@@ -283,6 +320,7 @@ const MATERIAL_ITEMS = {
         description: 'Medicinal herb with healing properties. Used in potion making.',
         icon: '🌿',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 6,
@@ -298,6 +336,7 @@ const MATERIAL_ITEMS = {
         description: 'Potent herb that enhances physical power. Used in strength potions.',
         icon: '🌿',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 50,
         value: 20,
@@ -313,6 +352,7 @@ const MATERIAL_ITEMS = {
         description: 'Mystical herb infused with arcane energy. Used in magic potions.',
         icon: '🌿',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'uncommon',
         stackLimit: 50,
         value: 25,
@@ -332,6 +372,7 @@ const MATERIAL_ITEMS = {
         description: 'Precious ruby gemstone. Radiates with inner fire.',
         icon: '🔴',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 25,
         value: 200,
@@ -345,6 +386,7 @@ const MATERIAL_ITEMS = {
         description: 'Beautiful sapphire gemstone. Deep blue color.',
         icon: '🔵',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 25,
         value: 200,
@@ -358,6 +400,7 @@ const MATERIAL_ITEMS = {
         description: 'Stunning emerald gemstone. Vibrant green hue.',
         icon: '🟢',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'rare',
         stackLimit: 25,
         value: 200,
@@ -371,6 +414,7 @@ const MATERIAL_ITEMS = {
         description: 'Flawless diamond. The hardest known material.',
         icon: '💎',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'epic',
         stackLimit: 10,
         value: 500,
@@ -388,6 +432,7 @@ const MATERIAL_ITEMS = {
         description: 'Clear glass made from sand. Used in various crafts.',
         icon: '🔳',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 100,
         value: 10,
@@ -401,6 +446,7 @@ const MATERIAL_ITEMS = {
         description: 'Sturdy rope. Useful for many purposes.',
         icon: '🪢',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 50,
         value: 8,
@@ -414,6 +460,7 @@ const MATERIAL_ITEMS = {
         description: 'Small iron nails for construction and repairs.',
         icon: '📌',
         category: 'material',
+        instanced: false,  // Stackable resource
         rarity: 'common',
         stackLimit: 200,
         value: 2,

@@ -7,14 +7,14 @@
 
 const WorldRegions = {
     /**
-     * THE SCAR - Starting Region
+     * THE CRADLE - Starting Region
      * Region ID: region_-3_-4
      * Coordinates: q=-3, r=-4
      */
     "region_-3_-4": {
         // ===== BASIC INFORMATION =====
-        name: "The Scar",
-        description: "A massive crater, home to the Unity members long banished to this corner of the new planet. The Scar is heavily wooded and features a large lake of trapped freshwater. This is where your journey begins.",
+        name: "The Cradle",
+        description: "A massive crater, home to the Unity members long banished to this corner of the new planet. The Cradle is heavily wooded and features a large lake of trapped freshwater. This is where your journey begins.",
         biome: "plains",
         icon: "🌾",  // Set from biome
         backgroundImage: "assets/backgrounds/regions/region_the_scar_01.png",
@@ -38,22 +38,18 @@ const WorldRegions = {
         // ===== DISCOVERABLE CONTENT =====
         // What players can find through Navigation discoveries
 
-        // Gathering nodes (leave empty array [] to use biome defaults)
+        // Gathering nodes - Only NodeRegistry nodes (new system)
         discoverableNodes: [
             // Mining
-            "copperVein",
-            "tinRock",
+            "riverbed",
             // Logging
-            "oakTree",
-            "birchTree",
+            "evergreen_forest",
             // Fishing
-            "pond",
-            "stream",
+            "cradle_lake_shallows",
             // Hunting
-            "grassland",
+            "cradle_woodlands",
             // Foraging
-            "flowerPatch",
-            "berryBush"
+            "fallen_timber"
         ],
 
         // Crafting stations
@@ -172,7 +168,7 @@ const WorldRegions = {
      */
     "region_-2_-4": {
         name: "Peaceful Meadows",
-        description: "Rolling grasslands stretching eastward from The Scar. Wild flowers bloom year-round and gentle streams wind through the fields.",
+        description: "Rolling grasslands stretching eastward from The Cradle. Wild flowers bloom year-round and gentle streams wind through the fields.",
         biome: "plains",
         icon: "🌾",
         backgroundImage: null,  // Use biome default
@@ -185,7 +181,7 @@ const WorldRegions = {
             "E": "region_-1_-4",
             "NE": "region_-1_-5",
             "NW": "region_-2_-5",
-            "W": "region_-3_-4",    // Back to The Scar
+            "W": "region_-3_-4",    // Back to The Cradle
             "SW": "region_-3_-3",
             "SE": "region_-2_-3"
         },

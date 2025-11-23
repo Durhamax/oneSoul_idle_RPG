@@ -83,6 +83,34 @@ const STATUS_EFFECTS = {
 
 const CombatSystem = {
     /**
+     * Helper: Get enemy definition from EnemyRegistry first, fallback to definitions
+     */
+    _getEnemyDef(enemyId, engine) {
+        let enemyDef = null;
+        if (typeof EnemyRegistry !== 'undefined') {
+            enemyDef = EnemyRegistry.getAllActive()[enemyId];
+        }
+        if (!enemyDef && engine.definitions) {
+            enemyDef = engine.definitions.enemies?.[enemyId];
+        }
+        return enemyDef;
+    },
+
+    /**
+     * Helper: Get item definition from ItemRegistry first, fallback to definitions
+     */
+    _getItemDef(itemId, engine) {
+        let itemDef = null;
+        if (typeof ItemRegistry !== 'undefined') {
+            itemDef = ItemRegistry.getItem(itemId);
+        }
+        if (!itemDef && engine.definitions) {
+            itemDef = engine.definitions.items?.[itemId];
+        }
+        return itemDef;
+    },
+
+    /**
      * Initialize the combat system and bind methods to the game engine
      * @param {Object} engine - The game engine instance
      */
@@ -119,7 +147,7 @@ const CombatSystem = {
      * Start combat with an enemy
      */
     startCombat(enemyId) {
-        const enemyDef = this.definitions.enemies[enemyId];
+        const enemyDef = CombatSystem._getEnemyDef(enemyId, this);
 
         if (!enemyDef) {
             return { success: false, reason: "Enemy not found" };
@@ -166,7 +194,7 @@ const CombatSystem = {
         const equippedWeapon = this.state.equipment.weapon;
         const playerStats = this.getPlayerCombatStats();
         if (equippedWeapon) {
-            const weaponDef = this.definitions.items[equippedWeapon];
+            const weaponDef = CombatSystem._getItemDef(equippedWeapon, this);
             if (weaponDef?.magazineSize) {
                 // Player has a gun, initialize magazine to full
                 this.state.combat.playerAmmo.magazineSize = weaponDef.magazineSize;
@@ -291,7 +319,7 @@ const CombatSystem = {
 
         // Apply type effectiveness (weapon damage type vs enemy armor type)
         const weaponDamageType = this.getWeaponDamageType();
-        const enemyDef = this.definitions.enemies[enemy.id];
+        const enemyDef = CombatSystem._getEnemyDef(enemy.id, this);
         const enemyArmorType = enemyDef?.stats?.armorType || 'biological';
         const typeMultiplier = this.calculateDamageMultiplier(weaponDamageType, enemyArmorType);
         damage = Math.floor(damage * typeMultiplier);
@@ -308,7 +336,7 @@ const CombatSystem = {
         let specialAttackData = null;
         const equippedWeapon = this.state.equipment.weapon;
         if (equippedWeapon) {
-            const weaponDef = this.definitions.items[equippedWeapon];
+            const weaponDef = CombatSystem._getItemDef(equippedWeapon, this);
             if (weaponDef?.specialAttack) {
                 const specialRoll = Math.random();
                 // Apply INTELLECT special attack chance bonus
@@ -449,7 +477,7 @@ const CombatSystem = {
         if (evasionRoll < playerStats.evasionRating) {
             this.addCombatLog(`🌪️ You evaded ${enemy.name}'s attack!`);
             // Show evade hit splat
-            const enemyDef = this.definitions.enemies[enemy.id];
+            const enemyDef = CombatSystem._getEnemyDef(enemy.id, this);
             const enemyDamageType = enemyDef?.stats?.damageType || 'pierce';
             if (CombatUI && CombatUI.createHitSplat) {
                 CombatUI.createHitSplat(0, enemyDamageType, false, 'player', true);
@@ -464,7 +492,7 @@ const CombatSystem = {
         if (hitRoll > effectiveEnemyAccuracy) {
             this.addCombatLog(`💨 ${enemy.name} missed!`);
             // Show miss hit splat
-            const enemyDef = this.definitions.enemies[enemy.id];
+            const enemyDef = CombatSystem._getEnemyDef(enemy.id, this);
             const enemyDamageType = enemyDef?.stats?.damageType || 'pierce';
             if (CombatUI && CombatUI.createHitSplat) {
                 CombatUI.createHitSplat(0, enemyDamageType, false, 'player', true);
@@ -477,7 +505,7 @@ const CombatSystem = {
         let damage = Math.floor(enemy.attackDamage * variance);
 
         // Apply type effectiveness (enemy damage type vs player armor type)
-        const enemyDef = this.definitions.enemies[enemy.id];
+        const enemyDef = CombatSystem._getEnemyDef(enemy.id, this);
         const enemyDamageType = enemyDef?.stats?.damageType || 'pierce';
         const playerArmorType = this.getPlayerDominantArmorType();
         const typeMultiplier = this.calculateDamageMultiplier(enemyDamageType, playerArmorType);
@@ -550,7 +578,7 @@ const CombatSystem = {
      */
     defeatEnemy() {
         const enemy = this.state.combat.currentEnemy;
-        const enemyDef = this.definitions.enemies[enemy.id];
+        const enemyDef = CombatSystem._getEnemyDef(enemy.id, this);
 
         this.addCombatLog(`🎉 You defeated ${enemy.name}!`);
 
@@ -707,7 +735,7 @@ const CombatSystem = {
         }
 
         const enemyId = this.state.combat.selectedEnemyId;
-        const enemyDef = this.definitions.enemies[enemyId];
+        const enemyDef = CombatSystem._getEnemyDef(enemyId, this);
         const now = Date.now();
         const timeSinceDefeat = now - this.state.combat.enemyDefeatedAt;
 
@@ -955,7 +983,7 @@ const CombatSystem = {
         }
 
         // Get food definition
-        const foodDef = this.definitions.items[equippedFood];
+        const foodDef = CombatSystem._getItemDef(equippedFood, this);
         if (!foodDef || !foodDef.healAmount) {
             return; // Invalid food item
         }

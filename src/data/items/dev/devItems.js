@@ -17,6 +17,7 @@ const DEV_ITEMS = {
         description: 'Development sword with massive stats for testing.',
         icon: '⚔️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'legendary',
         stackLimit: 1,
         value: 999999,
@@ -39,6 +40,7 @@ const DEV_ITEMS = {
         description: 'Invincible armor for testing. Makes you immortal.',
         icon: '🛡️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'legendary',
         stackLimit: 1,
         value: 999999,
@@ -60,6 +62,7 @@ const DEV_ITEMS = {
         description: 'Fully heals and gives all buffs. For testing only.',
         icon: '🧪',
         category: 'consumable',
+        instanced: true,  // Unique instance
         rarity: 'legendary',
         stackLimit: 999,
         value: 0,
@@ -77,6 +80,7 @@ const DEV_ITEMS = {
         description: 'Gives 1,000,000 gold when used. For testing economy.',
         icon: '💰',
         category: 'consumable',
+        instanced: true,  // Unique instance
         rarity: 'epic',
         stackLimit: 99,
         value: 0,
@@ -93,6 +97,7 @@ const DEV_ITEMS = {
         description: 'Instantly gain 10 levels. For testing progression.',
         icon: '⏫',
         category: 'special',
+        instanced: true,  // Unique instance
         rarity: 'epic',
         stackLimit: 99,
         value: 0,
@@ -111,6 +116,7 @@ const DEV_ITEMS = {
         description: 'Sets all skills to level 99. For testing endgame.',
         icon: '📊',
         category: 'special',
+        instanced: true,  // Unique instance
         rarity: 'legendary',
         stackLimit: 1,
         value: 0,
@@ -128,6 +134,7 @@ const DEV_ITEMS = {
         description: 'Teleport to any region instantly. For testing navigation.',
         icon: '🌀',
         category: 'special',
+        instanced: true,  // Unique instance
         rarity: 'epic',
         stackLimit: 99,
         value: 0,
@@ -145,6 +152,7 @@ const DEV_ITEMS = {
         description: 'Spawns any item. For testing inventory/drops.',
         icon: '📦',
         category: 'special',
+        instanced: true,  // Unique instance
         rarity: 'legendary',
         stackLimit: 1,
         value: 0,

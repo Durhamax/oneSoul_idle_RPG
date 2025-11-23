@@ -190,6 +190,11 @@ const NavigationUI = {
         // Always update active node display (shows health bar)
         this.updateActiveNodeDisplay();
 
+        // Update mining UI if mining is active
+        if (GameEngine.state.currentActivity === 'mining' && typeof renderMiningUI === 'function') {
+            renderMiningUI();
+        }
+
         // Only update available nodes if selection changed
         if (needsGridUpdate) {
             this.updateNodesDisplay();
@@ -213,10 +218,15 @@ const NavigationUI = {
             return;
         }
 
-        const nodeDef = GameEngine.definitions.resourceNodes[activeNode.nodeId];
-        const nodeState = GameEngine.getNodeStateInRegion(activeNode.nodeId);
+        // Get node data from GatheringSystem (not NodeCollectionSystem)
+        const gatheringSession = GameEngine.state.gatheringSession;
+        if (!gatheringSession || gatheringSession.nodeId !== activeNode.nodeId) {
+            container.innerHTML = "";
+            return;
+        }
 
-        if (!nodeDef || !nodeState) {
+        const nodeDef = NodeRegistry.getAllActive()[activeNode.nodeId];
+        if (!nodeDef) {
             container.innerHTML = "";
             return;
         }
@@ -226,27 +236,15 @@ const NavigationUI = {
             let html = `
                 <div style="padding: 15px; background: #2a2a3a; border-radius: 4px; border: 2px solid #4a9eff;">
                     <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 10px;">
-                        ${nodeDef.image} Harvesting: ${nodeDef.name}
+                        ${nodeDef.icon} Harvesting: ${nodeDef.name}
                     </div>
                     <div style="margin: 10px 0;">
-                        <strong>Harvests Remaining:</strong>
-                        <div class="health-bar">
-                            <div class="health-bar-fill" id="nodeHarvestsFill" style="width: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width 0.3s ease-out;"></div>
-                            <div class="health-bar-text" id="nodeHarvestsText">0/0</div>
+                        <div style="font-size: 0.85em; color: #aaa;">
+                            Node health and progress shown in persistent action bar above
                         </div>
                     </div>
-                    <div style="margin: 10px 0;">
-                        <strong id="harvestProgressLabel">Harvest Progress:</strong>
-                        <div class="health-bar">
-                            <div class="health-bar-fill" id="harvestIntervalBar" style="width: 0%; background: linear-gradient(90deg, #2196F3, #03A9F4); transition: width 0.3s ease-out;"></div>
-                            <div class="health-bar-text" id="harvestIntervalText">Ready</div>
-                        </div>
-                    </div>
-                    <div style="font-size: 0.85em; color: #aaa; margin-top: 10px;">
-                        ⏱️ Harvest time: ${(nodeDef.harvestTime / 1000).toFixed(1)}s
-                    </div>
-                    <button onclick="stopNodeHarvesting()" style="margin-top: 10px; width: 100%;">
-                        ⏹️ Stop Harvesting
+                    <button onclick="GameEngine.stopGathering()" style="margin-top: 10px; width: 100%;">
+                        ⏹️ Stop Gathering
                     </button>
                 </div>
             `;
@@ -254,62 +252,7 @@ const NavigationUI = {
             this.lastActiveNodeId = activeNode.nodeId;
         }
 
-        // Always update progress bars
-        const harvestsPercent = (nodeState.harvestsRemaining / nodeState.maxHarvests) * 100;
-        const harvestsFill = document.getElementById("nodeHarvestsFill");
-        const harvestsText = document.getElementById("nodeHarvestsText");
-
-        if (harvestsFill) {
-            harvestsFill.style.width = `${harvestsPercent}%`;
-        }
-        if (harvestsText) {
-            harvestsText.textContent = `${nodeState.harvestsRemaining}/${nodeState.maxHarvests}`;
-        }
-
-        // Update harvest/respawn interval bar
-        const now = Date.now();
-        const intervalBar = document.getElementById("harvestIntervalBar");
-        const intervalText = document.getElementById("harvestIntervalText");
-        const progressLabel = document.getElementById("harvestProgressLabel");
-
-        if (intervalBar && intervalText) {
-            // Check if waiting for respawn
-            if (activeNode.waitingForRespawn) {
-                // Show respawn progress
-                const elapsed = now - (nodeState.depletedAt || now);
-                const progress = Math.min(100, (elapsed / nodeState.respawnTime) * 100);
-
-                // Change bar color to orange for respawn
-                intervalBar.style.background = "linear-gradient(90deg, #FF9800, #FFC107)";
-                ProgressBar.applyProgressWithReset(intervalBar, progress, this.lastHarvestProgress || 0);
-                this.lastHarvestProgress = progress;
-
-                const remaining = Math.max(0, (nodeState.respawnTime - elapsed) / 1000);
-                intervalText.textContent = remaining > 0 ? `Respawning ${remaining.toFixed(1)}s` : "Respawned!";
-
-                // Update label
-                if (progressLabel) {
-                    progressLabel.textContent = "Respawn Progress:";
-                }
-            } else {
-                // Show harvest progress
-                const elapsed = now - activeNode.startTime;
-                const progress = Math.min(100, (elapsed / activeNode.harvestTime) * 100);
-
-                // Use blue color for harvesting
-                intervalBar.style.background = "linear-gradient(90deg, #2196F3, #03A9F4)";
-                ProgressBar.applyProgressWithReset(intervalBar, progress, this.lastHarvestProgress || 0);
-                this.lastHarvestProgress = progress;
-
-                const remaining = Math.max(0, (activeNode.harvestTime - elapsed) / 1000);
-                intervalText.textContent = remaining > 0 ? `${remaining.toFixed(1)}s` : "Harvesting!";
-
-                // Update label
-                if (progressLabel) {
-                    progressLabel.textContent = "Harvest Progress:";
-                }
-            }
-        }
+        // All progress is now shown in PersistentActionBar - no need for duplicate display here
     },
 
     /**
@@ -377,27 +320,19 @@ const NavigationUI = {
             const state = nodeData.state;
             const isLocked = nodeData.locked;
             const isActive = activeNodeId === nodeData.nodeId;
+            const isDepleted = nodeData.isDepleted; // Depletion status provided by NodeCollectionSystem
 
             // Tier stars
             const tierStars = '⭐'.repeat(def.tier);
 
-            // Availability status
-            const isDepleted = state && state.harvestsRemaining <= 0;
+            // Status display removed - using PersistentActionBar for node health
             let statusColor = '#4caf50'; // Available
-            if (isDepleted) statusColor = '#f44336'; // Depleted
-            else if (isLocked) statusColor = '#888'; // Locked
+            if (isLocked) statusColor = '#888'; // Locked
 
-            // Respawn timer if depleted
-            let availabilityText = '';
-            if (isDepleted && state.depletedAt) {
-                const timeUntilRespawn = Math.max(0, Math.ceil((state.depletedAt + state.respawnTime - Date.now()) / 1000));
-                availabilityText = `<span style="color: #f44336;">⏳ Respawns in ${timeUntilRespawn}s</span>`;
-            } else if (state) {
-                availabilityText = `<span style="color: ${statusColor};">${state.harvestsRemaining}/${state.maxHarvests} harvests</span>`;
-            }
+            let availabilityText = isLocked ? '<span style="color: #888;">Locked</span>' : '<span style="color: #4caf50;">Available</span>';
 
             html += `
-                <div class="panel" style="padding: 15px; ${isLocked ? 'opacity: 0.5;' : ''} ${isActive ? 'border: 2px solid #4a9eff;' : ''} ${isDepleted ? 'opacity: 0.7;' : ''}">
+                <div class="panel" style="padding: 15px; ${isLocked ? 'opacity: 0.5;' : ''} ${isActive ? 'border: 2px solid #4a9eff;' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="font-size: 0.8em; color: #ff9800;">${tierStars}</div>
                         <div style="font-size: 0.75em; color: #888;">Lv.${def.skillLevel}</div>
@@ -450,7 +385,7 @@ const NavigationUI = {
         const totalWeight = normalLoot.reduce((sum, entry) => sum + entry.weight, 0);
 
         for (let entry of normalLoot) {
-            const itemName = GameEngine.definitions.items[entry.itemId]?.name || entry.itemId;
+            const itemName = ItemAccessHelper.getItem(entry.itemId)?.name || entry.itemId;
             const chance = Math.round((entry.weight / totalWeight) * 100);
             html += `<div style="margin-bottom: 2px;">• ${entry.min}-${entry.max} ${itemName} <span style="color: #888;">(${chance}%)</span></div>`;
         }
@@ -465,8 +400,8 @@ const NavigationUI = {
 
         let html = '';
         for (let entry of rareLoot) {
-            const itemName = GameEngine.definitions.items[entry.itemId]?.name || entry.itemId;
-            const itemDef = GameEngine.definitions.items[entry.itemId];
+            const itemName = ItemAccessHelper.getItem(entry.itemId)?.name || entry.itemId;
+            const itemDef = ItemAccessHelper.getItem(entry.itemId);
             const chance = (entry.chance * 100).toFixed(1);
             const rarityColor = itemDef?.rarity === 'legendary' ? '#9c27b0' : itemDef?.rarity === 'epic' ? '#ff9800' : '#4a9eff';
             html += `<div style="margin-bottom: 2px; color: ${rarityColor};">✨ ${itemName} <span style="color: #888;">(${chance}%)</span></div>`;
@@ -489,7 +424,7 @@ const NavigationUI = {
                 }
             } else if (reward.itemId) {
                 // Item reward
-                const itemName = GameEngine.definitions.items[reward.itemId]?.name || reward.itemId;
+                const itemName = ItemAccessHelper.getItem(reward.itemId)?.name || reward.itemId;
                 html += `<div style="font-size: 0.8em;">${reward.min}-${reward.max} ${itemName} (${chancePercent}%)</div>`;
             }
         }
@@ -612,15 +547,15 @@ const NavigationUI = {
                 </button>
             </div>
 
-            <!-- Rest Resource Consumption Bar -->
+            <!-- Rest Resource Equipment -->
             <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px;">
-                <div style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">🔥 Rest Resources</div>
-                <div class="health-bar" style="margin-bottom: 8px;">
-                    <div class="health-bar-fill" id="restIntervalBar" style="width: 0%; background: linear-gradient(90deg, #FF9800, #d32f2f); transition: width 0.3s ease-out;"></div>
-                    <div class="health-bar-text" id="restIntervalText">${isRecovering ? '6.0s' : 'Not Active'}</div>
+                <div style="margin-bottom: 10px; font-size: 0.9em; font-weight: bold;">🔥 Camping Resources</div>
+                <div style="font-size: 0.75em; color: #888; margin-bottom: 10px;">
+                    Equip food and wood for recovery. Consumes during rest mode.
                 </div>
-                <div style="font-size: 0.75em; color: #888;">
-                    ${isRecovering ? '💤 Consuming 1 food + 1 log every 6 seconds during recovery' : isNavigating ? '⚡ No consumption while exploring' : 'Resources consumed during recovery mode'}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    ${this.renderRestEquipmentSlot('food')}
+                    ${this.renderRestEquipmentSlot('wood')}
                 </div>
             </div>
         `;
@@ -628,11 +563,11 @@ const NavigationUI = {
         container.innerHTML = html;
         this.lastNavigationState = currentState;
 
-        // Re-initialize map grid system after DOM update (since innerHTML destroys the canvas)
-        if (typeof MapGridSystem !== 'undefined') {
+        // Initialize hex grid system after DOM update
+        if (typeof HexGridSystem !== 'undefined') {
             setTimeout(() => {
                 if (document.getElementById('hexMapContainer')) {
-                    MapGridSystem.init('hexMapContainer');
+                    HexGridSystem.init('hexMapContainer');
                 }
             }, 50);
         }
@@ -877,34 +812,20 @@ const NavigationUI = {
             const nodeDef = GameEngine.definitions.resourceNodes[nodeId];
             if (!nodeDef) continue;
 
-            // Get node state in this region (with fallback if function doesn't exist)
-            let nodeState = null;
-            if (GameEngine.getNodeStateInRegion) {
-                nodeState = GameEngine.getNodeStateInRegion(nodeId);
-            }
-
             // Check if player can collect this node
             const playerSkillLevel = GameEngine.state.skills[nodeDef.skill]?.level || 0;
             const canCollect = playerSkillLevel >= nodeDef.skillLevel;
             const isActive = GameEngine.state.nodeCollection.activeNode?.nodeId === nodeId;
 
-            // Check if depleted
-            const isDepleted = nodeState && nodeState.harvestsRemaining <= 0;
-
             html += `
-                <div style="background: #1a1a1a; padding: 10px; border-radius: 5px; border: 1px solid ${isActive ? '#4a9eff' : '#444'}; cursor: ${canCollect && !isDepleted ? 'pointer' : 'default'}; position: relative; ${isDepleted ? 'opacity: 0.6;' : ''}"
-                     ${canCollect && !isDepleted ? `onclick="startHarvestingFromNavigation('${nodeId}')" onmouseenter="this.style.borderColor='#4a9eff'" onmouseleave="this.style.borderColor='${isActive ? '#4a9eff' : '#444'}'"` : ''}
-                     class="${canCollect && !isDepleted ? 'node-clickable' : ''}">
+                <div style="background: #1a1a1a; padding: 10px; border-radius: 5px; border: 1px solid ${isActive ? '#4a9eff' : '#444'}; cursor: ${canCollect ? 'pointer' : 'default'}; position: relative;"
+                     ${canCollect ? `onclick="startHarvestingFromNavigation('${nodeId}')" onmouseenter="this.style.borderColor='#4a9eff'" onmouseleave="this.style.borderColor='${isActive ? '#4a9eff' : '#444'}'"` : ''}
+                     class="${canCollect ? 'node-clickable' : ''}">
                     <div style="font-weight: bold; margin-bottom: 5px;">${nodeDef.image} ${nodeDef.name}</div>
-                    <div style="font-size: 0.8em; color: #aaa;">Harvests: ${nodeState?.harvestsRemaining || 0}/${nodeState?.maxHarvests || 0}</div>
                     <div style="font-size: 0.75em; color: #888; margin-top: 5px;">${nodeDef.skill} Lv.${nodeDef.skillLevel}</div>
-                    ${isDepleted ? `
-                        <div style="font-size: 0.75em; color: #f44336; margin-top: 5px;">
-                            ⏳ Depleted
-                        </div>
-                    ` : canCollect ? `
+                    ${canCollect ? `
                         <div style="font-size: 0.75em; color: #4a9eff; margin-top: 5px;">
-                            ${isActive ? '✅ Harvesting' : '👆 Click to harvest'}
+                            ${isActive ? '✅ Gathering' : '👆 Click to gather'}
                         </div>
                     ` : `
                         <div style="font-size: 0.75em; color: #ff9800; margin-top: 5px;">
@@ -1305,6 +1226,68 @@ const NavigationUI = {
             isDragging = false;
             svg.style.cursor = 'default';
         });
+    },
+
+    /**
+     * Render rest equipment slot (food or wood)
+     */
+    renderRestEquipmentSlot(slotType) {
+        // Safety check: initialize restEquipment if it doesn't exist (old saves)
+        if (!GameEngine.state.activeNavigation.restEquipment) {
+            GameEngine.state.activeNavigation.restEquipment = {
+                food: null,
+                wood: null
+            };
+        }
+
+        const equippedItemId = GameEngine.state.activeNavigation.restEquipment[slotType];
+        const itemDef = equippedItemId ? ItemRegistry.getItem(equippedItemId) : null;
+        const isEquipped = equippedItemId !== null && itemDef !== null;
+
+        // Get quantity for consumables
+        let quantity = 0;
+        if (isEquipped && GameEngine.state.bank.items[equippedItemId]) {
+            quantity = GameEngine.state.bank.items[equippedItemId].quantity;
+        }
+
+        const slotLabels = {
+            food: '🍖 Food',
+            wood: '🪵 Wood'
+        };
+
+        const slotIcons = {
+            food: '🍖',
+            wood: '🪵'
+        };
+
+        return `
+            <div class="rest-equipment-slot ${isEquipped ? 'equipped' : ''}"
+                 onclick="openRestEquipModal('${slotType}', event)"
+                 style="background: rgba(0, 0, 0, 0.3);
+                        border: 2px solid ${isEquipped ? 'rgba(0, 217, 255, 0.5)' : '#444'};
+                        border-radius: 8px;
+                        padding: 10px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;">
+                <div style="font-size: 0.75em; color: #888; margin-bottom: 5px; font-weight: 600;">
+                    ${slotLabels[slotType]}
+                </div>
+                ${isEquipped ? `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="font-size: 2rem;">${IconHelper.getItemIconHTML(itemDef, {size: 32})}</div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.85em; font-weight: 600; color: #fff;">${itemDef.name}</div>
+                            <div style="font-size: 0.75em; color: #4a9eff;">×${quantity}</div>
+                        </div>
+                    </div>
+                ` : `
+                    <div style="text-align: center; padding: 20px; color: #666;">
+                        <div style="font-size: 2.5rem; margin-bottom: 5px;">${slotIcons[slotType]}</div>
+                        <div style="font-size: 0.75em;">Empty Slot</div>
+                    </div>
+                `}
+            </div>
+        `;
     },
 
     /**

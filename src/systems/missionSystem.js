@@ -7,6 +7,34 @@
 
 const MissionSystem = {
     /**
+     * Helper: Get mission definition from MissionRegistry first, fallback to definitions
+     */
+    _getMissionDef(missionId, engine) {
+        let missionDef = null;
+        if (typeof MissionRegistry !== 'undefined') {
+            missionDef = MissionRegistry.getAllActive()[missionId];
+        }
+        if (!missionDef && engine.definitions) {
+            missionDef = engine.definitions.missions?.[missionId];
+        }
+        return missionDef;
+    },
+
+    /**
+     * Helper: Get item definition from ItemRegistry first, fallback to definitions
+     */
+    _getItemDef(itemId, engine) {
+        let itemDef = null;
+        if (typeof ItemRegistry !== 'undefined') {
+            itemDef = ItemRegistry.getItem(itemId);
+        }
+        if (!itemDef && engine.definitions) {
+            itemDef = engine.definitions.items?.[itemId];
+        }
+        return itemDef;
+    },
+
+    /**
      * Initialize mission system functions on the GameEngine
      * @param {object} engine - Reference to GameEngine
      */
@@ -92,7 +120,7 @@ const MissionSystem = {
      * Check if a mission is unlocked (handles mission chains)
      */
     isMissionUnlocked(missionId) {
-        const mission = this.definitions.missions[missionId];
+        const mission = MissionSystem._getMissionDef(missionId, this);
         if (!mission) return false;
 
         // If no required completed missions, it's unlocked
@@ -157,7 +185,7 @@ const MissionSystem = {
      * Check if player can start a mission
      */
     canStartMission(missionId) {
-        const mission = this.definitions.missions[missionId];
+        const mission = MissionSystem._getMissionDef(missionId, this);
         if (!mission) {
             return { canStart: false, reason: "Mission not found" };
         }
@@ -220,7 +248,7 @@ const MissionSystem = {
                     const requiredAmount = reqs.items[itemId];
                     const playerAmount = this.getItemCount(itemId);
                     if (playerAmount < requiredAmount) {
-                        const itemDef = this.definitions.items[itemId];
+                        const itemDef = MissionSystem._getItemDef(itemId, this);
                         return {
                             canStart: false,
                             reason: `Requires ${requiredAmount}x ${itemDef?.name || itemId}`
@@ -232,7 +260,7 @@ const MissionSystem = {
             if (reqs.completedMissions) {
                 for (let requiredMission of reqs.completedMissions) {
                     if (!this.state.missions.completed.includes(requiredMission)) {
-                        const reqMissionDef = this.definitions.missions[requiredMission];
+                        const reqMissionDef = MissionSystem._getMissionDef(requiredMission, this);
                         return {
                             canStart: false,
                             reason: `Requires completion of: ${reqMissionDef?.name || requiredMission}`
@@ -254,7 +282,7 @@ const MissionSystem = {
             return { success: false, reason: checkResult.reason };
         }
 
-        const mission = this.definitions.missions[missionId];
+        const mission = MissionSystem._getMissionDef(missionId, this);
 
         // Add to active missions
         this.state.missions.active.push(missionId);
@@ -408,7 +436,7 @@ const MissionSystem = {
      * Complete a mission and grant rewards
      */
     completeMission(missionId) {
-        const mission = this.definitions.missions[missionId];
+        const mission = MissionSystem._getMissionDef(missionId, this);
         if (!mission) {
             return { success: false, reason: "Mission not found" };
         }
@@ -507,7 +535,7 @@ const MissionSystem = {
                 for (let itemReward of rewards.base.items) {
                     this.addItemToBank(itemReward.itemId, itemReward.amount);
                     granted.items.push(itemReward);
-                    const itemDef = this.definitions.items[itemReward.itemId];
+                    const itemDef = MissionSystem._getItemDef(itemReward.itemId, this);
                     console.log(`🎁 +${itemReward.amount}x ${itemDef?.name || itemReward.itemId}`);
                 }
             }
@@ -556,7 +584,7 @@ const MissionSystem = {
                     for (let itemReward of rewards.bonus.items) {
                         this.addItemToBank(itemReward.itemId, itemReward.amount);
                         granted.items.push(itemReward);
-                        const itemDef = this.definitions.items[itemReward.itemId];
+                        const itemDef = MissionSystem._getItemDef(itemReward.itemId, this);
                         console.log(`🎁 BONUS +${itemReward.amount}x ${itemDef?.name || itemReward.itemId}`);
                     }
                 }
@@ -588,7 +616,8 @@ const MissionSystem = {
         }
         this.state.missions.analytics.totalAbandoned++;
 
-        console.log(`❌ Abandoned mission: ${this.definitions.missions[missionId]?.name || missionId}`);
+        const abandonedMission = MissionSystem._getMissionDef(missionId, this);
+        console.log(`❌ Abandoned mission: ${abandonedMission?.name || missionId}`);
 
         // Update available missions
         this.updateAvailableMissions();
@@ -610,7 +639,7 @@ const MissionSystem = {
      * Calculate mission difficulty score (1-10)
      */
     calculateMissionDifficulty(missionId) {
-        const mission = this.definitions.missions[missionId];
+        const mission = MissionSystem._getMissionDef(missionId, this);
         if (!mission) return 0;
 
         // If difficulty is already set, use it

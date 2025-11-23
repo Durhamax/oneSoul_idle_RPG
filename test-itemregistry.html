@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ItemRegistry Test</title>
+</head>
+<body>
+    <h1>ItemRegistry Test</h1>
+    <div id="output"></div>
+
+    <!-- Load dependencies in order -->
+    <script src="src/core/BaseRegistry.js"></script>
+    <script src="src/data/items/itemRegistry_NEW.js"></script>
+    <script src="src/data/items/production/equipment/equipment.js"></script>
+    <script src="src/data/items/production/equipment/testWeaponsAttachments.js"></script>
+    <script src="src/data/items/production/consumables/consumables.js"></script>
+    <script src="src/data/items/production/materials/materials.js"></script>
+    <script src="src/data/items/production/currencies/currencies.js"></script>
+    <script src="src/data/items/index.js"></script>
+
+    <script>
+        const output = document.getElementById('output');
+
+        // Check if huntsman_40 exists
+        console.log('TEST_WEAPONS_ATTACHMENTS:', TEST_WEAPONS_ATTACHMENTS);
+        console.log('EQUIPMENT_ITEMS has huntsman_40?', 'huntsman_40' in EQUIPMENT_ITEMS);
+        console.log('ItemRegistry has huntsman_40?', ItemRegistry.hasItem('huntsman_40'));
+
+        const item = ItemRegistry.getItem('huntsman_40');
+        console.log('huntsman_40 item:', item);
+
+        // Check all items with equipSlot === 'weapon'
+        const allItems = ItemRegistry.getAllActive();
+        const weapons = Object.values(allItems).filter(i => i.equipSlot === 'weapon');
+        console.log('All weapons with equipSlot:', weapons);
+
+        // Check items with rarity creator
+        const creatorItems = Object.values(allItems).filter(i => i.rarity === 'creator');
+        console.log('Creator rarity items:', creatorItems);
+
+        output.innerHTML = `
+            <p>TEST_WEAPONS_ATTACHMENTS exists: ${typeof TEST_WEAPONS_ATTACHMENTS !== 'undefined'}</p>
+            <p>huntsman_40 in EQUIPMENT_ITEMS: ${'huntsman_40' in EQUIPMENT_ITEMS}</p>
+            <p>huntsman_40 in ItemRegistry: ${ItemRegistry.hasItem('huntsman_40')}</p>
+            <p>huntsman_40 item: ${item ? JSON.stringify(item, null, 2) : 'NOT FOUND'}</p>
+            <p>Weapons with equipSlot: ${weapons.length}</p>
+            <p>Creator rarity items: ${creatorItems.length}</p>
+        `;
+    </script>
+</body>
+</html>

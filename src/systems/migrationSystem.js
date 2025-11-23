@@ -45,7 +45,13 @@ const MigrationSystem = {
             this.migrateInvalidEquipment,
             this.migrateCoordinateSystem,
             this.migrateGlobalDiscovery,
-            this.migrateNavigationRequirements
+            this.migrateNavigationRequirements,
+            this.autoDiscoverStartingNodes,
+            this.fixNegativeNodeHP,
+            this.grantStartingMiningTool,
+            this.migrateEquipmentPresets,
+            this.migrateAttachmentSystem,
+            this.migrateDualBankStructure  // ✅ Phase 4 complete - re-enabled
         ];
 
         let totalMigrations = 0;
@@ -329,6 +335,16 @@ const MigrationSystem = {
             changes++;
         }
 
+        // Add rest equipment slots for camping system
+        if (!GameEngine.state.activeNavigation.restEquipment) {
+            GameEngine.state.activeNavigation.restEquipment = {
+                food: null,
+                wood: null
+            };
+            console.log("  ✅ Added rest equipment slots to navigation");
+            changes++;
+        }
+
         if (GameEngine.state.activeNavigation && !GameEngine.state.activeNavigation.hasOwnProperty('isNavigating')) {
             GameEngine.state.activeNavigation.isNavigating = false;
             changes++;
@@ -482,8 +498,9 @@ const MigrationSystem = {
         // Migrate old region ID to new coordinate system
         if (GameEngine.state.currentRegion === "startingPlains" ||
             GameEngine.state.currentRegion === "region_0_0" ||
-            GameEngine.state.currentRegion === "region_0_10") {
-            GameEngine.state.currentRegion = "region_-10_0";
+            GameEngine.state.currentRegion === "region_0_10" ||
+            GameEngine.state.currentRegion === "region_-10_0") {
+            GameEngine.state.currentRegion = "region_-3_-4"; // The Cradle starting region
             console.log("  ✅ Migrated currentRegion to hexagonal world map");
             changes++;
         }
@@ -611,7 +628,7 @@ const MigrationSystem = {
             const bankItem = GameEngine.state.bank.items[itemId];
 
             if (bankItem.tab === 'legacy') {
-                const itemDef = GameEngine.definitions.items[itemId];
+                const itemDef = GameEngine.getItem(itemId);
 
                 if (itemDef) {
                     // Use the tab migration logic
@@ -845,24 +862,31 @@ const MigrationSystem = {
     migrateEquipmentSlots() {
         let changes = 0;
 
-        // Ensure new consumable slots exist
-        if (GameEngine.state.equipment.ammo === undefined) {
-            GameEngine.state.equipment.ammo = null;
+        // Ensure equipment object exists
+        if (!GameEngine.state.equipment) {
+            GameEngine.state.equipment = {};
+            console.log("  ⚠️ Equipment object was missing, recreating");
             changes++;
         }
 
-        if (GameEngine.state.equipment.potion === undefined) {
-            GameEngine.state.equipment.potion = null;
-            changes++;
-        }
+        // Ensure all equipment slots exist with correct structure
+        const requiredSlots = [
+            'weapon', 'helmet', 'back', 'gloves', 'chest', 'neck', 'boots', 'legs', 'ring',
+            'ammo', 'food', 'potion',
+            'tech1', 'tech2', 'tech3', 'tech4'
+        ];
 
-        // Ensure technology slots exist
-        const techSlots = ['tech1', 'tech2', 'tech3', 'tech4'];
-        for (let slot of techSlots) {
+        for (let slot of requiredSlots) {
             if (GameEngine.state.equipment[slot] === undefined) {
                 GameEngine.state.equipment[slot] = null;
                 changes++;
             }
+        }
+
+        // Legacy: Remove old 'shield' slot if it exists (replaced by 'back')
+        if (GameEngine.state.equipment.shield !== undefined) {
+            delete GameEngine.state.equipment.shield;
+            changes++;
         }
 
         if (changes > 0) {
@@ -882,7 +906,21 @@ const MigrationSystem = {
         // Check all equipment slots
         for (let slot in GameEngine.state.equipment) {
             const equippedItemId = GameEngine.state.equipment[slot];
-            if (equippedItemId && !GameEngine.definitions.items[equippedItemId]) {
+
+            // Fix: If equipment slot contains an object instead of a string
+            if (equippedItemId && typeof equippedItemId === 'object') {
+                if (equippedItemId.itemId) {
+                    console.log(`  ✅ Converting ${slot} from object to string: ${equippedItemId.itemId}`);
+                    GameEngine.state.equipment[slot] = equippedItemId.itemId;
+                    changes++;
+                } else {
+                    console.log(`  ⚠️ Removing invalid equipment object from ${slot}`);
+                    GameEngine.state.equipment[slot] = null;
+                    changes++;
+                }
+            }
+            // Check if itemId is valid
+            else if (equippedItemId && !GameEngine.getItem(equippedItemId)) {
                 console.log(`  ⚠️ Removing invalid equipped item: ${equippedItemId} from ${slot}`);
                 GameEngine.state.equipment[slot] = null;
                 changes++;
@@ -891,6 +929,68 @@ const MigrationSystem = {
 
         if (changes > 0) {
             console.log(`  ✅ Cleared ${changes} invalid equipped item(s)`);
+        }
+
+        return changes;
+    },
+
+    /**
+     * Auto-discover nodes in starting region
+     * This ensures all players can access mining/gathering without manual discovery commands
+     */
+    autoDiscoverStartingNodes() {
+        let changes = 0;
+        const STARTING_REGION = "region_-3_-4";
+
+        // Only run if WorldRegions is available
+        if (typeof WorldRegions === 'undefined' || !WorldRegions[STARTING_REGION]) {
+            return 0;
+        }
+
+        const startRegionDef = WorldRegions[STARTING_REGION];
+        if (!startRegionDef.discoverableNodes || startRegionDef.discoverableNodes.length === 0) {
+            return 0;
+        }
+
+        // Initialize globalNodes if doesn't exist
+        if (!GameEngine.state.globalNodes) {
+            GameEngine.state.globalNodes = {};
+        }
+
+        // Auto-discover each node in starting region
+        for (const nodeId of startRegionDef.discoverableNodes) {
+            // Only auto-discover if not already discovered
+            if (!GameEngine.state.globalNodes[nodeId] || !GameEngine.state.globalNodes[nodeId].discovered) {
+                GameEngine.discoverNodeGlobally(nodeId, STARTING_REGION);
+                console.log(`  ✅ Auto-discovered starting node: ${nodeId}`);
+                changes++;
+            }
+        }
+
+        return changes;
+    },
+
+    /**
+     * Fix negative node HP values from before HP clamping was implemented
+     * Resets any negative currentHP to 0 (depleted state)
+     */
+    fixNegativeNodeHP() {
+        let changes = 0;
+
+        // Check if nodeHealth exists
+        if (!GameEngine.state.nodeHealth) {
+            return 0;
+        }
+
+        // Iterate through all nodes and fix negative HP
+        for (const nodeId in GameEngine.state.nodeHealth) {
+            const nodeHealth = GameEngine.state.nodeHealth[nodeId];
+
+            if (nodeHealth.currentHP < 0) {
+                console.log(`  ⚠️ Fixed negative HP for ${nodeId}: ${nodeHealth.currentHP} → 0`);
+                nodeHealth.currentHP = 0;
+                changes++;
+            }
         }
 
         return changes;
@@ -1039,6 +1139,274 @@ const MigrationSystem = {
 
         if (changes > 0) {
             console.log(`  ✅ Updated ${changes} region navigation requirements to new scaling system`);
+        }
+
+        return changes;
+    },
+
+    /**
+     * Grant starting mining tool if player doesn't have one
+     * Ensures player can access Phase 1 mining system
+     */
+    grantStartingMiningTool() {
+        let changes = 0;
+
+        // Check if player already has a pickaxe
+        const hasPickaxe = GameEngine.getEquippedMiningTool && GameEngine.getEquippedMiningTool();
+
+        if (!hasPickaxe) {
+            // Check if lightPickaxe exists in bank
+            const lightPickaxeCount = GameEngine.state.bank?.items?.lightPickaxe?.quantity || 0;
+
+            if (lightPickaxeCount === 0) {
+                // Grant lightPickaxe
+                GameEngine.addItemToBank('lightPickaxe', 1);
+                console.log(`  ⛏️ Granted lightPickaxe for Phase 1 mining system`);
+                changes++;
+            }
+        }
+
+        return changes;
+    },
+
+    /**
+     * Migrate equipment preset system - add equipmentPresets state if missing
+     */
+    migrateEquipmentPresets() {
+        let changes = 0;
+
+        // Check if equipmentPresets exists
+        if (!GameEngine.state.equipmentPresets) {
+            GameEngine.state.equipmentPresets = {
+                presets: [
+                    null, null, null, null, null,  // Presets 1-5
+                    null, null, null, null, null   // Presets 6-10
+                ],
+                activePreset: null  // Index of currently active preset (0-9), or null if custom
+            };
+            console.log(`  ✅ Added equipment preset system (10 slots)`);
+            changes++;
+        }
+
+        return changes;
+    },
+
+    /**
+     * Migrate attachment system - ensure weapon instances have correct structure
+     */
+    migrateAttachmentSystem() {
+        let changes = 0;
+
+        // Check all bank items for weapon instances that need migration
+        if (GameEngine.state.bank && GameEngine.state.bank.items) {
+            for (let itemId in GameEngine.state.bank.items) {
+                const item = GameEngine.state.bank.items[itemId];
+
+                // If this is a weapon instance, ensure it has the attachments property
+                if (item.instanceId && !item.attachments) {
+                    // Get base item to determine slots
+                    const baseId = item.baseItemId || item.itemId;
+                    const baseItem = GameEngine.getItem(baseId);
+
+                    if (baseItem && baseItem.equipSlot === 'weapon') {
+                        const rarity = GameEngine.getItemRarity(baseId);
+                        const rarityName = rarity ? rarity.id : 'common';
+                        const maxSlots = AttachmentSystem.ATTACHMENT_SLOTS_BY_RARITY[rarityName];
+                        const slotTypes = Object.keys(AttachmentSystem.ATTACHMENT_TYPES);
+
+                        // Initialize empty attachments
+                        item.attachments = {};
+                        for (let i = 0; i < maxSlots && i < slotTypes.length; i++) {
+                            item.attachments[slotTypes[i]] = null;
+                        }
+
+                        // Calculate initial stats if missing
+                        if (!item.modifiedStats) {
+                            item.modifiedStats = AttachmentSystem.calculateModifiedStats.call(GameEngine, baseItem, {});
+                        }
+
+                        changes++;
+                    }
+                }
+            }
+
+            if (changes > 0) {
+                console.log(`  ✅ Migrated ${changes} weapon instance(s) for attachment system`);
+            }
+        }
+
+        return changes;
+    },
+
+    /**
+     * Migrate bank structure from unified items to dual-bank (stackable + instanced)
+     * This is a MAJOR migration that separates simple quantities from unique instances
+     */
+    migrateDualBankStructure() {
+        let changes = 0;
+
+        // Check if migration already completed
+        if (GameEngine.state.bank.stackable && GameEngine.state.bank.instanced) {
+            // Check if old structure still exists
+            if (!GameEngine.state.bank.items || Object.keys(GameEngine.state.bank.items).length === 0) {
+                return 0; // Already migrated and cleaned up
+            }
+        }
+
+        console.log('  🔄 Migrating bank to dual-bank structure...');
+
+        // Initialize new structure
+        if (!GameEngine.state.bank.stackable) {
+            GameEngine.state.bank.stackable = {};
+        }
+        if (!GameEngine.state.bank.instanced) {
+            GameEngine.state.bank.instanced = {};
+        }
+
+        // Helper: Get rarity multiplier for mods
+        const getRarityMultiplier = (rarity) => {
+            const multipliers = {
+                common: 1.02,
+                uncommon: 1.04,
+                rare: 1.07,
+                epic: 1.10,
+                legendary: 1.15,
+                mythic: 1.20,
+                divine: 1.25,
+                transcendent: 1.30,
+                creator: 1.50
+            };
+            return multipliers[rarity] || 1.02;
+        };
+
+        // Helper: Extract base item ID from suffixed mod IDs
+        const extractBaseId = (itemId) => {
+            return itemId.replace(/_common|_uncommon|_rare|_epic|_legendary|_mythic|_divine|_transcendent|_creator$/g, '');
+        };
+
+        // Migrate each item
+        if (GameEngine.state.bank.items) {
+            for (let itemId in GameEngine.state.bank.items) {
+                const itemData = GameEngine.state.bank.items[itemId];
+
+                // Try to find definition - check base ID first for instances
+                let def = ItemRegistry.getItem(itemId);
+                let baseItemId = itemId;
+
+                // If not found and looks like an instance, try extracting base ID
+                if (!def && (itemData.instanceId || itemId.includes('_instance_'))) {
+                    baseItemId = itemData.baseItemId || extractBaseId(itemId);
+                    def = ItemRegistry.getItem(baseItemId);
+                }
+
+                // If still not found, try without rarity suffix (for mods)
+                if (!def) {
+                    baseItemId = extractBaseId(itemId);
+                    def = ItemRegistry.getItem(baseItemId);
+                }
+
+                if (!def) {
+                    console.warn(`  ⚠️ Item not found in registry: ${itemId} (tried base: ${baseItemId}) - skipping`);
+                    continue;
+                }
+
+                // Determine if item is instanced
+                const isInstanced = itemData.instanceId || itemId.includes('_instance_') || def.instanced === true;
+
+                if (isInstanced) {
+                    // === INSTANCED ITEMS (Weapons, Armor, Tools, Mods) ===
+
+                    // Special handling for MODS/ATTACHMENTS
+                    if (def.slot === 'attachment' || def.itemType === 'attachment') {
+                        // Use the baseItemId we found from registry lookup (already extracted)
+
+                        // Detect rarity (priority: itemData > def > ID parsing)
+                        let rarity = 'common';
+                        if (itemData.rarity) {
+                            rarity = itemData.rarity;
+                        } else if (def.rarity) {
+                            rarity = def.rarity;
+                        } else {
+                            // Parse from ID suffix
+                            if (itemId.includes('_legendary')) rarity = 'legendary';
+                            else if (itemId.includes('_epic')) rarity = 'epic';
+                            else if (itemId.includes('_rare')) rarity = 'rare';
+                            else if (itemId.includes('_uncommon')) rarity = 'uncommon';
+                            else if (itemId.includes('_mythic')) rarity = 'mythic';
+                            else if (itemId.includes('_divine')) rarity = 'divine';
+                            else if (itemId.includes('_transcendent')) rarity = 'transcendent';
+                            else if (itemId.includes('_creator')) rarity = 'creator';
+                        }
+
+                        // Get mod properties
+                        const modType = def.modType || def.attachmentSlot;
+                        const modStat = def.modStat || def.bonusStat;
+                        const multiplier = def.bonusValue || getRarityMultiplier(rarity);
+
+                        // Create unique instance for EACH mod in bank
+                        const quantity = itemData.quantity || 1;
+                        for (let i = 0; i < quantity; i++) {
+                            const uniqueId = `${baseItemId}_instance_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+                            GameEngine.state.bank.instanced[uniqueId] = {
+                                baseItemId: baseItemId,
+                                uniqueId: uniqueId,
+                                rarity: rarity,
+                                modType: modType,
+                                modStat: modStat,
+                                multiplier: multiplier,
+                                equipped: false,
+                                locked: false
+                            };
+
+                            changes++;
+                        }
+                    }
+                    // WEAPONS, ARMOR, TOOLS (already have unique IDs)
+                    else {
+                        const uniqueId = itemData.instanceId || itemId;
+                        // Use the baseItemId we found earlier from registry lookup
+                        const finalBaseItemId = itemData.baseItemId || baseItemId;
+
+                        GameEngine.state.bank.instanced[uniqueId] = {
+                            baseItemId: finalBaseItemId,
+                            uniqueId: uniqueId,
+                            rarity: itemData.rarity || def.rarity || 'common',
+                            attachments: itemData.attachments || {},
+                            equipped: itemData.equipped || false,
+                            locked: itemData.locked || false
+                        };
+
+                        // Preserve any additional properties
+                        if (itemData.modifiedStats) {
+                            GameEngine.state.bank.instanced[uniqueId].modifiedStats = itemData.modifiedStats;
+                        }
+
+                        changes++;
+                    }
+                } else {
+                    // === STACKABLE ITEMS (Resources, Materials, Consumables) ===
+                    const quantity = itemData.quantity || itemData || 1;
+
+                    if (!GameEngine.state.bank.stackable[itemId]) {
+                        GameEngine.state.bank.stackable[itemId] = 0;
+                    }
+
+                    GameEngine.state.bank.stackable[itemId] += quantity;
+                    changes++;
+                }
+            }
+        }
+
+        // Clean up old bank.items structure (preserve as backup temporarily)
+        if (changes > 0) {
+            GameEngine.state.bank.items_backup = GameEngine.state.bank.items;
+            GameEngine.state.bank.items = {}; // Clear old structure
+
+            console.log(`  ✅ Migrated ${changes} items to dual-bank structure`);
+            console.log(`  📦 Stackable items: ${Object.keys(GameEngine.state.bank.stackable).length}`);
+            console.log(`  ⚔️ Instanced items: ${Object.keys(GameEngine.state.bank.instanced).length}`);
+            console.log(`  💾 Old structure backed up to bank.items_backup`);
         }
 
         return changes;
