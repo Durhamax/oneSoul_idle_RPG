@@ -39,11 +39,13 @@ const EquipmentUI = {
     updateBank() {
         const bank = GameEngine.state.bank;
 
-        // Create a snapshot of current bank state
+        // DUAL-BANK: Create a snapshot of current bank state (all storage locations)
         const currentState = {
             activeTab: bank.activeTab,
-            itemsHash: JSON.stringify(bank.items),
-            newItemsCount: bank.newItems.length,
+            itemsHash: JSON.stringify(bank.items || {}),
+            instancedHash: JSON.stringify(bank.instanced || {}),
+            stackableHash: JSON.stringify(bank.stackable || {}),
+            newItemsCount: bank.newItems?.length || 0,
             medalsCount: GameEngine.state.craftedMedals?.length || 0
         };
 
@@ -51,6 +53,8 @@ const EquipmentUI = {
         const hasChanged = !this.lastBankState ||
             this.lastBankState.activeTab !== currentState.activeTab ||
             this.lastBankState.itemsHash !== currentState.itemsHash ||
+            this.lastBankState.instancedHash !== currentState.instancedHash ||
+            this.lastBankState.stackableHash !== currentState.stackableHash ||
             this.lastBankState.newItemsCount !== currentState.newItemsCount ||
             this.lastBankState.medalsCount !== currentState.medalsCount;
 
@@ -258,8 +262,12 @@ const EquipmentUI = {
      */
     updateEquipment() {
         const equipment = GameEngine.state.equipment;
-        const playerHealth = GameEngine.state.combat.player.currentHealth;
-        const totalWeight = GameEngine.getTotalEquippedWeight();
+        // Get player health - check multiple possible locations
+        const playerHealth = GameEngine.state.player?.currentHP
+            || GameEngine.state.combat?.player?.currentHealth
+            || GameEngine.state.combat?.player?.currentHP
+            || 100;
+        const totalWeight = GameEngine.getTotalEquippedWeight ? GameEngine.getTotalEquippedWeight() : 0;
 
         // Create state snapshot
         const currentState = {

@@ -130,9 +130,10 @@ const OverviewUI = {
      * Render current status (region, activity) - for Activity Panel
      */
     renderCurrentStatus() {
-        const currentRegion = GameEngine.state.currentRegion;
-        const hexDef = GameEngine.definitions.worldMap?.[currentRegion];
-        const regionName = hexDef?.name || currentRegion;
+        const currentRegion = GameEngine.state?.currentRegion;
+        const worldMap = GameEngine.definitions?.worldMap || GameEngine.state?.worldMap;
+        const hexDef = worldMap?.[currentRegion];
+        const regionName = hexDef?.name || currentRegion || 'Unknown';
         const biome = hexDef?.biome || 'unknown';
 
         // Determine current activity

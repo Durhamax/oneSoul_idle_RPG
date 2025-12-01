@@ -120,7 +120,7 @@ NodeRegistry.production.evergreen_forest = {
         skillLevel: 1,
         characterLevel: 0,
         quests: [],
-        tools: ["axe", "hatchet"],
+        tools: ["woodcutting"],
         toolTier: 1
     },
 
@@ -238,7 +238,7 @@ NodeRegistry.production.pine_tree = {
         skillLevel: 5,
         characterLevel: 0,
         quests: [],
-        tools: ["axe", "hatchet"],
+        tools: ["woodcutting"],
         toolTier: 1
     },
 
@@ -363,7 +363,7 @@ NodeRegistry.production.willow_tree = {
         skillLevel: 15,
         characterLevel: 8,
         quests: [],
-        tools: ["axe"],
+        tools: ["woodcutting"],
         toolTier: 2
     },
 
@@ -486,7 +486,7 @@ NodeRegistry.production.maple_tree = {
         skillLevel: 25,
         characterLevel: 15,
         quests: [],
-        tools: ["axe"],
+        tools: ["woodcutting"],
         toolTier: 3
     },
 

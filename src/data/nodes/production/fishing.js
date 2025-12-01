@@ -78,7 +78,7 @@ NodeRegistry.production.cradle_lake_shallows = {
         skillLevel: 1,
         characterLevel: 0,
         quests: [],
-        tools: ["fishing_rod"],
+        tools: ["fishing"],
         toolTier: 1
     },
 

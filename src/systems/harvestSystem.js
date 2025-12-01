@@ -351,7 +351,18 @@ const HarvestSystem = {    /**
             const equippedItemId = this.state.equipment[slot];
             if (!equippedItemId) continue;
 
-            const itemDef = HarvestSystem._getItemDef.call(this, equippedItemId);
+            // Parse instance ID to get base item ID
+            let lookupId = equippedItemId;
+            if (equippedItemId.includes('_instance_')) {
+                lookupId = equippedItemId.split('_instance_')[0];
+            } else if (equippedItemId.includes('_')) {
+                const parts = equippedItemId.split('_');
+                if (parts.length >= 3 && /^\d{13}$/.test(parts[parts.length - 2])) {
+                    lookupId = parts.slice(0, -2).join('_');
+                }
+            }
+
+            const itemDef = HarvestSystem._getItemDef.call(this, lookupId);
             if (!itemDef) continue;
 
             // Check if this is a tool of required type and tier

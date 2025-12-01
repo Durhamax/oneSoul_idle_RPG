@@ -6,165 +6,6 @@
 
 const MATERIAL_ITEMS = {
     // =================================================================
-    // ORES & METALS
-    // =================================================================
-
-    copperOre: {
-        id: 'copperOre',
-        name: 'Copper Ore',
-        description: 'Raw copper ore mined from copper deposits. Used in basic smithing.',
-        icon: '🪨',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        instanced: false,  // Stackable resource
-        rarity: 'common',
-        stackLimit: 100,
-        value: 5,
-        resourceType: 'ore',
-        gatherSkill: 'mining',
-        gatherLevel: 1,
-        tags: ['material', 'ore', 'metal', 'copper', 'mining'],
-    },
-
-    tinOre: {
-        id: 'tinOre',
-        name: 'Tin Ore',
-        description: 'Raw tin ore from tin deposits. Combines with copper to make bronze.',
-        icon: '🪨',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'common',
-        stackLimit: 100,
-        value: 5,
-        resourceType: 'ore',
-        gatherSkill: 'mining',
-        gatherLevel: 1,
-        tags: ['material', 'ore', 'metal', 'tin', 'mining'],
-    },
-
-    ironOre: {
-        id: 'ironOre',
-        name: 'Iron Ore',
-        description: 'Raw iron ore extracted from iron deposits. Essential for smithing.',
-        icon: '🪨',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'common',
-        stackLimit: 100,
-        value: 15,
-        resourceType: 'ore',
-        gatherSkill: 'mining',
-        gatherLevel: 10,
-        tags: ['material', 'ore', 'metal', 'iron', 'mining'],
-    },
-
-    coal: {
-        id: 'coal',
-        name: 'Coal',
-        description: 'Black coal used as fuel for smelting. Burns hot and long.',
-        icon: '⚫',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'common',
-        stackLimit: 100,
-        value: 8,
-        resourceType: 'ore',
-        gatherSkill: 'mining',
-        gatherLevel: 5,
-        tags: ['material', 'ore', 'fuel', 'coal', 'mining'],
-    },
-
-    goldOre: {
-        id: 'goldOre',
-        name: 'Gold Ore',
-        description: 'Precious gold ore. Can be smelted into gold bars.',
-        icon: '🪨',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'uncommon',
-        stackLimit: 50,
-        value: 50,
-        resourceType: 'ore',
-        gatherSkill: 'mining',
-        gatherLevel: 20,
-        tags: ['material', 'ore', 'metal', 'gold', 'mining'],
-    },
-
-    // =================================================================
-    // BARS & INGOTS
-    // =================================================================
-
-    copperBar: {
-        id: 'copperBar',
-        name: 'Copper Bar',
-        description: 'Refined copper bar. Ready for crafting.',
-        icon: '🟫',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'common',
-        stackLimit: 100,
-        value: 12,
-        resourceType: 'bar',
-        tags: ['material', 'bar', 'metal', 'copper', 'smithing'],
-    },
-
-    bronzeBar: {
-        id: 'bronzeBar',
-        name: 'Bronze Bar',
-        description: 'Bronze alloy bar made from copper and tin. Durable and versatile.',
-        icon: '🟫',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'common',
-        stackLimit: 100,
-        value: 25,
-        resourceType: 'bar',
-        tags: ['material', 'bar', 'metal', 'bronze', 'smithing'],
-    },
-
-    ironBar: {
-        id: 'ironBar',
-        name: 'Iron Bar',
-        description: 'Refined iron bar. Strong and reliable crafting material.',
-        icon: '⬛',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'uncommon',
-        stackLimit: 100,
-        value: 40,
-        resourceType: 'bar',
-        tags: ['material', 'bar', 'metal', 'iron', 'smithing'],
-    },
-
-    steelBar: {
-        id: 'steelBar',
-        name: 'Steel Bar',
-        description: 'Tempered steel bar. Superior strength and quality.',
-        icon: '⬛',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'rare',
-        stackLimit: 75,
-        value: 100,
-        resourceType: 'bar',
-        tags: ['material', 'bar', 'metal', 'steel', 'smithing'],
-    },
-
-    goldBar: {
-        id: 'goldBar',
-        name: 'Gold Bar',
-        description: 'Pure gold bar. Valuable and malleable.',
-        icon: '🟨',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'rare',
-        stackLimit: 50,
-        value: 150,
-        resourceType: 'bar',
-        tags: ['material', 'bar', 'metal', 'gold', 'smithing'],
-    },
-
-    // =================================================================
     // WOOD & LOGS
     // =================================================================
 
@@ -186,101 +27,9 @@ const MATERIAL_ITEMS = {
         tags: ['material', 'wood', 'logs', 'woodcutting', 'fuel', 'navigation'],
     },
 
-    normalLogs: {
-        id: 'normalLogs',
-        name: 'Normal Logs',
-        description: 'Basic logs from common trees. Used in crafting and construction.',
-        icon: '🪵',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'common',
-        stackLimit: 100,
-        value: 3,
-        resourceType: 'wood',
-        gatherSkill: 'woodcutting',
-        gatherLevel: 1,
-        tags: ['material', 'wood', 'logs', 'woodcutting'],
-    },
-
-    oakLogs: {
-        id: 'oakLogs',
-        name: 'Oak Logs',
-        description: 'Sturdy oak logs. Better quality than normal wood.',
-        icon: '🪵',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'common',
-        stackLimit: 100,
-        value: 10,
-        resourceType: 'wood',
-        gatherSkill: 'woodcutting',
-        gatherLevel: 10,
-        tags: ['material', 'wood', 'logs', 'oak', 'woodcutting'],
-    },
-
-    willowLogs: {
-        id: 'willowLogs',
-        name: 'Willow Logs',
-        description: 'Flexible willow logs. Excellent for crafting bows and tools.',
-        icon: '🪵',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'uncommon',
-        stackLimit: 100,
-        value: 18,
-        resourceType: 'wood',
-        gatherSkill: 'woodcutting',
-        gatherLevel: 15,
-        tags: ['material', 'wood', 'logs', 'willow', 'woodcutting'],
-    },
-
-    mapleLogs: {
-        id: 'mapleLogs',
-        name: 'Maple Logs',
-        description: 'Hard maple logs. Dense and durable.',
-        icon: '🪵',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'uncommon',
-        stackLimit: 100,
-        value: 30,
-        resourceType: 'wood',
-        gatherSkill: 'woodcutting',
-        gatherLevel: 25,
-        tags: ['material', 'wood', 'logs', 'maple', 'woodcutting'],
-    },
-
     // =================================================================
     // TEXTILES & LEATHER
     // =================================================================
-
-    wool: {
-        id: 'wool',
-        name: 'Wool',
-        description: 'Soft wool fiber. Can be spun into thread.',
-        icon: '🧶',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'common',
-        stackLimit: 100,
-        value: 4,
-        resourceType: 'textile',
-        tags: ['material', 'textile', 'wool', 'crafting'],
-    },
-
-    thread: {
-        id: 'thread',
-        name: 'Thread',
-        description: 'Spun thread for sewing and crafting cloth items.',
-        icon: '🧵',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'common',
-        stackLimit: 100,
-        value: 8,
-        resourceType: 'textile',
-        tags: ['material', 'textile', 'thread', 'crafting'],
-    },
 
     leather: {
         id: 'leather',
@@ -294,72 +43,6 @@ const MATERIAL_ITEMS = {
         value: 15,
         resourceType: 'leather',
         tags: ['material', 'leather', 'hide', 'crafting'],
-    },
-
-    hardLeather: {
-        id: 'hardLeather',
-        name: 'Hard Leather',
-        description: 'Hardened leather. More durable than regular leather.',
-        icon: '🦴',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'uncommon',
-        stackLimit: 50,
-        value: 35,
-        resourceType: 'leather',
-        tags: ['material', 'leather', 'hide', 'crafting'],
-    },
-
-    // =================================================================
-    // HERBS & PLANTS
-    // =================================================================
-
-    healingHerb: {
-        id: 'healingHerb',
-        name: 'Healing Herb',
-        description: 'Medicinal herb with healing properties. Used in potion making.',
-        icon: '🌿',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'common',
-        stackLimit: 100,
-        value: 6,
-        resourceType: 'herb',
-        gatherSkill: 'herbalism',
-        gatherLevel: 1,
-        tags: ['material', 'herb', 'plant', 'alchemy', 'healing'],
-    },
-
-    strengthHerb: {
-        id: 'strengthHerb',
-        name: 'Strength Herb',
-        description: 'Potent herb that enhances physical power. Used in strength potions.',
-        icon: '🌿',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'uncommon',
-        stackLimit: 50,
-        value: 20,
-        resourceType: 'herb',
-        gatherSkill: 'herbalism',
-        gatherLevel: 10,
-        tags: ['material', 'herb', 'plant', 'alchemy', 'strength'],
-    },
-
-    magicHerb: {
-        id: 'magicHerb',
-        name: 'Magic Herb',
-        description: 'Mystical herb infused with arcane energy. Used in magic potions.',
-        icon: '🌿',
-        category: 'material',
-        instanced: false,  // Stackable resource
-        rarity: 'uncommon',
-        stackLimit: 50,
-        value: 25,
-        resourceType: 'herb',
-        gatherSkill: 'herbalism',
-        gatherLevel: 15,
-        tags: ['material', 'herb', 'plant', 'alchemy', 'magic'],
     },
 
     // =================================================================
@@ -466,6 +149,230 @@ const MATERIAL_ITEMS = {
         value: 2,
         resourceType: 'misc',
         tags: ['material', 'iron', 'nails', 'crafting'],
+    },
+
+    flintstone: {
+        id: 'flintstone',
+        name: 'Flintstone',
+        description: 'Sharp flint stone. Used for arrowheads and primitive tools.',
+        icon: '🪨',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 100,
+        value: 3,
+        resourceType: 'stone',
+        gatherSkill: 'mining',
+        gatherLevel: 1,
+        tags: ['material', 'stone', 'flint', 'mining'],
+    },
+
+    feather: {
+        id: 'feather',
+        name: 'Feather',
+        description: 'Light bird feather. Used for fletching arrows.',
+        icon: '🪶',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 100,
+        value: 2,
+        resourceType: 'misc',
+        gatherSkill: 'hunting',
+        gatherLevel: 1,
+        tags: ['material', 'feather', 'hunting', 'fletching'],
+    },
+
+    copperite: {
+        id: 'copperite',
+        name: 'Copperite',
+        description: 'Refined copper alloy suitable for ammunition casings.',
+        icon: '🟫',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 100,
+        value: 8,
+        resourceType: 'metal',
+        tags: ['material', 'metal', 'copper', 'ammunition'],
+    },
+
+    linen: {
+        id: 'linen',
+        name: 'Linen',
+        description: 'Woven linen fabric. Light and breathable.',
+        icon: '🧵',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 100,
+        value: 10,
+        resourceType: 'textile',
+        tags: ['material', 'textile', 'linen', 'crafting'],
+    },
+
+    wax: {
+        id: 'wax',
+        name: 'Wax',
+        description: 'Natural beeswax. Waterproofing and coating material.',
+        icon: '🕯️',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 100,
+        value: 5,
+        resourceType: 'misc',
+        tags: ['material', 'wax', 'crafting'],
+    },
+
+    // =================================================================
+    // HERBS & PLANTS
+    // =================================================================
+
+    mintyHerb: {
+        id: 'mintyHerb',
+        name: 'Minty Herb',
+        description: 'A fragrant herb with a cool, refreshing taste. Commonly used in cooking and medicine.',
+        icon: '🌿',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 100,
+        value: 3,
+        resourceType: 'herb',
+        gatherSkill: 'foraging',
+        gatherLevel: 1,
+        tags: ['material', 'herb', 'plant', 'cooking', 'foraging'],
+    },
+
+    // =================================================================
+    // FOOD MATERIALS
+    // =================================================================
+
+    solfish: {
+        id: 'solfish',
+        name: 'Solfish',
+        description: 'Common fish caught in freshwater. Can be cooked.',
+        icon: '🐟',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 50,
+        value: 4,
+        resourceType: 'food',
+        gatherSkill: 'fishing',
+        gatherLevel: 1,
+        tags: ['material', 'food', 'fish', 'fishing'],
+    },
+
+    minnow: {
+        id: 'minnow',
+        name: 'Minnow',
+        description: 'Tiny fish found in ponds and streams. Can be processed into fish oil.',
+        icon: '🐟',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 100,
+        value: 2,
+        resourceType: 'food',
+        gatherSkill: 'fishing',
+        gatherLevel: 1,
+        tags: ['material', 'food', 'fish', 'fishing', 'bait'],
+    },
+
+    smallGameMeat: {
+        id: 'smallGameMeat',
+        name: 'Small Game Meat',
+        description: 'Raw meat from small game animals like rabbits or squirrels.',
+        icon: '🥩',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 50,
+        value: 6,
+        resourceType: 'food',
+        gatherSkill: 'hunting',
+        gatherLevel: 1,
+        tags: ['material', 'food', 'meat', 'hunting'],
+    },
+
+    fishoil: {
+        id: 'fishoil',
+        name: 'Fish Oil',
+        description: 'Oil extracted from fish. Nutritious and restorative.',
+        icon: '🧴',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 50,
+        value: 8,
+        resourceType: 'misc',
+        tags: ['material', 'oil', 'fish', 'alchemy'],
+    },
+
+    // =================================================================
+    // DROID PARTS & ELECTRONICS (Enemy Loot)
+    // =================================================================
+
+    circuit_scrap: {
+        id: 'circuit_scrap',
+        name: 'Circuit Scrap',
+        description: 'Salvaged electronic components from droid enemies. Useful for electronics crafting.',
+        icon: '🔌',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 999,
+        value: 3,
+        slot: 'resource',
+        resourceType: 'electronics',
+        tags: ['material', 'electronics', 'droid', 'crafting', 'combat_loot'],
+    },
+
+    copper_wire: {
+        id: 'copper_wire',
+        name: 'Copper Wire',
+        description: 'Thin copper wiring useful for electronics crafting. Often salvaged from defeated droids.',
+        icon: '🪡',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 999,
+        value: 2,
+        slot: 'resource',
+        resourceType: 'metal',
+        tags: ['material', 'metal', 'wire', 'electronics', 'crafting', 'combat_loot'],
+    },
+
+    lens_fragment: {
+        id: 'lens_fragment',
+        name: 'Lens Fragment',
+        description: 'A cracked optical lens from a drone sensor array. Can be reprocessed or used in optics crafting.',
+        icon: '🔍',
+        category: 'material',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 999,
+        value: 5,
+        slot: 'resource',
+        resourceType: 'optics',
+        tags: ['material', 'optics', 'lens', 'droid', 'crafting', 'combat_loot'],
+    },
+
+    survey_data_chip: {
+        id: 'survey_data_chip',
+        name: 'Survey Data Chip',
+        description: 'Contains encrypted survey data from Elaran reconnaissance drones. May be valuable to certain buyers or useful for reverse engineering.',
+        icon: '💾',
+        category: 'material',
+        instanced: false,
+        rarity: 'uncommon',
+        stackLimit: 99,
+        value: 12,
+        slot: 'resource',
+        resourceType: 'data',
+        tags: ['material', 'data', 'electronics', 'droid', 'valuable', 'combat_loot'],
     },
 };
 

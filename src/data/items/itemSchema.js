@@ -36,12 +36,17 @@ const ITEM_RARITIES = {
 /**
  * Equipment Slots
  *
- * Valid slots for items
+ * Valid slots for items (3-1-3 Grid System)
  *
  * EQUIPMENT (category: 'equipment'):
  *   - tool: Skilling items (pickaxes, axes, fishing rods) → Tools tab
  *   - weapon: Combat weapons → Weapons tab
- *   - head/body/legs/feet/hands/offhand/accessory: Combat armor → Armor tab
+ *   - armor: Full armor set (head/chest/legs combined) → Armor tab
+ *   - back: Capes/Cloaks → Armor tab
+ *   - gloves: Gloves → Armor tab
+ *   - neck: Necklaces/Amulets → Armor tab
+ *   - boots: Boots → Armor tab
+ *   - ring: Rings → Armor tab
  *
  * CONSUMABLES (category: 'consumable'):
  *   - ammo/food/potion: Consumable slots → Consumables tab
@@ -50,16 +55,15 @@ const ITEM_RARITIES = {
  *   - resource: Raw materials → Resources tab
  */
 const EQUIPMENT_SLOTS = {
-    // Equipment slots
-    TOOL: 'tool',                 // Skilling equipment (any slot)
+    // Equipment slots (3-1-3 Grid)
+    TOOL: 'tool',                 // Skilling equipment
     WEAPON: 'weapon',             // Combat weapons
-    HEAD: 'head',                 // Armor
-    BODY: 'body',                 // Armor
-    LEGS: 'legs',                 // Armor
-    FEET: 'feet',                 // Armor
-    HANDS: 'hands',               // Armor
-    OFFHAND: 'offhand',           // Armor/shields
-    ACCESSORY: 'accessory',       // Armor/accessories
+    ARMOR: 'armor',               // Full armor set (unified head/chest/legs)
+    BACK: 'back',                 // Cape/Cloak
+    GLOVES: 'gloves',             // Gloves
+    NECK: 'neck',                 // Necklace/Amulet
+    BOOTS: 'boots',               // Boots
+    RING: 'ring',                 // Ring
 
     // Consumable slots
     AMMO: 'ammo',                 // Ammo consumable
@@ -238,13 +242,23 @@ const ITEM_SCHEMA = {
     // =================================================================
 
     /**
-     * Equipment slot this item occupies
+     * Equipment slot this item occupies (for bank tab categorization)
      * @type {string}
      * @category equipment
      * @required
      * @see EQUIPMENT_SLOTS
      */
     slot: '',
+
+    /**
+     * Equipment slot where this item is actually equipped (where it goes on character)
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @see EQUIPMENT_SLOTS
+     * @example "weapon" (for both weapons and tools)
+     */
+    equipSlot: '',
 
     /**
      * Equipment tier for progression
@@ -254,6 +268,32 @@ const ITEM_SCHEMA = {
      * @see EQUIPMENT_TIERS
      */
     tier: '',
+
+    /**
+     * Weapon category for accuracy modifier calculations
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "rifle", "bow", "pistol", "balancedMelee", "heavyMelee", "precisionMelee", "tool"
+     */
+    weaponCategory: '',
+
+    /**
+     * Tool type for gathering/skilling
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "mining", "woodcutting", "fishing", "hunting"
+     */
+    toolType: '',
+
+    /**
+     * Tool tier for gathering effectiveness
+     * @type {number}
+     * @category equipment
+     * @optional
+     */
+    toolTier: 1,
 
     /**
      * Skill this equipment is associated with
@@ -298,11 +338,11 @@ const ITEM_SCHEMA = {
     },
 
     /**
-     * Skill requirements to equip
+     * Requirements to equip/use item
      * @type {Object}
      * @category equipment
      * @optional
-     * @example { combat: 10, smithing: 5 }
+     * @example { characterLevel: 10, mining: 5 }
      */
     requirements: {},
 
@@ -528,7 +568,7 @@ const EXAMPLE_ITEMS = {
             attackSpeed: 1.0,
         },
         requirements: {
-            combat: 5,
+            characterLevel: 5,
         },
         tags: ['weapon', 'sword', 'melee', 'iron'],
     },

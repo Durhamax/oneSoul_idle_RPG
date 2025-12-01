@@ -1,7 +1,7 @@
 # Idle RPG Prototype - Game Context Document
 
-**Last Updated:** 2025-11-19
-**Version:** 2.1
+**Last Updated:** 2025-11-29
+**Version:** 2.2
 **Purpose:** Comprehensive context document for development and AI assistance
 
 ---
@@ -38,6 +38,38 @@ Expected output: `C:\Users\durha\Documents\oneSoul_idle_RPG` (this is the defaul
 ---
 
 ## ⚠️ CURRENT STATUS
+
+**Recent Changes (2025-11-29)**:
+- ✅ **NEW: Rev1 Combat UI System** - Complete combat UI overhaul
+  - 3-tab system (Enemies, Combat, Loadout)
+  - Enemy selection panel with difficulty indicators
+  - Active combat container with HP bars and attack timers
+  - Loadout container with equipment/consumables/technology slots
+  - Enemy modal with type effectiveness calculations
+  - EventBus integration for combat animations
+  - Comprehensive CSS styling (1,100+ lines)
+- ✅ **FIXED: Item Registry & Bank System** - Major cleanup and standardization
+  - Removed ALL legacy/deprecated items from item registry
+  - Bank tabs reorganized to 11 tabs (removed "perk" tab)
+  - Cleaned up duplicate/legacy item definitions
+  - Standardized item schema validation
+  - Fixed equipment state migration issues
+- ✅ **FIXED: Weapon Modification System** - Removed deprecated attachment system
+  - Deleted weaponBuildModal.js and attachmentModal.js
+  - Removed weapon modification UI components
+  - Cleaned up legacy attachment system code
+- ✅ **ATTRIBUTE STRUCTURE** - Unified player attributes
+  - All attributes now use `player.attributes` (not `combatAttributes`)
+  - Intelligence properly referenced as `player.attributes.intellect`
+  - Technology slots correctly check intellect requirements
+
+**Recent Changes (2025-11-23)**:
+- ✅ **NEW: 3-1-3 Equipment Grid** - Armor system simplified to full armor sets
+  - Removed individual helmet/chest/legs slots → Replaced with unified `armor` slot
+  - Equipment grid changed from 3x3 to 3-1-3 (7 slots total)
+  - Armor items now render as tall tiles in bank (span 2 rows)
+  - Created armor set items: clothRobeSet, leatherArmorSet, ironArmorSet
+  - Updated CSS, rendering, and equipmentSystem.js
 
 **Recent Changes (2025-11-19)**:
 - ✅ **NEW: Skill-Based Tool System** - Tools now use `skill` property instead of toolType mapping
@@ -149,6 +181,7 @@ oneSoul_idle_RPG/
 │   │   ├── definitions.js              # Legacy definitions adapter
 │   │   ├── BaseRegistry.js            # Base registry class
 │   │   ├── RegistryManager.js         # Central registry manager
+│   │   ├── EventBus.js                # Event system for UI/system communication
 │   │   └── statCalculator.js          # Stat calculation system
 │   │
 │   ├── data/                          # Game data definitions (UNIFIED REGISTRY SYSTEM)
@@ -205,7 +238,13 @@ oneSoul_idle_RPG/
 │   │   └── [Other registries: perks, npcs, biomes, lootTables, etc.]
 │   │
 │   ├── systems/                       # Game systems
-│   │   ├── combatSystem.js            # ✅ Combat logic and enemy encounters
+│   │   ├── combat/                    # Combat system (Rev1)
+│   │   │   ├── combatSystem.js        # ✅ Core combat logic with EventBus integration
+│   │   │   ├── combatTimers.js        # ✅ Attack/reload timers
+│   │   │   ├── combatDamage.js        # ✅ Damage calculations
+│   │   │   ├── combatEffects.js       # ✅ Status effects (DoT, debuffs)
+│   │   │   ├── combatLoot.js          # ✅ Loot generation
+│   │   │   └── combatStatsCompiler.js # ✅ Player/enemy stat compilation
 │   │   ├── offlineCombatSystem.js     # ✅ Offline combat simulation
 │   │   ├── craftingSystem.js          # ✅ Recipe-based crafting
 │   │   ├── equipmentSystem.js         # ✅ Equipment, stats calculation
@@ -233,8 +272,14 @@ oneSoul_idle_RPG/
 │   │   └── itemIntegration.js         # Item system integration
 │   │
 │   ├── ui/                            # UI modules
+│   │   ├── combat/                    # Combat UI (Rev1)
+│   │   │   ├── combatUI.js            # ✅ Main combat coordinator (3-tab system)
+│   │   │   ├── enemySelectionPanel.js # ✅ Enemy browsing and selection
+│   │   │   ├── combatContainer.js     # ✅ Active combat display
+│   │   │   ├── loadoutContainer.js    # ✅ Equipment/stats display
+│   │   │   ├── enemyModal.js          # ✅ Enemy details modal
+│   │   │   └── combatAnimations.js    # ✅ Combat visual effects
 │   │   ├── uiCore.js                  # ✅ UI coordinator, main update loop
-│   │   ├── combatUI.js                # ✅ Combat view rendering
 │   │   ├── offlineCombatUI.js         # ✅ Offline combat results modal
 │   │   ├── craftingUI.js              # ✅ Crafting view
 │   │   ├── equipmentUI.js             # ✅ Equipment and bank UI
@@ -512,13 +557,66 @@ All equipment bonuses are summed and applied:
 
 ### Combat System
 
+#### Combat UI (Rev1 - Implemented 2025-11-29)
+
+**3-Tab System:**
+1. **Enemies Tab** - Enemy selection and browsing
+   - Grid of available enemies with difficulty indicators
+   - Enemy stats preview (HP, damage, type)
+   - Click enemy tile to open detailed modal
+   - Start combat button in enemy modal
+2. **Combat Tab** - Active combat display
+   - Real-time HP bars for player and enemy
+   - Attack timer/cooldown display
+   - Combat log with damage numbers
+   - Flee button
+   - Auto-switches to this tab when combat starts
+3. **Loadout Tab** - Equipment and stats
+   - 7 core equipment slots (weapon, head, body, legs, hands, feet, offhand)
+   - 3 consumable slots (ammo, food, potion) with quantities
+   - 4 technology slots (tech1-4) with intellect gating
+   - Combat stats panel (Offense/Defense/Weight)
+   - Type effectiveness breakdown visualization
+
+**Features:**
+- **EventBus Integration** - All combat events trigger visual feedback
+  - `combat-started` - Switch to combat tab
+  - `combat-ended` - Show victory/defeat screen
+  - `player-damaged` - Damage animation
+  - `enemy-damaged` - Damage animation
+  - `player-healed` - Heal animation (auto-eat)
+  - `attack-missed` - Miss indicator
+  - `loot-dropped` - Loot notification
+- **Enemy Modal** - Detailed enemy information
+  - Full enemy stats and abilities
+  - Type matchup calculations
+  - Recommended equipment display
+  - Estimated kill time
+- **Loadout Display** - Real-time equipment visualization
+  - Equipment slots with item icons
+  - Weight tracking with overweight warnings
+  - Damage type distribution (pierce/explosive/cryo/shock/incendiary)
+  - Armor type distribution (insulated/plated/airborne/droid/biological)
+
+**Files:**
+- `src/ui/combat/combatUI.js` - Main coordinator (412 lines)
+- `src/ui/combat/enemySelectionPanel.js` - Enemy browser (178 lines)
+- `src/ui/combat/combatContainer.js` - Combat display (358 lines)
+- `src/ui/combat/loadoutContainer.js` - Loadout display (417 lines)
+- `src/ui/combat/enemyModal.js` - Enemy details (425 lines)
+- `src/ui/combat/combatAnimations.js` - Visual effects (215 lines)
+- `styles/combat-ui.css` - Styling (1,100+ lines)
+
 #### Combat Flow
-1. Player selects enemy from list
-2. Combat begins (turn-based with auto-attack)
-3. Player can manually attack or auto-attack on cooldown
-4. Enemy auto-attacks on their cooldown
-5. Defeat enemy → loot drops → respawn timer
-6. Player can flee at any time
+1. Player selects enemy from Enemies tab
+2. Click enemy to open Enemy Modal with full stats
+3. Click "Start Combat" in modal
+4. UI auto-switches to Combat tab
+5. Combat begins (timer-based with simultaneous attacks)
+6. Player can manually attack or auto-attack on cooldown
+7. Enemy auto-attacks on their cooldown
+8. Defeat enemy → loot drops → respawn timer → UI shows victory screen
+9. Player can flee at any time using Flee button
 
 #### Damage Calculation (Player → Enemy)
 ```javascript
@@ -630,18 +728,26 @@ When players are away from the game, combat progress is simulated:
 
 ### Bank/Inventory System
 
-#### Bank Tabs (11 total)
-1. Resources (ore, wood, etc.)
-2. Equipment (weapons, armor)
-3. Consumables (food, potions)
-4. Quest (mission items)
-5. Crafting (materials)
-6. Tools (gathering tools)
-7. Weapons (combat weapons)
-8. Armor (wearable armor)
-9. Accessories (rings, amulets)
-10. Medals (crafted medals - special display)
-11. Legacy (deprecated items)
+#### Bank Tabs (10 total - Updated 2025-11-29)
+1. **Materials** - Raw materials (ore, wood, stone, fish, meat, bars, planks, etc.)
+2. **Weapons** - Combat weapons (swords, bows, guns, spears)
+3. **Ammo** - Ammunition (arrows, bullets, shells, bolts)
+4. **Armor** - Armor sets and protective gear (armor sets, shields)
+5. **Tools** - Gathering tools (pickaxes, axes, fishing rods, baskets)
+6. **Food** - Consumable food items (cooked meals, provisions)
+7. **Potions** - Healing and buff potions (health potions, buff elixirs)
+8. **Technology** - Technology upgrades and devices
+9. **Perks** - Perk items (used for perk grid system)
+10. **Quest Items** - Mission-specific quest items
+
+**Recent Changes:**
+- Renamed "Resources" to "Materials" for clarity
+- Separated consumables into specific tabs: Ammo, Food, Potions
+- Removed deprecated Mods/Attachments tab (weapon modification system removed)
+- Removed Medal tab (medals now managed in Perks view)
+- Removed Legacy tab (cleaned up all deprecated items)
+- Cleaned up all legacy items (over 200 deprecated items removed from production registry)
+- Standardized tab categorization with `slot` property
 
 #### Item Properties
 ```javascript

@@ -57,7 +57,7 @@ class ItemRegistryClass extends BaseRegistry {
                 'durability', 'maxDurability', 'repairCost', 'modSlots', 'setBonus',
                 'statusEffects', 'passive', 'active', 'cooldown', 'charges', 'consumeOnUse',
                 'resourceType', 'gatherSkill', 'gatherLevel', 'craftingUse',
-                'tutorialItem', 'questReward', 'toolType',
+                'tutorialItem', 'questReward', 'toolType', 'toolTier',
                 // NEW: Skill-based tool system
                 'skill',
                 // Equipment fields from itemSchema.js
@@ -96,8 +96,8 @@ class ItemRegistryClass extends BaseRegistry {
                 icon: item.icon || item.image || '❓',
                 // Damage aliases (production uses combatStats.damage)
                 attackDamage: item.combatStats?.damage || item.damage || 0,
-                // Slot aliases (production uses 'slot', legacy used 'equipSlot')
-                equipSlot: item.slot,
+                // Slot aliases (production uses 'equipSlot' if defined, else fallback to 'slot')
+                equipSlot: item.equipSlot || item.slot,
                 // Attack speed alias
                 attackSpeed: item.combatStats?.attackSpeed || 1.0,
                 // Defense alias

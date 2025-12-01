@@ -35,18 +35,29 @@ class EnemyRegistryClass extends BaseRegistry {
     }
 
     _initSchema() {
-        this.schema = {
-            required: ['id', 'name', 'type', 'tier', 'level'],
-            optional: [
-                'description', 'icon', 'difficulty', 'isBoss', 'health', 'maxHealth',
-                'damage', 'defense', 'accuracy', 'evasion', 'critChance', 'critDamage',
-                'abilities', 'drops', 'lootTable', 'experience', 'gold',
-                'resistances', 'weaknesses', 'immunities', 'statusEffects',
-                'behavior', 'aiPattern', 'spawnLocations', 'spawnWeight',
-                'minLevel', 'maxLevel', 'tags', 'assetPath', 'rarity',
-                'respawnTime', 'aggro', 'attackSpeed', 'moveSpeed'
-            ]
-        };
+        // Use the combat-focused schema
+        if (typeof EnemySchema !== 'undefined') {
+            this.schema = EnemySchema;
+        } else {
+            // Fallback legacy schema
+            this.schema = {
+                required: ['id', 'name', 'type', 'tier', 'level'],
+                optional: [
+                    'description', 'icon', 'difficulty', 'isBoss', 'health', 'maxHealth',
+                    'damage', 'defense', 'accuracy', 'evasion', 'critChance', 'critDamage',
+                    'abilities', 'drops', 'lootTable', 'experience', 'gold',
+                    'resistances', 'weaknesses', 'immunities', 'statusEffects',
+                    'behavior', 'aiPattern', 'spawnLocations', 'spawnWeight',
+                    'minLevel', 'maxLevel', 'tags', 'assetPath', 'rarity',
+                    'respawnTime', 'aggro', 'attackSpeed', 'moveSpeed'
+                ]
+            };
+        }
+
+        // Initialize validator
+        if (typeof EnemyValidator !== 'undefined') {
+            this.validator = EnemyValidator;
+        }
     }
 
     // ===== ORIGINAL METHODS (100% backward compatible) =====
@@ -204,6 +215,132 @@ class EnemyRegistryClass extends BaseRegistry {
         if (stats.bosses > 0) {
             console.log(`👑 Bosses: ${stats.bosses} enemies\n`);
         }
+    }
+
+    // ===== NEW COMBAT-SPECIFIC METHODS =====
+
+    /**
+     * Get enemies by category (for new combat system)
+     * @param {string} category - Enemy category (beast, droid, etc.)
+     * @returns {Object} Enemies matching category
+     */
+    getByCategory(category) {
+        const all = this.getAllActive();
+        const filtered = {};
+
+        for (const [id, enemy] of Object.entries(all)) {
+            if (enemy.category === category) {
+                filtered[id] = enemy;
+            }
+        }
+
+        return filtered;
+    }
+
+    /**
+     * Get enemies by damage type
+     * @param {string} damageType - Damage type
+     * @returns {Object} Enemies with that damage type
+     */
+    getByDamageType(damageType) {
+        const all = this.getAllActive();
+        const filtered = {};
+
+        for (const [id, enemy] of Object.entries(all)) {
+            if (enemy.damageType === damageType ||
+                (enemy.damageRatings && enemy.damageRatings[damageType])) {
+                filtered[id] = enemy;
+            }
+        }
+
+        return filtered;
+    }
+
+    /**
+     * Get enemies by armor type
+     * @param {string} armorType - Armor type
+     * @returns {Object} Enemies with that armor type
+     */
+    getByArmorType(armorType) {
+        const all = this.getAllActive();
+        const filtered = {};
+
+        for (const [id, enemy] of Object.entries(all)) {
+            if (enemy.armorType === armorType ||
+                (enemy.armorRatings && enemy.armorRatings[armorType])) {
+                filtered[id] = enemy;
+            }
+        }
+
+        return filtered;
+    }
+
+    /**
+     * Get enemies by region
+     * @param {string} region - Region identifier
+     * @returns {Object} Enemies in that region
+     */
+    getByRegion(region) {
+        const all = this.getAllActive();
+        const filtered = {};
+
+        for (const [id, enemy] of Object.entries(all)) {
+            if (enemy.region === region) {
+                filtered[id] = enemy;
+            }
+        }
+
+        return filtered;
+    }
+
+    /**
+     * Get enemy power rating (for difficulty display)
+     * @param {string} enemyId - Enemy ID
+     * @returns {number} Power rating
+     */
+    getPowerRating(enemyId) {
+        const enemy = this.get(enemyId);
+        if (!enemy) return 0;
+
+        // Simple power formula: HP/10 + avgDamage*5 + accuracy/10
+        const avgDamage = enemy.baseDamage || 0;
+        return Math.floor(
+            (enemy.maxHP / 10) +
+            (avgDamage * 5) +
+            (enemy.accuracy / 10) +
+            (enemy.evasion / 5) +
+            (enemy.armorRating / 5)
+        );
+    }
+
+    /**
+     * Get difficulty label for enemy
+     * @param {string} enemyId - Enemy ID
+     * @returns {string} Difficulty label
+     */
+    getDifficultyLabel(enemyId) {
+        const power = this.getPowerRating(enemyId);
+
+        if (power < 30) return 'Weak';
+        if (power < 60) return 'Easy';
+        if (power < 100) return 'Moderate';
+        if (power < 150) return 'Challenging';
+        if (power < 250) return 'Hard';
+        if (power < 400) return 'Deadly';
+        return 'Elite';
+    }
+
+    /**
+     * Validate an enemy before registration
+     * @param {Object} enemy - Enemy definition
+     * @returns {Object} { valid: boolean, errors: string[] }
+     */
+    validateEnemy(enemy) {
+        if (this.validator) {
+            return this.validator.validate(enemy);
+        }
+        // Fallback if validator not loaded
+        return { valid: true, errors: [] };
     }
 
     // Note: BaseRegistry already provides:

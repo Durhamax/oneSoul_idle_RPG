@@ -159,8 +159,8 @@ const DualBankSystem = {
             instance.multiplier = properties.multiplier || def.bonusValue || this.getRarityMultiplier(instance.rarity);
         }
 
-        // Add weapon/armor-specific properties
-        if (def.slot === 'weapon' || ['head', 'body', 'legs', 'feet', 'hands', 'offhand', 'accessory'].includes(def.slot)) {
+        // Add weapon/armor-specific properties (3-1-3 Grid)
+        if (def.slot === 'weapon' || ['armor', 'back', 'gloves', 'neck', 'boots', 'ring'].includes(def.slot)) {
             instance.attachments = properties.attachments || {};
         }
 

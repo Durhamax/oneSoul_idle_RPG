@@ -240,8 +240,17 @@ const GatheringSystem = {
         session.totalResources[itemId] = (session.totalResources[itemId] || 0) + amount;
       }
 
-      // Award XP
-      const xpGained = nodeDef.baseXP || 10;
+      // Award XP (with perk multiplier)
+      let xpGained = nodeDef.baseXP || 10;
+
+      // Apply skill XP perk multiplier (use compiled stats when available)
+      const compiledStats = typeof GameEngine !== 'undefined' && GameEngine.state?.compiledStats;
+      const perkMultipliers = compiledStats?.perkMultipliers
+        || (typeof GameEngine !== 'undefined' && GameEngine.getPerkMultipliers ? GameEngine.getPerkMultipliers() : {});
+      if (perkMultipliers.skillXP) {
+        xpGained = Math.floor(xpGained * perkMultipliers.skillXP);
+      }
+
       this.engine.gainSkillExp(session.skill, xpGained);
       session.totalXP += xpGained;
 
@@ -367,6 +376,27 @@ const GatheringSystem = {
     const nodeResistance = nodeDef.harvestSpeed || 1.0;
     baseInterval = baseInterval * nodeResistance;
 
+    // Apply perk grid speed multiplier (use compiled stats when available)
+    const compiledStats = typeof GameEngine !== 'undefined' && GameEngine.state?.compiledStats;
+    const perkMultipliers = compiledStats?.perkMultipliers
+      || (typeof GameEngine !== 'undefined' && GameEngine.getPerkMultipliers ? GameEngine.getPerkMultipliers() : {});
+
+    // Map skill to perk stat name
+    const speedPerkMap = {
+      mining: 'miningSpeed',
+      logging: 'loggingSpeed',
+      fishing: 'fishingSpeed',
+      hunting: 'huntingSpeed',
+      foraging: 'foragingSpeed',
+      thieving: 'thievingSpeed'
+    };
+
+    const speedPerk = speedPerkMap[playerSkill.id] || speedPerkMap[nodeDef.nodeType];
+    if (speedPerk && perkMultipliers[speedPerk]) {
+      // Speed multiplier > 1 means faster, so divide interval
+      baseInterval = baseInterval / perkMultipliers[speedPerk];
+    }
+
     // Minimum 500ms
     return Math.max(500, Math.floor(baseInterval));
   },
@@ -400,6 +430,24 @@ const GatheringSystem = {
       return resources;
     }
 
+    // Get perk multipliers for yield bonuses (use compiled stats when available)
+    const compiledStats = typeof GameEngine !== 'undefined' && GameEngine.state?.compiledStats;
+    const perkMultipliers = compiledStats?.perkMultipliers
+      || (typeof GameEngine !== 'undefined' && GameEngine.getPerkMultipliers ? GameEngine.getPerkMultipliers() : {});
+
+    // Map skill to yield perk stat name
+    const yieldPerkMap = {
+      mining: 'miningYield',
+      logging: 'loggingYield',
+      fishing: 'fishingYield',
+      hunting: 'huntingYield',
+      foraging: 'foragingYield',
+      thieving: 'thievingYield'
+    };
+
+    const yieldPerk = yieldPerkMap[playerSkill.id] || yieldPerkMap[nodeDef.nodeType];
+    const perkYieldMultiplier = (yieldPerk && perkMultipliers[yieldPerk]) ? perkMultipliers[yieldPerk] : 1.0;
+
     // Roll each resource in the table
     for (const resource of nodeDef.resourceTable) {
       // Check weight/chance
@@ -421,6 +469,12 @@ const GatheringSystem = {
       const skillYieldBonus = 1 + (Math.floor(playerSkill.level / 10) * 0.05);
       amount = Math.floor(amount * skillYieldBonus);
 
+      // Apply perk yield multiplier (rounds at 0.50 threshold)
+      if (perkYieldMultiplier > 1.0) {
+        const rawYield = amount * perkYieldMultiplier;
+        amount = Math.round(rawYield);  // 1.49 → 1, 1.50 → 2
+      }
+
       resources[resource.itemId] = Math.max(1, amount);
     }
 
@@ -432,20 +486,25 @@ const GatheringSystem = {
   // ========================================
 
   getEquippedToolForSkill(skill) {
-    console.log(`[getEquippedToolForSkill] Looking for tool with skill: ${skill}`);
-    console.log(`[getEquippedToolForSkill] Equipment state:`, this.state.equipment);
-
     // Check weapon slot first (most gathering tools are weapons)
     const weaponId = this.state.equipment.weapon;
-    console.log(`[getEquippedToolForSkill] Weapon slot contains: ${weaponId}`);
 
     if (weaponId) {
-      const weapon = ItemRegistry.getItem(weaponId);
-      console.log(`[getEquippedToolForSkill] ItemRegistry.getItem returned:`, weapon);
-      console.log(`[getEquippedToolForSkill] weapon?.skill = ${weapon?.skill}`);
+      // Parse instance ID to get base item ID
+      let lookupId = weaponId;
+      if (weaponId.includes('_instance_')) {
+        lookupId = weaponId.split('_instance_')[0];
+      } else if (weaponId.includes('_')) {
+        const parts = weaponId.split('_');
+        if (parts.length >= 3 && /^\d{13}$/.test(parts[parts.length - 2])) {
+          lookupId = parts.slice(0, -2).join('_');
+        }
+      }
 
-      if (weapon && weapon.skill === skill) {
-        console.log(`[getEquippedToolForSkill] ✅ Found matching tool!`);
+      const weapon = ItemRegistry.getItem(lookupId);
+
+      // Check both 'skill' and 'toolType' properties for compatibility
+      if (weapon && (weapon.skill === skill || weapon.toolType === skill)) {
         return weapon;
       }
     }
@@ -453,14 +512,24 @@ const GatheringSystem = {
     // Check tool slot if you have one
     const toolId = this.state.equipment.tool;
     if (toolId) {
-      const tool = ItemRegistry.getItem(toolId);
-      console.log(`[getEquippedToolForSkill] Checking tool slot: ${toolId}`, tool);
-      if (tool && tool.skill === skill) {
+      // Parse instance ID to get base item ID
+      let lookupId = toolId;
+      if (toolId.includes('_instance_')) {
+        lookupId = toolId.split('_instance_')[0];
+      } else if (toolId.includes('_')) {
+        const parts = toolId.split('_');
+        if (parts.length >= 3 && /^\d{13}$/.test(parts[parts.length - 2])) {
+          lookupId = parts.slice(0, -2).join('_');
+        }
+      }
+
+      const tool = ItemRegistry.getItem(lookupId);
+      // Check both 'skill' and 'toolType' properties for compatibility
+      if (tool && (tool.skill === skill || tool.toolType === skill)) {
         return tool;
       }
     }
 
-    console.log(`[getEquippedToolForSkill] ❌ No tool found with skill: ${skill}`);
     return null;
   },
 

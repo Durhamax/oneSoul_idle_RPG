@@ -179,56 +179,14 @@ const ItemIntegration = {
     },
 
     /**
-     * Migrate definitions.js items to ItemRegistry
-     *
-     * Wraps old-format items and registers them in the legacy registry.
-     * This maintains backwards compatibility while using the new item system.
-     *
-     * @param {Object} definitionsItems - Items from definitions.js
+     * LEGACY MIGRATION REMOVED
+     * Using production items only - no legacy item migration
      */
     migrateDefinitionsItems(definitionsItems) {
-        if (typeof DefinitionsAdapter === 'undefined') {
-            console.warn("⚠️  DefinitionsAdapter not loaded, skipping migration");
-            return;
-        }
+        console.log(`✅ Legacy item migration disabled - using production items only`);
 
-        if (typeof ItemRegistry === 'undefined') {
-            console.warn("⚠️  ItemRegistry not loaded, skipping migration");
-            return;
-        }
-
-        // Wrap old-format items
-        const wrappedItems = DefinitionsAdapter.wrapItems(definitionsItems);
-
-        // Filter items that don't already exist in unified system
-        const newItems = {};
-        let skipped = 0;
-        let added = 0;
-
-        for (const [itemId, item] of Object.entries(wrappedItems)) {
-            // Check if item already exists in production registry
-            const existsInProduction = ItemRegistry.production.hasOwnProperty(itemId);
-
-            if (existsInProduction) {
-                skipped++;
-                // console.log(`   ⏭️  Skipping ${itemId} (already in production)`);
-            } else {
-                newItems[itemId] = item;
-                added++;
-            }
-        }
-
-        // Register wrapped items to legacy registry
-        if (Object.keys(newItems).length > 0) {
-            ItemRegistry.register('legacy', newItems);
-            console.log(`✅ Migrated ${added} items from definitions.js to legacy registry`);
-            console.log(`   (Skipped ${skipped} items already in production)`);
-        } else {
-            console.log(`✅ All definitions.js items already in production registry`);
-        }
-
-        // Refresh ITEMS_DB to include newly registered items
-        if (typeof window !== 'undefined') {
+        // Refresh ITEMS_DB from production registry
+        if (typeof window !== 'undefined' && typeof ItemRegistry !== 'undefined') {
             window.ITEMS_DB = ItemRegistry.getAllActive();
         }
     },

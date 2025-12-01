@@ -77,25 +77,31 @@ const MigrationSystem = {
 
         // Define all required tabs
         const requiredTabs = {
-            resource: { name: "Resources", icon: "📦", order: 0 },
-            tool: { name: "Tools", icon: "⛏️", order: 1 },
+            material: { name: "Materials", icon: "📦", order: 0 },
+            armor: { name: "Armor", icon: "🛡️", order: 1 },
             weapon: { name: "Weapons", icon: "⚔️", order: 2 },
-            armor: { name: "Armor", icon: "🛡️", order: 3 },
-            technology: { name: "Technology", icon: "⚡", order: 4 },
-            mod: { name: "Mods", icon: "💎", order: 5 },
-            healing: { name: "Healing", icon: "🧪", order: 6 },
-            consumable: { name: "Consumables", icon: "⚗️", order: 7 },
-            medal: { name: "Medals", icon: "🏅", order: 8 },
+            ammo: { name: "Ammo", icon: "🎯", order: 3 },
+            tool: { name: "Tools", icon: "⛏️", order: 4 },
+            food: { name: "Food", icon: "🍖", order: 5 },
+            potion: { name: "Potions", icon: "⚗️", order: 6 },
+            technology: { name: "Technology", icon: "⚡", order: 7 },
+            perk: { name: "Perks", icon: "🏅", order: 8 },
             quest: { name: "Quest Items", icon: "📜", order: 9 },
             legacy: { name: "Legacy Items", icon: "🎒", order: 10 }
         };
 
         // Migrate old tab names to new structure
         const tabMigrations = {
-            'resources': 'resource',
+            'resources': 'material',
+            'resource': 'material',
             'equipment': 'legacy',
-            'consumables': 'consumable',
-            'perk': null  // Remove perk tab, medals tab handles this now
+            'consumables': null,  // Remove old consumables tab
+            'consumable': null,   // Remove consumable tab
+            'healing': 'food',    // Rename healing to food
+            'medal': 'perk',      // Rename medals to perks
+            'medals': 'perk',     // Rename medals to perks
+            'mod': null,          // Remove mod tab, no longer needed
+            'mods': null          // Remove mods tab, no longer needed
         };
 
         // Apply tab name migrations
@@ -151,17 +157,23 @@ const MigrationSystem = {
         }
 
         // Fix active tab if using old name
-        if (GameEngine.state.bank.activeTab === 'resources') {
-            GameEngine.state.bank.activeTab = 'resource';
+        if (GameEngine.state.bank.activeTab === 'resources' || GameEngine.state.bank.activeTab === 'resource') {
+            GameEngine.state.bank.activeTab = 'material';
             changes++;
         } else if (GameEngine.state.bank.activeTab === 'equipment') {
             GameEngine.state.bank.activeTab = 'legacy';
             changes++;
-        } else if (GameEngine.state.bank.activeTab === 'consumables') {
-            GameEngine.state.bank.activeTab = 'consumable';
+        } else if (GameEngine.state.bank.activeTab === 'consumables' || GameEngine.state.bank.activeTab === 'consumable') {
+            GameEngine.state.bank.activeTab = 'material';
             changes++;
-        } else if (GameEngine.state.bank.activeTab === 'perk') {
-            GameEngine.state.bank.activeTab = 'medal';
+        } else if (GameEngine.state.bank.activeTab === 'healing') {
+            GameEngine.state.bank.activeTab = 'food';
+            changes++;
+        } else if (GameEngine.state.bank.activeTab === 'medal' || GameEngine.state.bank.activeTab === 'medals') {
+            GameEngine.state.bank.activeTab = 'perk';
+            changes++;
+        } else if (GameEngine.state.bank.activeTab === 'mod' || GameEngine.state.bank.activeTab === 'mods') {
+            GameEngine.state.bank.activeTab = 'material';
             changes++;
         }
 
@@ -633,16 +645,21 @@ const MigrationSystem = {
                 if (itemDef) {
                     // Use the tab migration logic
                     const tabMigration = {
-                        'resources': 'resource',
+                        'resources': 'material',
+                        'resource': 'material',
                         'equipment': 'tool',
-                        'consumables': 'consumable',
+                        'consumables': 'material',
+                        'consumable': 'material',
+                        'healing': 'food',
                         'tools': 'tool',
                         'weapons': 'weapon',
                         'armor': 'armor',
-                        'accessories': 'technology'
+                        'accessories': 'technology',
+                        'medal': 'perk',
+                        'medals': 'perk'
                     };
 
-                    let newTab = 'resource'; // default fallback
+                    let newTab = 'material'; // default fallback
 
                     if (itemDef.defaultTab) {
                         newTab = tabMigration[itemDef.defaultTab] || itemDef.defaultTab;
@@ -869,9 +886,9 @@ const MigrationSystem = {
             changes++;
         }
 
-        // Ensure all equipment slots exist with correct structure
+        // Ensure all equipment slots exist with correct structure (3-1-3 Grid)
         const requiredSlots = [
-            'weapon', 'helmet', 'back', 'gloves', 'chest', 'neck', 'boots', 'legs', 'ring',
+            'weapon', 'armor', 'back', 'gloves', 'neck', 'boots', 'ring',
             'ammo', 'food', 'potion',
             'tech1', 'tech2', 'tech3', 'tech4'
         ];
@@ -883,10 +900,13 @@ const MigrationSystem = {
             }
         }
 
-        // Legacy: Remove old 'shield' slot if it exists (replaced by 'back')
-        if (GameEngine.state.equipment.shield !== undefined) {
-            delete GameEngine.state.equipment.shield;
-            changes++;
+        // Legacy: Remove old deprecated slots (replaced by unified armor slot)
+        const deprecatedSlots = ['shield', 'helmet', 'head', 'chest', 'body', 'legs', 'hands', 'feet', 'offhand', 'accessory'];
+        for (let oldSlot of deprecatedSlots) {
+            if (GameEngine.state.equipment[oldSlot] !== undefined) {
+                delete GameEngine.state.equipment[oldSlot];
+                changes++;
+            }
         }
 
         if (changes > 0) {
@@ -899,6 +919,7 @@ const MigrationSystem = {
     /**
      * Clear any equipped items that no longer exist in definitions
      * (e.g., after skill renames or item removals)
+     * Uses ItemIdUtils to properly handle instance IDs
      */
     migrateInvalidEquipment() {
         let changes = 0;
@@ -909,9 +930,10 @@ const MigrationSystem = {
 
             // Fix: If equipment slot contains an object instead of a string
             if (equippedItemId && typeof equippedItemId === 'object') {
-                if (equippedItemId.itemId) {
-                    console.log(`  ✅ Converting ${slot} from object to string: ${equippedItemId.itemId}`);
-                    GameEngine.state.equipment[slot] = equippedItemId.itemId;
+                if (equippedItemId.itemId || equippedItemId.instanceId) {
+                    const newId = equippedItemId.instanceId || equippedItemId.itemId;
+                    console.log(`  ✅ Converting ${slot} from object to string: ${newId}`);
+                    GameEngine.state.equipment[slot] = newId;
                     changes++;
                 } else {
                     console.log(`  ⚠️ Removing invalid equipment object from ${slot}`);
@@ -919,11 +941,32 @@ const MigrationSystem = {
                     changes++;
                 }
             }
-            // Check if itemId is valid
-            else if (equippedItemId && !GameEngine.getItem(equippedItemId)) {
-                console.log(`  ⚠️ Removing invalid equipped item: ${equippedItemId} from ${slot}`);
-                GameEngine.state.equipment[slot] = null;
-                changes++;
+            // Check if itemId is valid - use ItemIdUtils to handle instance IDs
+            else if (equippedItemId) {
+                // Use ItemIdUtils to properly resolve instance IDs to base IDs
+                let itemDef = null;
+
+                if (typeof ItemIdUtils !== 'undefined') {
+                    itemDef = ItemIdUtils.getItemDefinition(equippedItemId);
+                } else {
+                    // Fallback: try to extract base ID manually
+                    let baseId = equippedItemId;
+                    const match = equippedItemId.match(/^(.+)_(\d{13})_([a-z0-9]+)$/i);
+                    if (match) {
+                        baseId = match[1];
+                    }
+                    itemDef = GameEngine.getItem(baseId);
+                }
+
+                if (!itemDef) {
+                    // Get base ID for logging
+                    const baseId = typeof ItemIdUtils !== 'undefined'
+                        ? ItemIdUtils.getBaseItemId(equippedItemId)
+                        : equippedItemId;
+                    console.log(`  ⚠️ Removing invalid equipped item: ${equippedItemId} (base: ${baseId}) from ${slot}`);
+                    GameEngine.state.equipment[slot] = null;
+                    changes++;
+                }
             }
         }
 
@@ -1155,14 +1198,21 @@ const MigrationSystem = {
         const hasPickaxe = GameEngine.getEquippedMiningTool && GameEngine.getEquippedMiningTool();
 
         if (!hasPickaxe) {
-            // Check if lightPickaxe exists in bank
-            const lightPickaxeCount = GameEngine.state.bank?.items?.lightPickaxe?.quantity || 0;
+            // Check if lightPickaxe exists in bank (check instanced storage)
+            const hasLightPickaxe = Object.values(GameEngine.state.bank.instanced || {})
+                .some(inst => inst.baseItemId === 'lightPickaxe');
 
-            if (lightPickaxeCount === 0) {
-                // Grant lightPickaxe
-                GameEngine.addItemToBank('lightPickaxe', 1);
-                console.log(`  ⛏️ Granted lightPickaxe for Phase 1 mining system`);
-                changes++;
+            if (!hasLightPickaxe) {
+                // Grant lightPickaxe as instanced equipment
+                const itemDef = ItemRegistry?.getItem('lightPickaxe');
+                if (itemDef && itemDef.instanced && GameEngine.createEquipmentInstance) {
+                    const instance = GameEngine.createEquipmentInstance('lightPickaxe', itemDef.rarity, {});
+                    if (instance && GameEngine.addEquipmentInstance) {
+                        GameEngine.addEquipmentInstance(instance);
+                        console.log(`  ⛏️ Granted lightPickaxe instance for Phase 1 mining system`);
+                        changes++;
+                    }
+                }
             }
         }
 

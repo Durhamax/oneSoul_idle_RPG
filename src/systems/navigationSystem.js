@@ -16,6 +16,7 @@ const NavigationSystem = {
         engine.stopNavigation = this.stopNavigation.bind(engine);
         engine.processNavigation = this.processNavigation.bind(engine);
         engine.getNavigationStats = this.getNavigationStats.bind(engine);
+        engine.getNavigationPerkMultipliers = this.getNavigationPerkMultipliers.bind(engine);
         engine.makeDiscovery = this.makeDiscovery.bind(engine);
         engine.discoverResourceNode = this.discoverResourceNode.bind(engine);
         engine.discoverEnemyInRegion = this.discoverEnemyInRegion.bind(engine);
@@ -182,11 +183,31 @@ const NavigationSystem = {
     },
 
     /**
+     * Get navigation perk multipliers
+     * Uses centralized compiled stats when available for consistency
+     * @returns {Object} Navigation-related perk multipliers
+     */
+    getNavigationPerkMultipliers() {
+        // Use centralized compiled stats when available (from StatCompiler)
+        const compiledStats = typeof GameEngine !== 'undefined' && GameEngine.state?.compiledStats;
+        const multipliers = compiledStats?.perkMultipliers
+            || (typeof GameEngine !== 'undefined' && GameEngine.getPerkMultipliers ? GameEngine.getPerkMultipliers() : {});
+        return {
+            explorationSpeed: multipliers.explorationSpeed || 1.0,
+            discoveryChance: multipliers.discoveryChance || 1.0,
+            enduranceCapacity: multipliers.enduranceCapacity || 1.0,
+            enduranceRecovery: multipliers.enduranceRecovery || 1.0,
+            pathDiscovery: multipliers.pathDiscovery || 1.0
+        };
+    },
+
+    /**
      * Get player's navigation stats for discovery
      * Uses attribute-based system:
      * - Health: Max endurance, depletion/recovery rates
      * - Perception: Discovery success chance vs region complication
      * - Mobility: Discovery interval speed
+     * Plus perk bonuses from the perk grid
      */
     getNavigationStats() {
         const navSkill = this.state.skills.navigation;
@@ -200,42 +221,58 @@ const NavigationSystem = {
         const perception = attributes.perception || 1;
         const mobility = attributes.mobility || 1;
 
-        // ===== MAX ENDURANCE (Health only) =====
-        // Formula: baseEndurance + (health * healthMult)
-        const maxEndurance = (balance.baseEndurance || 50) + (health * (balance.enduranceHealthMult || 10));
+        // Get navigation perk multipliers
+        const navPerks = this.getNavigationPerkMultipliers();
 
-        // ===== DISCOVERY CHANCE (Perception vs Region Complication) =====
-        // Formula: baseChance + (perception * bonus) - (complication * penalty)
+        // ===== MAX ENDURANCE (Health + Perk) =====
+        // Formula: (baseEndurance + (health * healthMult)) * enduranceCapacity perk
+        let maxEndurance = (balance.baseEndurance || 50) + (health * (balance.enduranceHealthMult || 10));
+        maxEndurance = Math.floor(maxEndurance * navPerks.enduranceCapacity);
+
+        // ===== DISCOVERY CHANCE (Perception vs Region Complication + Perk) =====
+        // Formula: (baseChance + (perception * bonus) - (complication * penalty)) * discoveryChance perk
         const regionComplication = regionDef?.complication || 1.0;
         const perceptionBonus = perception * (balance.perceptionDiscoveryBonus || 2.5);
         const complicationPenalty = (regionComplication - 1.0) * 10; // 10% per complexity point
-        const discoveryChance = Math.max(5, Math.min(95,
-            (balance.baseDiscoveryChance || 30) + perceptionBonus - complicationPenalty
-        ));
+        let discoveryChance = (balance.baseDiscoveryChance || 30) + perceptionBonus - complicationPenalty;
+        // Apply perk multiplier before clamping
+        discoveryChance = discoveryChance * navPerks.discoveryChance;
+        discoveryChance = Math.max(5, Math.min(95, discoveryChance));
 
-        // ===== DISCOVERY INTERVAL (Mobility-based speed) =====
-        // Formula: baseInterval - (mobility * reduction), capped at minimum
+        // ===== DISCOVERY INTERVAL (Mobility + Perk) =====
+        // Formula: (baseInterval - (mobility * reduction)) / explorationSpeed perk
         const baseInterval = balance.navigationInterval || 3000;
         const mobilityReduction = mobility * (balance.mobilityIntervalReduction || 50);
-        const discoveryInterval = Math.max(
-            balance.minDiscoveryInterval || 1000,
-            baseInterval - mobilityReduction
-        );
+        let discoveryInterval = baseInterval - mobilityReduction;
+        // Apply perk multiplier (higher = faster, so divide)
+        discoveryInterval = discoveryInterval / navPerks.explorationSpeed;
+        discoveryInterval = Math.max(balance.minDiscoveryInterval || 1000, discoveryInterval);
 
         // ===== ENDURANCE DRAIN (Base rate, refined by health in processNavigation) =====
         const enduranceDrain = balance.enduranceDrainPerAttempt || 5;
 
+        // ===== ENDURANCE RECOVERY (affected by perk) =====
+        const baseRecoveryRate = (balance.baseRecoveryRate || 3) + (health * (balance.healthRecoveryMult || 0.5));
+        const recoveryRate = baseRecoveryRate * navPerks.enduranceRecovery;
+
+        // ===== PATH DISCOVERY BONUS =====
+        const pathDiscoveryBonus = navPerks.pathDiscovery;
+
         return {
             maxEndurance: Math.floor(maxEndurance),
             discoveryChance: discoveryChance,
-            discoveryInterval: discoveryInterval,
+            discoveryInterval: Math.floor(discoveryInterval),
             enduranceDrain: enduranceDrain,
+            recoveryRate: recoveryRate,
+            pathDiscoveryBonus: pathDiscoveryBonus,
             navLevel: navSkill.level,
             regionComplication: regionComplication,
             // Include raw attributes for reference
             health: health,
             perception: perception,
-            mobility: mobility
+            mobility: mobility,
+            // Include perk multipliers for reference
+            navPerks: navPerks
         };
     },
 
@@ -362,10 +399,8 @@ const NavigationSystem = {
                 }
 
                 // Recover endurance over time
-                // Formula: base 3 + (health * 0.5) = faster recovery with higher health
-                const health = this.state.combatAttributes?.health || 1;
-                const balance = this.gameBalance;
-                const recoveryRate = (balance.baseRecoveryRate || 3) + (health * (balance.healthRecoveryMult || 0.5));
+                // Formula: (base 3 + (health * 0.5)) * enduranceRecovery perk
+                const recoveryRate = stats.recoveryRate || 3;
 
                 activeNav.endurance += recoveryRate;
 
@@ -580,11 +615,17 @@ const NavigationSystem = {
             return;
         }
 
+        // Get path discovery perk bonus
+        const navPerks = this.getNavigationPerkMultipliers();
+        const pathDiscoveryBonus = navPerks.pathDiscovery || 1.0;
+
         // Safety check for biomeDef
         if (!biomeDef || typeof biomeDef.exitPathChance !== 'number') {
-            // Default chance if not defined
+            // Default chance if not defined (30% base, modified by perk)
+            const baseChance = 0.3;
+            const modifiedChance = Math.min(0.5, baseChance * pathDiscoveryBonus); // Cap at 50%
             const exitRoll = Math.random();
-            if (exitRoll < 0.3) { // 30% default chance
+            if (exitRoll < modifiedChance) {
                 const randomExit = undiscoveredExits[Math.floor(Math.random() * undiscoveredExits.length)];
 
                 // Discover path bidirectionally
@@ -598,9 +639,10 @@ const NavigationSystem = {
             return;
         }
 
-        // Roll for exit path discovery
+        // Roll for exit path discovery (modified by perk)
+        const modifiedChance = Math.min(0.5, biomeDef.exitPathChance * pathDiscoveryBonus); // Cap at 50%
         const exitRoll = Math.random();
-        if (exitRoll < biomeDef.exitPathChance) {
+        if (exitRoll < modifiedChance) {
             // Pick a random undiscovered exit
             const randomExit = undiscoveredExits[Math.floor(Math.random() * undiscoveredExits.length)];
 

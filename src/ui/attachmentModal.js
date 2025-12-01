@@ -13,7 +13,11 @@ const AttachmentModal = {
      * Open the attachment modal for a weapon
      */
     open(weaponId) {
-        const weaponData = GameEngine.state.bank.items[weaponId];
+        // DUAL-BANK: Check all storage locations (instanced, stackable, legacy)
+        const instancedWeapon = GameEngine.state.bank.instanced?.[weaponId];
+        const legacyWeapon = GameEngine.state.bank.items?.[weaponId];
+        const weaponData = instancedWeapon || legacyWeapon;
+
         if (!weaponData) {
             console.error('Weapon not found:', weaponId);
             return;
@@ -72,7 +76,11 @@ const AttachmentModal = {
             this.currentWeaponId = weaponData.instanceId || weaponId;
         }
 
-        const weapon = GameEngine.state.bank.items[this.currentWeaponId];
+        // DUAL-BANK: Get weapon from appropriate storage
+        const instancedWeapon2 = GameEngine.state.bank.instanced?.[this.currentWeaponId];
+        const legacyWeapon2 = GameEngine.state.bank.items?.[this.currentWeaponId];
+        const weapon = instancedWeapon2 || legacyWeapon2;
+
         this.tempAttachments = {...(weapon.attachments || {})};
         this.render();
         document.getElementById('attachmentModal').style.display = 'block';
@@ -82,7 +90,11 @@ const AttachmentModal = {
      * Render the attachment modal
      */
     render() {
-        const weapon = GameEngine.state.bank.items[this.currentWeaponId];
+        // DUAL-BANK: Check all storage locations
+        const instancedWeapon = GameEngine.state.bank.instanced?.[this.currentWeaponId];
+        const legacyWeapon = GameEngine.state.bank.items?.[this.currentWeaponId];
+        const weapon = instancedWeapon || legacyWeapon;
+
         if (!weapon) {
             console.error('[AttachmentModal] Weapon not found:', this.currentWeaponId);
             this.close();
@@ -197,8 +209,15 @@ const AttachmentModal = {
         for (let i = 0; i < maxSlots && i < slotTypes.length; i++) {
             const slotType = slotTypes[i];
             const currentAttachment = this.tempAttachments[slotType];
-            const attachmentItem = currentAttachment ? ItemAccessHelper.getItem(currentAttachment) : null;
-            const rarity = attachmentItem ? GameEngine.getItemRarity(currentAttachment) : null;
+
+            // Parse instance ID to get base item ID
+            let baseItemId = currentAttachment;
+            if (currentAttachment && currentAttachment.includes('_instance_')) {
+                baseItemId = currentAttachment.split('_instance_')[0];
+            }
+
+            const attachmentItem = baseItemId ? ItemAccessHelper.getItem(baseItemId) : null;
+            const rarity = attachmentItem ? GameEngine.getItemRarity(baseItemId) : null;
 
             html += `
                 <div class="attachment-slot ${currentAttachment ? 'filled' : 'empty'}"
@@ -230,21 +249,30 @@ const AttachmentModal = {
      * Open selector overlay for a specific slot
      */
     openSlotSelector(slotType) {
+        // DUAL-BANK: Get attachments from all storage systems
+        const instancedItems = GameEngine.state.bank.instanced || {};
+        const stackableItems = GameEngine.state.bank.stackable || {};
+        const legacyItems = GameEngine.state.bank.items || {};
+        const allBankItems = {...instancedItems, ...stackableItems, ...legacyItems};
+
         // Get attachments from bank that match this slot type
-        const availableAttachments = Object.entries(GameEngine.state.bank.items)
+        const availableAttachments = Object.entries(allBankItems)
             .filter(([id, item]) => {
-                const itemId = item.itemId || id;
+                // Get the base item ID for lookups
+                const itemId = item.baseItemId || item.itemId || id;
                 const def = ItemAccessHelper.getItem(itemId);
+
+                // Check if this is a compatible attachment
                 return def &&
                        def.itemType === 'attachment' &&
-                       def.attachmentSlot === slotType &&
-                       !Object.values(this.tempAttachments).includes(itemId) &&
-                       !item.instanceId; // Don't use weapon instances as attachments
+                       (def.modType === slotType || def.attachmentSlot === slotType) &&
+                       !Object.values(this.tempAttachments).includes(id);
+                       // Note: Removed instanceId filter - attachments can be instanced items
             })
             .map(([id, item]) => ({
-                id: item.itemId || id,
+                id: id, // Use the actual bank ID (could be instance ID)
                 item: item,
-                definition: ItemAccessHelper.getItem(item.itemId || id)
+                definition: ItemAccessHelper.getItem(item.baseItemId || item.itemId || id)
             }));
 
         let html = `
@@ -315,7 +343,11 @@ const AttachmentModal = {
      * Save changes and apply to weapon
      */
     save() {
-        const weapon = GameEngine.state.bank.items[this.currentWeaponId];
+        // DUAL-BANK: Check all storage locations
+        const instancedWeapon = GameEngine.state.bank.instanced?.[this.currentWeaponId];
+        const legacyWeapon = GameEngine.state.bank.items?.[this.currentWeaponId];
+        const weapon = instancedWeapon || legacyWeapon;
+
         if (!weapon) {
             this.close();
             return;

@@ -264,9 +264,10 @@ const DevModal = {
                 <div style="background: #2a2a2a; padding: 15px; border-radius: 8px;">
                     <h3 style="margin: 0 0 10px 0; color: #ffd700;">Quick Actions</h3>
                     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                        <button onclick="DevModal.addAllItems()" style="padding: 10px; background: #9c27b0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer;">✨ Add ALL Items (10 each)</button>
+                        <button onclick="DevModal.addAllItems()" style="padding: 10px; background: #9c27b0; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer;">✨ Add ALL Items (3 each)</button>
                         <button onclick="DevModal.clearBank()" style="padding: 10px; background: #ff6b6b; border: none; border-radius: 4px; color: white; cursor: pointer;">Clear Bank</button>
-                        <button onclick="DevModal.cleanWeapons()" style="padding: 10px; background: #e74c3c; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer;">🗑️ DELETE ALL WEAPONS</button>
+                        <button onclick="DevModal.cleanupLegacyItems()" style="padding: 10px; background: #f39c12; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer;">🧹 Clean Legacy Items</button>
+                        <button onclick="DevModal.equipTier1CombatLoadout()" style="padding: 10px; background: #27ae60; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer;">⚔️ Equip Tier 1 Combat Loadout</button>
                         <button onclick="DevModal.addAllTier1Items()" style="padding: 10px; background: #3a3a3a; border: 1px solid #ffd700; border-radius: 4px; color: white; cursor: pointer;">Add All Tier 1 Items</button>
                         <button onclick="DevModal.addAllTier2Items()" style="padding: 10px; background: #3a3a3a; border: 1px solid #ffd700; border-radius: 4px; color: white; cursor: pointer;">Add All Tier 2 Items</button>
                         <button onclick="DevModal.addStarterKit()" style="padding: 10px; background: #3a3a3a; border: 1px solid #ffd700; border-radius: 4px; color: white; cursor: pointer;">Add Starter Kit</button>
@@ -957,13 +958,29 @@ const DevModal = {
 
         const items = ItemRegistry.getAllActive();
         let count = 0;
+        let instancedCount = 0;
 
         for (let itemId in items) {
-            GameEngine.addItemToBank(itemId, 10);
-            count++;
+            const itemDef = items[itemId];
+
+            // Handle instanced items (equipment, weapons, armor)
+            if (itemDef.instanced) {
+                // Add 3 instances of each instanced item
+                for (let i = 0; i < 3; i++) {
+                    const instance = GameEngine.createEquipmentInstance(itemId, itemDef.rarity, {});
+                    if (instance) {
+                        GameEngine.addEquipmentInstance(instance);
+                        instancedCount++;
+                    }
+                }
+            } else {
+                // Handle stackable items (materials, consumables, etc.)
+                GameEngine.addItemToBank(itemId, 10);
+                count++;
+            }
         }
 
-        console.log(`✨ Added ALL ${count} items (10 each)`);
+        console.log(`✨ Added ALL items: ${count} stackable (10 each), ${instancedCount} instanced (3 each)`);
         if (typeof UICore !== 'undefined') UICore.update();
         this.render();
     },
@@ -1022,23 +1039,172 @@ const DevModal = {
     addStarterKit() {
         if (!GameEngine?.addItemToBank) return;
 
-        const starterItems = [
-            { id: 'lightPickaxe', qty: 1 },
-            { id: 'utilityHatchet', qty: 1 },
-            { id: 'caneRod', qty: 1 },
-            { id: 'huntingBlade', qty: 1 },
-            { id: 'wovenBasket', qty: 1 },
-            { id: 'lockpick', qty: 1 },
+        // Instanced tools (equipment)
+        const starterTools = [
+            'lightPickaxe',
+            'utilityHatchet',
+            'caneRod',
+            'huntingBlade',
+            'wovenBasket',
+            'lockpick'
+        ];
+
+        // Stackable resources
+        const starterResources = [
             { id: 'pinewood', qty: 50 },
             { id: 'lightRations', qty: 20 },
             { id: 'bread', qty: 10 }
         ];
 
-        for (let item of starterItems) {
+        // Add instanced tools
+        for (let toolId of starterTools) {
+            const itemDef = ItemRegistry?.getItem(toolId);
+            if (itemDef && itemDef.instanced) {
+                const instance = GameEngine.createEquipmentInstance(toolId, itemDef.rarity, {});
+                if (instance) {
+                    GameEngine.addEquipmentInstance(instance);
+                    console.log(`Added tool instance: ${toolId}`);
+                }
+            } else {
+                // Fallback for non-instanced items
+                GameEngine.addItemToBank(toolId, 1);
+            }
+        }
+
+        // Add stackable resources
+        for (let item of starterResources) {
             GameEngine.addItemToBank(item.id, item.qty);
         }
 
-        console.log('Added starter kit');
+        console.log('✅ Added starter kit: 6 tools, 3 resources');
+        if (typeof UICore !== 'undefined') UICore.update();
+        this.render();
+    },
+
+    /**
+     * Equip Tier 1 Combat Loadout
+     */
+    equipTier1CombatLoadout() {
+        if (!GameEngine?.equipItem || !GameEngine?.createEquipmentInstance) {
+            alert('❌ GameEngine not loaded');
+            return;
+        }
+
+        console.log('\n⚔️ EQUIPPING TIER 1 COMBAT LOADOUT...\n');
+
+        // Define loadout items
+        const loadout = {
+            weapon: 'roughBlade',           // Tier 1 melee weapon
+            armor: 'unityScoutSet',         // Tier 1 light armor
+            ammo: 'copperiteRounds',        // Tier 1 ammo (stackable)
+            food: 'solfishBake',            // Tier 1 food (stackable)
+        };
+
+        const equipped = [];
+        const failed = [];
+
+        // Equip weapon (instanced)
+        if (loadout.weapon) {
+            const weaponDef = ItemRegistry?.getItem(loadout.weapon);
+            if (weaponDef && weaponDef.instanced) {
+                const instance = GameEngine.createEquipmentInstance(loadout.weapon, weaponDef.rarity, {});
+                if (instance) {
+                    GameEngine.addEquipmentInstance(instance);
+                    const result = GameEngine.equipItem(instance.instanceId, 'weapon');
+                    if (result?.success) {
+                        equipped.push(`⚔️ ${weaponDef.name} (weapon)`);
+                        console.log(`✅ Equipped: ${weaponDef.name} in weapon slot`);
+                    } else {
+                        failed.push(`Failed to equip ${weaponDef.name}: ${result?.message || 'Unknown error'}`);
+                        console.warn(`❌ Failed to equip: ${weaponDef.name}`);
+                    }
+                } else {
+                    failed.push(`Failed to create instance: ${loadout.weapon}`);
+                }
+            } else {
+                failed.push(`Weapon not found or not instanced: ${loadout.weapon}`);
+            }
+        }
+
+        // Equip armor (instanced)
+        if (loadout.armor) {
+            const armorDef = ItemRegistry?.getItem(loadout.armor);
+            if (armorDef && armorDef.instanced) {
+                const instance = GameEngine.createEquipmentInstance(loadout.armor, armorDef.rarity, {});
+                if (instance) {
+                    GameEngine.addEquipmentInstance(instance);
+                    const result = GameEngine.equipItem(instance.instanceId, 'armor');
+                    if (result?.success) {
+                        equipped.push(`🛡️ ${armorDef.name} (armor)`);
+                        console.log(`✅ Equipped: ${armorDef.name} in armor slot`);
+                    } else {
+                        failed.push(`Failed to equip ${armorDef.name}: ${result?.message || 'Unknown error'}`);
+                        console.warn(`❌ Failed to equip: ${armorDef.name}`);
+                    }
+                } else {
+                    failed.push(`Failed to create instance: ${loadout.armor}`);
+                }
+            } else {
+                failed.push(`Armor not found or not instanced: ${loadout.armor}`);
+            }
+        }
+
+        // Add ammo to bank (stackable, not equipped directly)
+        if (loadout.ammo) {
+            const ammoDef = ItemRegistry?.getItem(loadout.ammo);
+            if (ammoDef) {
+                const result = GameEngine.addItemToBank(loadout.ammo, 100);
+                if (result?.success) {
+                    equipped.push(`🎯 ${ammoDef.name} x100 (added to bank)`);
+                    console.log(`✅ Added: ${ammoDef.name} x100 to bank`);
+                } else {
+                    failed.push(`Failed to add ${ammoDef.name}: ${result?.message || 'Unknown error'}`);
+                    console.warn(`❌ Failed to add: ${ammoDef.name}`);
+                }
+            } else {
+                failed.push(`Ammo not found: ${loadout.ammo}`);
+            }
+        }
+
+        // Add food to bank (stackable, not equipped directly)
+        if (loadout.food) {
+            const foodDef = ItemRegistry?.getItem(loadout.food);
+            if (foodDef) {
+                const result = GameEngine.addItemToBank(loadout.food, 20);
+                if (result?.success) {
+                    equipped.push(`🍖 ${foodDef.name} x20 (added to bank)`);
+                    console.log(`✅ Added: ${foodDef.name} x20 to bank`);
+                } else {
+                    failed.push(`Failed to add ${foodDef.name}: ${result?.message || 'Unknown error'}`);
+                    console.warn(`❌ Failed to add: ${foodDef.name}`);
+                }
+            } else {
+                failed.push(`Food not found: ${loadout.food}`);
+            }
+        }
+
+        // Log summary
+        console.log('\n⚔️ TIER 1 COMBAT LOADOUT SUMMARY');
+        console.log('='.repeat(50));
+        console.log(`✅ Equipped: ${equipped.length} items`);
+        console.log(`❌ Failed: ${failed.length} items`);
+
+        if (equipped.length > 0) {
+            console.log('\n✅ Successfully equipped:');
+            equipped.forEach(item => console.log(`   ${item}`));
+        }
+
+        if (failed.length > 0) {
+            console.warn('\n❌ Failed to equip:');
+            failed.forEach(err => console.warn(`   ${err}`));
+        }
+
+        console.log('\n💡 TIP: Check your Loadout tab to see equipped items!\n');
+
+        // Show alert
+        alert(`⚔️ Tier 1 Combat Loadout Equipped!\n\n${equipped.join('\n')}\n\n${failed.length > 0 ? 'Failed: ' + failed.length : 'All items equipped successfully!'}`);
+
+        // Update UI
         if (typeof UICore !== 'undefined') UICore.update();
         this.render();
     },
@@ -1108,6 +1274,133 @@ const DevModal = {
         UICore.update();
 
         alert(`✅ Deleted ${removed} weapons from your save!`);
+        this.render();
+    },
+
+    /**
+     * Clean up legacy/unwanted items from bank
+     */
+    cleanupLegacyItems() {
+        if (!GameEngine?.state?.bank?.items) {
+            alert('❌ Game not loaded yet');
+            return;
+        }
+
+        console.log('\n🧹 CLEANING UP LEGACY ITEMS...\n');
+
+        const bank = GameEngine.state.bank.items;
+        const itemsToRemove = [];
+
+        // Define items to keep (Tier 1 production items + essential materials)
+        const keepItems = new Set([
+            // Tier 1 Weapons
+            'scrapBow', 'scrappedPistol', 'patchedRifle', 'roughBlade',
+
+            // Tier 1 Ammo
+            'flintheadArrows', 'copperiteRounds',
+
+            // Tier 1 Armor (only these 3 sets exist now)
+            'unityScoutSet', 'waxedWaderSet', 'harvestersGarb',
+
+            // Tier 1 Food/Consumables
+            'solfishBake', 'smallGameStew', 'fishOilTonic',
+
+            // Tier 1 Materials
+            'flintstone', 'feather', 'copperite', 'linen', 'wax',
+            'solfish', 'smallGameMeat', 'fishoil',
+
+            // Essential gathering tools
+            'lightPickaxe', 'utilityHatchet', 'caneRod', 'huntingBlade', 'wovenBasket', 'lockpick',
+
+            // Basic materials (always useful)
+            'pinewood', 'normalLogs', 'oakLogs', 'willowLogs', 'mapleLogs',
+            'copperOre', 'tinOre', 'ironOre', 'coal', 'goldOre',
+            'copperBar', 'bronzeBar', 'ironBar', 'steelBar', 'goldBar',
+            'wool', 'thread', 'leather', 'hardLeather',
+            'healingHerb', 'strengthHerb', 'magicHerb',
+            'glass', 'rope', 'nails',
+
+            // Node resources
+            'clay', 'flint', 'goldFlakes', 'sap', 'pinecone',
+            'willow_wood', 'willow_branch', 'maple_wood', 'maple_sap',
+            'wild_chicken_feathers', 'alcapa_hide', 'sinew',
+            'sweetcap_mushroom', 'flexible_limb',
+
+            // Basic potions
+            'minorHealthPotion', 'healthPotion', 'bread',
+
+            // Currencies
+            'gold', 'medals', 'tomes', 'gems'
+        ]);
+
+        // Scan all bank items
+        for (const itemId in bank) {
+            const bankItem = bank[itemId];
+
+            // Check if it's an instance (has baseItemId or instanceId)
+            if (bankItem.baseItemId) {
+                const baseId = bankItem.baseItemId;
+                if (!keepItems.has(baseId)) {
+                    itemsToRemove.push(itemId);
+                    console.log(`  🗑️ Removing instance of: ${baseId} (${itemId})`);
+                }
+                continue;
+            }
+
+            // For non-instances, check the itemId directly
+            if (!keepItems.has(itemId)) {
+                // Also check if item has a definition
+                const itemDef = ItemRegistry?.getItem(itemId);
+                if (!itemDef) {
+                    itemsToRemove.push(itemId);
+                    console.log(`  ⚠️ Removing undefined item: ${itemId}`);
+                } else {
+                    itemsToRemove.push(itemId);
+                    console.log(`  🗑️ Removing legacy item: ${itemId} (${itemDef.name})`);
+                }
+            }
+        }
+
+        console.log(`\n🗑️ Found ${itemsToRemove.length} items to remove`);
+
+        // Remove all marked items
+        let removed = 0;
+        itemsToRemove.forEach(itemId => {
+            if (bank[itemId]) {
+                delete bank[itemId];
+                removed++;
+            }
+        });
+
+        // Also clean up equipped legacy items
+        const equipment = GameEngine.state.equipment;
+        if (equipment) {
+            for (const slot in equipment) {
+                const equippedId = equipment[slot];
+                if (equippedId) {
+                    // Parse instance ID if needed
+                    let baseId = equippedId;
+                    if (equippedId.includes('_instance_')) {
+                        baseId = equippedId.split('_instance_')[0];
+                    } else if (equippedId.match(/_\d{13,}$/)) {
+                        baseId = equippedId.replace(/_\d{13,}$/, '');
+                    }
+
+                    if (!keepItems.has(baseId)) {
+                        console.log(`  🗑️ Unequipping legacy item from ${slot}: ${equippedId}`);
+                        equipment[slot] = null;
+                    }
+                }
+            }
+        }
+
+        console.log(`\n✅ Removed ${removed} legacy items from bank`);
+
+        // Save and update
+        SaveSystem.save();
+        UICore.update();
+
+        alert(`🧹 Cleanup Complete!\n\nRemoved ${removed} legacy items from bank.\n\nKept: Tier 1 items, gathering tools, and essential materials.`);
         this.render();
     },
 
@@ -1233,18 +1526,23 @@ const DevModal = {
      * Apply attributes to game state
      */
     applyAttributes() {
-        if (!GameEngine?.state?.attributes) return;
+        if (!GameEngine?.state?.combatAttributes) return;
 
         const attributeNames = ['health', 'defense', 'strength', 'stealth', 'perception', 'mobility', 'intellect'];
 
         for (let attr of attributeNames) {
             const input = document.getElementById(`dev${attr}Input`);
             if (input) {
-                GameEngine.state.attributes[attr] = parseInt(input.value) || 1;
+                GameEngine.state.combatAttributes[attr] = parseInt(input.value) || 1;
             }
         }
 
-        console.log('Attributes applied:', GameEngine.state.attributes);
+        // Recompile player stats after attribute changes
+        if (typeof GameEngine.compilePlayerStats === 'function') {
+            GameEngine.compilePlayerStats();
+        }
+
+        console.log('Attributes applied:', GameEngine.state.combatAttributes);
         if (typeof UICore !== 'undefined') UICore.update();
     },
 
@@ -1252,12 +1550,17 @@ const DevModal = {
      * Set all attributes to a value
      */
     setAllAttributes(value) {
-        if (!GameEngine?.state?.attributes) return;
+        if (!GameEngine?.state?.combatAttributes) return;
 
         const attributeNames = ['health', 'defense', 'strength', 'stealth', 'perception', 'mobility', 'intellect'];
 
         for (let attr of attributeNames) {
-            GameEngine.state.attributes[attr] = value;
+            GameEngine.state.combatAttributes[attr] = value;
+        }
+
+        // Recompile player stats after attribute changes
+        if (typeof GameEngine.compilePlayerStats === 'function') {
+            GameEngine.compilePlayerStats();
         }
 
         console.log(`Set all attributes to ${value}`);

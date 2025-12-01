@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weapon Accuracy Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #4a9eff;
+            border-bottom: 2px solid #4a9eff;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #ffa94a;
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: #16213e;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #0f3460;
+        }
+        th {
+            background: #0f3460;
+            color: #4a9eff;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background: #1a2332;
+        }
+        .weapon-icon {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+        .positive {
+            color: #4caf50;
+        }
+        .negative {
+            color: #f44336;
+        }
+        .neutral {
+            color: #ffa500;
+        }
+        .test-section {
+            background: #16213e;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #0f3460;
+        }
+        .success {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>⚔️ Weapon Accuracy Modifier Test</h1>
+
+    <div class="test-section">
+        <h2>System Status</h2>
+        <div id="systemStatus">Loading...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Weapon Category Base Modifiers</h2>
+        <table id="categoryTable">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Base Modifier</th>
+                    <th>Effect</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody id="categoryTableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="test-section">
+        <h2>Tier Scaling Test</h2>
+        <table id="tierTable">
+            <thead>
+                <tr>
+                    <th>Weapon Tier</th>
+                    <th>Rifle (1.15 base)</th>
+                    <th>Bow (1.10 base)</th>
+                    <th>Pistol (1.05 base)</th>
+                    <th>Balanced Melee (1.00 base)</th>
+                    <th>Heavy Melee (0.90 base)</th>
+                    <th>Tool (0.80 base)</th>
+                </tr>
+            </thead>
+            <tbody id="tierTableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="test-section">
+        <h2>Actual Weapon Definitions Test</h2>
+        <table id="weaponTable">
+            <thead>
+                <tr>
+                    <th>Weapon</th>
+                    <th>Category</th>
+                    <th>Tier</th>
+                    <th>Accuracy Modifier</th>
+                    <th>Effect</th>
+                </tr>
+            </thead>
+            <tbody id="weaponTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Load Required Scripts -->
+    <script src="src/systems/combat/weaponStats.js"></script>
+    <script src="src/data/items/production/equipment/equipment.js"></script>
+
+    <script>
+        // Test weapon accuracy system
+        function runTests() {
+            const statusDiv = document.getElementById('systemStatus');
+
+            // Check if WeaponStats is loaded
+            if (typeof WeaponStats === 'undefined') {
+                statusDiv.innerHTML = '<span class="error">❌ ERROR: WeaponStats not loaded!</span>';
+                return;
+            }
+
+            statusDiv.innerHTML = '<span class="success">✅ WeaponStats loaded successfully!</span>';
+
+            // Test 1: Display all weapon categories
+            displayCategories();
+
+            // Test 2: Display tier scaling
+            displayTierScaling();
+
+            // Test 3: Test actual weapons from equipment.js
+            displayWeaponTests();
+        }
+
+        function displayCategories() {
+            const tbody = document.getElementById('categoryTableBody');
+            const categories = WeaponStats.ACCURACY_BASE;
+
+            const descriptions = {
+                precisionMelee: 'Designed for precise strikes',
+                balancedMelee: 'Standard accuracy',
+                heavyMelee: 'Power over precision',
+                rifle: 'Built for accuracy',
+                pistol: 'Decent accuracy, less stable',
+                shotgun: 'Spread pattern, close range',
+                bow: 'Skill-based precision',
+                crossbow: 'Mechanical consistency',
+                tool: 'Not designed for combat'
+            };
+
+            for (const [category, modifier] of Object.entries(categories)) {
+                const row = document.createElement('tr');
+                const effect = ((modifier - 1.0) * 100).toFixed(0);
+                const effectClass = modifier > 1.0 ? 'positive' : modifier < 1.0 ? 'negative' : 'neutral';
+                const effectText = modifier > 1.0 ? `+${effect}%` : `${effect}%`;
+
+                row.innerHTML = `
+                    <td><strong>${category}</strong></td>
+                    <td>${modifier.toFixed(2)}×</td>
+                    <td class="${effectClass}">${effectText}</td>
+                    <td>${descriptions[category]}</td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+
+        function displayTierScaling() {
+            const tbody = document.getElementById('tierTableBody');
+            const categories = ['rifle', 'bow', 'pistol', 'balancedMelee', 'heavyMelee', 'tool'];
+
+            for (let tier = 1; tier <= 5; tier++) {
+                const row = document.createElement('tr');
+                const cells = [`<td><strong>Tier ${tier}</strong></td>`];
+
+                categories.forEach(category => {
+                    const weaponDef = {
+                        weaponCategory: category,
+                        tier: tier
+                    };
+                    const modifier = WeaponStats.calculateAccuracyModifier(weaponDef);
+                    const effect = ((modifier - 1.0) * 100).toFixed(0);
+                    const effectClass = modifier > 1.0 ? 'positive' : modifier < 1.0 ? 'negative' : 'neutral';
+                    const effectText = modifier > 1.0 ? `+${effect}%` : `${effect}%`;
+
+                    cells.push(`<td>${modifier.toFixed(2)}× <span class="${effectClass}">(${effectText})</span></td>`);
+                });
+
+                row.innerHTML = cells.join('');
+                tbody.appendChild(row);
+            }
+        }
+
+        function displayWeaponTests() {
+            const tbody = document.getElementById('weaponTableBody');
+
+            if (typeof EQUIPMENT_ITEMS === 'undefined') {
+                tbody.innerHTML = '<tr><td colspan="5" class="error">❌ EQUIPMENT_ITEMS not loaded!</td></tr>';
+                return;
+            }
+
+            const testWeapons = [
+                'greensmanTrainingBow',
+                'sidekick22',
+                'frontierMarksmanRifle',
+                'unityBlade',
+                'caneRod',
+                'huntingBlade',
+                'lightPickaxe',
+                'lockpick',
+                'utilityHatchet',
+                'wovenBasket'
+            ];
+
+            testWeapons.forEach(weaponId => {
+                const weapon = EQUIPMENT_ITEMS[weaponId];
+                if (!weapon) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td colspan="5" class="error">❌ Weapon not found: ${weaponId}</td>`;
+                    tbody.appendChild(row);
+                    return;
+                }
+
+                const stats = WeaponStats.getWeaponStats(weapon);
+                const row = document.createElement('tr');
+                const effectClass = stats.accuracyModifier > 1.0 ? 'positive' : stats.accuracyModifier < 1.0 ? 'negative' : 'neutral';
+
+                row.innerHTML = `
+                    <td><span class="weapon-icon">${weapon.icon || '⚔️'}</span>${weapon.name}</td>
+                    <td>${stats.category}</td>
+                    <td>Tier ${stats.tier}</td>
+                    <td>${stats.accuracyModifier.toFixed(2)}×</td>
+                    <td class="${effectClass}">${stats.displayText}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

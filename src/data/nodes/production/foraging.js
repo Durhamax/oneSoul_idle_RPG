@@ -106,8 +106,8 @@ NodeRegistry.production.fallen_timber = {
         skillLevel: 1,
         characterLevel: 0,
         quests: [],
-        tools: [],
-        toolTier: 0
+        tools: ["foraging"],
+        toolTier: 1
     },
 
     isRenewable: true,
@@ -185,8 +185,8 @@ NodeRegistry.production.berry_bush = {
         skillLevel: 1,
         characterLevel: 0,
         quests: [],
-        tools: [],
-        toolTier: 0
+        tools: ["foraging"],
+        toolTier: 1
     },
 
     isRenewable: true,
@@ -264,8 +264,8 @@ NodeRegistry.production.mushroom_cluster = {
         skillLevel: 5,
         characterLevel: 0,
         quests: [],
-        tools: [],
-        toolTier: 0
+        tools: ["foraging"],
+        toolTier: 1
     },
 
     isRenewable: true,
@@ -345,8 +345,8 @@ NodeRegistry.production.herb_patch = {
         skillLevel: 15,
         characterLevel: 8,
         quests: [],
-        tools: [],
-        toolTier: 0
+        tools: ["foraging"],
+        toolTier: 1
     },
 
     isRenewable: true,
@@ -426,8 +426,8 @@ NodeRegistry.production.rare_flower_grove = {
         skillLevel: 30,
         characterLevel: 18,
         quests: [],
-        tools: [],
-        toolTier: 0
+        tools: ["foraging"],
+        toolTier: 1
     },
 
     isRenewable: true,

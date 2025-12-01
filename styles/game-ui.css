@@ -1948,6 +1948,21 @@
     animation: glow-pulse 2s infinite;
 }
 
+/* Tall armor items - extended tile for armor sets */
+.item-card-armor {
+    grid-row: span 2;
+    min-height: 240px !important;
+}
+
+.item-card-armor .item-card-icon {
+    font-size: 4em !important;
+    min-height: 80px !important;
+}
+
+.item-card-armor .item-card-name {
+    font-size: var(--font-size-sm) !important;
+}
+
 .item-card-badges {
     position: absolute;
     top: 8px;
@@ -2406,6 +2421,39 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
 }
+
+/* 3-1-3 Grid Layout: Tall armor slot in center */
+.equipment-grid-3-1-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 10px;
+}
+
+/* Tall armor slot spans 3 rows and positioned in center column */
+.equipment-slot-tall {
+    grid-column: 2;  /* Center column */
+    grid-row: 1 / 4; /* Spans all 3 rows */
+    min-height: 380px !important;
+    justify-content: flex-start !important;
+    padding: 20px 15px !important;
+}
+
+.equipment-slot-tall .equipment-slot-label {
+    font-size: 1em;
+    margin-bottom: 15px;
+}
+
+.equipment-slot-tall .equipment-slot-icon {
+    font-size: 4em;
+    margin: 20px 0;
+}
+
+.equipment-slot-tall .equipment-slot-empty {
+    font-size: 4em;
+    margin-top: 60px;
+}
+
 .equipment-slot {
     background: #333;
     border: 2px dashed #555;

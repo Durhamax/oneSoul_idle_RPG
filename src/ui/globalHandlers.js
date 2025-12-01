@@ -29,6 +29,11 @@ async function initGame() {
         EquipmentUI.init();
     }
 
+    // Initialize CombatUI (Rev1)
+    if (typeof CombatUI !== 'undefined' && CombatUI.init) {
+        CombatUI.init();
+    }
+
     // Initialize WeaponBuildModal
     if (typeof WeaponBuildModal !== 'undefined' && WeaponBuildModal.init) {
         WeaponBuildModal.init();
@@ -238,10 +243,14 @@ function inspectItem(itemId) {
 
     GameEngine.clearNewItemStatus(itemId);
 
-    const bankItem = GameEngine.state.bank.items[itemId];
+    // DUAL-BANK: Check all storage locations (instanced, stackable, legacy)
+    const instancedItem = GameEngine.state.bank.instanced?.[itemId];
+    const stackableItem = GameEngine.state.bank.stackable?.[itemId];
+    const legacyItem = GameEngine.state.bank.items?.[itemId];
+    const bankItem = instancedItem || stackableItem || legacyItem;
     console.log('[inspectItem] Bank item:', bankItem);
 
-    // For weapon instances, use baseItemId to get definition
+    // For instanced items, use baseItemId to get definition
     const lookupId = bankItem?.baseItemId || itemId;
     const def = ItemAccessHelper.getItem(lookupId);
     console.log('[inspectItem] Definition (lookup:', lookupId, '):', def);
@@ -280,29 +289,33 @@ function openEquipModal(slot, event) {
     // Set modal title
     modalTitle.textContent = `Select ${slot.charAt(0).toUpperCase() + slot.slice(1)}`;
 
-    // Get all items in bank that can be equipped in this slot
-    const bankItems = GameEngine.state.bank.items;
+    // DUAL-BANK: Get all items from all storage locations that can be equipped in this slot
+    const instancedItems = GameEngine.state.bank.instanced || {};
+    const stackableItems = GameEngine.state.bank.stackable || {};
+    const legacyItems = GameEngine.state.bank.items || {};
+
+    // Combine all bank items
+    const allBankItems = {...instancedItems, ...stackableItems, ...legacyItems};
     const compatibleItems = [];
 
-    for (let itemId in bankItems) {
-        // Get item from ItemRegistry first, fallback to definitions
-        let def = null;
-        if (typeof ItemRegistry !== 'undefined') {
-            def = ItemRegistry.getItem(itemId);
-        }
-        if (!def) {
-            def = GameEngine.definitions?.items?.[itemId];
-        }
+    for (let itemId in allBankItems) {
+        const bankItem = allBankItems[itemId];
+
+        // Get base item ID for lookups (handle instances)
+        const lookupId = bankItem.baseItemId || itemId;
+
+        // Use ItemAccessHelper for standardized access
+        const def = ItemAccessHelper.getItem(lookupId);
 
         if (!def) continue; // Skip if item not found
 
         // Check both 'equipSlot' and 'slot' properties for compatibility
         const itemSlot = def.equipSlot || def.slot;
-        if (itemSlot === slot && bankItems[itemId].quantity > 0) {
+        if (itemSlot === slot && bankItem.quantity > 0) {
             compatibleItems.push({
-                itemId: itemId,
+                itemId: itemId, // Use actual ID (could be instance ID)
                 def: def,
-                quantity: bankItems[itemId].quantity
+                quantity: bankItem.quantity
             });
         }
     }
@@ -384,8 +397,15 @@ function unequipFromModal(slot) {
 function equipFromModal(itemId, slot) {
     const result = GameEngine.equipItem(itemId);
 
+    // Use ItemIdUtils to get base ID for item name lookup
+    const baseId = typeof ItemIdUtils !== 'undefined'
+        ? ItemIdUtils.getBaseItemId(itemId)
+        : itemId;
+
     if (result.success) {
-        console.log(`⚔️ Equipped ${ItemAccessHelper.getItem(itemId).name}!`);
+        const itemDef = ItemAccessHelper.getItem(baseId);
+        const itemName = itemDef ? itemDef.name : itemId;
+        console.log(`⚔️ Equipped ${itemName}!`);
         closeEquipModal();
     } else {
         console.log(`❌ Cannot equip: ${result.reason}`);
@@ -635,11 +655,15 @@ function hideContextMenu() {
 function equipItemFromContext(itemId) {
     const result = GameEngine.equipItem(itemId);
 
+    // Use ItemIdUtils to get base ID for item name lookup
+    const baseId = typeof ItemIdUtils !== 'undefined'
+        ? ItemIdUtils.getBaseItemId(itemId)
+        : itemId;
+
     if (result.success) {
-        // Get item name from ItemRegistry or definitions
-        let itemName = itemId;
-        const def = ItemRegistry.getItem(itemId) || GameEngine.definitions?.items?.[itemId];
-        if (def) itemName = def.name;
+        // Get item name using base ID
+        const def = ItemRegistry.getItem(baseId) || GameEngine.definitions?.items?.[baseId];
+        const itemName = def ? def.name : itemId;
 
         console.log(`⚔️ Equipped ${itemName}!`);
     } else {

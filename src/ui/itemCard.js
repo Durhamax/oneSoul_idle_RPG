@@ -26,10 +26,13 @@ const ItemCard = {
      * @returns {string} HTML string for the item card
      */
     create(itemId, context = 'bank', options = {}) {
-        // Get item data from bank first to check for weapon instances
-        const bankItem = GameEngine.state.bank.items[itemId];
+        // DUAL-BANK: Check all storage locations (instanced, stackable, legacy)
+        const instancedItem = GameEngine.state.bank.instanced?.[itemId];
+        const stackableItem = GameEngine.state.bank.stackable?.[itemId];
+        const legacyItem = GameEngine.state.bank.items?.[itemId];
+        const bankItem = instancedItem || stackableItem || legacyItem;
 
-        // For weapon instances, use baseItemId to get definition
+        // For instanced items, use baseItemId to get definition
         const lookupId = bankItem?.baseItemId || itemId;
         const itemDef = ItemAccessHelper.getItem(lookupId);
 
@@ -38,7 +41,7 @@ const ItemCard = {
             return '';
         }
 
-        const quantity = options.quantity !== undefined ? options.quantity : (bankItem ? bankItem.quantity : 0);
+        const quantity = options.quantity !== undefined ? options.quantity : (bankItem ? bankItem.quantity || 1 : 0);
         const isNew = options.isNew !== undefined ? options.isNew : (bankItem ? bankItem.isNew : false);
 
         // Get rarity information (use lookupId for instances)
@@ -60,6 +63,11 @@ const ItemCard = {
         if (isEquipped) classes.push('item-card-equipped');
         if (options.compact) classes.push('item-card-compact');
         if (rarityGlow) classes.push('item-card-glow');
+
+        // Add armor class for full armor sets (equipSlot === 'armor')
+        if (itemDef.equipSlot === 'armor' || itemDef.slot === 'armor') {
+            classes.push('item-card-armor');
+        }
 
         // Build inline styles
         const styles = [];
@@ -87,7 +95,8 @@ const ItemCard = {
             rarityName,
             context,
             showActions: options.showActions,
-            compact: options.compact
+            compact: options.compact,
+            bankItem: bankItem  // Pass bankItem for attachment badge rendering
         });
     },
 
@@ -108,7 +117,8 @@ const ItemCard = {
             rarityName,
             context,
             showActions,
-            compact
+            compact,
+            bankItem
         } = params;
 
         let html = `
@@ -139,8 +149,8 @@ const ItemCard = {
         html += '<div class="item-card-badges-left">';
 
         // Attachment indicator for modified weapons (instances)
-        const bankItem = GameEngine.state.bank.items[itemId];
-        if (bankItem && bankItem.instanceId && bankItem.attachments) {
+        // Use the bankItem we already retrieved with dual-bank support
+        if (bankItem && bankItem.attachments) {
             const attachmentCount = Object.values(bankItem.attachments).filter(a => a).length;
             if (attachmentCount > 0) {
                 html += `<div class="item-card-attachment-badge" title="${attachmentCount} Attachment${attachmentCount > 1 ? 's' : ''} Installed">⚙️${attachmentCount}</div>`;

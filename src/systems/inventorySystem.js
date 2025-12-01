@@ -384,31 +384,33 @@ const InventorySystem = {
         const slot = itemDef.slot;
         const category = itemDef.category;
 
-        // Equipment tabs
+        // Equipment tabs (3-1-3 Grid)
         if (slot === 'tool') return 'tool';
         if (slot === 'weapon') return 'weapon';
-        if (['head', 'body', 'legs', 'feet', 'hands', 'offhand', 'accessory'].includes(slot)) return 'armor';
-        if (slot === 'attachment') return 'mod';
+        if (slot === 'ammo') return 'ammo';
+        if (['armor', 'back', 'gloves', 'neck', 'boots', 'ring'].includes(slot)) return 'armor';
 
         // Consumable tabs
         if (category === 'consumable') {
-            if (slot === 'food') return 'healing';
-            if (slot === 'potion') return 'consumable';
-            if (slot === 'ammo') return 'consumable';
-            return 'consumable';
+            if (slot === 'food') return 'food';
+            if (slot === 'potion') return 'potion';
+            return 'food';
         }
 
         // Material/resource tab
-        if (category === 'material') return 'resource';
+        if (category === 'material') return 'material';
 
         // Currency/special tabs
-        if (category === 'currency') return 'resource';
+        if (category === 'currency') return 'material';
         if (category === 'quest') return 'quest';
-        if (category === 'key') return 'resource';
-        if (category === 'special') return 'consumable';
+        if (category === 'key') return 'material';
+        if (category === 'special') return 'material';
 
-        // Default to resource tab
-        return 'resource';
+        // Perk tab
+        if (category === 'perk') return 'perk';
+
+        // Default to material tab
+        return 'material';
     },
 
     /**
@@ -522,11 +524,13 @@ const InventorySystem = {
      */
     removeEquipmentInstance(instanceId) {
         // DUAL-BANK: Remove from instanced storage
-        const result = DualBankSystem.removeInstance(instanceId);
+        // DualBankSystem.removeInstance returns the removed instance or null
+        const removedInstance = DualBankSystem.removeInstance(instanceId);
 
-        if (!result.success) {
+        if (!removedInstance) {
             // Try fallback to old storage
             if (!this.state.bank.equipmentInstances[instanceId]) {
+                console.warn(`❌ Instance not found: ${instanceId}`);
                 return { success: false, reason: "Instance not found" };
             }
         }
@@ -536,7 +540,13 @@ const InventorySystem = {
             delete this.state.bank.equipmentInstances[instanceId];
         }
 
-        return { success: true };
+        // Also remove from legacy bank.items if present
+        if (this.state.bank.items[instanceId]) {
+            delete this.state.bank.items[instanceId];
+        }
+
+        console.log(`✅ Removed equipment instance: ${instanceId}`);
+        return { success: true, instance: removedInstance };
     },
 
     /**

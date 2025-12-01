@@ -10,589 +10,392 @@ const EQUIPMENT_ITEMS = {
     // WEAPONS
     // =================================================================
 
-    // Starter Weapons
-    rustyDagger: {
-        id: 'rustyDagger',
-        name: 'Rusty Dagger',
-        description: 'A worn dagger covered in rust. Better than nothing.',
-        icon: '🗡️',
+    // Tier 1 Weapons
+    greensmanTrainingBow: {
+        id: 'greensmanTrainingBow',
+        name: 'Greensman Training Bow',
+        description: 'A basic bow crafted from riverwillow and plant fibers. Perfect for beginners learning archery.',
+        icon: '🏹',
         category: 'equipment',
-        instanced: true,  // Unique instance
+        instanced: true,
         rarity: 'common',
         stackLimit: 1,
-        value: 5,
+        value: 25,
         level: 1,
         slot: 'weapon',
+        equipSlot: 'weapon',
         tier: 'starter',
+        weaponCategory: 'bow',
         combatStats: {
-            damage: 3,
-            attackSpeed: 1.2,
-        },
-        tags: ['weapon', 'dagger', 'melee', 'starter'],
-    },
-
-    woodenStaff: {
-        id: 'woodenStaff',
-        name: 'Wooden Staff',
-        description: 'A simple wooden staff. Light and easy to handle.',
-        icon: '🪵',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'common',
-        stackLimit: 1,
-        value: 10,
-        level: 1,
-        slot: 'weapon',
-        tier: 'starter',
-        combatStats: {
-            damage: 4,
+            damage: 6,
             attackSpeed: 1.0,
-        },
-        attributes: {
-            wisdom: 1,
-        },
-        tags: ['weapon', 'staff', 'magic', 'starter'],
-    },
-
-    // Basic Weapons
-    bronzeSword: {
-        id: 'bronzeSword',
-        name: 'Bronze Sword',
-        description: 'A basic sword forged from bronze. Reliable for early adventures.',
-        icon: '🗡️',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'common',
-        stackLimit: 1,
-        value: 50,
-        level: 5,
-        slot: 'weapon',
-        tier: 'basic',
-        combatStats: {
-            damage: 10,
-            attackSpeed: 1.0,
-        },
-        attributes: {
-            strength: 2,
-        },
-        requirements: {
-            combat: 5,
-        },
-        tags: ['weapon', 'sword', 'bronze', 'melee'],
-    },
-
-    ironSword: {
-        id: 'ironSword',
-        name: 'Iron Sword',
-        description: 'A sturdy sword forged from iron. A warrior\'s reliable companion.',
-        icon: '🗡️',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'uncommon',
-        stackLimit: 1,
-        value: 150,
-        level: 10,
-        slot: 'weapon',
-        tier: 'improved',
-        combatStats: {
-            damage: 18,
-            attackSpeed: 1.0,
-        },
-        attributes: {
-            strength: 3,
-        },
-        requirements: {
-            combat: 10,
-        },
-        tags: ['weapon', 'sword', 'iron', 'melee'],
-    },
-
-    steelSword: {
-        id: 'steelSword',
-        name: 'Steel Sword',
-        description: 'A finely crafted sword made of tempered steel. Sharp and deadly.',
-        icon: '⚔️',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'rare',
-        stackLimit: 1,
-        value: 400,
-        level: 20,
-        slot: 'weapon',
-        tier: 'quality',
-        combatStats: {
-            damage: 30,
-            attackSpeed: 1.0,
+            accuracy: 70,
             critChance: 5,
         },
-        attributes: {
-            strength: 5,
-            dexterity: 2,
-        },
         requirements: {
-            combat: 20,
+            characterLevel: 1,
         },
-        tags: ['weapon', 'sword', 'steel', 'melee'],
+        tags: ['weapon', 'bow', 'ranged', 'starter', 'mechanics'],
     },
 
-    // =================================================================
-    // ARMOR - HEAD
-    // =================================================================
-
-    leatherCap: {
-        id: 'leatherCap',
-        name: 'Leather Cap',
-        description: 'Simple leather headgear. Provides minimal protection.',
-        icon: '🎩',
+    sidekick22: {
+        id: 'sidekick22',
+        name: 'Sidekick 22',
+        description: 'A small caliber pistol with a copper frame. Reliable sidearm for close encounters.',
+        icon: '🔫',
         category: 'equipment',
-        instanced: true,  // Unique instance
+        instanced: true,
         rarity: 'common',
         stackLimit: 1,
         value: 30,
-        level: 3,
-        slot: 'head',
-        tier: 'basic',
+        level: 1,
+        slot: 'weapon',
+        equipSlot: 'weapon',
+        tier: 'starter',
+        weaponType: 'pistol',
+        weaponCategory: 'pistol',
+        requiresAmmo: true,
+        ammoType: 'pistol',
+        baseDamage: 7,
+        attackInterval: 2000,
         combatStats: {
-            defense: 3,
-            health: 10,
-        },
-        tags: ['armor', 'head', 'leather'],
-    },
-
-    ironHelm: {
-        id: 'ironHelm',
-        name: 'Iron Helm',
-        description: 'A solid iron helmet. Protects the head from serious damage.',
-        icon: '⛑️',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'uncommon',
-        stackLimit: 1,
-        value: 180,
-        level: 12,
-        slot: 'head',
-        tier: 'improved',
-        combatStats: {
-            defense: 12,
-            health: 30,
-        },
-        attributes: {
-            constitution: 2,
+            damage: 7,
+            attackSpeed: 1.2,
+            accuracy: 65,
+            critChance: 8,
         },
         requirements: {
-            combat: 12,
+            characterLevel: 1,
         },
-        tags: ['armor', 'head', 'iron', 'helmet'],
+        tags: ['weapon', 'pistol', 'ranged', 'firearm', 'starter', 'mechanics'],
     },
 
-    // =================================================================
-    // ARMOR - BODY
-    // =================================================================
-
-    clothRobe: {
-        id: 'clothRobe',
-        name: 'Cloth Robe',
-        description: 'Simple cloth robes favored by scholars and mages.',
-        icon: '👘',
+    frontierMarksmanRifle: {
+        id: 'frontierMarksmanRifle',
+        name: 'Frontier Marksman Rifle',
+        description: 'A pinewood-stocked rifle with copper frame. Standard issue for frontier scouts.',
+        icon: '🔫',
         category: 'equipment',
-        instanced: true,  // Unique instance
+        instanced: true,
         rarity: 'common',
         stackLimit: 1,
-        value: 40,
+        value: 35,
         level: 1,
-        slot: 'body',
+        slot: 'weapon',
+        equipSlot: 'weapon',
         tier: 'starter',
+        weaponCategory: 'rifle',
         combatStats: {
-            defense: 2,
-            health: 15,
+            damage: 9,
+            attackSpeed: 0.8,
+            accuracy: 80,
+            critChance: 6,
         },
-        attributes: {
-            wisdom: 2,
+        requirements: {
+            characterLevel: 1,
         },
-        tags: ['armor', 'body', 'cloth', 'robe'],
+        tags: ['weapon', 'rifle', 'ranged', 'firearm', 'starter', 'mechanics'],
     },
 
-    leatherArmor: {
-        id: 'leatherArmor',
-        name: 'Leather Armor',
-        description: 'Flexible leather armor. Good balance of protection and mobility.',
-        icon: '🦺',
+    unityBlade: {
+        id: 'unityBlade',
+        name: 'Unity Blade',
+        description: 'A simple copper blade with pinewood handle. Standard melee weapon for Unity recruits.',
+        icon: '🗡️',
         category: 'equipment',
-        instanced: true,  // Unique instance
+        instanced: true,
         rarity: 'common',
         stackLimit: 1,
-        value: 100,
-        level: 5,
-        slot: 'body',
-        tier: 'basic',
+        value: 20,
+        level: 1,
+        slot: 'weapon',
+        equipSlot: 'weapon',
+        tier: 'starter',
+        weaponCategory: 'balancedMelee',
+        combatStats: {
+            damage: 8,
+            attackSpeed: 1.1,
+            accuracy: 75,
+            critChance: 10,
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['weapon', 'melee', 'sword', 'starter', 'smithing'],
+    },
+
+    // =================================================================
+    // AMMUNITION
+    // =================================================================
+
+    flintheadArrows: {
+        id: 'flintheadArrows',
+        name: 'Flinthead Arrows',
+        description: 'Basic arrows with flint tips. Essential ammunition for bows.',
+        icon: '🏹',
+        category: 'equipment',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 100,
+        value: 2,
+        level: 1,
+        slot: 'ammo',
+        equipSlot: 'ammo',
+        tier: 'starter',
+        tags: ['ammo', 'arrow', 'ranged'],
+    },
+
+    copperiteRounds: {
+        id: 'copperiteRounds',
+        name: 'Copperite Rounds',
+        description: 'Simple ammunition made from copperite. Compatible with pistols and rifles.',
+        icon: '🔘',
+        category: 'equipment',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 100,
+        value: 3,
+        level: 1,
+        slot: 'ammo',
+        equipSlot: 'ammo',
+        tier: 'starter',
+        ammoType: 'pistol',
+        tags: ['ammo', 'pistol', 'ranged', 'firearm'],
+    },
+
+    // =================================================================
+    // ARMOR SETS (Full body armor: head + chest + legs combined)
+    // =================================================================
+
+    // Tier 1 Armor Sets
+    unityScoutSet: {
+        id: 'unityScoutSet',
+        name: 'Unity Scout Set',
+        description: 'Standard issue armor for Unity scouts. Lightweight linen construction offers basic protection for field reconnaissance.',
+        icon: '🎽',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 45,
+        level: 1,
+        slot: 'armor',
+        equipSlot: 'armor',
+        tier: 'starter',
         combatStats: {
             defense: 8,
             health: 25,
-            evasion: 2,
+            evasion: 3,
         },
         attributes: {
             dexterity: 1,
         },
         requirements: {
-            combat: 5,
+            characterLevel: 1,
         },
-        tags: ['armor', 'body', 'leather'],
+        tags: ['armor', 'linen', 'light', 'set', 'unity'],
     },
 
-    ironChestplate: {
-        id: 'ironChestplate',
-        name: 'Iron Chestplate',
-        description: 'Heavy iron armor for the torso. Provides excellent protection.',
-        icon: '🛡️',
+    waxedWaderSet: {
+        id: 'waxedWaderSet',
+        name: 'Waxed Wader Set',
+        description: 'Waterproof gear designed for fishermen and foragers. Waxed fabric keeps you dry in wet conditions.',
+        icon: '🧥',
         category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'uncommon',
-        stackLimit: 1,
-        value: 300,
-        level: 15,
-        slot: 'body',
-        tier: 'improved',
-        combatStats: {
-            defense: 20,
-            health: 50,
-        },
-        attributes: {
-            constitution: 3,
-            strength: 1,
-        },
-        requirements: {
-            combat: 15,
-        },
-        tags: ['armor', 'body', 'iron', 'plate'],
-    },
-
-    // =================================================================
-    // ARMOR - LEGS
-    // =================================================================
-
-    leatherPants: {
-        id: 'leatherPants',
-        name: 'Leather Pants',
-        description: 'Durable leather leg protection.',
-        icon: '👖',
-        category: 'equipment',
-        instanced: true,  // Unique instance
+        instanced: true,
         rarity: 'common',
         stackLimit: 1,
         value: 60,
-        level: 5,
-        slot: 'legs',
-        tier: 'basic',
-        combatStats: {
-            defense: 5,
-            health: 15,
-        },
-        tags: ['armor', 'legs', 'leather'],
-    },
-
-    ironGreaves: {
-        id: 'ironGreaves',
-        name: 'Iron Greaves',
-        description: 'Iron leg armor. Heavy but protective.',
-        icon: '🦵',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'uncommon',
-        stackLimit: 1,
-        value: 200,
-        level: 12,
-        slot: 'legs',
-        tier: 'improved',
-        combatStats: {
-            defense: 15,
-            health: 35,
-        },
-        attributes: {
-            constitution: 2,
-        },
-        requirements: {
-            combat: 12,
-        },
-        tags: ['armor', 'legs', 'iron'],
-    },
-
-    // =================================================================
-    // ARMOR - FEET
-    // =================================================================
-
-    leatherBoots: {
-        id: 'leatherBoots',
-        name: 'Leather Boots',
-        description: 'Comfortable leather boots for long journeys.',
-        icon: '👢',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'common',
-        stackLimit: 1,
-        value: 40,
-        level: 3,
-        slot: 'feet',
-        tier: 'basic',
-        combatStats: {
-            defense: 3,
-            evasion: 1,
-        },
-        tags: ['armor', 'feet', 'leather', 'boots'],
-    },
-
-    ironBoots: {
-        id: 'ironBoots',
-        name: 'Iron Boots',
-        description: 'Heavy iron boots. Difficult to move quickly but very protective.',
-        icon: '🥾',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'uncommon',
-        stackLimit: 1,
-        value: 150,
-        level: 10,
-        slot: 'feet',
-        tier: 'improved',
+        level: 1,
+        slot: 'armor',
+        equipSlot: 'armor',
+        tier: 'starter',
         combatStats: {
             defense: 10,
-            health: 20,
+            health: 30,
         },
         attributes: {
             constitution: 1,
         },
         requirements: {
-            combat: 10,
+            characterLevel: 1,
         },
-        tags: ['armor', 'feet', 'iron', 'boots'],
+        tags: ['armor', 'waxed', 'waterproof', 'set', 'fishing'],
     },
 
-    // =================================================================
-    // ARMOR - HANDS
-    // =================================================================
-
-    leatherGloves: {
-        id: 'leatherGloves',
-        name: 'Leather Gloves',
-        description: 'Flexible leather gloves. Good grip and light protection.',
-        icon: '🧤',
+    harvestersGarb: {
+        id: 'harvestersGarb',
+        name: "Harvester's Garb",
+        description: 'Practical wool and leather outfit for gatherers. Durable construction withstands brush and thorns.',
+        icon: '👔',
         category: 'equipment',
-        instanced: true,  // Unique instance
+        instanced: true,
         rarity: 'common',
         stackLimit: 1,
-        value: 35,
-        level: 3,
-        slot: 'hands',
-        tier: 'basic',
+        value: 70,
+        level: 2,
+        slot: 'armor',
+        equipSlot: 'armor',
+        tier: 'starter',
         combatStats: {
-            defense: 2,
-            accuracy: 2,
-        },
-        tags: ['armor', 'hands', 'leather', 'gloves'],
-    },
-
-    ironGauntlets: {
-        id: 'ironGauntlets',
-        name: 'Iron Gauntlets',
-        description: 'Heavy iron gauntlets. Increase punching power.',
-        icon: '🥊',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'uncommon',
-        stackLimit: 1,
-        value: 120,
-        level: 10,
-        slot: 'hands',
-        tier: 'improved',
-        combatStats: {
-            defense: 8,
-            damage: 3,
+            defense: 12,
+            health: 35,
+            evasion: 1,
         },
         attributes: {
-            strength: 1,
+            constitution: 1,
+            dexterity: 1,
         },
         requirements: {
-            combat: 10,
+            characterLevel: 2,
         },
-        tags: ['armor', 'hands', 'iron', 'gauntlets'],
-    },
-
-    // =================================================================
-    // OFFHAND
-    // =================================================================
-
-    woodenShield: {
-        id: 'woodenShield',
-        name: 'Wooden Shield',
-        description: 'Basic wooden shield. Blocks some attacks.',
-        icon: '🛡️',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'common',
-        stackLimit: 1,
-        value: 50,
-        level: 3,
-        slot: 'offhand',
-        tier: 'basic',
-        combatStats: {
-            defense: 10,
-            evasion: 3,
-        },
-        tags: ['shield', 'offhand', 'wood', 'defense'],
-    },
-
-    ironShield: {
-        id: 'ironShield',
-        name: 'Iron Shield',
-        description: 'Sturdy iron shield. Provides solid protection.',
-        icon: '🛡️',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'uncommon',
-        stackLimit: 1,
-        value: 200,
-        level: 12,
-        slot: 'offhand',
-        tier: 'improved',
-        combatStats: {
-            defense: 18,
-            health: 30,
-            evasion: 5,
-        },
-        attributes: {
-            constitution: 2,
-        },
-        requirements: {
-            combat: 12,
-        },
-        tags: ['shield', 'offhand', 'iron', 'defense'],
+        tags: ['armor', 'wool', 'leather', 'set', 'harvesting'],
     },
 
     // =================================================================
     // TOOLS
     // =================================================================
 
-    bronzePickaxe: {
-        id: 'bronzePickaxe',
-        name: 'Bronze Pickaxe',
-        description: 'Basic mining tool. Can mine copper and tin ores.',
-        icon: '⛏️',
+    // Starter Tools (with custom icons)
+    caneRod: {
+        id: 'caneRod',
+        name: 'Cane Rod',
+        description: 'A simple fishing rod made from river cane. Perfect for catching small fish.',
+        icon: '🎣',
+        iconPath: 'assets/icons/tools/cane-rod.png',
         category: 'equipment',
-        instanced: true,  // Unique instance
+        instanced: true,
         rarity: 'common',
         stackLimit: 1,
-        value: 40,
+        value: 15,
         level: 1,
-        slot: 'tool',
-        tier: 'basic',
+        slot: 'tool',           // Bank tab categorization
+        equipSlot: 'weapon',    // Equipment slot (where it's equipped)
+        tier: 'starter',
+        weaponCategory: 'tool',
+        toolType: 'fishing',
+        toolTier: 1,
+        requirements: {
+            fishing: 1,
+        },
+        tags: ['tool', 'fishing', 'starter'],
+    },
+
+    huntingBlade: {
+        id: 'huntingBlade',
+        name: 'Hunting Blade',
+        description: 'A sharp blade designed for hunting and field dressing game.',
+        icon: '🔪',
+        iconPath: 'assets/icons/tools/hunting blade.png',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 20,
+        level: 1,
+        slot: 'tool',           // Bank tab categorization
+        equipSlot: 'weapon',    // Equipment slot (where it's equipped)
+        tier: 'starter',
+        weaponCategory: 'tool',
+        toolType: 'hunting',
+        toolTier: 1,
+        requirements: {
+            hunting: 1,
+        },
+        tags: ['tool', 'hunting', 'starter'],
+    },
+
+    lightPickaxe: {
+        id: 'lightPickaxe',
+        name: 'Light Pickaxe',
+        description: 'A lightweight pickaxe ideal for beginners. Can mine basic ores.',
+        icon: '⛏️',
+        iconPath: 'assets/icons/tools/light-pickaxe.png',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 25,
+        level: 1,
+        slot: 'tool',           // Bank tab categorization
+        equipSlot: 'weapon',    // Equipment slot (where it's equipped)
+        tier: 'starter',
+        weaponCategory: 'tool',
+        toolType: 'mining',
+        toolTier: 1,
         requirements: {
             mining: 1,
         },
-        tags: ['tool', 'pickaxe', 'bronze', 'mining'],
+        tags: ['tool', 'mining', 'starter'],
     },
 
-    ironPickaxe: {
-        id: 'ironPickaxe',
-        name: 'Iron Pickaxe',
-        description: 'Sturdy iron pickaxe. Can mine iron and coal.',
-        icon: '⛏️',
+    lockpick: {
+        id: 'lockpick',
+        name: 'Lockpick',
+        description: 'A set of basic lockpicking tools. Essential for opening locked containers.',
+        icon: '🔓',
+        iconPath: 'assets/icons/tools/lockpick.png',
         category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'uncommon',
-        stackLimit: 1,
-        value: 150,
-        level: 10,
-        slot: 'tool',
-        tier: 'improved',
-        requirements: {
-            mining: 10,
-        },
-        tags: ['tool', 'pickaxe', 'iron', 'mining'],
-    },
-
-    bronzeAxe: {
-        id: 'bronzeAxe',
-        name: 'Bronze Axe',
-        description: 'Basic woodcutting tool. Can chop normal trees.',
-        icon: '🪓',
-        category: 'equipment',
-        instanced: true,  // Unique instance
+        instanced: true,
         rarity: 'common',
         stackLimit: 1,
-        value: 35,
+        value: 30,
         level: 1,
-        slot: 'tool',
-        tier: 'basic',
+        slot: 'tool',           // Bank tab categorization
+        equipSlot: 'weapon',    // Equipment slot (where it's equipped)
+        tier: 'starter',
+        weaponCategory: 'tool',
+        toolType: 'lockpicking',
+        toolTier: 1,
+        tags: ['tool', 'lockpicking', 'starter'],
+    },
+
+    utilityHatchet: {
+        id: 'utilityHatchet',
+        name: 'Utility Hatchet',
+        description: 'A versatile hatchet for chopping wood and basic tasks.',
+        icon: '🪓',
+        iconPath: 'assets/icons/tools/utility-hatchet.png',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 18,
+        level: 1,
+        slot: 'tool',           // Bank tab categorization
+        equipSlot: 'weapon',    // Equipment slot (where it's equipped)
+        tier: 'starter',
+        weaponCategory: 'tool',
+        toolType: 'woodcutting',
+        toolTier: 1,
         requirements: {
             woodcutting: 1,
         },
-        tags: ['tool', 'axe', 'bronze', 'woodcutting'],
+        tags: ['tool', 'woodcutting', 'starter'],
     },
 
-    ironAxe: {
-        id: 'ironAxe',
-        name: 'Iron Axe',
-        description: 'Sharp iron axe. Can chop oak and willow trees.',
-        icon: '🪓',
+    wovenBasket: {
+        id: 'wovenBasket',
+        name: 'Woven Basket',
+        description: 'A sturdy basket woven from natural fibers. Useful for gathering plants.',
+        icon: '🧺',
+        iconPath: 'assets/icons/tools/woven-basket.png',
         category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'uncommon',
-        stackLimit: 1,
-        value: 140,
-        level: 10,
-        slot: 'tool',
-        tier: 'improved',
-        requirements: {
-            woodcutting: 10,
-        },
-        tags: ['tool', 'axe', 'iron', 'woodcutting'],
-    },
-
-    // =================================================================
-    // ACCESSORIES
-    // =================================================================
-
-    bronzeRing: {
-        id: 'bronzeRing',
-        name: 'Bronze Ring',
-        description: 'Simple bronze ring. Provides minor stat boost.',
-        icon: '💍',
-        category: 'equipment',
-        instanced: true,  // Unique instance
+        instanced: true,
         rarity: 'common',
         stackLimit: 1,
-        value: 80,
-        level: 5,
-        slot: 'accessory',
-        tier: 'basic',
-        attributes: {
-            luck: 2,
-        },
-        tags: ['accessory', 'ring', 'bronze'],
-    },
-
-    ironAmulet: {
-        id: 'ironAmulet',
-        name: 'Iron Amulet',
-        description: 'Heavy iron amulet. Increases constitution.',
-        icon: '📿',
-        category: 'equipment',
-        instanced: true,  // Unique instance
-        rarity: 'uncommon',
-        stackLimit: 1,
-        value: 200,
-        level: 12,
-        slot: 'accessory',
-        tier: 'improved',
-        combatStats: {
-            health: 40,
-        },
-        attributes: {
-            constitution: 3,
-        },
+        value: 12,
+        level: 1,
+        slot: 'tool',           // Bank tab categorization
+        equipSlot: 'weapon',    // Equipment slot (where it's equipped)
+        tier: 'starter',
+        weaponCategory: 'tool',
+        toolType: 'foraging',
+        toolTier: 1,
         requirements: {
-            combat: 12,
+            foraging: 1,
         },
-        tags: ['accessory', 'amulet', 'iron'],
+        tags: ['tool', 'foraging', 'starter'],
     },
 };
 

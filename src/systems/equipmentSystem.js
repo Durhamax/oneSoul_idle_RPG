@@ -8,17 +8,32 @@
 const EquipmentSystem = {
     /**
      * Get item definition from ItemRegistry (standardized access pattern)
-     * @param {string} itemId - Item ID to retrieve
+     * Handles both base IDs and instance IDs via ItemIdUtils
+     * @param {string} itemId - Item ID (base or instance) to retrieve
      * @returns {object|null} Item definition or null if not found
      */
     _getItemDef(itemId) {
+        // Use ItemIdUtils for consistent instance ID resolution
+        if (typeof ItemIdUtils !== 'undefined') {
+            return ItemIdUtils.getItemDefinition(itemId);
+        }
+
+        // Fallback: Extract base ID manually if ItemIdUtils not available
+        let baseId = itemId;
+        if (typeof itemId === 'string') {
+            const match = itemId.match(/^(.+)_(\d{13})_([a-z0-9]+)$/i);
+            if (match) {
+                baseId = match[1];
+            }
+        }
+
         // Primary: Use ItemRegistry if available
         if (typeof ItemRegistry !== 'undefined' && ItemRegistry.getItem) {
-            return ItemRegistry.getItem(itemId);
+            return ItemRegistry.getItem(baseId);
         }
 
         // Fallback: Use definitions.items (legacy support)
-        return this.definitions?.items?.[itemId] || null;
+        return this.definitions?.items?.[baseId] || null;
     },
 
     /**
@@ -70,7 +85,7 @@ const EquipmentSystem = {
      * Determine the slot type (equipment, consumable, or technology)
      */
     getEquipmentSlotType(slot) {
-        const equipmentSlots = ['weapon', 'helmet', 'back', 'gloves', 'chest', 'neck', 'boots', 'legs', 'ring'];
+        const equipmentSlots = ['weapon', 'armor', 'back', 'gloves', 'neck', 'boots', 'ring'];
         const consumableSlots = ['ammo', 'food', 'potion'];
         const techSlots = ['tech1', 'tech2', 'tech3', 'tech4'];
 
@@ -84,42 +99,70 @@ const EquipmentSystem = {
      * Equip an item from the bank
      */
     equipItem(itemId) {
-        // Use standardized item access pattern
-        const itemDef = EquipmentSystem._getItemDef.call(this, itemId);
-        const bankItem = this.state.bank.items[itemId];
-
-        if (!itemDef) {
-            return { success: false, reason: "Item not found" };
-        }
+        // DUAL-BANK: Check all storage locations (instanced, stackable, legacy)
+        const instancedItem = this.state.bank.instanced?.[itemId];
+        const stackableItem = this.state.bank.stackable?.[itemId];
+        const legacyItem = this.state.bank.items?.[itemId];
+        const bankItem = instancedItem || stackableItem || legacyItem;
 
         if (!bankItem || bankItem.quantity < 1) {
+            console.warn(`❌ Item not in bank or quantity < 1: ${itemId}`, bankItem);
             return { success: false, reason: "Item not in bank" };
+        }
+
+        // Get the base item ID for definition lookup (handle instances)
+        const lookupId = bankItem.baseItemId || itemId;
+
+        // Use standardized item access pattern
+        const itemDef = EquipmentSystem._getItemDef.call(this, lookupId);
+
+        if (!itemDef) {
+            console.warn(`❌ Item definition not found: ${lookupId} (from itemId: ${itemId})`);
+            return { success: false, reason: "Item not found" };
         }
 
         // Check both 'equipSlot' and 'slot' properties for compatibility
         const slot = itemDef.equipSlot || itemDef.slot;
 
+        console.log(`🔍 Equipping ${lookupId}: slot='${slot}', equipSlot='${itemDef.equipSlot}', itemDef.slot='${itemDef.slot}'`);
+
         if (!slot) {
+            console.warn(`❌ No slot found for ${lookupId}`, itemDef);
             return { success: false, reason: "Item cannot be equipped" };
         }
 
         // === VALIDATION LAYER ===
 
-        // 1. Check level requirements
-        if (itemDef.level && itemDef.level > this.state.characterLevel.level) {
-            return {
-                success: false,
-                reason: `Requires character level ${itemDef.level}`
-            };
-        }
+        // 1. Check level requirements (DISABLED - no level requirements for now)
+        // if (itemDef.level && itemDef.level > this.state.characterLevel.level) {
+        //     return {
+        //         success: false,
+        //         reason: `Requires character level ${itemDef.level}`
+        //     };
+        // }
 
-        // 2. Check attribute requirements
+        // 2. Check attribute requirements (character level, combat attributes, AND skills)
         if (itemDef.requirements) {
-            const attributes = this.state.combatAttributes;
+            const combatAttributes = this.state.combatAttributes || {};
+            const skills = this.state.skills || {};
+            const characterLevel = this.state.characterLevel?.level || 0;
 
             for (let attr in itemDef.requirements) {
                 const required = itemDef.requirements[attr];
-                const current = attributes[attr] || 0;
+                let current = 0;
+
+                // Special case: characterLevel is a top-level property
+                if (attr === 'characterLevel') {
+                    current = characterLevel;
+                }
+                // Check combat attributes first, then skills
+                else {
+                    const currentFromAttributes = combatAttributes[attr] || 0;
+                    const currentFromSkills = skills[attr]?.level || 0;
+                    current = currentFromAttributes || currentFromSkills;
+                }
+
+                console.log(`🔍 Requirement check: ${attr} requires ${required}, you have ${current}`);
 
                 if (current < required) {
                     return {
@@ -149,6 +192,7 @@ const EquipmentSystem = {
         let weightAfterEquip = currentWeight + itemWeight;
         const currentItemInSlot = this.state.equipment[slot];
         if (currentItemInSlot) {
+            // Use ItemIdUtils to extract base ID from instance ID
             const currentItemDef = EquipmentSystem._getItemDef.call(this, currentItemInSlot);
             const currentItemWeight = (currentItemDef && currentItemDef.stats && currentItemDef.stats.weight) || 0;
             weightAfterEquip -= currentItemWeight;
@@ -165,19 +209,37 @@ const EquipmentSystem = {
 
         // Unequip current item in slot if any
         if (this.state.equipment[slot]) {
+            console.log(`🔄 Unequipping current item in ${slot}:`, this.state.equipment[slot]);
             this.unequipItem(slot);
         }
 
         // Equip new item
+        console.log(`✅ Setting equipment[${slot}] = ${itemId}`);
         this.state.equipment[slot] = itemId;
+        console.log(`📊 Equipment state after setting:`, this.state.equipment[slot]);
 
-        // Remove from bank
-        this.removeItemFromBank(itemId, 1);
+        // DUAL-BANK: Remove from bank using appropriate method
+        if (instancedItem) {
+            console.log(`📦 Removing instanced item from bank: ${itemId}`);
+            this.removeEquipmentInstance(itemId);
+        } else if (stackableItem) {
+            console.log(`📦 Removing stackable item from bank: ${itemId}`);
+            this.removeStackableItem(itemId, 1);
+        } else {
+            console.log(`📦 Removing legacy item from bank: ${itemId}`);
+            this.removeItemFromBank(itemId, 1);
+        }
 
-        console.log(`⚔️ Equipped ${itemDef.name}`);
+        console.log(`⚔️ Equipped ${itemDef.name} to slot '${slot}' (${itemId})`);
+        console.log(`📊 Current equipment state:`, {...this.state.equipment});
 
         // Recalculate player stats
         this.recalculatePlayerStats();
+
+        // Recompile stats after equipment change
+        if (typeof this.compilePlayerStats === 'function') {
+            this.compilePlayerStats();
+        }
 
         return { success: true };
     },
@@ -192,18 +254,52 @@ const EquipmentSystem = {
             return { success: false, reason: "Nothing equipped in that slot" };
         }
 
+        console.log(`🔄 [UNEQUIP v2] Unequipping from ${slot}: ${itemId}`);
+
+        // Use ItemIdUtils to extract base item ID for definition lookup
+        const lookupId = typeof ItemIdUtils !== 'undefined'
+            ? ItemIdUtils.getBaseItemId(itemId)
+            : itemId;
+        const isInstance = typeof ItemIdUtils !== 'undefined'
+            ? ItemIdUtils.isInstanceId(itemId)
+            : false;
+
         const itemDef = EquipmentSystem._getItemDef.call(this, itemId);
 
-        // Return to bank
-        this.addItemToBank(itemId, 1);
+        // DUAL-BANK: Check if the item is instanced
+        if (isInstance || itemDef?.instanced) {
+            // For instanced items, we need to recreate the instance in the bank
+            console.log(`🔄 Returning instanced item to bank: ${itemId}`);
+
+            // Get the instance data if it exists in equipped items tracking
+            // Otherwise, recreate it from the base item
+            const instanceData = {
+                baseItemId: lookupId,
+                instanceId: itemId,
+                uniqueId: itemId,
+                rarity: itemDef?.rarity || 'common',
+                quantity: 1
+            };
+
+            // Add the instance back to bank
+            this.addEquipmentInstance(instanceData);
+        } else {
+            // Return to bank normally for non-instanced items
+            this.addItemToBank(itemId, 1);
+        }
 
         // Remove from equipment
         this.state.equipment[slot] = null;
 
-        console.log(`📦 Unequipped ${itemDef.name}`);
+        console.log(`📦 Unequipped ${itemDef?.name || itemId}`);
 
         // Recalculate player stats
         this.recalculatePlayerStats();
+
+        // Recompile stats after equipment change
+        if (typeof this.compilePlayerStats === 'function') {
+            this.compilePlayerStats();
+        }
 
         return { success: true };
     },
@@ -272,8 +368,8 @@ const EquipmentSystem = {
 
         // Get attributes for derived calculations
         const attributes = this.state.combatAttributes;
-        const baseStats = this.state.combat.player;
-        const currentHealth = this.state.combat.player.currentHealth;
+        const baseStats = this.state.combat.player || {};
+        const currentHealth = this.state.currentHP || 0;
 
         // Get stance modifiers
         const currentStance = this.state.combat.currentStance || "offensive";
@@ -750,22 +846,37 @@ const EquipmentSystem = {
 
     /**
      * Recalculate and update player stats
+     * Safely handles cases where combat.player structure doesn't exist
      */
     recalculatePlayerStats() {
+        // Ensure combat state structure exists before accessing
+        if (!this.state.combat) {
+            this.state.combat = {};
+        }
+        if (!this.state.combat.player) {
+            this.state.combat.player = {
+                currentHealth: 100,
+                maxHealth: 100,
+                baseAttackDamage: 5,
+                baseAttackSpeed: 1.0,
+                baseAccuracy: 75
+            };
+        }
+
         const stats = this.getPlayerCombatStats();
 
-        // Update max health (heal if max increased)
-        const oldMaxHealth = this.state.combat.player.maxHealth;
+        // Safely get old max health (default to current if not set)
+        const oldMaxHealth = this.state.combat.player.maxHealth || stats.maxHealth;
         this.state.combat.player.maxHealth = stats.maxHealth;
 
         if (stats.maxHealth > oldMaxHealth) {
             const healthIncrease = stats.maxHealth - oldMaxHealth;
-            this.state.combat.player.currentHealth += healthIncrease;
+            this.state.combat.player.currentHealth = (this.state.combat.player.currentHealth || 100) + healthIncrease;
         }
 
         // Cap current health at max
         this.state.combat.player.currentHealth = Math.min(
-            this.state.combat.player.currentHealth,
+            this.state.combat.player.currentHealth || stats.maxHealth,
             stats.maxHealth
         );
     }

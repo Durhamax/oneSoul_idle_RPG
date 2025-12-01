@@ -120,9 +120,50 @@ class NodeRegistryClass extends BaseRegistry {
 
     hasRequiredTool(requiredTools, minTier, playerState) {
         if (!requiredTools || requiredTools.length === 0) return true;
-        const equippedTool = playerState.equipment?.weapon;
-        if (!equippedTool) return false;
-        return requiredTools.includes(equippedTool);
+
+        console.log('🔧 [NodeRegistry] Checking tool requirements:', {
+            requiredTools,
+            minTier,
+            equipment: playerState.equipment
+        });
+
+        // Check all equipment slots for a matching tool
+        for (const slot in playerState.equipment) {
+            const equippedItemId = playerState.equipment[slot];
+            if (!equippedItemId) continue;
+
+            console.log(`🔧 [NodeRegistry] Checking slot '${slot}': ${equippedItemId}`);
+
+            // Parse instance ID to get base item ID
+            let lookupId = equippedItemId;
+            if (equippedItemId.includes('_instance_')) {
+                lookupId = equippedItemId.split('_instance_')[0];
+            } else if (equippedItemId.includes('_')) {
+                const parts = equippedItemId.split('_');
+                if (parts.length >= 3 && /^\d{13}$/.test(parts[parts.length - 2])) {
+                    lookupId = parts.slice(0, -2).join('_');
+                }
+            }
+
+            console.log(`🔧 [NodeRegistry] Parsed lookupId: ${lookupId}`);
+
+            // Get item definition
+            const itemDef = ItemRegistry?.getItem(lookupId);
+            console.log(`🔧 [NodeRegistry] Item def:`, itemDef);
+
+            if (!itemDef) continue;
+
+            // Check if this tool matches requirements
+            console.log(`🔧 [NodeRegistry] Tool check: toolType='${itemDef.toolType}', toolTier=${itemDef.toolTier}`);
+            if (requiredTools.includes(itemDef.toolType) &&
+                (itemDef.toolTier || 0) >= minTier) {
+                console.log('✅ [NodeRegistry] Tool requirement met!');
+                return true;
+            }
+        }
+
+        console.log('❌ [NodeRegistry] No matching tool found');
+        return false;
     }
 
     getStatistics() {

@@ -1,10 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(del \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\systems\\mapGenerationSystem.js\")",
-      "Bash(npm run validate-item-access:*)",
-      "Bash(start msedge \"C:\\Users\\durha\\oneSoul_idle_RPG\\test-itemregistry.html\")",
-      "Bash(git checkout:*)"
+      "Bash(powershell -Command \"Get-Content ''C:\\Users\\durha\\oneSoul_idle_RPG\\src\\data\\items\\production\\equipment\\equipment.js'' | Select-String -Pattern ''equipSlot'' -Context 1,1\")",
+      "Bash(del \"C:\\Users\\durha\\oneSoul_idle_RPG\\test-tool-definitions.html\")",
+      "Bash(powershell -Command \"Get-Content ''C:\\Users\\durha\\oneSoul_idle_RPG\\src\\core\\definitions.js'' | Select-String -Pattern ''lightPickaxe'' -Context 0,3\")",
+      "Bash(start msedge \"C:\\Users\\durha\\oneSoul_idle_RPG\\index.html\")",
+      "Bash(powershell -Command \"Get-Content ''C:\\Users\\durha\\oneSoul_idle_RPG\\src\\data\\items\\production\\equipment\\equipment.js'' | Select-String -Pattern ''^    lightPickaxe:'' -Context 0,3\")",
+      "Bash(powershell -Command:*)",
+      "Bash(start msedge \"C:\\Users\\durha\\oneSoul_idle_RPG\\test-weapon-accuracy.html\")",
+      "Bash($null)",
+      "Bash(del \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\data\\enemies\\production\\droids.js\")",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

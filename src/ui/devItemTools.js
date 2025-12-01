@@ -1137,5 +1137,149 @@ const DevItemTools = {
         }
 
         return { discovered, failed };
+    },
+
+    /**
+     * Add Tier 1 Starter Kit items to the player's bank for testing
+     */
+    addTier1StarterKit() {
+        if (typeof GameEngine === 'undefined') {
+            console.error('❌ GameEngine not found');
+            return { granted: [], failed: ['GameEngine not found'] };
+        }
+
+        if (typeof ItemRegistry === 'undefined') {
+            console.error('❌ ItemRegistry not found');
+            return { granted: [], failed: ['ItemRegistry not found'] };
+        }
+
+        console.log('\n🎁 ADDING TIER 1 STARTER KIT...\n');
+
+        const tier1Items = [
+            // Weapons
+            { id: 'scrapBow', quantity: 1 },
+            { id: 'scrappedPistol', quantity: 1 },
+            { id: 'patchedRifle', quantity: 1 },
+            { id: 'roughBlade', quantity: 1 },
+
+            // Ammunition
+            { id: 'flintheadArrows', quantity: 100 },
+            { id: 'copperiteRounds', quantity: 100 },
+
+            // Armor
+            { id: 'unityScoutSet', quantity: 1 },
+            { id: 'waxedWaderSet', quantity: 1 },
+            { id: 'harvestersGarb', quantity: 1 },
+
+            // Food
+            { id: 'solfishBake', quantity: 20 },
+            { id: 'smallGameStew', quantity: 20 },
+            { id: 'fishOilTonic', quantity: 15 },
+
+            // Materials for crafting
+            { id: 'flintstone', quantity: 50 },
+            { id: 'feather', quantity: 50 },
+            { id: 'copperite', quantity: 50 },
+            { id: 'linen', quantity: 50 },
+            { id: 'wax', quantity: 50 },
+            { id: 'solfish', quantity: 30 },
+            { id: 'smallGameMeat', quantity: 30 },
+            { id: 'fishoil', quantity: 30 },
+        ];
+
+        const granted = [];
+        const failed = [];
+
+        for (const { id, quantity } of tier1Items) {
+            try {
+                const itemDef = ItemRegistry.getAllActive()[id];
+
+                if (!itemDef) {
+                    failed.push(`Item not found: ${id}`);
+                    console.warn(`❌ Item not found: ${id}`);
+                    continue;
+                }
+
+                // Add to bank using GameEngine
+                if (itemDef.instanced) {
+                    // Instanced items (equipment, weapons, armor) - add each individually
+                    for (let i = 0; i < quantity; i++) {
+                        const result = GameEngine.addItemToBank(id);
+                        if (result.success) {
+                            granted.push(`${itemDef.icon || '📦'} ${itemDef.name}`);
+                            console.log(`✅ Added: ${itemDef.name}`);
+                        } else {
+                            failed.push(`Failed to add ${itemDef.name}: ${result.message || 'Unknown error'}`);
+                            console.warn(`❌ Failed to add: ${itemDef.name}`);
+                        }
+                    }
+                } else {
+                    // Stackable items (materials, consumables, ammo) - add with quantity
+                    const result = GameEngine.addItemToBank(id, quantity);
+                    if (result.success) {
+                        granted.push(`${itemDef.icon || '📦'} ${itemDef.name} x${quantity}`);
+                        console.log(`✅ Added: ${itemDef.name} x${quantity}`);
+                    } else {
+                        failed.push(`Failed to add ${itemDef.name}: ${result.message || 'Unknown error'}`);
+                        console.warn(`❌ Failed to add: ${itemDef.name}`);
+                    }
+                }
+            } catch (error) {
+                failed.push(`Error adding ${id}: ${error.message}`);
+                console.error(`❌ Error adding ${id}:`, error);
+            }
+        }
+
+        // Log summary
+        console.log('\n📦 TIER 1 STARTER KIT SUMMARY');
+        console.log('='.repeat(50));
+        console.log(`✅ Granted: ${granted.length} items`);
+        console.log(`❌ Failed: ${failed.length} items`);
+
+        if (granted.length > 0) {
+            console.log('\n✅ Successfully granted:');
+            granted.forEach(item => console.log(`   ${item}`));
+        }
+
+        if (failed.length > 0) {
+            console.warn('\n❌ Failed to grant:');
+            failed.forEach(err => console.warn(`   ${err}`));
+        }
+
+        console.log('\n💡 TIP: Check your Items tab to see the new Tier 1 items!');
+        console.log('   Weapons: Scrap Bow, Scrapped Pistol, Patched Rifle, Rough Blade');
+        console.log('   Armor: Unity Scout Set, Waxed Wader Set, Harvester\'s Garb');
+        console.log('   Food: Solfish Bake, Small Game Stew, Fish Oil Tonic\n');
+
+        // Show in UI
+        this.showResults(`
+            <div style="padding: 20px;">
+                <h3 style="color: #4a9eff; margin-top: 0;">🎁 Tier 1 Starter Kit Granted</h3>
+                <div style="background: rgba(74, 158, 255, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 10px;">
+                        ✅ ${granted.length} items added to bank
+                    </div>
+                    ${granted.map(item => `<div style="padding: 3px 0;">   ${item}</div>`).join('')}
+                </div>
+                ${failed.length > 0 ? `
+                    <div style="background: rgba(255, 0, 0, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="font-weight: bold; margin-bottom: 10px; color: #ff6b6b;">❌ Failed: ${failed.length}</div>
+                        ${failed.map(err => `<div style="padding: 3px 0; color: #ff6b6b;">   ${err}</div>`).join('')}
+                    </div>
+                ` : ''}
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                    <div style="font-weight: bold; margin-bottom: 8px;">💡 What's in the Kit:</div>
+                    <ul style="margin: 5px 0; padding-left: 20px; line-height: 1.6;">
+                        <li><strong>4 Weapons:</strong> Scrap Bow, Scrapped Pistol, Patched Rifle, Rough Blade</li>
+                        <li><strong>2 Ammo Types:</strong> Flinthead Arrows, Copperite Rounds (100 each)</li>
+                        <li><strong>3 Armor Sets:</strong> Unity Scout Set, Waxed Wader Set, Harvester's Garb</li>
+                        <li><strong>3 Food Items:</strong> Solfish Bake, Small Game Stew, Fish Oil Tonic</li>
+                        <li><strong>Crafting Materials:</strong> Various T1 materials for recipes</li>
+                    </ul>
+                </div>
+            </div>
+        `);
+
+        return { granted, failed };
     }
 };

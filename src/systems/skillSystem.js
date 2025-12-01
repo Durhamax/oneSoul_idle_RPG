@@ -183,6 +183,11 @@ const SkillSystem = {
 
         console.log(`✨ Assigned point to ${this.definitions.combatAttributes[attributeId].name}`);
 
+        // Recompile player stats (attributes affect all derived stats)
+        if (typeof this.compilePlayerStats === 'function') {
+            this.compilePlayerStats();
+        }
+
         // Trigger UI update to refresh immediately
         if (typeof UICore !== 'undefined' && UICore.update) {
             UICore.update();
@@ -204,6 +209,11 @@ const SkillSystem = {
 
         // Return points to unassigned pool
         this.state.characterLevel.unassignedAttributePoints += totalPoints;
+
+        // Recompile player stats (attributes affect all derived stats)
+        if (typeof this.compilePlayerStats === 'function') {
+            this.compilePlayerStats();
+        }
 
         console.log(`🔄 Reset all attributes. ${totalPoints} points available to reassign.`);
         return { success: true, pointsReturned: totalPoints };

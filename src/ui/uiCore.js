@@ -110,7 +110,13 @@ const UICore = {
                 CombatUI.updateCombat();
                 break;
             case 'crafting':
-                CraftingUI.updateCrafting();
+                // Use new UnifiedCraftingUI if available, fallback to legacy
+                if (typeof UnifiedCraftingUI !== 'undefined') {
+                    // Only update queue sidebar, don't re-render entire UI each tick
+                    UnifiedCraftingUI.update();
+                } else if (typeof CraftingUI !== 'undefined') {
+                    CraftingUI.updateCrafting();
+                }
                 break;
             case 'navigation':
                 NavigationUI.updateNavigation();
@@ -147,6 +153,11 @@ const UICore = {
      * Update character level and attribute points
      */
     updateCharacterLevel() {
+        // Safety check: Don't update if systems aren't initialized yet
+        if (!GameEngine.getCharacterExpRequired) {
+            return;
+        }
+
         const charLevel = GameEngine.state.characterLevel;
         const expRequired = GameEngine.getCharacterExpRequired();
         const expPercent = (charLevel.exp / expRequired) * 100;
@@ -245,7 +256,7 @@ const UICore = {
         const regionText = document.getElementById("currentRegionText");
 
         // Update current region
-        const currentRegion = GameEngine.definitions.worldMap?.[state.currentRegion];
+        const currentRegion = state.worldMap?.[state.currentRegion];
         if (regionText && currentRegion) {
             regionText.textContent = `${currentRegion.name || "Unknown"}`;
         }
@@ -287,7 +298,7 @@ const UICore = {
             }
         } else if (state.currentActivity === 'navigation' && state.activeNavigation.isNavigating) {
             // Show navigation activity
-            const currentRegion = GameEngine.definitions.worldMap?.[state.currentRegion];
+            const currentRegion = state.worldMap?.[state.currentRegion];
             const regionName = currentRegion?.name || "Unknown Region";
 
             text = `🧭 Exploring ${regionName}`;
@@ -396,10 +407,19 @@ const UICore = {
             }
         }
 
-        // Special handling for crafting view - ensure stations are synced
+        // Special handling for crafting view - render UnifiedCraftingUI or sync legacy stations
         if (viewName === 'crafting') {
-            if (typeof CraftingUI !== 'undefined' && CraftingUI.syncCraftingStations) {
+            if (typeof UnifiedCraftingUI !== 'undefined') {
+                UnifiedCraftingUI.render();
+            } else if (typeof CraftingUI !== 'undefined' && CraftingUI.syncCraftingStations) {
                 CraftingUI.syncCraftingStations();
+            }
+        }
+
+        // Special handling for combat view - render new combat UI
+        if (viewName === 'combat') {
+            if (typeof CombatUI !== 'undefined' && CombatUI.render) {
+                CombatUI.render();
             }
         }
 
@@ -439,8 +459,17 @@ const UICore = {
 
         // Missions tab: Available missions (not started yet)
         let availableMissionsCount = 0;
-        if (state.missions && GameEngine.definitions.missions) {
-            for (let missionId in GameEngine.definitions.missions) {
+        if (state.missions) {
+            // Get missions from MissionRegistry
+            const missions = typeof MissionRegistry !== 'undefined'
+                ? MissionRegistry.getAllActive()
+                : (GameEngine.definitions?.missions || {});
+
+            const missionIds = Array.isArray(missions)
+                ? missions.map(m => m.id)
+                : Object.keys(missions);
+
+            for (let missionId of missionIds) {
                 if (!state.missions[missionId] || state.missions[missionId].status === 'available') {
                     availableMissionsCount++;
                 }

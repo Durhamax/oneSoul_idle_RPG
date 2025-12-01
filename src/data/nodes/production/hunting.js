@@ -130,8 +130,8 @@ NodeRegistry.production.cradle_woodlands = {
         skillLevel: 1,
         characterLevel: 0,
         quests: [],
-        tools: [],
-        toolTier: 0
+        tools: ["hunting"],
+        toolTier: 1
     },
 
     isRenewable: true,
@@ -209,7 +209,7 @@ NodeRegistry.production.rabbit_burrow = {
         skillLevel: 1,
         characterLevel: 0,
         quests: [],
-        tools: ["bow", "crossbow", "trap"],
+        tools: ["hunting"],
         toolTier: 1
     },
 
@@ -290,7 +290,7 @@ NodeRegistry.production.deer_trail = {
         skillLevel: 15,
         characterLevel: 8,
         quests: [],
-        tools: ["bow", "crossbow"],
+        tools: ["hunting"],
         toolTier: 2
     },
 
@@ -372,7 +372,7 @@ NodeRegistry.production.wolf_den = {
         skillLevel: 30,
         characterLevel: 18,
         quests: [],
-        tools: ["bow", "crossbow"],
+        tools: ["hunting"],
         toolTier: 4
     },
 

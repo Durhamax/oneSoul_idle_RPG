@@ -18,6 +18,8 @@ NodeRegistry.production.riverbed = {
     tier: 1,
     requiredSkillLevel: 1,
     recommendedLevel: 1,
+    requiredTools: ['mining'],
+    minToolTier: 1,
 
     baseHealth: 10,
     minHealth: 8,
@@ -119,7 +121,7 @@ NodeRegistry.production.riverbed = {
         skillLevel: 1,
         characterLevel: 0,
         quests: [],
-        tools: ["pickaxe"],
+        tools: ["mining"],
         toolTier: 1
     },
 
@@ -197,7 +199,7 @@ NodeRegistry.production.copper_vein = {
         skillLevel: 1,
         characterLevel: 0,
         quests: [],
-        tools: ["pickaxe"],
+        tools: ["mining"],
         toolTier: 1
     },
 
@@ -275,7 +277,7 @@ NodeRegistry.production.tin_vein = {
         skillLevel: 5,
         characterLevel: 0,
         quests: [],
-        tools: ["pickaxe"],
+        tools: ["mining"],
         toolTier: 1
     },
 
@@ -356,7 +358,7 @@ NodeRegistry.production.iron_vein = {
         skillLevel: 15,
         characterLevel: 5,
         quests: [],
-        tools: ["pickaxe"],
+        tools: ["mining"],
         toolTier: 2
     },
 
@@ -434,7 +436,7 @@ NodeRegistry.production.coal_deposit = {
         skillLevel: 10,
         characterLevel: 0,
         quests: [],
-        tools: ["pickaxe"],
+        tools: ["mining"],
         toolTier: 1
     },
 
@@ -514,7 +516,7 @@ NodeRegistry.production.silver_vein = {
         skillLevel: 25,
         characterLevel: 12,
         quests: [],
-        tools: ["pickaxe"],
+        tools: ["mining"],
         toolTier: 3
     },
 
@@ -593,7 +595,7 @@ NodeRegistry.production.gold_vein = {
         skillLevel: 35,
         characterLevel: 20,
         quests: [],
-        tools: ["pickaxe"],
+        tools: ["mining"],
         toolTier: 4
     },
 
@@ -672,7 +674,7 @@ NodeRegistry.production.stone_outcrop = {
         skillLevel: 1,
         characterLevel: 0,
         quests: [],
-        tools: ["pickaxe"],
+        tools: ["mining"],
         toolTier: 1
     },
 

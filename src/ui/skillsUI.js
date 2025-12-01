@@ -95,27 +95,47 @@ const SkillsUI = {
             const expRequired = GameEngine.getSkillExpRequired(skillId);
             const expPercent = (skill.exp / expRequired) * 100;
 
-            // Make gathering skills, navigation, crafting skills, and engineering clickable
+            // Determine click behavior based on skill type
             const isGatheringSkill = gatheringSkills.includes(skillId);
             const isNavigationSkill = skillId === 'navigation';
             const isEngineeringSkill = skillId === 'engineering';
             const isCraftingSkill = craftingSkills.includes(skillId);
-            const isClickable = isGatheringSkill || isNavigationSkill || isEngineeringSkill || isCraftingSkill;
 
             let clickHandler = '';
-            let clickHint = '';
+            let extraContent = '';
+
             if (isGatheringSkill) {
                 clickHandler = `onclick="selectSkillForNodes('${skillId}')" style="cursor: pointer;"`;
-                clickHint = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to view nodes</div>';
+                extraContent = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to view nodes</div>';
             } else if (isNavigationSkill) {
                 clickHandler = `onclick="switchView('navigation')" style="cursor: pointer;"`;
-                clickHint = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to open navigation</div>';
+                extraContent = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to open navigation</div>';
             } else if (isEngineeringSkill) {
-                clickHandler = `onclick="switchView('engineering')" style="cursor: pointer;"`;
-                clickHint = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to open engineering</div>';
+                // Engineering now goes to Crafting tab (Engineering sub-tab)
+                clickHandler = `onclick="UnifiedCraftingUI.openToSkill('engineering'); UnifiedCraftingUI.switchTab('engineering');" style="cursor: pointer;"`;
+                extraContent = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to open engineering lab</div>';
             } else if (isCraftingSkill) {
-                clickHandler = `onclick="openCraftingForSkill('${skillId}')" style="cursor: pointer;"`;
-                clickHint = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to open crafting</div>';
+                // Crafting skills show recipe progression and link to Crafting tab
+                const recipeCount = this.getRecipeProgress(skillId, skill.level);
+                extraContent = `
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <div style="font-size: 0.75em; color: #aaa; margin-bottom: 4px;">
+                            📜 Recipes: ${recipeCount.unlocked}/${recipeCount.total}
+                        </div>
+                        ${recipeCount.next ? `
+                            <div style="font-size: 0.7em; color: #ff9800;">
+                                Next: ${recipeCount.next.name} (Lv.${recipeCount.next.level})
+                            </div>
+                        ` : ''}
+                        <button onclick="event.stopPropagation(); UnifiedCraftingUI.openToSkill('${skillId}');"
+                                style="margin-top: 6px; padding: 4px 10px; background: linear-gradient(90deg, #4a9eff, #7b3ff2);
+                                       border: none; border-radius: 4px; color: white; font-size: 0.75em; cursor: pointer;
+                                       width: 100%;">
+                            🔨 Go to Crafting
+                        </button>
+                    </div>
+                `;
+                clickHandler = `style="cursor: default;"`;
             }
 
             return `
@@ -128,13 +148,13 @@ const SkillsUI = {
                         </div>
                     </div>
                     <div style="font-size: 0.8em; color: #b8b8c4; margin-bottom: 8px; line-height: 1.4;">${def.description}</div>
-                    ${clickHint}
                     <div style="background: rgba(0, 0, 0, 0.5); border-radius: 4px; height: 8px; overflow: hidden; margin: 8px 0 4px 0;">
                         <div style="background: linear-gradient(90deg, #533483 0%, #7b3ff2 100%); height: 100%; width: ${expPercent}%; transition: width 0.3s;"></div>
                     </div>
                     <div style="font-size: 0.7em; color: #888; text-align: center;">
                         ${Formatting.formatNumber(skill.exp)} / ${Formatting.formatNumber(expRequired)} XP
                     </div>
+                    ${extraContent}
                 </div>
             `;
         };
@@ -239,6 +259,36 @@ const SkillsUI = {
                 ${this.renderAttributeBonuses(attrId, value)}
             </div>
         `;
+    },
+
+    /**
+     * Get recipe progress for a crafting skill
+     */
+    getRecipeProgress(skillId, playerLevel) {
+        let total = 0;
+        let unlocked = 0;
+        let nextRecipe = null;
+
+        // Get recipes from RecipeRegistry
+        if (typeof RecipeRegistry !== 'undefined' && RecipeRegistry.getRecipesBySkill) {
+            const recipesObj = RecipeRegistry.getRecipesBySkill(skillId);
+            // Convert object to array (RecipeRegistry returns an object, not array)
+            const recipes = Object.values(recipesObj || {});
+            total = recipes.length;
+
+            for (const recipe of recipes) {
+                if (playerLevel >= recipe.skillLevelRequired) {
+                    unlocked++;
+                } else if (!nextRecipe || recipe.skillLevelRequired < nextRecipe.level) {
+                    nextRecipe = {
+                        name: recipe.name,
+                        level: recipe.skillLevelRequired
+                    };
+                }
+            }
+        }
+
+        return { total, unlocked, next: nextRecipe };
     },
 
     /**

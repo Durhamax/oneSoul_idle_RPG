@@ -137,6 +137,12 @@ const SaveSystem = {
             GameEngine.state.lastTick = Date.now();
             GameEngine.startGameLoop();
 
+            // Recompile player stats after loading (applies saved perk grid and equipment)
+            if (typeof GameEngine.compilePlayerStats === 'function') {
+                GameEngine.compilePlayerStats();
+                console.log('✅ Player stats recompiled after save load');
+            }
+
             return true;
         } catch (error) {
             console.error("❌ Load failed:", error);

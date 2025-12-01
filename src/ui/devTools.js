@@ -191,5 +191,46 @@ const DevTools = {
 
         console.log('✅ Missions reset! All missions are now incomplete.');
         console.log('📋 Available missions:', GameEngine.state.missions.available);
+    },
+
+    /**
+     * Add medal fragments for testing
+     * @param {number} amount - Amount to add (default 10000)
+     */
+    addFragments(amount = 10000) {
+        if (!GameEngine.state.currencies) {
+            GameEngine.state.currencies = {};
+        }
+        GameEngine.state.currencies.medalFragments = (GameEngine.state.currencies.medalFragments || 0) + amount;
+        console.log(`✅ Added ${amount.toLocaleString()} medal fragments!`);
+        console.log(`💎 Total fragments: ${GameEngine.state.currencies.medalFragments.toLocaleString()}`);
+
+        // Refresh UI if on perk grid
+        if (typeof PerkGridUI !== 'undefined') {
+            PerkGridUI.render();
+        }
+        return GameEngine.state.currencies.medalFragments;
+    },
+
+    /**
+     * Set medal fragments to specific amount
+     * @param {number} amount - Amount to set
+     */
+    setFragments(amount) {
+        if (!GameEngine.state.currencies) {
+            GameEngine.state.currencies = {};
+        }
+        GameEngine.state.currencies.medalFragments = amount;
+        console.log(`✅ Set medal fragments to ${amount.toLocaleString()}`);
+
+        // Refresh UI if on perk grid
+        if (typeof PerkGridUI !== 'undefined') {
+            PerkGridUI.render();
+        }
+        return amount;
     }
 };
+
+// Console shortcuts for medal fragments
+window.addFragments = (amount) => DevTools.addFragments(amount);
+window.setFragments = (amount) => DevTools.setFragments(amount);

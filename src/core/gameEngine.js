@@ -60,7 +60,7 @@ const GameEngine = {
             smithing: { level: 1, exp: 0, unlocked: true },
             mechanics: { level: 1, exp: 0, unlocked: true },
             electronics: { level: 1, exp: 0, unlocked: true },
-            textiles: { level: 1, exp: 0, unlocked: true },
+            tailoring: { level: 1, exp: 0, unlocked: true },  // Renamed from textiles
             engineering: { level: 1, exp: 0, unlocked: true }
         },
 
@@ -118,21 +118,21 @@ const GameEngine = {
 
         // Bank/Inventory System
         bank: {
-            activeTab: "resource",  // Currently selected tab
+            activeTab: "material",  // Currently selected tab
             tabs: {
-                resource: {
-                    name: "Resources",
+                material: {
+                    name: "Materials",
                     icon: "📦",
                     order: 0
-                },
-                tool: {
-                    name: "Tools",
-                    icon: "⛏️",
-                    order: 1
                 },
                 weapon: {
                     name: "Weapons",
                     icon: "⚔️",
+                    order: 1
+                },
+                ammo: {
+                    name: "Ammo",
+                    icon: "🎯",
                     order: 2
                 },
                 armor: {
@@ -140,24 +140,24 @@ const GameEngine = {
                     icon: "🛡️",
                     order: 3
                 },
-                technology: {
-                    name: "Technology",
-                    icon: "⚡",
+                tool: {
+                    name: "Tools",
+                    icon: "⛏️",
                     order: 4
                 },
-                mod: {
-                    name: "Mods",
-                    icon: "💎",
+                food: {
+                    name: "Food",
+                    icon: "🍖",
                     order: 5
                 },
-                healing: {
-                    name: "Healing",
+                potion: {
+                    name: "Potions",
                     icon: "🧪",
                     order: 6
                 },
-                consumable: {
-                    name: "Consumables",
-                    icon: "⚗️",
+                technology: {
+                    name: "Technology",
+                    icon: "⚡",
                     order: 7
                 },
                 perk: {
@@ -165,20 +165,10 @@ const GameEngine = {
                     icon: "⭐",
                     order: 8
                 },
-                medal: {
-                    name: "Medals",
-                    icon: "🏅",
-                    order: 9
-                },
-                attachment: {
-                    name: "Attachments",
-                    icon: "⚙️",
-                    order: 10
-                },
                 quest: {
                     name: "Quest Items",
                     icon: "📜",
-                    order: 11
+                    order: 9
                 }
             },
             items: {
@@ -192,18 +182,17 @@ const GameEngine = {
             }
         },
 
-        // Equipment System - 3x3 Grid + Consumables + Technology
+        // Equipment System - 3-1-3 Grid + Consumables + Technology
         equipment: {
-            // === 3x3 EQUIPMENT GRID (Provides perks) ===
+            // === 3-1-3 EQUIPMENT GRID (Provides perks) ===
             weapon: null,      // Main weapon
-            helmet: null,      // Head armor
+            armor: null,       // Full armor set (head/chest/legs combined)
             back: null,        // Cape/Cloak
             gloves: null,      // Gloves
-            chest: null,       // Body armor
             neck: null,        // Necklace/Amulet
             boots: null,       // Boots
-            legs: null,        // Leg armor
             ring: null,        // Ring
+            // Note: helmet, chest, legs removed - replaced by unified armor slot
 
             // === CONSUMABLE SLOTS (No perks, show quantity) ===
             ammo: null,        // Ammunition for ranged weapons
@@ -294,10 +283,37 @@ const GameEngine = {
 
         // Crafting System
         crafting: {
-            discoveredStations: [],  // Array of discovered crafting station IDs
-            activeCrafts: [],        // Array of active crafts {recipeId, startTime, completionTime, stationId}
+            discoveredStations: [],  // Array of discovered crafting station IDs (legacy)
+            activeCrafts: [],        // Legacy: Array of active crafts {recipeId, startTime, completionTime}
             selectedSkill: null,     // Currently selected crafting skill filter
-            autoRecipe: null         // Recipe to auto-repeat until stopped or out of materials
+            autoRecipe: null,        // Recipe to auto-repeat until stopped or out of materials
+
+            // NEW: Skill-based craft queues
+            activeQueues: {
+                smithing: [],        // Material processing
+                mechanics: [],       // Weapons
+                electronics: [],     // Components
+                tailoring: [],       // Armor
+                chemistry: [],       // Consumables
+                cooking: []          // Food
+            }
+        },
+
+        // Workstations (NEW: Tier-based system, engineering-gated)
+        workstations: {
+            smithing: { tier: 1 },
+            mechanics: { tier: 1 },
+            electronics: { tier: 1 },
+            tailoring: { tier: 1 },
+            chemistry: { tier: 1 },
+            cooking: { tier: 1 }
+        },
+
+        // Blueprints (NEW: Currency for workstation upgrades)
+        blueprints: {
+            common: 0,
+            advanced: 0,
+            masterwork: 0
         },
 
         // Mission System
@@ -327,6 +343,7 @@ const GameEngine = {
             tokens: 0,
 
             // Workshop tiers for each crafting skill (0 = no workshop, 1-4 = tiers)
+            // LEGACY - Use workstations state instead
             workshops: {
                 cooking: 0,
                 chemistry: 0,
@@ -342,7 +359,13 @@ const GameEngine = {
             },
 
             // Unlocked recipes from reverse engineering
-            reversedRecipes: []
+            reversedRecipes: [],
+
+            // NEW: Perfection system tracking
+            perfectionAttempts: 0,
+            perfectionSuccesses: 0,
+            technologiesAssembled: 0,
+            itemsSalvaged: 0
         },
 
         // Perk Grid System
@@ -606,7 +629,8 @@ const GameEngine = {
         SkillSystem.init(this);
         EquipmentSystem.init(this);
         EquipmentPresetSystem.init(this);
-        AttachmentSystem.init(this);
+        // AttachmentSystem.init(this);  // DEPRECATED - Removed in Rev1 Combat
+        CombatSystem.init(this);  // Rev1 Combat System
         TypeEffectivenessSystem.init(this);
         ResourceSystem.init(this);
         GatheringSystem.init(this);  // New universal gathering system
@@ -617,14 +641,27 @@ const GameEngine = {
         NavigationSystem.init(this);
         NodeCollectionSystem.init(this);
         // HarvestSystem.init(this);  // DEPRECATED - Replaced by gatheringSystem.js
-        CombatSystem.init(this);
+        // CombatSystem.init(this);  // MOVED - Now initialized earlier with other core systems
         OfflineCombatSystem.init(this);
         CraftingSystem.init(this);
         MissionSystem.init(this);
         EngineeringSystem.init(this);
         EnhancementSystem.init(this);
-        PerkGridSystem.init(this);
-        MedalCraftingSystem.init(this);
+        // NEW Perk Grid System (7x7)
+        if (typeof PerkGridSystemNew !== 'undefined') {
+            PerkGridSystemNew.init(this);
+            MedalCraftingSystemNew.init(this);
+            console.log('[GameEngine] New 7x7 Perk Grid System initialized');
+        } else if (typeof PerkGridSystem !== 'undefined') {
+            // Fallback to old system if new not loaded
+            PerkGridSystem.init(this);
+            MedalCraftingSystem.init(this);
+        }
+
+        // Initialize StatCompiler (centralized stat compilation)
+        if (typeof StatCompiler !== 'undefined') {
+            StatCompiler.init(this);
+        }
 
         // Initialize unified item database integration
         if (typeof ItemIntegration !== 'undefined') {
@@ -988,25 +1025,29 @@ const GameEngine = {
 
         // Add all missing bank tabs (backward compatibility)
         const requiredTabs = {
-            resource: { name: "Resources", icon: "📦", order: 0 },
-            tool: { name: "Tools", icon: "⛏️", order: 1 },
-            weapon: { name: "Weapons", icon: "⚔️", order: 2 },
+            material: { name: "Materials", icon: "📦", order: 0 },
+            weapon: { name: "Weapons", icon: "⚔️", order: 1 },
+            ammo: { name: "Ammo", icon: "🎯", order: 2 },
             armor: { name: "Armor", icon: "🛡️", order: 3 },
-            technology: { name: "Technology", icon: "⚡", order: 4 },
-            mod: { name: "Mods", icon: "💎", order: 5 },
-            healing: { name: "Healing", icon: "🧪", order: 6 },
-            consumable: { name: "Consumables", icon: "⚗️", order: 7 },
+            tool: { name: "Tools", icon: "⛏️", order: 4 },
+            food: { name: "Food", icon: "🍖", order: 5 },
+            potion: { name: "Potions", icon: "🧪", order: 6 },
+            technology: { name: "Technology", icon: "⚡", order: 7 },
             perk: { name: "Perks", icon: "⭐", order: 8 },
-            medal: { name: "Medals", icon: "🏅", order: 9 },
-            quest: { name: "Quest Items", icon: "📜", order: 10 },
-            legacy: { name: "Legacy Items", icon: "🎒", order: 11 }
+            quest: { name: "Quest Items", icon: "📜", order: 9 }
         };
 
         // Migrate old tab names to new structure
         const tabMigrations = {
-            'resources': 'resource',
-            'equipment': 'legacy',  // Old equipment tab becomes legacy
-            'consumables': 'consumable'
+            'resources': 'material',      // Old "resources" → "material"
+            'resource': 'material',       // Old "resource" → "material"
+            'consumables': 'food',        // Old general consumables → food tab
+            'consumable': 'food',         // Old general consumables → food tab
+            'healing': 'potion',          // Old "healing" → "potion"
+            'mod': 'material',            // Old mods → materials (deprecated)
+            'medal': 'perk',              // Old medal tab → perks
+            'legacy': 'material',         // Old legacy items → materials
+            'equipment': 'material'       // Old equipment tab → materials
         };
 
         // Apply migrations
@@ -1069,6 +1110,12 @@ const GameEngine = {
                     console.log(`✅ Node system validated: ${nodeReport.valid}/${nodeReport.total} nodes`);
                 }
             }
+        }
+
+        // Initial stat compilation after all systems are initialized
+        if (typeof this.compilePlayerStats === 'function') {
+            this.compilePlayerStats();
+            console.log('✅ Initial player stats compiled');
         }
 
         this.startGameLoop();
@@ -1175,11 +1222,16 @@ const GameEngine = {
 
         // Process combat (delegated to CombatSystem)
         if (this.state.combat.inCombat) {
-            if (this.playerAttack) {
-                this.playerAttack();
-            }
-            if (this.enemyAttack) {
-                this.enemyAttack();
+            if (typeof CombatSystem !== 'undefined' && CombatSystem.update) {
+                CombatSystem.update(deltaTime * 1000, this.state); // Convert deltaTime to ms
+            } else {
+                // Fallback to legacy methods if new CombatSystem not available
+                if (this.playerAttack) {
+                    this.playerAttack();
+                }
+                if (this.enemyAttack) {
+                    this.enemyAttack();
+                }
             }
 
             // Apply HP regeneration

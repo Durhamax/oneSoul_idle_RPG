@@ -7705,19 +7705,9 @@ Object.defineProperty(GameDefinitions, 'items', {
     get() {
         // On first access, migrate legacy items to ItemRegistry
         if (!_legacyItemsMigrated && typeof ItemRegistry !== 'undefined') {
-            console.log('🔄 Migrating legacy items from GameDefinitions to ItemRegistry...');
-
-            let migratedCount = 0;
-            for (let itemId in this._legacyItems) {
-                // Only add to legacy if not already in production
-                if (!ItemRegistry.production[itemId]) {
-                    ItemRegistry.legacy[itemId] = this._legacyItems[itemId];
-                    migratedCount++;
-                }
-            }
-
+            // LEGACY ITEM MIGRATION REMOVED - Using production items only
             _legacyItemsMigrated = true;
-            console.log(`✅ Migrated ${migratedCount} legacy items to ItemRegistry.legacy`);
+            console.log(`✅ Legacy item migration disabled - using production items only`);
         }
 
         // Return all active items from ItemRegistry

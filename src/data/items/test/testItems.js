@@ -27,7 +27,7 @@ const TEST_ITEMS = {
             accuracy: 85,
         },
         requirements: {
-            combat: 10,
+            characterLevel: 10,
         },
         tags: ['weapon', 'rifle', 'ranged', 'test'],
     },

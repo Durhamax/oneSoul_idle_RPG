@@ -243,19 +243,29 @@ const AttachmentSystem = {
         Object.entries(attachments).forEach(([slotType, attachmentId]) => {
             if (!attachmentId) return;
 
-            const attachment = AttachmentSystem._getItemDef.call(this, attachmentId);
+            // Parse the attachment ID to get the base item ID
+            // Format: baseItemId_instance_timestamp_randomid or just baseItemId
+            let baseItemId = attachmentId;
 
-            if (!attachment) {
-                console.warn(`Attachment not found: ${attachmentId}`);
+            // If it's an instance ID, extract the base ID
+            if (attachmentId.includes('_instance_')) {
+                baseItemId = attachmentId.split('_instance_')[0];
+            }
+
+            // Get the attachment definition
+            const attachmentDef = AttachmentSystem._getItemDef.call(this, baseItemId);
+
+            if (!attachmentDef) {
+                console.warn(`Attachment definition not found for ${attachmentId} (base: ${baseItemId})`);
                 return;
             }
 
-            // Read the stat bonus directly from the attachment (already set when item was created)
-            const bonusStat = attachment.bonusStat;
-            const bonusValue = attachment.bonusValue;
+            // Read the stat bonus from the definition (modStat and bonusValue)
+            const bonusStat = attachmentDef.modStat || attachmentDef.bonusStat;
+            const bonusValue = attachmentDef.bonusValue;
 
             if (!bonusStat || bonusValue === undefined) {
-                console.warn(`Attachment ${attachmentId} missing bonusStat or bonusValue`);
+                console.warn(`Attachment ${baseItemId} missing modStat/bonusStat or bonusValue`);
                 return;
             }
 
