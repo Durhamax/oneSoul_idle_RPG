@@ -10,15 +10,33 @@ const CombatSystem = {
      * Initialize combat system
      */
     init(engine) {
-        console.log('✅ CombatSystem initialized (Rev1)');
+        console.log('✅ CombatSystem initialized (Rev1) with auto-respawn');
 
         // Attach combat functions to engine
         engine.startCombat = this.startCombat.bind(this);
         engine.endCombat = this.endCombat.bind(this);
         engine.updateCombat = this.update.bind(this);
 
+        // NEW: Auto-respawn bindings
+        engine.startRespawnTimer = this.startRespawnTimer.bind(this);
+        engine.cancelRespawnTimer = this.cancelRespawnTimer.bind(this);
+        engine.respawnEnemy = this.respawnEnemy.bind(this);
+        engine.setAutoCombat = this.setAutoCombat.bind(this);
+        engine.getRespawnProgress = this.getRespawnProgress.bind(this);
+
         // Initialize default perk multipliers structure
         engine.getDefaultPerkMultipliers = this.getDefaultPerkMultipliers.bind(this);
+
+        // Initialize respawn state on engine state
+        if (!engine.state.combat) engine.state.combat = {};
+        engine.state.combat.respawn = {
+            active: false,
+            enemyId: null,
+            startTime: null,
+            duration: null,
+            timerId: null
+        };
+        engine.state.combat.autoCombat = true; // Default ON
     },
 
     /**
@@ -101,7 +119,44 @@ const CombatSystem = {
         const compiledWeapon = this.compileWeaponData(player);
         const compiledAmmo = this.compileAmmoData(player);
 
-        // Initialize combat state
+        // Food: Handle both legacy (string ID) and new ({ itemId, quantity }) formats
+        // Convert legacy format to new format if needed
+        const foodSlot = player.equipment?.food;
+        if (foodSlot && typeof foodSlot === 'string') {
+            // Legacy format: convert string ID to { itemId, quantity } object
+            const foodId = foodSlot;
+            const bank = player.bank || GameEngine?.state?.bank;
+            let quantity = 0;
+
+            // Get quantity from bank
+            if (bank?.stackable && typeof bank.stackable[foodId] === 'number') {
+                quantity = bank.stackable[foodId];
+                delete bank.stackable[foodId]; // Transfer to equipment
+            } else if (bank?.items && bank.items[foodId]) {
+                const bankItem = bank.items[foodId];
+                quantity = typeof bankItem === 'number' ? bankItem : (bankItem.quantity || 0);
+                delete bank.items[foodId]; // Transfer to equipment
+            }
+
+            // Convert to new format
+            player.equipment.food = { itemId: foodId, quantity };
+            console.log(`   Food converted from legacy: ${foodId} x${quantity}`);
+        }
+
+        const hasFood = player.equipment?.food && typeof player.equipment.food === 'object' && player.equipment.food.quantity > 0;
+        const foodInfo = hasFood ? `${player.equipment.food.itemId} x${player.equipment.food.quantity}` : 'None';
+
+        // Preserve persistent combat settings before reinitializing
+        const prevAutoCombat = player.combat?.autoCombat ?? true;
+        const prevRespawn = player.combat?.respawn || {
+            active: false,
+            enemyId: null,
+            startTime: null,
+            duration: null,
+            timerId: null
+        };
+
+        // Initialize combat state (preserving persistent settings)
         player.combat = {
             inCombat: true,
             currentEnemy: enemy,
@@ -129,12 +184,19 @@ const CombatSystem = {
                 crits: 0,
                 kills: 0,
                 foodConsumed: 0,
-                ammoConsumed: 0
-            }
+                foodConserved: 0,
+                ammoConsumed: 0,
+                ammoConserved: 0
+            },
+
+            // Persistent settings (preserved across combats)
+            autoCombat: prevAutoCombat,
+            respawn: prevRespawn
         };
 
         console.log(`   Compiled Weapon:`, compiledWeapon ? `${compiledWeapon.name} (${compiledWeapon.weaponType})` : 'None');
         console.log(`   Compiled Ammo:`, compiledAmmo ? `${compiledAmmo.ammoName} x${compiledAmmo.currentAmmo}` : 'None');
+        console.log(`   Equipped Food:`, foodInfo);
 
         // Use centralized compiled stats when available (from StatCompiler)
         // This ensures combat uses the same stat values as other systems
@@ -205,6 +267,7 @@ const CombatSystem = {
 
         const combat = player.combat;
         const enemy = combat.currentEnemy;
+        const enemyId = enemy?.id || enemy?.enemyId;
 
         console.log(`🏁 [COMBAT] Ending combat - Victory: ${victory}`);
         console.log(`📊 [COMBAT] Session stats:`, combat.session);
@@ -216,11 +279,39 @@ const CombatSystem = {
 
             // Award loot/XP here
             this.awardLoot(player, enemy);
+
+            // Emit defeat event
+            if (typeof EventBus !== 'undefined') {
+                EventBus.emit('enemy-defeated', { enemyId, enemy });
+            }
+
+            // Check if auto-combat is enabled for respawn
+            const autoCombat = GameEngine?.state?.combat?.autoCombat ?? true;
+            if (autoCombat && enemyId) {
+                // Delay before starting respawn timer to allow HP bar animation to show 0
+                const VICTORY_DISPLAY_DELAY = 500; // 500ms to show the kill
+                setTimeout(() => {
+                    this.startRespawnTimer(enemyId);
+                }, VICTORY_DISPLAY_DELAY);
+            }
         } else {
             this.addLog(combat, `Defeat! You were slain by ${enemy.name}.`);
+
+            // Player defeated - cancel any respawn and disable auto-combat
+            this.cancelRespawnTimer();
+            if (GameEngine?.state?.combat) {
+                GameEngine.state.combat.autoCombat = false;
+            }
+
+            // Emit player defeated event
+            if (typeof EventBus !== 'undefined') {
+                EventBus.emit('player-defeated', {});
+            }
+
+            console.log('[CombatSystem] Player defeated - auto-combat disabled');
         }
 
-        // Emit event
+        // Emit combat-ended event
         if (typeof EventBus !== 'undefined') {
             EventBus.emit('combat-ended', {
                 result: victory ? 'victory' : 'defeat',
@@ -229,7 +320,7 @@ const CombatSystem = {
             });
         }
 
-        // Clean up
+        // Clean up combat state (but keep respawn state if victory)
         combat.inCombat = false;
         combat.currentEnemy = null;
 
@@ -269,8 +360,10 @@ const CombatSystem = {
         // Process auto-eat
         const autoEatResult = AutoConsumption.processAutoEat(player, combat);
         if (autoEatResult && autoEatResult.success) {
-            console.log(`🍖 [COMBAT] Auto-eat: ${autoEatResult.foodName} (+${autoEatResult.healed} HP) | Player HP: ${player.currentHP}/${player.maxHP}`);
-            this.addLog(combat, `Auto-eat: Consumed ${autoEatResult.foodName}, healed ${autoEatResult.healed} HP`);
+            const maxHP = AutoConsumption.calculateMaxHP(player);
+            const itemsText = autoEatResult.itemsConsumed > 1 ? `${autoEatResult.itemsConsumed}x ` : '';
+            console.log(`🍖 [COMBAT] Auto-eat: ${itemsText}${autoEatResult.foodName} (+${autoEatResult.healed} HP) | Player HP: ${player.currentHP}/${maxHP} | Remaining: ${autoEatResult.remaining}`);
+            this.addLog(combat, `Auto-eat: Consumed ${autoEatResult.itemsConsumed}x ${autoEatResult.foodName}, healed ${autoEatResult.healed} HP`);
 
             // Emit event
             if (typeof EventBus !== 'undefined') {
@@ -319,8 +412,18 @@ const CombatSystem = {
             return;
         }
 
+        // Apply food effects to player stats for this attack
+        // Effects are active while food quantity > 0
+        const foodEffect = AutoConsumption.getActiveFoodEffects(player);
+        let effectivePlayer = player;
+
+        if (foodEffect) {
+            // Create a modified player object with food effect bonuses
+            effectivePlayer = this.applyFoodEffect(player, foodEffect);
+        }
+
         // Perform 3-roll attack sequence
-        const attackResult = this.performAttack(player, enemy);
+        const attackResult = this.performAttack(effectivePlayer, enemy);
 
         // Log result
         if (!attackResult.hit.success) {
@@ -438,6 +541,37 @@ const CombatSystem = {
             finalDamage: damageResult.damage,
             pipeline: damageResult.pipeline
         };
+    },
+
+    /**
+     * Apply food effect to player stats for attack
+     * Creates a shallow copy with modified combat attributes
+     * @param {Object} player - Player state
+     * @param {Object} effect - Food effect { stat, amount, ... }
+     * @returns {Object} Modified player object for attack calculation
+     */
+    applyFoodEffect(player, effect) {
+        if (!effect || !effect.stat || !effect.amount) {
+            return player;
+        }
+
+        // Create shallow copy with modified combatAttributes
+        const modifiedPlayer = {
+            ...player,
+            combatAttributes: {
+                ...(player.combatAttributes || {})
+            }
+        };
+
+        // Apply stat bonus
+        const currentValue = modifiedPlayer.combatAttributes[effect.stat] || 0;
+        modifiedPlayer.combatAttributes[effect.stat] = currentValue + effect.amount;
+
+        // If the effect modifies a stat that affects derived values, recalculate
+        // For now, combat attributes are used directly in combat calculations
+        // More complex effects (like accuracy bonuses) would need additional handling
+
+        return modifiedPlayer;
     },
 
     /**
@@ -747,16 +881,17 @@ const CombatSystem = {
 
         console.log(`💰 Loot: Gold ${baseGold} × ${goldMultiplier.toFixed(2)} = ${gold} | XP ${baseXP} × ${xpMultiplier.toFixed(2)} = ${xp}`);
 
-        // Award gold to player
-        if (player.currencies) {
-            player.currencies.gold = (player.currencies.gold || 0) + gold;
-
-            // Emit event for gold drop
+        // Store gold in pending loot (don't add to player yet)
+        if (gold > 0) {
+            // Emit event for UI to show in loot box
             if (typeof EventBus !== 'undefined') {
                 EventBus.emit('loot-dropped', {
                     itemId: 'gold',
+                    name: 'Gold',
+                    icon: '🪙',
                     quantity: gold,
-                    rarity: 'common'
+                    rarity: 'currency',
+                    isCurrency: true
                 });
             }
         }
@@ -780,15 +915,17 @@ const CombatSystem = {
 
                 console.log(`🏅 Loot: Fragments ${baseFragments} × ${fragmentMultiplier.toFixed(2)} = ${fragments}`);
 
-                if (player.currencies && fragments > 0) {
-                    player.currencies.medalFragments = (player.currencies.medalFragments || 0) + fragments;
-
-                    // Emit event for fragment drop
+                // Store fragments in pending loot (don't add to player yet)
+                if (fragments > 0) {
+                    // Emit event for UI to show in loot box
                     if (typeof EventBus !== 'undefined') {
                         EventBus.emit('loot-dropped', {
                             itemId: 'medalFragments',
+                            name: 'Medal Fragments',
+                            icon: '🏅',
                             quantity: fragments,
-                            rarity: 'uncommon'
+                            rarity: 'currency',
+                            isCurrency: true
                         });
                     }
                 }
@@ -822,19 +959,19 @@ const CombatSystem = {
                     const finalQty = Math.round(baseQty * itemMultiplier);
 
                     if (finalQty > 0) {
-                        // Add item to player inventory
-                        if (typeof GameEngine !== 'undefined' && GameEngine.addItemToBank) {
-                            GameEngine.addItemToBank(lootEntry.itemId, finalQty);
-                        } else if (typeof InventorySystem !== 'undefined' && InventorySystem.addItem) {
-                            InventorySystem.addItem(player, lootEntry.itemId, finalQty, { isNew: true });
-                        }
+                        // Store item in pending loot (don't add to inventory yet)
+                        // Get item definition for display info
+                        const itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(lootEntry.itemId) : null;
 
-                        // Emit event
+                        // Emit event for UI to show in loot box
                         if (typeof EventBus !== 'undefined') {
                             EventBus.emit('loot-dropped', {
                                 itemId: lootEntry.itemId,
+                                name: itemDef?.name || lootEntry.itemId,
+                                icon: itemDef?.icon || '📦',
                                 quantity: finalQty,
-                                rarity: lootEntry.rarity || 'common'
+                                rarity: lootEntry.rarity || itemDef?.rarity || 'common',
+                                isItem: true
                             });
                         }
 
@@ -1006,6 +1143,170 @@ const CombatSystem = {
         const result = DamageCalculator.calculateFinalDamage(rawDamage, attacker, defender);
         console.log('Damage Pipeline Test:', result);
         return result;
+    },
+
+    // ===== AUTO-RESPAWN SYSTEM =====
+
+    /**
+     * Start respawn timer for enemy
+     * @param {string} enemyId - Enemy ID to respawn
+     */
+    startRespawnTimer(enemyId) {
+        if (!GameEngine?.state?.combat) {
+            console.warn('[CombatSystem] Cannot start respawn - no combat state');
+            return;
+        }
+
+        const state = GameEngine.state;
+        const mobility = state.combatAttributes?.mobility || 0;
+
+        // Calculate respawn time using EnemyRegistry
+        const respawnTime = typeof EnemyRegistry !== 'undefined'
+            ? EnemyRegistry.calculateRespawnTime(enemyId, mobility)
+            : 3100; // Fallback
+
+        // Set respawn state
+        state.combat.respawn = {
+            active: true,
+            enemyId: enemyId,
+            startTime: Date.now(),
+            duration: respawnTime,
+            timerId: null
+        };
+
+        // Set timer for respawn
+        state.combat.respawn.timerId = setTimeout(() => {
+            this.respawnEnemy();
+        }, respawnTime);
+
+        // Emit event for UI
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('respawn-started', {
+                enemyId,
+                duration: respawnTime,
+                startTime: state.combat.respawn.startTime
+            });
+        }
+
+        console.log(`⏱️ [CombatSystem] Respawn timer started: ${respawnTime}ms for ${enemyId} (mobility: ${mobility})`);
+    },
+
+    /**
+     * Cancel active respawn timer
+     */
+    cancelRespawnTimer() {
+        if (!GameEngine?.state?.combat) return;
+
+        const state = GameEngine.state;
+
+        if (state.combat.respawn?.timerId) {
+            clearTimeout(state.combat.respawn.timerId);
+        }
+
+        state.combat.respawn = {
+            active: false,
+            enemyId: null,
+            startTime: null,
+            duration: null,
+            timerId: null
+        };
+
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('respawn-cancelled', {});
+        }
+
+        console.log('[CombatSystem] Respawn timer cancelled');
+    },
+
+    /**
+     * Respawn enemy and resume combat
+     */
+    respawnEnemy() {
+        if (!GameEngine?.state?.combat) return;
+
+        const state = GameEngine.state;
+        const enemyId = state.combat.respawn?.enemyId;
+
+        if (!enemyId) {
+            console.warn('[CombatSystem] No enemy to respawn');
+            return;
+        }
+
+        // Clear respawn state
+        state.combat.respawn = {
+            active: false,
+            enemyId: null,
+            startTime: null,
+            duration: null,
+            timerId: null
+        };
+
+        // Get enemy definition
+        const enemyDef = typeof EnemyRegistry !== 'undefined'
+            ? EnemyRegistry.get(enemyId)
+            : null;
+
+        if (!enemyDef) {
+            console.error(`[CombatSystem] Cannot respawn - enemy not found: ${enemyId}`);
+            return;
+        }
+
+        // Create fresh enemy instance with full HP
+        const enemyInstance = {
+            ...enemyDef,
+            currentHP: enemyDef.maxHP,
+            id: enemyId
+        };
+
+        // Start combat with same enemy
+        this.startCombat(GameEngine.state, enemyInstance);
+
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('enemy-respawned', { enemyId });
+        }
+
+        console.log(`🔄 [CombatSystem] Enemy respawned: ${enemyId}`);
+    },
+
+    /**
+     * Toggle auto-combat setting
+     * @param {boolean} enabled - Whether auto-combat is enabled
+     */
+    setAutoCombat(enabled) {
+        if (!GameEngine?.state?.combat) return;
+
+        GameEngine.state.combat.autoCombat = enabled;
+
+        if (!enabled) {
+            this.cancelRespawnTimer();
+        }
+
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('auto-combat-changed', { enabled });
+        }
+
+        console.log(`[CombatSystem] Auto-combat: ${enabled ? 'ON' : 'OFF'}`);
+    },
+
+    /**
+     * Get respawn progress (0-1) for UI
+     * @returns {Object|null} Progress info or null if not respawning
+     */
+    getRespawnProgress() {
+        const respawn = GameEngine?.state?.combat?.respawn;
+
+        if (!respawn?.active) return null;
+
+        const elapsed = Date.now() - respawn.startTime;
+        const progress = Math.min(elapsed / respawn.duration, 1);
+        const remaining = Math.max(respawn.duration - elapsed, 0);
+
+        return {
+            progress,
+            remaining,
+            total: respawn.duration,
+            enemyId: respawn.enemyId
+        };
     }
 };
 

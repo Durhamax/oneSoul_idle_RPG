@@ -34,6 +34,11 @@ async function initGame() {
         CombatUI.init();
     }
 
+    // Initialize UnifiedCraftingUI (includes RecipesTab event delegation)
+    if (typeof UnifiedCraftingUI !== 'undefined' && UnifiedCraftingUI.init) {
+        UnifiedCraftingUI.init();
+    }
+
     // Initialize WeaponBuildModal
     if (typeof WeaponBuildModal !== 'undefined' && WeaponBuildModal.init) {
         WeaponBuildModal.init();
@@ -49,17 +54,13 @@ async function initGame() {
     if (!hasSave) {
         console.log("🎁 Adding starter items...");
 
-        // Add some starting resources
-        GameEngine.addItemToBank("gold", 100);
-        GameEngine.addItemToBank("wood", 50);
-        GameEngine.addItemToBank("ore", 50);
+        // Add starting gold to currencies (NOT bank)
+        if (GameEngine.state.currencies) {
+            GameEngine.state.currencies.gold = (GameEngine.state.currencies.gold || 0) + 100;
+            console.log(`💰 Added 100 gold to currencies (Total: ${GameEngine.state.currencies.gold})`);
+        }
 
-        // Add basic starter equipment
-        GameEngine.addItemToBank("dagger", 1);
-        GameEngine.addItemToBank("clothHood", 1);
-        GameEngine.addItemToBank("huntingJacket", 1);
-        GameEngine.addItemToBank("clothPants", 1);
-
+        // Note: Other starter items removed - tutorial missions now handle equipment rewards
         UICore.update();
     }
 
@@ -80,12 +81,29 @@ function saveGame() {
 
 /**
  * Reset the game
+ * Provides a complete fresh start by deleting save and reloading the page
  */
 async function resetGame() {
-    if (await confirm("Are you sure you want to reset all progress?")) {
-        SaveSystem.deleteSave();
-        GameEngine.reset();
-        UICore.update();
+    if (await confirm("Are you sure you want to reset all progress?\n\nThis will delete your save and reload the game as a new player.")) {
+        console.log("🗑️ Initiating fresh start...");
+
+        // CRITICAL: Set flag to skip loading on next page load
+        // This is checked FIRST in SaveSystem.init() before any loading happens
+        localStorage.setItem("idleRpg_skipLoad", "true");
+
+        // Also delete the save file now
+        localStorage.removeItem("idleRpgSave_v1");
+
+        // Prevent any further saves
+        if (typeof SaveSystem !== 'undefined') {
+            SaveSystem.preventSave = true;
+            SaveSystem.stopAutoSave();
+        }
+
+        console.log("🔄 Reloading for fresh start...");
+
+        // Reload the page for a true fresh start
+        window.location.reload();
     }
 }
 
@@ -865,7 +883,7 @@ function startNavigating() {
         // Check specific cases and provide helpful messages
         if (result.reason?.includes('food') || result.reason?.includes('logs')) {
             const hasFood = GameEngine.state.equipment?.food && GameEngine.state.bank.items[GameEngine.state.equipment.food]?.quantity > 0;
-            const logItems = ['pinewood', 'log', 'normalLogs', 'oakLog', 'oakLogs', 'willowLog', 'willowLogs', 'birchLog', 'mapleLog', 'mapleLogs', 'wood'];
+            const logItems = ['pinewood', 'log', 'normalLogs', 'oakLog', 'willowLog', 'willowLogs', 'birchLog', 'mapleLog', 'mapleLogs', 'wood'];
             const hasLogs = logItems.some(logId => GameEngine.state.bank.items[logId]?.quantity > 0);
 
             if (!hasFood && !hasLogs) {
@@ -1057,6 +1075,321 @@ function toggleWorldMap() {
     NavigationUI.worldMapCollapsed = !NavigationUI.worldMapCollapsed;
     NavigationUI.lastNavigationState = null; // Force re-render
     UICore.update();
+}
+
+// =============================================================================
+// CAMPFIRE / FUEL SYSTEM
+// =============================================================================
+
+/**
+ * Select campfire fuel from dropdown
+ * @param {string} fuelId - The fuel item ID to select
+ */
+function selectCampfireFuel(fuelId) {
+    if (!GameEngine.selectCampfireFuel) {
+        console.warn('CampfireSystem not initialized');
+        return;
+    }
+
+    const result = GameEngine.selectCampfireFuel(fuelId || null);
+
+    if (result.success) {
+        console.log(`🔥 ${result.message}`);
+
+        // If fuel is selected and we're in recovery mode, start burning
+        if (fuelId && GameEngine.state.activeNavigation?.isRecovering) {
+            GameEngine.consumeFuel();
+        }
+    } else {
+        console.warn(`⚠️ ${result.message}`);
+    }
+
+    // Force navigation UI update
+    NavigationUI.lastNavigationState = null;
+    UICore.update();
+}
+
+/**
+ * Manually add fuel to campfire
+ */
+function addFuelToCampfire() {
+    if (!GameEngine.consumeFuel) {
+        console.warn('CampfireSystem not initialized');
+        return;
+    }
+
+    const result = GameEngine.consumeFuel();
+
+    if (result.success) {
+        console.log(`🔥 Added ${result.fuelName} to campfire (+${result.burnTime}s)`);
+    } else {
+        console.warn(`⚠️ Cannot add fuel: ${result.reason}`);
+    }
+
+    UICore.update();
+}
+
+/**
+ * Extinguish campfire
+ */
+function extinguishCampfire() {
+    if (!GameEngine.extinguishCampfire) {
+        console.warn('CampfireSystem not initialized');
+        return;
+    }
+
+    GameEngine.extinguishCampfire();
+    UICore.update();
+}
+
+/**
+ * Open fuel selection modal for campfire
+ */
+function openFuelModal(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+
+    const modal = document.getElementById("equipModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalGrid = document.getElementById("modalItemGrid");
+
+    modalTitle.textContent = 'Select Fuel';
+
+    // Get all fuel items from bank (stackable items - fuel is not instanced)
+    // Note: stackable storage is { itemId: quantity } NOT { itemId: { quantity } }
+    const stackableItems = GameEngine.state.bank.stackable || {};
+    const fuelItems = [];
+
+    for (let itemId in stackableItems) {
+        const def = ItemRegistry.getItem(itemId);
+        const qty = stackableItems[itemId] || 0; // Direct number, not object
+
+        if (!def || qty === 0) continue;
+
+        // Check if item is fuel (fuel: true property)
+        if (def.fuel === true) {
+            console.log(`🔥 [openFuelModal] Found fuel item: ${itemId}, qty=${qty}`);
+            fuelItems.push({
+                itemId: itemId,
+                def: def,
+                quantity: qty
+            });
+        }
+    }
+
+    // Sort by tier (higher tier fuels first)
+    fuelItems.sort((a, b) => (b.def.tier || 0) - (a.def.tier || 0));
+
+    // Render items
+    let html = "";
+
+    if (fuelItems.length === 0) {
+        html = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #888;">
+            No fuel items in bank.<br>
+            <span style="font-size: 0.9em;">Gather wood or craft charcoal to use as fuel.</span>
+        </div>`;
+    } else {
+        for (let item of fuelItems) {
+            const stats = item.def.fuelStats || {};
+            const efficiency = stats.efficiency || 1.0;
+            const burnTime = stats.burnTime || 30;
+
+            // Custom card for fuel showing stats
+            html += `
+                <div class="item-card tier-${item.def.tier || 1}"
+                     onclick="equipFuelItem('${item.itemId}')"
+                     style="cursor: pointer; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid #444;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="font-size: 2.5rem;">${item.def.icon || '🪵'}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; color: #fff;">${item.def.name}</div>
+                            <div style="color: #FF9800; font-size: 0.9em;">×${item.quantity}</div>
+                            <div style="font-size: 0.8em; color: #aaa; margin-top: 4px;">
+                                🔥 ${burnTime}s burn • ⚡ ${(efficiency * 100).toFixed(0)}% efficiency
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    modalGrid.innerHTML = html;
+    modal.style.display = "block";
+    modal.dataset.currentSlot = 'fuel';
+    modal.dataset.fuelSelection = 'true';
+}
+
+/**
+ * Equip/select a fuel item for campfire
+ */
+function equipFuelItem(itemId) {
+    const def = ItemRegistry.getItem(itemId);
+    if (!def) {
+        console.error('❌ Fuel item not found:', itemId);
+        return;
+    }
+
+    // Validate item is fuel
+    if (def.fuel !== true) {
+        console.error(`❌ ${def.name} is not a fuel item`);
+        return;
+    }
+
+    // Check we have quantity in bank (stackable is { itemId: number })
+    const bankQty = GameEngine.state.bank.stackable?.[itemId] || 0;
+    if (bankQty <= 0) {
+        console.error(`❌ No ${def.name} in bank`);
+        return;
+    }
+
+    // Select this fuel via CampfireSystem
+    if (GameEngine.selectCampfireFuel) {
+        const result = GameEngine.selectCampfireFuel(itemId);
+        if (result.success) {
+            console.log(`🔥 Selected ${def.name} as campfire fuel`);
+
+            // If in recovery mode, start burning immediately
+            if (GameEngine.state.activeNavigation?.isRecovering) {
+                GameEngine.consumeFuel();
+            }
+        } else {
+            console.warn(`⚠️ ${result.message}`);
+        }
+    }
+
+    closeEquipModal();
+
+    // Update navigation UI
+    if (typeof NavigationUI !== 'undefined') {
+        NavigationUI.lastNavigationState = null;
+        NavigationUI.updateNavigation();
+    }
+}
+
+/**
+ * Open modal to select food for the shared equipment slot
+ * Food is shared between combat loadout and navigation
+ */
+function openFoodEquipModal(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+
+    const modal = document.getElementById("equipModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalGrid = document.getElementById("modalItemGrid");
+
+    modalTitle.textContent = 'Select Food';
+
+    // Get all consumable food items from bank
+    // DualBankSystem stores stackable items as { itemId: quantity }
+    const stackableItems = GameEngine.state.bank.stackable || {};
+    const foodItems = [];
+
+    for (let itemId in stackableItems) {
+        const def = ItemRegistry.getItem(itemId);
+        const qty = stackableItems[itemId] || 0;
+        if (!def || qty === 0) continue;
+
+        // Check if item is food (category: consumable with healing or food tags)
+        const isFood = def.category === 'consumable' ||
+                       (def.tags && (def.tags.includes('food') || def.tags.includes('consumable'))) ||
+                       def.itemType === 'food' ||
+                       (def.effects && def.effects.heal);
+
+        if (isFood) {
+            console.log(`🍖 [openFoodEquipModal] Found food item: ${itemId}, qty=${qty}`);
+            foodItems.push({
+                itemId: itemId,
+                def: def,
+                quantity: qty
+            });
+        }
+    }
+
+    // Sort by tier/rarity (higher first)
+    foodItems.sort((a, b) => (b.def.tier || 0) - (a.def.tier || 0));
+
+    // Render items
+    let html = '';
+    if (foodItems.length === 0) {
+        html = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #888;">
+            No food items in bank.<br>
+            <span style="font-size: 0.9em;">Cook food or buy rations from merchants.</span>
+        </div>`;
+    } else {
+        for (let item of foodItems) {
+            const healAmount = item.def.effects?.heal || item.def.healAmount || '?';
+
+            html += `
+                <div class="item-card tier-${item.def.tier || 1}"
+                     onclick="equipFoodItem('${item.itemId}')"
+                     style="cursor: pointer; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid #444;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="font-size: 2.5rem;">${item.def.icon || '🍖'}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; color: #fff;">${item.def.name}</div>
+                            <div style="color: #4caf50; font-size: 0.9em;">×${item.quantity}</div>
+                            <div style="font-size: 0.8em; color: #aaa; margin-top: 4px;">
+                                ❤️ +${healAmount} HP
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    modalGrid.innerHTML = html;
+    modal.style.display = "block";
+    modal.dataset.currentSlot = 'food';
+    modal.dataset.foodSelection = 'true';
+}
+
+/**
+ * Equip a food item to the shared equipment.food slot
+ * Transfers quantity from bank to equipment slot
+ */
+function equipFoodItem(itemId) {
+    const def = ItemRegistry.getItem(itemId);
+    if (!def) {
+        console.error('❌ Food item not found:', itemId);
+        return;
+    }
+
+    // Check we have quantity in bank (stackable is { itemId: number })
+    const bankQty = GameEngine.state.bank.stackable?.[itemId] || 0;
+    if (bankQty <= 0) {
+        console.error(`❌ No ${def.name} in bank`);
+        return;
+    }
+
+    // Transfer all quantity from bank to equipment.food slot
+    // equipment.food format: { itemId: string, quantity: number }
+    GameEngine.state.equipment.food = {
+        itemId: itemId,
+        quantity: bankQty
+    };
+
+    // Remove from bank stackable
+    delete GameEngine.state.bank.stackable[itemId];
+
+    console.log(`🍖 Equipped ${def.name} x${bankQty} to food slot`);
+
+    closeEquipModal();
+
+    // Update navigation UI
+    if (typeof NavigationUI !== 'undefined') {
+        NavigationUI.lastNavigationState = null;
+        NavigationUI.updateNavigation();
+    }
+
+    // Update combat/loadout UI if visible
+    if (typeof LoadoutContainer !== 'undefined' && LoadoutContainer.render) {
+        LoadoutContainer.render();
+    }
 }
 
 // =============================================================================
@@ -2859,15 +3192,123 @@ function spawnNavResources() {
         itemId: 'lightRations'
     };
 
+    // Also spawn all fuel types for campfire testing
+    const fuelItems = ['pinewood', 'hardwood', 'charcoal'];
+    for (const fuelId of fuelItems) {
+        if (!GameEngine.state.bank.items[fuelId]) {
+            GameEngine.state.bank.items[fuelId] = {
+                itemId: fuelId,
+                quantity: 0
+            };
+        }
+        GameEngine.state.bank.items[fuelId].quantity += 100;
+    }
+
+    // Auto-select best fuel if CampfireSystem is available
+    if (GameEngine.selectCampfireFuel) {
+        GameEngine.selectCampfireFuel('pinewood');
+    }
+
     console.log("✅ Spawned navigation resources:");
     console.log("   🍖 Light Rations: 9999 (equipped in food slot)");
-    console.log("   🪵 Pinewood: 9999");
-    console.log("   You can now navigate/explore regions!");
+    console.log("   🪵 Pinewood: 9999 + 100 (selected fuel)");
+    console.log("   🪵 Hardwood: 100");
+    console.log("   ⬛ Charcoal: 100");
+    console.log("   You can now navigate/explore regions with campfire!");
 
     // Update UI
     if (typeof UI !== 'undefined' && UI.updateAll) {
         UI.updateAll();
     }
+}
+
+// =============================================================================
+// CAMPFIRE DEV TOOLS
+// =============================================================================
+
+/**
+ * Add fuel to bank for testing
+ */
+function devAddFuel(fuelId, quantity = 100) {
+    if (!ItemRegistry) {
+        console.warn('ItemRegistry not available');
+        return;
+    }
+
+    const fuelDef = ItemRegistry.getItem(fuelId);
+    if (!fuelDef || fuelDef.fuel !== true) {
+        console.warn(`${fuelId} is not a valid fuel item (needs fuel: true)`);
+        return;
+    }
+
+    if (!GameEngine.state.bank.items[fuelId]) {
+        GameEngine.state.bank.items[fuelId] = {
+            itemId: fuelId,
+            quantity: 0
+        };
+    }
+    GameEngine.state.bank.items[fuelId].quantity += quantity;
+
+    console.log(`🔥 Added ${quantity}x ${fuelDef.name} to bank`);
+    UICore.update();
+}
+
+/**
+ * List all owned fuel items
+ */
+function devListFuels() {
+    if (!GameEngine.getOwnedFuelItems) {
+        console.warn('CampfireSystem not initialized');
+        return;
+    }
+
+    const fuels = GameEngine.getOwnedFuelItems();
+    console.log('\n=== OWNED FUEL ITEMS ===');
+    for (const fuel of fuels) {
+        const stats = fuel.definition.fuelStats || {};
+        console.log(`  ${fuel.definition.icon || '🪵'} ${fuel.definition.name} x${fuel.quantity}`);
+        console.log(`     Burn: ${stats.burnTime || 30}s | Warmth: ${stats.warmth || 5} | Efficiency: ${stats.efficiency || 1.0}x`);
+    }
+    console.log('========================\n');
+}
+
+/**
+ * Show campfire status
+ */
+function devCampfireStatus() {
+    if (!GameEngine.getCampfireStats) {
+        console.warn('CampfireSystem not initialized');
+        return;
+    }
+
+    const stats = GameEngine.getCampfireStats();
+    console.log('\n=== CAMPFIRE STATUS ===');
+    console.log(`  Active: ${stats.active}`);
+    console.log(`  Selected Fuel: ${stats.selectedFuelName} (${stats.selectedFuelId || 'none'})`);
+    console.log(`  Fuel in Bank: ${stats.fuelInBank}`);
+    console.log(`  Fuel Remaining: ${Math.floor(stats.fuelRemaining)}s`);
+    console.log(`  Warmth: ${stats.warmth}`);
+    console.log(`  Efficiency: ${stats.efficiency}x`);
+    console.log('=======================\n');
+}
+
+/**
+ * Force start campfire with selected fuel
+ */
+function devStartCampfire() {
+    if (!GameEngine.consumeFuel) {
+        console.warn('CampfireSystem not initialized');
+        return;
+    }
+
+    const result = GameEngine.consumeFuel();
+    if (result.success) {
+        console.log(`🔥 Campfire started with ${result.fuelName}`);
+        console.log(`   Burn time: ${result.totalBurnTime}s`);
+    } else {
+        console.warn(`Could not start campfire: ${result.reason}`);
+    }
+    UICore.update();
 }
 
 // =============================================================================
@@ -3254,6 +3695,95 @@ const GlobalEventDelegation = {
         'debug-test-unlimited-bank'() {
             if (typeof debug !== 'undefined' && debug.testUnlimitedBank) {
                 debug.testUnlimitedBank();
+            }
+        },
+
+        // Tutorial & Tour System
+        'start-tutorial'() {
+            // Hide the welcome modal first
+            if (typeof WelcomeModal !== 'undefined' && WelcomeModal.hide) {
+                WelcomeModal.hide();
+            }
+
+            // Switch to missions view
+            if (typeof UICore !== 'undefined' && UICore.switchView) {
+                UICore.switchView('missions');
+            }
+
+            // Start mission 101 after a brief delay
+            setTimeout(() => {
+                if (typeof GameEngine !== 'undefined' && GameEngine.startMission) {
+                    GameEngine.startMission('mission_101');
+                    console.log('🎓 Starting tutorial mission 101');
+                }
+            }, 500);
+        },
+
+        'skip-tutorial'() {
+            // Hide the welcome modal
+            if (typeof WelcomeModal !== 'undefined' && WelcomeModal.hide) {
+                WelcomeModal.hide();
+            }
+
+            // Mark tutorial as skipped in state
+            if (typeof GameEngine !== 'undefined' && GameEngine.state) {
+                if (!GameEngine.state.flags) {
+                    GameEngine.state.flags = {};
+                }
+                GameEngine.state.flags.tutorialSkipped = true;
+            }
+
+            // Grant starter kit so player isn't left empty-handed
+            if (typeof GameEngine !== 'undefined' && GameEngine.grantStarterKit) {
+                GameEngine.grantStarterKit();
+            }
+
+            // Switch to overview
+            if (typeof UICore !== 'undefined' && UICore.switchView) {
+                UICore.switchView('overview');
+            }
+
+            console.log('⏭️ Tutorial skipped - starter kit granted');
+        },
+
+        'skip-tutorial-spotlight'() {
+            // Deactivate the spotlight system
+            if (typeof TutorialSpotlight !== 'undefined' && TutorialSpotlight.deactivate) {
+                TutorialSpotlight.deactivate();
+            }
+
+            // Abandon current tutorial mission if active
+            if (typeof GameEngine !== 'undefined' && GameEngine.state?.missions?.active) {
+                const activeTutorial = GameEngine.state.missions.active.find(id =>
+                    id.startsWith('mission_10')
+                );
+                if (activeTutorial && GameEngine.abandonMission) {
+                    GameEngine.abandonMission(activeTutorial);
+                }
+            }
+
+            // Grant starter kit
+            if (typeof GameEngine !== 'undefined' && GameEngine.grantStarterKit) {
+                GameEngine.grantStarterKit();
+            }
+
+            console.log('⏭️ Tutorial spotlight skipped');
+        },
+
+        'close-tour'() {
+            // Hide the tour overlay and optionally abandon mission
+            if (typeof TourOverlay !== 'undefined' && TourOverlay.hide) {
+                TourOverlay.hide();
+            }
+            if (typeof TutorialSpotlight !== 'undefined' && TutorialSpotlight.deactivate) {
+                TutorialSpotlight.deactivate();
+            }
+        },
+
+        'continue-tour'() {
+            // Hide the current tour tooltip (progress is tracked automatically)
+            if (typeof TourOverlay !== 'undefined' && TourOverlay.hide) {
+                TourOverlay.hide();
             }
         }
     }

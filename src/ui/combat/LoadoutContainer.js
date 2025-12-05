@@ -26,28 +26,39 @@ const LoadoutContainer = {
     },
 
     /**
-     * Render equipment grid (card-based sections)
+     * Render equipment grid (3-1-3 format: Left 3 slots | Middle 1 tall armor | Right 3 slots)
      */
     renderEquipmentGrid(player) {
         const equipment = player.equipment || {};
+        const attrs = player.combatAttributes || {};
+        const intellect = attrs.intellect || 0;
 
         return `
             <div class="loadout-equipment">
-                <!-- Core Equipment Card -->
+                <!-- Core Equipment Card (3-1-3 Layout) -->
                 <div class="loadout-section-card">
                     <div class="loadout-section-header">
                         <span class="section-icon">🎽</span>
                         <span class="section-title">Equipment</span>
                     </div>
                     <div class="loadout-section-content">
-                        <div class="equipment-slots-grid">
-                            ${this.renderEquipmentSlot('weapon', equipment.weapon, '⚔️')}
-                            ${this.renderEquipmentSlot('armor', equipment.armor, '🛡️')}
-                            ${this.renderEquipmentSlot('back', equipment.back, '🎒')}
-                            ${this.renderEquipmentSlot('gloves', equipment.gloves, '🧤')}
-                            ${this.renderEquipmentSlot('neck', equipment.neck, '📿')}
-                            ${this.renderEquipmentSlot('boots', equipment.boots, '👢')}
-                            ${this.renderEquipmentSlot('ring', equipment.ring, '💍')}
+                        <div class="combat-loadout-grid">
+                            <!-- Left Column: Weapon, Gloves, Boots (3 slots) -->
+                            <div class="loadout-column">
+                                ${this.renderEquipmentSlot('weapon', equipment.weapon, '⚔️')}
+                                ${this.renderEquipmentSlot('gloves', equipment.gloves, '🧤')}
+                                ${this.renderEquipmentSlot('boots', equipment.boots, '👢')}
+                            </div>
+                            <!-- Middle Column: Armor Set (1 tall slot) -->
+                            <div class="loadout-column loadout-column--armor">
+                                ${this.renderArmorSlot(equipment.armor)}
+                            </div>
+                            <!-- Right Column: Back, Neck, Ring (3 slots) -->
+                            <div class="loadout-column">
+                                ${this.renderEquipmentSlot('back', equipment.back, '🎒')}
+                                ${this.renderEquipmentSlot('neck', equipment.neck, '📿')}
+                                ${this.renderEquipmentSlot('ring', equipment.ring, '💍')}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -59,10 +70,10 @@ const LoadoutContainer = {
                         <span class="section-title">Consumables</span>
                     </div>
                     <div class="loadout-section-content">
-                        <div class="consumable-slots-grid">
-                            ${this.renderConsumableSlot('ammo', equipment.ammo, '🎯', player.combat?.playerAmmo?.currentAmmo)}
+                        <div class="consumables-row">
                             ${this.renderConsumableSlot('food', equipment.food, '🍖', player.combat?.equippedFoodQuantity)}
-                            ${this.renderConsumableSlot('potion', equipment.potion, '⚗️', null)}
+                            ${this.renderConsumableSlot('potion', equipment.potion, '🧪', null)}
+                            ${this.renderConsumableSlot('ammo', equipment.ammo, '🎯', player.combat?.playerAmmo?.currentAmmo)}
                         </div>
                     </div>
                 </div>
@@ -74,13 +85,66 @@ const LoadoutContainer = {
                         <span class="section-title">Technology</span>
                     </div>
                     <div class="loadout-section-content">
-                        <div class="tech-slots-grid">
-                            ${this.renderTechSlot('tech1', equipment.tech1, 0)}
-                            ${this.renderTechSlot('tech2', equipment.tech2, 3)}
-                            ${this.renderTechSlot('tech3', equipment.tech3, 6)}
-                            ${this.renderTechSlot('tech4', equipment.tech4, 9)}
+                        <div class="tech-row">
+                            ${this.renderTechSlot('tech1', equipment.tech1, 0, intellect)}
+                            ${this.renderTechSlot('tech2', equipment.tech2, 3, intellect)}
+                            ${this.renderTechSlot('tech3', equipment.tech3, 6, intellect)}
+                            ${this.renderTechSlot('tech4', equipment.tech4, 9, intellect)}
                         </div>
                     </div>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Render tall armor slot (fills middle column)
+     * @param {string|object|null} item - Instance ID string, item object, or null
+     */
+    renderArmorSlot(item) {
+        if (!item) {
+            return `
+                <div class="loadout-slot loadout-slot--armor empty" data-slot="armor">
+                    <div class="slot-icon-container">
+                        <span class="slot-icon">🛡️</span>
+                    </div>
+                    <div class="slot-info">
+                        <span class="slot-label">Armor Set</span>
+                        <span class="slot-status">Empty</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        const itemId = typeof item === 'string' ? item : (item.id || item.instanceId || item.itemId || item);
+
+        const itemDef = typeof ItemIdUtils !== 'undefined'
+            ? ItemIdUtils.getItemDefinition(itemId)
+            : (typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(itemId) : null);
+
+        if (!itemDef) {
+            return this.renderArmorSlot(null);
+        }
+
+        // Get rarity from instance if available, otherwise from item definition
+        const instancedItem = GameEngine.state.bank?.instanced?.[itemId];
+        const rarity = instancedItem?.rarity || itemDef.rarity || 'common';
+        const rarityData = GameEngine.definitions?.RARITY_TIERS?.[rarity] || { color: '#9e9e9e' };
+        const rarityColor = rarityData.color;
+        const hasGlow = rarityData.glow;
+
+        return `
+            <div class="loadout-slot loadout-slot--armor filled rarity-${rarity} ${hasGlow ? 'loadout-slot--glow' : ''}"
+                 data-slot="armor"
+                 onclick="ItemModal.open('${itemId}')"
+                 style="--rarity-color: ${rarityColor};">
+                <div class="slot-icon-container">
+                    <span class="slot-icon">${itemDef.icon || '🛡️'}</span>
+                </div>
+                <div class="slot-info">
+                    <span class="slot-name">${itemDef.name}</span>
+                    <span class="slot-rarity" style="color: ${rarityColor};">${this.capitalizeFirst(rarity)}</span>
+                    ${this.renderItemStats(itemDef)}
                 </div>
             </div>
         `;
@@ -110,7 +174,8 @@ const LoadoutContainer = {
         }
 
         // Handle both string instance IDs and object formats
-        const itemId = typeof item === 'string' ? item : (item.instanceId || item.itemId || item);
+        // Compiled objects have 'id', other objects may have 'instanceId' or 'itemId'
+        const itemId = typeof item === 'string' ? item : (item.id || item.instanceId || item.itemId || item);
 
         // Use ItemIdUtils to resolve instance ID to item definition
         const itemDef = typeof ItemIdUtils !== 'undefined'
@@ -121,15 +186,24 @@ const LoadoutContainer = {
             return this.renderEquipmentSlot(slotId, null, defaultIcon);
         }
 
-        const rarityClass = itemDef.rarity ? `rarity-${itemDef.rarity}` : '';
+        // Get rarity from instance if available, otherwise from item definition
+        const instancedItem = GameEngine.state.bank?.instanced?.[itemId];
+        const rarity = instancedItem?.rarity || itemDef.rarity || 'common';
+        const rarityData = GameEngine.definitions?.RARITY_TIERS?.[rarity] || { color: '#9e9e9e' };
+        const rarityColor = rarityData.color;
+        const hasGlow = rarityData.glow;
 
         return `
-            <div class="loadout-slot filled ${rarityClass}" data-slot="${slotId}" onclick="ItemModal.open('${itemId}')">
+            <div class="loadout-slot filled rarity-${rarity} ${hasGlow ? 'loadout-slot--glow' : ''}"
+                 data-slot="${slotId}"
+                 onclick="ItemModal.open('${itemId}')"
+                 style="--rarity-color: ${rarityColor};">
                 <div class="slot-icon-container">
                     <span class="slot-icon">${itemDef.icon || defaultIcon}</span>
                 </div>
                 <div class="slot-info">
                     <span class="slot-name">${itemDef.name}</span>
+                    <span class="slot-rarity" style="color: ${rarityColor};">${this.capitalizeFirst(rarity)}</span>
                     ${this.renderItemStats(itemDef)}
                 </div>
             </div>
@@ -161,7 +235,8 @@ const LoadoutContainer = {
         }
 
         // Handle both string instance IDs and object formats
-        const itemId = typeof item === 'string' ? item : (item.instanceId || item.itemId || item);
+        // Compiled food objects have 'id', other objects may have 'instanceId' or 'itemId'
+        const itemId = typeof item === 'string' ? item : (item.id || item.instanceId || item.itemId || item);
 
         // Use ItemIdUtils to resolve instance ID to item definition
         const itemDef = typeof ItemIdUtils !== 'undefined'
@@ -173,6 +248,7 @@ const LoadoutContainer = {
         }
 
         // Get quantity from item object if it exists
+        // Compiled food objects use 'quantity' directly
         const itemQuantity = typeof item === 'object' ? (item.quantity || 0) : 0;
         const displayQuantity = quantity !== null && quantity !== undefined ? quantity : itemQuantity;
 
@@ -192,9 +268,9 @@ const LoadoutContainer = {
     /**
      * Render technology slot (card-based style)
      */
-    renderTechSlot(slotId, item, requiredInt) {
+    renderTechSlot(slotId, item, requiredInt, currentInt = null) {
         const player = GameEngine.state;
-        const intellect = player.combatAttributes?.intellect || player.attributes?.intellect || 0;
+        const intellect = currentInt !== null ? currentInt : (player.combatAttributes?.intellect || player.attributes?.intellect || 0);
         const isLocked = intellect < requiredInt;
         const slotNumber = slotId.replace('tech', '');
 
@@ -227,7 +303,8 @@ const LoadoutContainer = {
         }
 
         // Handle both string instance IDs and object formats
-        const itemId = typeof item === 'string' ? item : (item.instanceId || item.itemId || item);
+        // Compiled objects have 'id', other objects may have 'instanceId' or 'itemId'
+        const itemId = typeof item === 'string' ? item : (item.id || item.instanceId || item.itemId || item);
 
         // Use ItemIdUtils to resolve instance ID to item definition
         const itemDef = typeof ItemIdUtils !== 'undefined'
@@ -280,8 +357,8 @@ const LoadoutContainer = {
      * Render stats panel (card-based sidebar)
      */
     renderStatsPanel(player, compiledStats) {
-        const damage = compiledStats.damage;
-        const defense = compiledStats.defense;
+        const damage = compiledStats?.damage || { minDamage: 0, maxDamage: 0, accuracy: 0, critRating: 0, ratings: {} };
+        const defense = compiledStats?.defense || { evasion: 0, armorRating: 0, damageReduction: 0, ratings: {} };
         const weight = this.calculateWeight(player);
         const weightLimit = typeof CombatTimers !== 'undefined'
             ? CombatTimers.calculateWeightLimit(player)
@@ -474,7 +551,8 @@ const LoadoutContainer = {
         // Helper to get item definition from slot value (string or object)
         const getItemDefFromSlot = (slotValue) => {
             if (!slotValue) return null;
-            const itemId = typeof slotValue === 'string' ? slotValue : (slotValue.instanceId || slotValue.itemId || slotValue);
+            // Compiled objects have 'id', other objects may have 'instanceId' or 'itemId'
+            const itemId = typeof slotValue === 'string' ? slotValue : (slotValue.id || slotValue.instanceId || slotValue.itemId || slotValue);
             return typeof ItemIdUtils !== 'undefined'
                 ? ItemIdUtils.getItemDefinition(itemId)
                 : ItemRegistry.getItem(itemId);

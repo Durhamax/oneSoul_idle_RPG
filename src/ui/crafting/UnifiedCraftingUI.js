@@ -27,8 +27,8 @@ const UnifiedCraftingUI = {
 
         // Subscribe to relevant events
         if (typeof EventBus !== 'undefined') {
-            EventBus.on('craft-completed', this.onCraftCompleted.bind(this));
-            EventBus.on('craft-started', this.onCraftStarted.bind(this));
+            EventBus.on('crafting-complete', this.onCraftCompleted.bind(this));
+            EventBus.on('crafting-started', this.onCraftStarted.bind(this));
             EventBus.on('workstation-upgraded', this.onWorkstationUpgraded.bind(this));
         }
     },
@@ -183,6 +183,19 @@ const UnifiedCraftingUI = {
 
     onCraftCompleted(data) {
         console.log('[UnifiedCraftingUI] Craft completed:', data);
+        const { outputs, recipe, skill } = data;
+
+        // Show XP drop notification
+        if (recipe) {
+            const xp = recipe.experienceGain || recipe.expReward || 10;
+            this.showXPDrop(skill, xp);
+        }
+
+        // Show item added notifications
+        if (outputs && outputs.length > 0) {
+            this.showItemNotifications(outputs);
+        }
+
         // Refresh current tab to show updated state
         this.renderCurrentTab();
         CraftQueue.update();
@@ -212,7 +225,7 @@ const UnifiedCraftingUI = {
             smithing: '🔨',
             mechanics: '⚙️',
             electronics: '⚡',
-            textiles: '🧵',
+            tailoring: '🧵',
             chemistry: '⚗️',
             cooking: '🍳',
             engineering: '🔬'
@@ -228,7 +241,7 @@ const UnifiedCraftingUI = {
             smithing: '#8B4513',
             mechanics: '#708090',
             electronics: '#00CED1',
-            textiles: '#8B008B',
+            tailoring: '#8B008B',
             chemistry: '#32CD32',
             cooking: '#FF6347'
         };
@@ -241,6 +254,82 @@ const UnifiedCraftingUI = {
     capitalizeFirst(str) {
         if (!str) return '';
         return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+
+    /**
+     * Show XP drop notification
+     */
+    showXPDrop(skill, xp) {
+        const container = document.getElementById('crafting-content');
+        if (!container) return;
+
+        const xpDrop = document.createElement('div');
+        xpDrop.className = 'crafting-xp-drop';
+        xpDrop.innerHTML = `+${xp} ${this.capitalizeFirst(skill)} XP`;
+        xpDrop.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #4caf50;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+            pointer-events: none;
+            z-index: 1000;
+            animation: craftXpFloat 1.5s ease-out forwards;
+        `;
+
+        container.style.position = 'relative';
+        container.appendChild(xpDrop);
+
+        // Remove after animation
+        setTimeout(() => xpDrop.remove(), 1500);
+    },
+
+    /**
+     * Show item added notifications
+     */
+    showItemNotifications(outputs) {
+        const container = document.getElementById('crafting-content');
+        if (!container) return;
+
+        outputs.forEach((output, index) => {
+            const item = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(output.itemId) : null;
+            const itemName = item?.name || output.itemId;
+            const quantity = output.quantity || 1;
+
+            const notification = document.createElement('div');
+            notification.className = 'crafting-item-notification';
+            notification.innerHTML = `
+                <span class="item-icon">${item?.icon || '📦'}</span>
+                <span class="item-text">+${quantity} ${itemName}</span>
+            `;
+            notification.style.cssText = `
+                position: absolute;
+                top: calc(40% + ${index * 30}px);
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(56, 142, 60, 0.9));
+                color: white;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+                pointer-events: none;
+                z-index: 999;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+                animation: craftItemSlide 2s ease-out forwards;
+            `;
+
+            container.style.position = 'relative';
+            container.appendChild(notification);
+
+            // Remove after animation
+            setTimeout(() => notification.remove(), 2000);
+        });
     }
 };
 

@@ -15,6 +15,7 @@ const GameEngine = {
         currencies: {
             gold: 0,
             medals: 0,
+            medalFragments: 0,  // Dropped from combat, used for perk grid
             tomes: 0,
             gems: 0
         },
@@ -350,7 +351,7 @@ const GameEngine = {
                 smithing: 0,
                 mechanics: 0,
                 electronics: 0,
-                textiles: 0
+                tailoring: 0
             },
 
             // Specialization paths (one per skill, mutually exclusive)
@@ -626,6 +627,7 @@ const GameEngine = {
 
         // Initialize all systems
         InventorySystem.init(this);
+        DualBankSystem.initialize();  // Initialize dual-bank storage structure
         SkillSystem.init(this);
         EquipmentSystem.init(this);
         EquipmentPresetSystem.init(this);
@@ -639,6 +641,7 @@ const GameEngine = {
         // RestRecoverySystem.init(this);  // DEPRECATED - System removed
         WorldMapSystem.init(this);  // Initialize world map system
         NavigationSystem.init(this);
+        CampfireSystem.init(this);  // Initialize campfire fuel system for navigation recovery
         NodeCollectionSystem.init(this);
         // HarvestSystem.init(this);  // DEPRECATED - Replaced by gatheringSystem.js
         // CombatSystem.init(this);  // MOVED - Now initialized earlier with other core systems
@@ -882,7 +885,7 @@ const GameEngine = {
         }
 
         // Add new crafting skills if missing (backward compatibility)
-        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'textiles', 'engineering'];
+        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'tailoring', 'engineering'];
         for (let skill of craftingSkills) {
             if (!this.state.skills[skill]) {
                 this.state.skills[skill] = { level: 1, exp: 0, unlocked: true };
@@ -900,7 +903,7 @@ const GameEngine = {
                     smithing: 0,
                     mechanics: 0,
                     electronics: 0,
-                    textiles: 0
+                    tailoring: 0
                 },
                 paths: {},
                 reversedRecipes: []
@@ -919,7 +922,7 @@ const GameEngine = {
                     smithing: 0,
                     mechanics: 0,
                     electronics: 0,
-                    textiles: 0
+                    tailoring: 0
                 },
                 paths: {},
                 reversedRecipes: []
@@ -1437,7 +1440,142 @@ const GameEngine = {
     },
 
     /**
+     * Check if this is a new player (no prior save data)
+     * @returns {boolean} True if new player, false if returning player
+     */
+    isNewPlayer() {
+        // Check for existence of save data in localStorage
+        const saveData = localStorage.getItem('oneSoulSaveData');
+        if (!saveData) return true;
+
+        // Additional check: if save exists but missions.completed is empty, treat as new
+        try {
+            const parsed = JSON.parse(saveData);
+            if (!parsed.missions || !parsed.missions.completed || parsed.missions.completed.length === 0) {
+                return true;
+            }
+        } catch (e) {
+            return true;
+        }
+
+        return false;
+    },
+
+    /**
+     * Initialize a new player with tutorial mission available
+     * Called when isNewPlayer() returns true
+     */
+    initializeNewPlayer() {
+        console.log('🆕 New player detected, initializing first-time experience...');
+
+        // Ensure mission_101 is in available missions
+        if (!this.state.missions.available.includes('mission_101')) {
+            this.state.missions.available.push('mission_101');
+            console.log('📋 Added mission_101 to available missions');
+        }
+
+        // Pre-discover Tier 1 nodes in Region 1 (The Cradle)
+        this.initializeTier1Nodes();
+
+        // Emit event for WelcomeModal to show
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('new-player-initialized');
+            console.log('📤 Emitted new-player-initialized event');
+        }
+    },
+
+    /**
+     * Initialize Tier 1 nodes with pre-discovered state
+     * All 6 starting nodes are available from the beginning with capacity 3
+     */
+    initializeTier1Nodes() {
+        const STARTING_REGION = 'region_-3_-4';  // The Cradle
+        const TIER1_NODES = ['node_1_1', 'node_1_2', 'node_1_3', 'node_1_4', 'node_1_5', 'node_1_6'];
+        const INITIAL_HEALTH_BONUS = 10;  // Same as discovering in one region
+
+        // Initialize globalNodes if needed
+        if (!this.state.globalNodes) {
+            this.state.globalNodes = {};
+        }
+
+        // Pre-discover each Tier 1 node
+        TIER1_NODES.forEach(nodeId => {
+            // Only initialize if not already discovered
+            if (!this.state.globalNodes[nodeId]) {
+                this.state.globalNodes[nodeId] = {
+                    discovered: true,
+                    regionContributions: {
+                        [STARTING_REGION]: INITIAL_HEALTH_BONUS
+                    },
+                    totalHealthBonus: INITIAL_HEALTH_BONUS,
+                    firstDiscoveredAt: Date.now(),
+                    firstDiscoveredIn: STARTING_REGION
+                };
+
+                const nodeDef = typeof NodeRegistry !== 'undefined' ? NodeRegistry.get(nodeId) : null;
+                const nodeName = nodeDef ? nodeDef.name : nodeId;
+                console.log(`🌲 Pre-discovered ${nodeName} in The Cradle`);
+            }
+        });
+
+        console.log(`✅ Initialized ${TIER1_NODES.length} Tier 1 nodes for new player`);
+    },
+
+    /**
+     * Check for new player and initialize if needed
+     * Should be called after game loads
+     */
+    checkNewPlayer() {
+        if (this.isNewPlayer()) {
+            this.initializeNewPlayer();
+        } else {
+            console.log('👋 Returning player detected');
+        }
+    },
+
+    /**
+     * Grant starter kit to player
+     * Called when player skips tutorial or as part of tutorial rewards
+     */
+    grantStarterKit() {
+        console.log('📦 Granting starter kit...');
+
+        // Unity Scout Set (armor)
+        if (typeof InventorySystem !== 'undefined' && InventorySystem.addItem) {
+            InventorySystem.addItem.call(this, 'unityScoutSet', 1);
+        }
+
+        // 6 Gathering Tools
+        const tools = ['lightPickaxe', 'utilityHatchet', 'caneRod', 'huntingBlade', 'wovenBasket', 'lockpick'];
+        tools.forEach(toolId => {
+            if (typeof InventorySystem !== 'undefined' && InventorySystem.addItem) {
+                InventorySystem.addItem.call(this, toolId, 1);
+            }
+        });
+
+        // Some starter resources
+        const resources = [
+            { id: 'solfish', qty: 10 },
+            { id: 'mintyHerb', qty: 10 },
+            { id: 'pinewood', qty: 10 }
+        ];
+        resources.forEach(({ id, qty }) => {
+            if (typeof InventorySystem !== 'undefined' && InventorySystem.addItem) {
+                InventorySystem.addItem.call(this, id, qty);
+            }
+        });
+
+        // Update UI
+        if (typeof UICore !== 'undefined' && UICore.update) {
+            UICore.update();
+        }
+
+        console.log('📦 Starter kit granted');
+    },
+
+    /**
      * Reset the game to initial state
+     * Provides a complete fresh start for playtesting early game experience
      */
     reset() {
         // Stop the game loop
@@ -1445,23 +1583,32 @@ const GameEngine = {
             clearInterval(this.gameLoop);
         }
 
-        // Reset state to initial values
+        // Reset state to initial values - matching the full initial state structure
         this.state = {
+            // Currencies
             currencies: {
                 gold: 0,
-                medals: 0
+                medals: 0,
+                tomes: 0,
+                gems: 0
             },
+
+            // Legacy resources (kept for backwards compatibility)
             resources: {
                 ore: 0,
                 wood: 0,
                 health: 100,
                 maxHealth: 100
             },
+
+            // Legacy generators
             generators: {
                 miner: { level: 0, unlocked: true },
                 lumberjack: { level: 0, unlocked: true },
                 merchant: { level: 0, unlocked: true }
             },
+
+            // Legacy upgrades
             upgrades: {
                 goldBoost1: { level: 0, unlocked: true },
                 goldBoost2: { level: 0, unlocked: false },
@@ -1469,7 +1616,10 @@ const GameEngine = {
                 loggingEfficiency: { level: 0, unlocked: true },
                 merchantSkill: { level: 0, unlocked: false }
             },
+
+            // Skills - All reset to level 1
             skills: {
+                // Gathering Skills
                 navigation: { level: 1, exp: 0, unlocked: true },
                 mining: { level: 1, exp: 0, unlocked: true },
                 logging: { level: 1, exp: 0, unlocked: true },
@@ -1477,18 +1627,25 @@ const GameEngine = {
                 hunting: { level: 1, exp: 0, unlocked: true },
                 foraging: { level: 1, exp: 0, unlocked: true },
                 thieving: { level: 1, exp: 0, unlocked: true },
-                forging: { level: 1, exp: 0, unlocked: true },
-                machining: { level: 1, exp: 0, unlocked: true },
+                // Crafting Skills
                 cooking: { level: 1, exp: 0, unlocked: true },
                 chemistry: { level: 1, exp: 0, unlocked: true },
-                textiles: { level: 1, exp: 0, unlocked: true },
+                smithing: { level: 1, exp: 0, unlocked: true },
+                mechanics: { level: 1, exp: 0, unlocked: true },
+                electronics: { level: 1, exp: 0, unlocked: true },
+                tailoring: { level: 1, exp: 0, unlocked: true },
                 engineering: { level: 1, exp: 0, unlocked: true }
             },
+
+            // Character Level - Reset to level 1
             characterLevel: {
+                name: "Adventurer",
                 level: 1,
                 exp: 0,
                 unassignedAttributePoints: 0
             },
+
+            // Combat Attributes - All reset to 1
             combatAttributes: {
                 health: 1,
                 defense: 1,
@@ -1498,99 +1655,237 @@ const GameEngine = {
                 mobility: 1,
                 intellect: 1
             },
-            currentRegion: "region_0_0",
+
+            // Regions - Reset to starting region only
+            currentRegion: "region_-3_-4",
             regions: {
-                "region_0_0": {
+                "region_-3_-4": {
                     discovered: true,
                     discoveryProgress: 0,
                     discoveredLocations: [],
-                    discoveredNodeTypes: [],
-                    nodeHealthBonuses: {},
                     discoveredExitPaths: [],
-                    discoveredCraftingStations: []
+                    availableNodes: {}
                 }
             },
+
+            // Global discovery state - Clear all discoveries
+            globalNodes: {},
+            globalEnemies: {},
+
+            // Current Activity
             currentActivity: null,
+
+            // Active Navigation
             activeNavigation: {
                 isNavigating: false,
+                isRecovering: false,
                 lastNavigationTick: 0,
+                lastRecoveryTick: 0,
                 endurance: 100,
-                maxEndurance: 100
+                maxEndurance: 100,
+                restEquipment: {
+                    food: null,
+                    wood: null
+                }
             },
+
+            // Bank - Empty inventory
             bank: {
-                activeTab: "resources",
+                activeTab: "material",
                 tabs: {
-                    resources: {
-                        name: "Resources",
-                        icon: "📦",
-                        order: 0
-                    },
-                    equipment: {
-                        name: "Equipment",
-                        icon: "⚔️",
-                        order: 1
-                    },
-                    consumables: {
-                        name: "Consumables",
-                        icon: "🧪",
-                        order: 2
-                    }
+                    material: { name: "Materials", icon: "📦", order: 0 },
+                    weapon: { name: "Weapons", icon: "⚔️", order: 1 },
+                    ammo: { name: "Ammo", icon: "🎯", order: 2 },
+                    armor: { name: "Armor", icon: "🛡️", order: 3 },
+                    tool: { name: "Tools", icon: "⛏️", order: 4 },
+                    food: { name: "Food", icon: "🍖", order: 5 },
+                    potion: { name: "Potions", icon: "🧪", order: 6 },
+                    technology: { name: "Technology", icon: "⚡", order: 7 },
+                    perk: { name: "Perks", icon: "⭐", order: 8 },
+                    quest: { name: "Quest Items", icon: "📜", order: 9 }
                 },
                 items: {},
-                newItems: []
+                newItems: [],
+                equipmentInstances: {}
             },
+
+            // Equipment - All slots empty
             equipment: {
                 weapon: null,
-                shield: null,
-                helmet: null,
-                chest: null,
-                legs: null,
+                armor: null,
+                back: null,
+                gloves: null,
                 neck: null,
+                boots: null,
                 ring: null,
-                back: null
+                ammo: null,
+                food: null,
+                potion: null,
+                tech1: null,
+                tech2: null,
+                tech3: null,
+                tech4: null
             },
+
+            // Equipment Presets
+            equipmentPresets: {
+                presets: [null, null, null, null, null, null, null, null, null, null],
+                activePreset: null
+            },
+
+            // Combat System
             combat: {
                 player: {
                     baseAttackDamage: 5,
                     baseAttackSpeed: 1.0,
                     baseAccuracy: 75,
-                    currentHealth: 100,
-                    maxHealth: 100
+                    currentHealth: 500,
+                    maxHealth: 500
                 },
                 currentEnemy: null,
                 inCombat: false,
                 combatLog: [],
                 lastAttackTime: 0,
+                isAttacking: false,
+                playerAmmo: {
+                    currentAmmo: 0,
+                    magazineSize: 0,
+                    isReloading: false,
+                    reloadStartTime: 0,
+                    reloadDuration: 0
+                },
+                activeEffects: [],
+                autoEatThreshold: 0.5,
+                lastAutoEatTime: 0,
+                autoEatCooldown: 3000,
+                equippedFoodQuantity: 0,
+                currentStance: "offensive",
+                lastStanceChange: 0,
+                stanceChangeCooldown: 2000,
                 selectedEnemyId: null,
                 enemyDefeatedAt: null,
                 waitingForRespawn: false,
                 pendingLoot: []
             },
+
+            // Perks
             perks: {
                 damageBonus: 0,
                 speedBonus: 0,
                 accuracyBonus: 0,
                 healthBonus: 0
             },
+
+            // Node Collection System
             nodeCollection: {
                 activeNode: null,
                 selectedSkill: null
             },
+
+            // Crafting System
             crafting: {
                 discoveredStations: [],
                 activeCrafts: [],
                 selectedSkill: null,
-                autoRecipe: null
+                autoRecipe: null,
+                activeQueues: {
+                    smithing: [],
+                    mechanics: [],
+                    electronics: [],
+                    tailoring: [],
+                    chemistry: [],
+                    cooking: []
+                }
             },
+
+            // Workstations
+            workstations: {
+                smithing: { tier: 1 },
+                mechanics: { tier: 1 },
+                electronics: { tier: 1 },
+                tailoring: { tier: 1 },
+                chemistry: { tier: 1 },
+                cooking: { tier: 1 }
+            },
+
+            // Blueprints
+            blueprints: {
+                common: 0,
+                advanced: 0,
+                masterwork: 0
+            },
+
+            // Missions - All reset to initial state
+            missions: {
+                available: [],
+                active: [],
+                completed: [],
+                activeProgress: {},
+                cooldowns: {},
+                analytics: {
+                    totalStarted: 0,
+                    totalCompleted: 0,
+                    totalAbandoned: 0,
+                    byMission: {}
+                }
+            },
+
+            // Engineering System
+            engineering: {
+                tokens: 0,
+                workshops: {
+                    cooking: 0,
+                    chemistry: 0,
+                    smithing: 0,
+                    mechanics: 0,
+                    electronics: 0,
+                    tailoring: 0
+                },
+                paths: {},
+                reversedRecipes: [],
+                perfectionAttempts: 0,
+                perfectionSuccesses: 0,
+                technologiesAssembled: 0,
+                itemsSalvaged: 0
+            },
+
+            // Perk Grid System
+            perkGrid: {
+                unlockedNodes: [],
+                equippedMedals: {},
+                availableSlots: 1
+            },
+
+            // Timing
             gameTime: 0,
             lastTick: Date.now(),
             lastSave: null,
             tickRate: 100
         };
 
+        // Re-initialize mission availability for starting region
+        if (typeof MissionSystem !== 'undefined' && MissionSystem.updateAvailableMissions) {
+            // Delay slightly to ensure state is set
+            setTimeout(() => {
+                MissionSystem.updateAvailableMissions.call(this);
+                console.log("📋 Missions refreshed for new game");
+            }, 100);
+        }
+
         // Restart the game loop
         this.startGameLoop();
-        console.log("🔄 Game reset complete");
+
+        // Emit reset event for UI components
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('game:reset', {});
+
+            // Show welcome modal for new player experience (after a brief delay for UI to settle)
+            setTimeout(() => {
+                EventBus.emit('new-player-initialized', {});
+            }, 200);
+        }
+
+        console.log("🔄 Game reset complete - Fresh start from The Cradle (region_-3_-4)");
     }
 };
 

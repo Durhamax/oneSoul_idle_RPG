@@ -277,7 +277,7 @@ const PERK_STAT_POOL = {
     smithingSpeed: { name: 'Smithing Speed', category: 'crafting', icon: '🔨' },
     mechanicsSpeed: { name: 'Mechanics Speed', category: 'crafting', icon: '⚙️' },
     electronicsSpeed: { name: 'Electronics Speed', category: 'crafting', icon: '🔌' },
-    textilesSpeed: { name: 'Textiles Speed', category: 'crafting', icon: '🧵' },
+    tailoringSpeed: { name: 'Tailoring Speed', category: 'crafting', icon: '🧵' },
     engineeringSpeed: { name: 'Engineering Speed', category: 'crafting', icon: '🔧' },
 
     // ═══════════════════════════════════════════════════════════════
@@ -293,7 +293,7 @@ const PERK_STAT_POOL = {
     // CRAFTING RARITY (2) - Instanced outputs only
     // ═══════════════════════════════════════════════════════════════
     mechanicsRarity: { name: 'Mechanics Rarity', category: 'crafting', icon: '⭐' },
-    textilesRarity: { name: 'Textiles Rarity', category: 'crafting', icon: '⭐' },
+    tailoringRarity: { name: 'Tailoring Rarity', category: 'crafting', icon: '⭐' },
 
     // ═══════════════════════════════════════════════════════════════
     // EXPERIENCE (2)

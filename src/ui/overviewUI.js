@@ -1,18 +1,142 @@
 /**
- * OVERVIEW UI - Character & Progress Summary
+ * OVERVIEW UI - 3-Column Dashboard Layout
  *
- * Displays a compact overview of:
- * - All skill levels
- * - Current region
- * - Current activity
- * - Equipped items
- *
- * Designed to fit on one screen without scrolling.
+ * Layout:
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │                          CHARACTER HEADER                               │
+ * │            [Level] [Name] [Location] [Power]                            │
+ * ├─────────────────────┬─────────────────────┬─────────────────────────────┤
+ * │    COLUMN 1         │    COLUMN 2         │      COLUMN 3               │
+ * │   Attributes        │   Skills Panel      │   Loadout (3-1-3)           │
+ * │   + Combat Stats    │   (vertical list)   │   + Recent Activity         │
+ * │                     │   Priority Section  │   + Milestones              │
+ * │   ❤️ Health    [+]  │   Gathering Section │                             │
+ * │   💪 Strength  [+]  │   Crafting Section  │   Equipment Grid            │
+ * │   🏃 Mobility  [+]  │                     │   Consumables Row           │
+ * │   🧠 Intellect [+]  │   Each skill:       │   Tech Slots                │
+ * │                     │   [Icon][Name][Lv]→ │                             │
+ * │   Combat Stats:     │                     │                             │
+ * │   HP, DMG, SPD...   │                     │                             │
+ * └─────────────────────┴─────────────────────┴─────────────────────────────┘
  */
 
 const OverviewUI = {
     // Cache last rendered state
     lastOverviewState: null,
+
+    // Skills organized by category with navigation info
+    PRIORITY_SKILLS: [
+        { id: 'navigation', name: 'Navigation', icon: '🧭', view: 'navigation', action: null },
+        { id: 'engineering', name: 'Engineering', icon: '🔬', view: 'crafting', action: () => UnifiedCraftingUI?.switchTab?.('engineering') }
+    ],
+
+    GATHERING_SKILLS: [
+        { id: 'mining', name: 'Mining', icon: '⛏️', view: 'gather', action: () => GatherUI?.selectSkill?.('mining') },
+        { id: 'logging', name: 'Logging', icon: '🪓', view: 'gather', action: () => GatherUI?.selectSkill?.('logging') },
+        { id: 'fishing', name: 'Fishing', icon: '🎣', view: 'gather', action: () => GatherUI?.selectSkill?.('fishing') },
+        { id: 'hunting', name: 'Hunting', icon: '🏹', view: 'gather', action: () => GatherUI?.selectSkill?.('hunting') },
+        { id: 'foraging', name: 'Foraging', icon: '🌿', view: 'gather', action: () => GatherUI?.selectSkill?.('foraging') },
+        { id: 'thieving', name: 'Thieving', icon: '🎭', view: 'gather', action: () => GatherUI?.selectSkill?.('thieving') }
+    ],
+
+    CRAFTING_SKILLS: [
+        { id: 'smithing', name: 'Smithing', icon: '🔨', view: 'crafting', action: () => UnifiedCraftingUI?.selectSkill?.('smithing') },
+        { id: 'mechanics', name: 'Mechanics', icon: '⚙️', view: 'crafting', action: () => UnifiedCraftingUI?.selectSkill?.('mechanics') },
+        { id: 'electronics', name: 'Electronics', icon: '⚡', view: 'crafting', action: () => UnifiedCraftingUI?.selectSkill?.('electronics') },
+        { id: 'cooking', name: 'Cooking', icon: '🍳', view: 'crafting', action: () => UnifiedCraftingUI?.selectSkill?.('cooking') },
+        { id: 'chemistry', name: 'Chemistry', icon: '⚗️', view: 'crafting', action: () => UnifiedCraftingUI?.selectSkill?.('chemistry') },
+        { id: 'tailoring', name: 'Tailoring', icon: '🧵', view: 'crafting', action: () => UnifiedCraftingUI?.selectSkill?.('tailoring') }
+    ],
+
+    // Attributes configuration (7 total - matches GameEngine.state.combatAttributes)
+    ATTRIBUTES: [
+        {
+            id: 'health',
+            icon: '❤️',
+            name: 'Health',
+            desc: '+10 Max HP per point',
+            tooltip: {
+                combat: 'Increases maximum health pool, allowing you to survive more hits in combat.',
+                gathering: 'Higher health lets you gather from dangerous nodes longer without retreating.',
+                crafting: 'No direct crafting benefit.'
+            }
+        },
+        {
+            id: 'strength',
+            icon: '💪',
+            name: 'Strength',
+            desc: '+1 Damage per point',
+            tooltip: {
+                combat: 'Increases base attack damage dealt to enemies.',
+                gathering: 'Improves yield from mining and logging nodes.',
+                crafting: 'Reduces stamina cost for smithing recipes.'
+            }
+        },
+        {
+            id: 'defense',
+            icon: '🛡️',
+            name: 'Defense',
+            desc: '+1% Damage Reduction per point',
+            tooltip: {
+                combat: 'Reduces incoming damage from enemy attacks.',
+                gathering: 'Reduces damage taken from hazardous gathering nodes.',
+                crafting: 'No direct crafting benefit.'
+            }
+        },
+        {
+            id: 'stealth',
+            icon: '🥷',
+            name: 'Stealth',
+            desc: '+1% Evasion per point',
+            tooltip: {
+                combat: 'Chance to completely avoid enemy attacks.',
+                gathering: 'Improves thieving success rate and reduces detection.',
+                crafting: 'No direct crafting benefit.'
+            }
+        },
+        {
+            id: 'perception',
+            icon: '👁️',
+            name: 'Perception',
+            desc: '+1% Accuracy per point',
+            tooltip: {
+                combat: 'Increases hit chance against enemies, especially evasive ones.',
+                gathering: 'Increases chance to find rare materials while foraging and fishing.',
+                crafting: 'Improves quality inspection, reducing failed crafts.'
+            }
+        },
+        {
+            id: 'mobility',
+            icon: '🏃',
+            name: 'Mobility',
+            desc: '+1% Attack Speed per point',
+            tooltip: {
+                combat: 'Increases attack frequency, dealing damage more often.',
+                gathering: 'Speeds up gathering actions at all nodes.',
+                crafting: 'Reduces crafting time for all recipes.'
+            }
+        },
+        {
+            id: 'intellect',
+            icon: '🧠',
+            name: 'Intellect',
+            desc: 'Unlocks Tech Slots',
+            tooltip: {
+                combat: 'Unlocks technology slots for combat gadgets and buffs.',
+                gathering: 'Improves engineering node efficiency.',
+                crafting: 'Required for electronics and chemistry recipes. Unlocks advanced crafting tiers.'
+            }
+        }
+    ],
+
+    // Slot icons for equipment display
+    SLOT_ICONS: {
+        weapon: '⚔️', gloves: '🧤', boots: '👢',
+        armor: '🛡️',  // Single armor set slot (replaces helmet/chest/legs)
+        back: '🎒', neck: '📿', ring: '💍',
+        food: '🍖', potion: '🧪', ammo: '🎯',
+        tech1: '💾', tech2: '💾', tech3: '💾', tech4: '💾'
+    },
 
     /**
      * Update overview display
@@ -21,17 +145,18 @@ const OverviewUI = {
         const container = document.getElementById("overviewView");
         if (!container) return;
 
-        // Create state snapshot
+        // Create state snapshot for change detection
         const currentState = {
             region: GameEngine.state.currentRegion,
             activity: GameEngine.state.currentActivity,
-            navLevel: GameEngine.state.skills.navigation.level,
+            charLevel: GameEngine.state.characterLevel?.level,
+            unassignedPoints: GameEngine.state.characterLevel?.unassignedAttributePoints,
             equipment: JSON.stringify(GameEngine.state.equipment),
-            activeNode: GameEngine.state.nodeCollection?.activeNode?.nodeId || null,
-            activeCrafts: GameEngine.state.crafting?.activeCrafts?.length || 0,
-            inCombat: GameEngine.state.combat?.inCombat || false,
             combatAttributes: JSON.stringify(GameEngine.state.combatAttributes),
-            skills: JSON.stringify(GameEngine.state.skills)
+            skills: JSON.stringify(GameEngine.state.skills),
+            inCombat: GameEngine.state.combat?.inCombat || false,
+            gatheringSession: GameEngine.state.gatheringSession?.nodeId || null,
+            activeCrafts: GameEngine.state.crafting?.activeCrafts?.length || 0
         };
 
         // Only re-render if state changed
@@ -39,380 +164,783 @@ const OverviewUI = {
             return;
         }
 
-        container.innerHTML = this.renderOverview();
+        container.innerHTML = this.render();
         this.lastOverviewState = currentState;
     },
 
     /**
-     * Render the overview interface with grid layout
+     * Main render function - 3-column layout
      */
-    renderOverview() {
+    render() {
         return `
-            <div class="dashboard-grid">
-                ${this.renderActivityPanel()}
-                ${this.renderCombatPanel()}
-                ${this.renderSkillsPanel()}
-                ${this.renderEquipmentPanel()}
-            </div>
-        `;
-    },
+            <div class="overview-dashboard">
+                <div class="overview-three-columns">
+                    <!-- Column 1: Attributes + Combat Stats + Milestones -->
+                    <div class="overview-column overview-column--left">
+                        ${this.renderAttributesPanel()}
+                        ${this.renderCombatStatsPanel()}
+                        ${this.renderMilestonesPanel()}
+                    </div>
 
-    /**
-     * Create a reusable panel component
-     */
-    createPanel(title, subtitle, content, className = '') {
-        return `
-            <div class="dashboard-panel ${className}">
-                <div class="panel-header">
-                    <div class="panel-title">${title}</div>
-                    ${subtitle ? `<div class="panel-subtitle">${subtitle}</div>` : ''}
-                </div>
-                <div class="panel-content">
-                    ${content}
+                    <!-- Column 2: Skills (vertical list) -->
+                    <div class="overview-column overview-column--center">
+                        ${this.renderSkillsPanel()}
+                    </div>
+
+                    <!-- Column 3: Loadout (full height) -->
+                    <div class="overview-column overview-column--right">
+                        ${this.renderLoadoutPanel()}
+                    </div>
                 </div>
             </div>
         `;
     },
 
     /**
-     * Render Activity Panel (large, top-left)
+     * Render character header
      */
-    renderActivityPanel() {
-        const content = this.renderCurrentStatus();
-        return this.createPanel(
-            '🎯 Current Activity',
-            'What you\'re doing right now',
-            content,
-            'panel-activity'
-        );
-    },
+    renderCharacterHeader() {
+        const charLevel = GameEngine.state.characterLevel || { level: 1, exp: 0 };
+        const expRequired = GameEngine.getCharacterExpRequired?.() || 100;
+        const expPercent = Math.min(100, (charLevel.exp / expRequired) * 100);
+        const combatPower = this.calculateCombatPower();
+        const unassignedPoints = charLevel.unassignedAttributePoints || 0;
 
-    /**
-     * Render Combat Panel (right side, tall)
-     */
-    renderCombatPanel() {
-        const content = this.renderCombatAttributes();
-        return this.createPanel(
-            '⚔️ Character Stats',
-            'Overall Power Metrics',
-            content,
-            'panel-combat'
-        );
-    },
-
-    /**
-     * Render Skills Panel (middle-left)
-     */
-    renderSkillsPanel() {
-        const content = this.renderSkillsList();
-        return this.createPanel(
-            '⭐ Skills Overview',
-            'All skill levels',
-            content,
-            'panel-skills'
-        );
-    },
-
-    /**
-     * Render Equipment Panel (middle-center)
-     */
-    renderEquipmentPanel() {
-        const content = this.renderEquipment();
-        return this.createPanel(
-            '🛡️ Loadout',
-            'Equipped gear',
-            content,
-            'panel-equipment'
-        );
-    },
-
-    /**
-     * Render current status (region, activity) - for Activity Panel
-     */
-    renderCurrentStatus() {
         const currentRegion = GameEngine.state?.currentRegion;
         const worldMap = GameEngine.definitions?.worldMap || GameEngine.state?.worldMap;
         const hexDef = worldMap?.[currentRegion];
         const regionName = hexDef?.name || currentRegion || 'Unknown';
-        const biome = hexDef?.biome || 'unknown';
 
-        // Determine current activity
-        let activityText = 'Idle';
-        let activityColor = '#888';
-        let activityIcon = '💤';
-        let activityDetails = 'Nothing happening right now';
-
-        if (GameEngine.state.combat?.inCombat) {
-            const enemy = GameEngine.state.combat.currentEnemy;
-            const enemyDef = GameEngine.definitions.enemies[enemy?.enemyId];
-            activityText = `Fighting ${enemyDef?.name || 'Enemy'}`;
-            activityColor = '#f44336';
-            activityIcon = '⚔️';
-            activityDetails = `Enemy HP: ${Math.floor(enemy?.currentHealth || 0)} / ${enemyDef?.health || 0}`;
-        } else if (GameEngine.state.nodeCollection?.activeNode) {
-            const nodeId = GameEngine.state.nodeCollection.activeNode.nodeId;
-            const nodeDef = GameEngine.definitions.resourceNodes[nodeId];
-            activityText = `Harvesting ${nodeDef?.name || 'Node'}`;
-            activityColor = '#4caf50';
-            activityIcon = nodeDef?.image || '⛏️';
-            activityDetails = `Collecting resources from node`;
-        } else if (GameEngine.state.crafting?.activeCrafts?.length > 0) {
-            const craft = GameEngine.state.crafting.activeCrafts[0];
-            const recipeDef = GameEngine.definitions.recipes[craft.recipeId];
-            activityText = `Crafting ${recipeDef?.name || 'Item'}`;
-            activityColor = '#ff9800';
-            activityIcon = '🔨';
-            const remaining = Math.max(0, Math.ceil((craft.completionTime - Date.now()) / 1000));
-            activityDetails = `${remaining}s remaining`;
-        } else if (GameEngine.state.activeNavigation?.isNavigating) {
-            activityText = 'Exploring Region';
-            activityColor = '#2196f3';
-            activityIcon = '🗺️';
-            activityDetails = `Discovering new locations`;
-        }
+        // Get current activity status
+        const activity = this.getCurrentActivityStatus();
 
         return `
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <!-- Region Info (Compressed) -->
-                <div style="background: rgba(0, 0, 0, 0.3); border-radius: 6px; padding: 10px; border-left: 3px solid #e94560;">
-                    <div style="font-size: 0.7em; color: #888; text-transform: uppercase; margin-bottom: 3px;">Current Region</div>
-                    <div style="display: flex; align-items: baseline; gap: 8px;">
-                        <div style="font-weight: bold; color: #e94560; font-size: 1.2em;">📍 ${regionName}</div>
-                        <div style="font-size: 0.75em; color: #aaa;">${Formatting.capitalizeFirst(biome)}</div>
+            <div class="overview-header ${unassignedPoints > 0 ? 'has-unassigned-points' : ''}">
+                <div class="header-left">
+                    <div class="level-badge">
+                        <span class="level-number">${charLevel.level}</span>
+                        <span class="level-label">LVL</span>
+                    </div>
+                    <div class="character-info">
+                        <div class="character-name">Adventurer</div>
+                        <div class="xp-bar-container">
+                            <div class="xp-bar">
+                                <div class="xp-fill" style="width: ${expPercent}%;"></div>
+                            </div>
+                            <span class="xp-text">${Formatting.formatNumber(charLevel.exp)} / ${Formatting.formatNumber(expRequired)}</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Activity Info (Compressed) -->
-                <div style="background: rgba(0, 0, 0, 0.3); border-radius: 6px; padding: 10px; border-left: 3px solid ${activityColor};">
-                    <div style="font-size: 0.7em; color: #888; text-transform: uppercase; margin-bottom: 3px;">Current Activity</div>
-                    <div style="font-weight: bold; color: ${activityColor}; font-size: 1.1em; margin-bottom: 2px;">${activityIcon} ${activityText}</div>
-                    <div style="font-size: 0.75em; color: #aaa;">${activityDetails}</div>
+                <div class="header-center">
+                    <div class="location-badge">
+                        <span class="location-icon">📍</span>
+                        <span class="location-name">${regionName}</span>
+                    </div>
+                    <div class="activity-status" style="color: ${activity.color};">
+                        <span class="activity-icon">${activity.icon}</span>
+                        <span class="activity-text">${activity.text}</span>
+                    </div>
+                    ${unassignedPoints > 0 ? `
+                        <div class="points-badge" onclick="switchView('skills')">
+                            <span class="points-glow">✨</span>
+                            <span class="points-count">${unassignedPoints}</span>
+                            <span class="points-text">Point${unassignedPoints !== 1 ? 's' : ''}</span>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="header-right">
+                    <div class="power-display" style="--power-color: ${combatPower.tierColor};">
+                        <span class="power-value">${combatPower.power}</span>
+                        <span class="power-tier">${combatPower.tier}</span>
+                    </div>
                 </div>
             </div>
         `;
     },
 
     /**
-     * Render skills in a compact list for Skills Panel - 2 columns showing all 14 skills
+     * Render attributes panel with + buttons
      */
-    renderSkillsList() {
-        const skills = GameEngine.state.skills;
-        const skillDefs = GameEngine.definitions.skills;
+    renderAttributesPanel() {
+        const attrs = GameEngine.state.combatAttributes || {};
+        const charLevel = GameEngine.state.characterLevel || {};
+        const unassignedPoints = charLevel.unassignedAttributePoints || 0;
 
-        let html = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">`;
+        return `
+            <div class="overview-panel panel-attributes">
+                <div class="panel-header">
+                    <span class="panel-icon">📊</span>
+                    <span class="panel-title">Attributes</span>
+                    ${unassignedPoints > 0 ? `<span class="panel-badge badge-warning">${unassignedPoints} pts</span>` : ''}
+                </div>
+                <div class="panel-content">
+                    <div class="attributes-list">
+                        ${this.ATTRIBUTES.map(attr => `
+                            <div class="attribute-row"
+                                 onmouseenter="OverviewUI.showAttributeTooltip(event, '${attr.id}')"
+                                 onmouseleave="OverviewUI.hideAttributeTooltip()">
+                                <div class="attribute-info">
+                                    <span class="attr-icon">${attr.icon}</span>
+                                    <span class="attr-name">${attr.name}</span>
+                                </div>
+                                <div class="attribute-controls">
+                                    <span class="attr-value">${attrs[attr.id] || 0}</span>
+                                    ${unassignedPoints > 0 ? `
+                                        <button class="attr-add-btn" onclick="event.stopPropagation(); OverviewUI.addAttribute('${attr.id}')" title="${attr.desc}">+</button>
+                                    ` : `
+                                        <div class="attr-btn-placeholder"></div>
+                                    `}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    },
 
-        // All skills in order (14 skills - no combat skill)
-        const skillOrder = [
-            'navigation',
-            'mining', 'logging',
-            'fishing', 'hunting',
-            'foraging', 'thieving',
-            'smithing', 'mechanics',
-            'electronics', 'cooking',
-            'chemistry', 'textiles',
-            'engineering'
+    /**
+     * Add attribute point
+     */
+    addAttribute(attrId) {
+        if (typeof GameEngine.assignAttributePoint === 'function') {
+            const result = GameEngine.assignAttributePoint(attrId);
+            if (result.success) {
+                this.updateOverview();
+            } else {
+                console.log(`❌ Could not assign point: ${result.reason}`);
+            }
+        }
+    },
+
+    /**
+     * Show attribute tooltip on hover
+     */
+    showAttributeTooltip(event, attrId) {
+        const attr = this.ATTRIBUTES.find(a => a.id === attrId);
+        if (!attr || !attr.tooltip) return;
+
+        // Remove existing tooltip
+        this.hideAttributeTooltip();
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'attribute-tooltip';
+        tooltip.id = 'attribute-tooltip';
+        tooltip.innerHTML = `
+            <div class="attr-tooltip-header">
+                <span class="attr-tooltip-icon">${attr.icon}</span>
+                <span class="attr-tooltip-name">${attr.name}</span>
+            </div>
+            <div class="attr-tooltip-desc">${attr.desc}</div>
+            <div class="attr-tooltip-section">
+                <span class="attr-tooltip-label">⚔️ Combat</span>
+                <span class="attr-tooltip-text">${attr.tooltip.combat}</span>
+            </div>
+            <div class="attr-tooltip-section">
+                <span class="attr-tooltip-label">⛏️ Gathering</span>
+                <span class="attr-tooltip-text">${attr.tooltip.gathering}</span>
+            </div>
+            <div class="attr-tooltip-section">
+                <span class="attr-tooltip-label">🔨 Crafting</span>
+                <span class="attr-tooltip-text">${attr.tooltip.crafting}</span>
+            </div>
+        `;
+
+        document.body.appendChild(tooltip);
+
+        // Position tooltip near the element
+        const rect = event.currentTarget.getBoundingClientRect();
+        tooltip.style.left = `${rect.right + 10}px`;
+        tooltip.style.top = `${rect.top}px`;
+
+        // Adjust if off-screen
+        const tooltipRect = tooltip.getBoundingClientRect();
+        if (tooltipRect.right > window.innerWidth) {
+            tooltip.style.left = `${rect.left - tooltipRect.width - 10}px`;
+        }
+        if (tooltipRect.bottom > window.innerHeight) {
+            tooltip.style.top = `${window.innerHeight - tooltipRect.height - 10}px`;
+        }
+    },
+
+    /**
+     * Hide attribute tooltip
+     */
+    hideAttributeTooltip() {
+        const existing = document.getElementById('attribute-tooltip');
+        if (existing) existing.remove();
+    },
+
+    /**
+     * Render combat stats panel
+     */
+    renderCombatStatsPanel() {
+        const stats = GameEngine.getPlayerCombatStats?.() || {};
+        const combatPower = this.calculateCombatPower();
+
+        return `
+            <div class="overview-panel panel-combat-stats">
+                <div class="panel-header">
+                    <span class="panel-icon">⚔️</span>
+                    <span class="panel-title">Combat Stats</span>
+                </div>
+                <div class="panel-content">
+                    <!-- Combat Power as top stat -->
+                    <div class="combat-power-display" style="--power-color: ${combatPower.tierColor};">
+                        <span class="power-icon">💥</span>
+                        <span class="power-label">POWER</span>
+                        <span class="power-value">${combatPower.power}</span>
+                        <span class="power-tier">${combatPower.tier}</span>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-icon">❤️</span>
+                            <span class="stat-label">HP</span>
+                            <span class="stat-value">${Math.floor(stats.currentHealth || 0)}/${Math.floor(stats.maxHealth || 100)}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">⚔️</span>
+                            <span class="stat-label">Damage</span>
+                            <span class="stat-value">${(stats.attackDamage || 0).toFixed(1)}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">⚡</span>
+                            <span class="stat-label">Speed</span>
+                            <span class="stat-value">${(stats.attackSpeed || 1).toFixed(2)}/s</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">🎯</span>
+                            <span class="stat-label">Accuracy</span>
+                            <span class="stat-value">${(stats.accuracy || 0).toFixed(0)}%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">🛡️</span>
+                            <span class="stat-label">Defense</span>
+                            <span class="stat-value">${((stats.damageReduction || 0) * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">🔄</span>
+                            <span class="stat-label">Crit</span>
+                            <span class="stat-value">${((stats.critChance || 0) * 100).toFixed(1)}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Render skills panel with vertical list
+     */
+    renderSkillsPanel() {
+        const skills = GameEngine.state?.skills || {};
+
+        return `
+            <div class="overview-panel panel-skills">
+                <div class="panel-header">
+                    <span class="panel-icon">⭐</span>
+                    <span class="panel-title">Skills</span>
+                </div>
+                <div class="panel-content skills-list-container">
+                    <!-- Priority Skills Section -->
+                    <div class="skill-section">
+                        <div class="skill-section-header">Priority</div>
+                        <div class="skill-section-list">
+                            ${this.PRIORITY_SKILLS.map(skill => this.renderSkillRow(skill, skills[skill.id])).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Gathering Skills Section -->
+                    <div class="skill-section">
+                        <div class="skill-section-header">Gathering</div>
+                        <div class="skill-section-list">
+                            ${this.GATHERING_SKILLS.map(skill => this.renderSkillRow(skill, skills[skill.id])).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Crafting Skills Section -->
+                    <div class="skill-section">
+                        <div class="skill-section-header">Crafting</div>
+                        <div class="skill-section-list">
+                            ${this.CRAFTING_SKILLS.map(skill => this.renderSkillRow(skill, skills[skill.id])).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Render a single skill row (matches attribute row structure)
+     */
+    renderSkillRow(skillConfig, skillData) {
+        const level = skillData?.level || 1;
+        const exp = skillData?.exp || 0;
+        const expRequired = GameEngine.getSkillExpRequired?.(skillConfig.id) || 100;
+        const expPercent = level >= 100 ? 100 : Math.min(100, (exp / expRequired) * 100);
+
+        return `
+            <div class="skill-row skill-row--clickable" onclick="OverviewUI.navigateToSkill('${skillConfig.id}')">
+                <span class="skill-icon">${skillConfig.icon}</span>
+                <span class="skill-name">${skillConfig.name}</span>
+                <div class="skill-xp-container">
+                    <div class="skill-xp-bar">
+                        <div class="skill-xp-fill" style="width: ${expPercent}%;"></div>
+                    </div>
+                </div>
+                <span class="skill-level">LV.${level}</span>
+                <span class="skill-arrow">→</span>
+            </div>
+        `;
+    },
+
+    /**
+     * Navigate to skill's relevant UI
+     */
+    navigateToSkill(skillId) {
+        const allSkills = [...this.PRIORITY_SKILLS, ...this.GATHERING_SKILLS, ...this.CRAFTING_SKILLS];
+        const skill = allSkills.find(s => s.id === skillId);
+
+        if (!skill) {
+            console.warn(`[OverviewUI] Unknown skill: ${skillId}`);
+            return;
+        }
+
+        // Switch to the target view
+        if (typeof switchView === 'function') {
+            switchView(skill.view);
+        }
+
+        // Execute skill-specific action after view switch
+        if (skill.action) {
+            setTimeout(() => skill.action(), 50);
+        }
+
+        console.log(`[OverviewUI] Navigated to ${skill.view} for ${skillId}`);
+    },
+
+    /**
+     * Render loadout panel (3-1-3 grid)
+     */
+    renderLoadoutPanel() {
+        const equipment = GameEngine.state.equipment || {};
+        const attrs = GameEngine.state.combatAttributes || {};
+        const intellect = attrs.intellect || 0;
+        const currentWeight = GameEngine.getTotalEquippedWeight?.() || 0;
+        const maxWeight = GameEngine.getMaxEquipmentWeight?.() || 100;
+
+        return `
+            <div class="overview-panel panel-loadout">
+                <div class="panel-header">
+                    <span class="panel-icon">🎒</span>
+                    <span class="panel-title">Loadout</span>
+                    <span class="panel-badge ${currentWeight >= maxWeight ? 'badge-warning' : ''}">${currentWeight}/${maxWeight}</span>
+                </div>
+                <div class="panel-content">
+                    <!-- 3-1-3 Equipment Grid: Left (3) | Middle (1 tall armor) | Right (3) -->
+                    <div class="loadout-equipment-grid">
+                        <!-- Left Column: Weapon, Gloves, Boots (3 slots) -->
+                        <div class="loadout-column">
+                            ${this.renderLoadoutSlot(equipment.weapon, 'weapon')}
+                            ${this.renderLoadoutSlot(equipment.gloves, 'gloves')}
+                            ${this.renderLoadoutSlot(equipment.boots, 'boots')}
+                        </div>
+                        <!-- Middle Column: Armor Set (1 tall slot) -->
+                        <div class="loadout-column loadout-column--armor">
+                            ${this.renderArmorSlot(equipment.armor)}
+                        </div>
+                        <!-- Right Column: Back, Neck, Ring (3 slots) -->
+                        <div class="loadout-column">
+                            ${this.renderLoadoutSlot(equipment.back, 'back')}
+                            ${this.renderLoadoutSlot(equipment.neck, 'neck')}
+                            ${this.renderLoadoutSlot(equipment.ring, 'ring')}
+                        </div>
+                    </div>
+
+                    <!-- Consumables -->
+                    <div class="loadout-section">
+                        <div class="loadout-section-label">CONSUMABLES</div>
+                        <div class="loadout-consumables-row">
+                            ${this.renderLoadoutSlot(equipment.food, 'food', true)}
+                            ${this.renderLoadoutSlot(equipment.potion, 'potion', true)}
+                            ${this.renderLoadoutSlot(equipment.ammo, 'ammo', true)}
+                        </div>
+                    </div>
+
+                    <!-- Technology -->
+                    <div class="loadout-section">
+                        <div class="loadout-section-label">TECHNOLOGY</div>
+                        <div class="loadout-tech-row">
+                            ${this.renderTechSlot(equipment.tech1, 'tech1', 0, intellect)}
+                            ${this.renderTechSlot(equipment.tech2, 'tech2', 3, intellect)}
+                            ${this.renderTechSlot(equipment.tech3, 'tech3', 6, intellect)}
+                            ${this.renderTechSlot(equipment.tech4, 'tech4', 9, intellect)}
+                        </div>
+                    </div>
+
+                    <button class="loadout-view-btn" onclick="switchView('equipment')">
+                        View Full Loadout
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Render loadout slot (unified for equipment and consumables)
+     */
+    renderLoadoutSlot(itemData, slotName, isConsumable = false) {
+        const icon = this.SLOT_ICONS[slotName] || '❓';
+        let itemDef = null;
+        let itemIcon = icon;
+        let quantity = 0;
+        let itemId = null;
+
+        if (itemData) {
+            itemId = typeof itemData === 'string' ? itemData : itemData.itemId;
+            if (isConsumable && itemData.quantity) {
+                quantity = itemData.quantity;
+            }
+            if (itemId) {
+                const baseId = this.parseInstanceId(itemId);
+                itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(baseId) : null;
+                if (itemDef?.icon) itemIcon = itemDef.icon;
+            }
+        }
+
+        const isEmpty = !itemDef && (!isConsumable || quantity <= 0);
+        const isFilled = itemDef !== null;
+        const title = itemDef?.name || slotName.charAt(0).toUpperCase() + slotName.slice(1);
+
+        // Get rarity from instance if available, otherwise from item definition
+        const instancedItem = itemId ? GameEngine.state.bank?.instanced?.[itemId] : null;
+        const rarity = instancedItem?.rarity || itemDef?.rarity || 'common';
+        const rarityData = GameEngine.definitions?.RARITY_TIERS?.[rarity] || { color: '#9e9e9e' };
+        const rarityColor = rarityData.color;
+        const hasGlow = rarityData.glow;
+
+        return `
+            <div class="loadout-slot ${isEmpty ? 'loadout-slot--empty' : ''} ${isFilled ? 'loadout-slot--filled' : ''} ${hasGlow ? 'loadout-slot--glow' : ''} rarity-${rarity}"
+                 ${isFilled ? `style="--rarity-color: ${rarityColor};"` : ''}
+                 title="${title}${isFilled ? ` (${rarity})` : ''}" data-slot="${slotName}">
+                <span class="slot-icon">${itemIcon}</span>
+                ${isConsumable && quantity > 0 ? `<span class="slot-qty">${this.formatQuantity(quantity)}</span>` : ''}
+            </div>
+        `;
+    },
+
+    /**
+     * Render armor slot (tall slot for armor set)
+     */
+    renderArmorSlot(armorData) {
+        let itemDef = null;
+        let itemIcon = '🛡️';
+        let itemId = null;
+
+        if (armorData) {
+            itemId = typeof armorData === 'string' ? armorData : armorData.itemId;
+            if (itemId) {
+                const baseId = this.parseInstanceId(itemId);
+                itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(baseId) : null;
+                if (itemDef?.icon) itemIcon = itemDef.icon;
+            }
+        }
+
+        const isEmpty = !itemDef;
+        const isFilled = itemDef !== null;
+        const title = itemDef?.name || 'Armor Set';
+
+        // Get rarity from instance if available, otherwise from item definition
+        const instancedItem = itemId ? GameEngine.state.bank?.instanced?.[itemId] : null;
+        const rarity = instancedItem?.rarity || itemDef?.rarity || 'common';
+        const rarityData = GameEngine.definitions?.RARITY_TIERS?.[rarity] || { color: '#9e9e9e' };
+        const rarityColor = rarityData.color;
+        const hasGlow = rarityData.glow;
+
+        return `
+            <div class="loadout-slot loadout-slot--armor ${isEmpty ? 'loadout-slot--empty' : ''} ${isFilled ? 'loadout-slot--filled' : ''} ${hasGlow ? 'loadout-slot--glow' : ''} rarity-${rarity}"
+                 ${isFilled ? `style="--rarity-color: ${rarityColor};"` : ''}
+                 title="${title}${isFilled ? ` (${rarity})` : ''}" data-slot="armor">
+                <span class="slot-icon">${itemIcon}</span>
+                <span class="slot-label">Armor</span>
+            </div>
+        `;
+    },
+
+    /**
+     * Render recent activity panel
+     */
+    renderRecentActivityPanel() {
+        const activity = this.getCurrentActivityStatus();
+
+        return `
+            <div class="overview-panel panel-activity">
+                <div class="panel-header">
+                    <span class="panel-icon">📋</span>
+                    <span class="panel-title">Recent Activity</span>
+                </div>
+                <div class="panel-content">
+                    <div class="activity-current">
+                        <span class="activity-icon" style="color: ${activity.color};">${activity.icon}</span>
+                        <div class="activity-info">
+                            <span class="activity-title">${activity.title}</span>
+                            <span class="activity-detail">${activity.detail}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Render milestones panel
+     */
+    renderMilestonesPanel() {
+        const milestones = this.getMilestones();
+
+        return `
+            <div class="overview-panel panel-milestones">
+                <div class="panel-header">
+                    <span class="panel-icon">🏆</span>
+                    <span class="panel-title">Milestones</span>
+                </div>
+                <div class="panel-content">
+                    <div class="milestones-list">
+                        ${milestones.map(m => `
+                            <div class="milestone-item ${m.achieved ? 'achieved' : ''}">
+                                <span class="milestone-icon">${m.icon}</span>
+                                <span class="milestone-text">${m.text}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    // ===========================
+    // SLOT RENDERING HELPERS
+    // ===========================
+
+    /**
+     * Parse instance ID to get base item ID
+     */
+    parseInstanceId(fullId) {
+        if (!fullId) return fullId;
+        if (fullId.includes('_instance_')) {
+            return fullId.split('_instance_')[0];
+        }
+        const parts = fullId.split('_');
+        if (parts.length >= 3 && /^\d{13}$/.test(parts[parts.length - 2])) {
+            return parts.slice(0, -2).join('_');
+        }
+        return fullId;
+    },
+
+    /**
+     * Render equipment slot
+     */
+    renderEquipSlot(itemData, slotName) {
+        const icon = this.SLOT_ICONS[slotName] || '❓';
+        let itemDef = null;
+        let itemIcon = icon;
+        let itemId = null;
+
+        if (itemData) {
+            itemId = typeof itemData === 'string' ? itemData : itemData.itemId;
+            if (itemId) {
+                const baseId = this.parseInstanceId(itemId);
+                itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(baseId) : null;
+                if (itemDef?.icon) itemIcon = itemDef.icon;
+            }
+        }
+
+        const isEmpty = !itemDef;
+        const title = itemDef?.name || slotName.charAt(0).toUpperCase() + slotName.slice(1);
+
+        // Get rarity from instance if available, otherwise from item definition
+        const instancedItem = itemId ? GameEngine.state.bank?.instanced?.[itemId] : null;
+        const rarity = instancedItem?.rarity || itemDef?.rarity || 'common';
+        const rarityData = GameEngine.definitions?.RARITY_TIERS?.[rarity] || { color: '#9e9e9e' };
+        const rarityColor = rarityData.color;
+        const hasGlow = rarityData.glow;
+
+        return `
+            <div class="equip-slot ${isEmpty ? 'equip-slot--empty' : ''} ${hasGlow ? 'equip-slot--glow' : ''} rarity-${rarity}"
+                 ${!isEmpty ? `style="--rarity-color: ${rarityColor};"` : ''}
+                 title="${title}${!isEmpty ? ` (${rarity})` : ''}" data-slot="${slotName}">
+                <span class="slot-icon">${itemIcon}</span>
+            </div>
+        `;
+    },
+
+    /**
+     * Render consumable slot
+     */
+    renderConsumableSlot(itemData, slotName) {
+        const icon = this.SLOT_ICONS[slotName] || '❓';
+        let itemDef = null;
+        let quantity = 0;
+        let itemIcon = icon;
+
+        if (itemData) {
+            const itemId = typeof itemData === 'string' ? itemData : itemData.itemId;
+            quantity = itemData?.quantity || 0;
+
+            if (itemId) {
+                const baseId = this.parseInstanceId(itemId);
+                itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(baseId) : null;
+                if (itemDef?.icon) itemIcon = itemDef.icon;
+            }
+        }
+
+        const isEmpty = !itemDef || quantity <= 0;
+        const title = itemDef ? `${itemDef.name} (${quantity})` : slotName;
+
+        return `
+            <div class="consumable-slot ${isEmpty ? 'consumable-slot--empty' : ''}"
+                 title="${title}" data-slot="${slotName}">
+                <span class="slot-icon">${itemIcon}</span>
+                ${quantity > 0 ? `<span class="slot-qty">${this.formatQuantity(quantity)}</span>` : ''}
+            </div>
+        `;
+    },
+
+    /**
+     * Render technology slot
+     */
+    renderTechSlot(itemData, slotName, requiredInt, currentInt) {
+        const isLocked = currentInt < requiredInt;
+        const icon = this.SLOT_ICONS[slotName] || '💾';
+        let itemDef = null;
+        let itemIcon = icon;
+
+        if (!isLocked && itemData) {
+            const itemId = typeof itemData === 'string' ? itemData : itemData.itemId;
+            if (itemId) {
+                const baseId = this.parseInstanceId(itemId);
+                itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(baseId) : null;
+                if (itemDef?.icon) itemIcon = itemDef.icon;
+            }
+        }
+
+        const isEmpty = isLocked || !itemDef;
+        const title = isLocked ? `Requires ${requiredInt} Intellect` : (itemDef?.name || slotName);
+
+        return `
+            <div class="tech-slot ${isEmpty ? 'tech-slot--empty' : ''} ${isLocked ? 'tech-slot--locked' : ''}"
+                 title="${title}" data-slot="${slotName}">
+                ${isLocked ? `<span class="slot-lock">🔒</span>` : `<span class="slot-icon">${itemIcon}</span>`}
+            </div>
+        `;
+    },
+
+    // ===========================
+    // HELPER METHODS
+    // ===========================
+
+    /**
+     * Get current activity status for header
+     */
+    getCurrentActivityStatus() {
+        // Combat
+        if (GameEngine.state.combat?.inCombat) {
+            return { icon: '⚔️', text: 'In Combat', color: '#f44336', title: 'Combat', detail: 'Fighting enemy' };
+        }
+
+        // Gathering
+        if (GameEngine.state.gatheringSession && GameEngine.state.currentActivity === 'gathering') {
+            const session = GameEngine.state.gatheringSession;
+            return {
+                icon: session.isRecovering ? '⏳' : '⛏️',
+                text: session.isRecovering ? 'Recovering' : 'Gathering',
+                color: session.isRecovering ? '#FFC107' : '#4caf50',
+                title: 'Gathering',
+                detail: `${session.skill} - ${session.totalActions || 0} actions`
+            };
+        }
+
+        // Crafting
+        if (GameEngine.state.crafting?.activeCrafts?.length > 0) {
+            const count = GameEngine.state.crafting.activeCrafts.length;
+            return {
+                icon: '🔨',
+                text: `Crafting (${count})`,
+                color: '#9c27b0',
+                title: 'Crafting',
+                detail: `${count} item${count > 1 ? 's' : ''} in queue`
+            };
+        }
+
+        // Navigation
+        if (GameEngine.state.activeNavigation?.isNavigating) {
+            return { icon: '🗺️', text: 'Navigating', color: '#2196f3', title: 'Navigation', detail: 'Traveling...' };
+        }
+
+        // Idle
+        return { icon: '💤', text: 'Idle', color: '#888', title: 'Idle', detail: 'Ready for action' };
+    },
+
+    /**
+     * Calculate combat power
+     */
+    calculateCombatPower() {
+        if (typeof GameEngine.calculateCombatPower === 'function') {
+            return GameEngine.calculateCombatPower();
+        }
+
+        // Fallback calculation
+        const stats = GameEngine.getPlayerCombatStats?.() || {};
+        const power = Math.floor(
+            (stats.maxHealth || 0) * 0.5 +
+            (stats.attackDamage || 0) * 2 +
+            (stats.attackSpeed || 1) * 10
+        );
+
+        const tiers = [
+            { threshold: 0, name: 'Novice', color: '#888' },
+            { threshold: 50, name: 'Apprentice', color: '#4caf50' },
+            { threshold: 100, name: 'Journeyman', color: '#2196f3' },
+            { threshold: 200, name: 'Expert', color: '#9c27b0' },
+            { threshold: 400, name: 'Master', color: '#ff9800' },
+            { threshold: 800, name: 'Legendary', color: '#f44336' }
         ];
 
-        for (let skillId of skillOrder) {
-            if (!skills[skillId]) continue;
-
-            const skill = skills[skillId];
-            const def = skillDefs[skillId];
-            const icon = this.getSkillIcon(skillId);
-
-            // Calculate XP progress
-            const baseExp = def?.baseExp || 100;
-            const expCurve = def?.expCurve || 1.5;
-            const xpForNext = Math.floor(baseExp * Math.pow(skill.level + 1, expCurve));
-            const xpPercent = skill.level >= 100 ? 100 : (skill.exp / xpForNext * 100);
-
-            html += `
-            <div style="background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                    <span style="font-size: 1.5em;">${icon}</span>
-                    <div style="flex: 1;">
-                        <div style="font-size: 0.75em; color: #aaa; text-transform: uppercase;">${def?.name || skillId}</div>
-                        <div style="font-weight: bold; color: #4a9eff; font-size: 1em;">Lv ${skill.level}</div>
-                    </div>
-                </div>
-                <div style="background: rgba(0, 0, 0, 0.5); border-radius: 3px; height: 6px; overflow: hidden; margin-bottom: 3px;">
-                    <div style="background: linear-gradient(90deg, #533483 0%, #7b3ff2 100%);
-                                height: 100%;
-                                width: ${xpPercent}%;
-                                transition: width 0.3s;">
-                    </div>
-                </div>
-                <div style="font-size: 0.65em; color: #888; text-align: center;">
-                    ${Formatting.formatNumber(skill.exp)} / ${Formatting.formatNumber(xpForNext)} XP
-                </div>
-            </div>
-            `;
+        let currentTier = tiers[0];
+        for (const tier of tiers) {
+            if (power >= tier.threshold) currentTier = tier;
         }
 
-        html += `</div>`;
-        return html;
+        return { power, tier: currentTier.name, tierColor: currentTier.color };
     },
 
     /**
-     * Render combat attributes for Combat Panel
+     * Get milestones for display
      */
-    renderCombatAttributes() {
-        const attributes = GameEngine.state.combatAttributes;
-        const stats = GameEngine.getPlayerCombatStats();
-        const combatPower = GameEngine.calculateCombatPower();
+    getMilestones() {
+        const charLevel = GameEngine.state.characterLevel?.level || 1;
+        const skills = GameEngine.state.skills || {};
 
-        return `
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <!-- Character Level -->
-                <div style="background: rgba(0, 0, 0, 0.3); border-radius: 6px; padding: 12px; border-left: 3px solid #4a9eff;">
-                    <div style="font-size: 0.7em; color: #888; text-transform: uppercase; margin-bottom: 3px;">Character Level</div>
-                    <div style="font-weight: bold; color: #4a9eff; font-size: 1.3em;">${GameEngine.state.characterLevel.level}</div>
-                </div>
+        // Calculate total skill levels
+        const totalSkillLevels = Object.values(skills).reduce((sum, s) => sum + (s?.level || 0), 0);
 
-                <!-- Combat Power -->
-                <div style="background: rgba(0, 0, 0, 0.3); border-radius: 6px; padding: 12px; border-left: 3px solid ${combatPower.tierColor};">
-                    <div style="font-size: 0.7em; color: #888; text-transform: uppercase; margin-bottom: 3px;">Combat Power</div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="font-weight: bold; color: ${combatPower.tierColor}; font-size: 1.3em;">${combatPower.power}</div>
-                        <div style="background: ${combatPower.tierColor}22; color: ${combatPower.tierColor}; border: 1px solid ${combatPower.tierColor}; border-radius: 4px; padding: 2px 8px; font-size: 0.7em; font-weight: bold;">${combatPower.tier}</div>
-                    </div>
-                </div>
+        // Check for max level skills
+        const maxLevelSkills = Object.values(skills).filter(s => s?.level >= 100).length;
 
-                <!-- Current Stats -->
-                <div style="background: rgba(0, 0, 0, 0.3); border-radius: 6px; padding: 12px;">
-                    <div style="font-size: 0.75em; color: #888; text-transform: uppercase; margin-bottom: 8px;">Current Stats</div>
-                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.85em;">
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #aaa;">❤️ Health</span>
-                            <span style="font-weight: bold; color: #fff;">${Math.floor(stats.currentHealth)} / ${Math.floor(stats.maxHealth)}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #aaa;">⚔️ Damage</span>
-                            <span style="font-weight: bold; color: #fff;">${stats.attackDamage.toFixed(1)}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #aaa;">⚡ Speed</span>
-                            <span style="font-weight: bold; color: #fff;">${stats.attackSpeed.toFixed(2)}/s</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #aaa;">🎯 Accuracy</span>
-                            <span style="font-weight: bold; color: #fff;">${stats.accuracy.toFixed(0)}%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Attributes -->
-                <div style="background: rgba(0, 0, 0, 0.3); border-radius: 6px; padding: 12px;">
-                    <div style="font-size: 0.75em; color: #888; text-transform: uppercase; margin-bottom: 8px;">Attributes</div>
-                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.85em;">
-                        ${this.renderAttribute('health', '❤️', attributes.health)}
-                        ${this.renderAttribute('defense', '🛡️', attributes.defense)}
-                        ${this.renderAttribute('strength', '💪', attributes.strength)}
-                        ${this.renderAttribute('stealth', '🥷', attributes.stealth)}
-                        ${this.renderAttribute('perception', '👁️', attributes.perception)}
-                        ${this.renderAttribute('mobility', '⚡', attributes.mobility)}
-                        ${this.renderAttribute('intellect', '🧠', attributes.intellect)}
-                    </div>
-                </div>
-            </div>
-        `;
+        return [
+            { icon: '🎯', text: `Character Level ${charLevel}`, achieved: charLevel >= 10 },
+            { icon: '📚', text: `Total Skill Levels: ${totalSkillLevels}`, achieved: totalSkillLevels >= 50 },
+            { icon: '⭐', text: `Mastered Skills: ${maxLevelSkills}`, achieved: maxLevelSkills >= 1 }
+        ];
     },
 
     /**
-     * Render a single attribute (compact)
+     * Format quantity for compact display
      */
-    renderAttribute(id, icon, value) {
-        const attrDef = GameEngine.definitions.combatAttributes[id];
-        return `
-            <div style="display: flex; justify-content: space-between; padding: 4px 0;">
-                <span style="color: #aaa;">${icon} ${attrDef.name}</span>
-                <span style="font-weight: bold; color: #4a9eff;">${value}</span>
-            </div>
-        `;
-    },
-
-    /**
-     * Render equipped items for Equipment Panel with stats summary
-     */
-    renderEquipment() {
-        const stats = GameEngine.getPlayerCombatStats();
-        const currentWeight = GameEngine.getTotalEquippedWeight();
-        const maxWeight = GameEngine.getMaxEquipmentWeight();
-
-        let html = `
-        <!-- Equipment Component (compact mode - no tech slots) -->
-        ${EquipmentComponent.render({ mode: 'compact', showLabels: false, interactive: false })}
-
-        <!-- Equipment Stats Summary -->
-        <div style="background: rgba(0, 0, 0, 0.3); border-radius: 6px; padding: 10px; border-top: 2px solid #4a9eff; margin-top: 12px;">
-            <div style="font-size: 0.75em; color: #4a9eff; text-transform: uppercase; font-weight: bold; margin-bottom: 8px;">Equipment Summary</div>
-
-            <!-- Weight -->
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85em;">
-                <span style="color: #aaa;">⚖️ Weight</span>
-                <span style="font-weight: bold; color: ${currentWeight >= maxWeight ? '#f44336' : currentWeight >= maxWeight * 0.8 ? '#ff9800' : '#4caf50'};">
-                    ${currentWeight} / ${maxWeight}
-                </span>
-            </div>
-
-            <!-- Bonuses -->
-            <div style="font-size: 0.7em; color: #888; margin: 6px 0 4px 0;">Bonuses:</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.8em;">
-                <div style="display: flex; justify-content: space-between;">
-                    <span style="color: #aaa;">⚔️ Damage</span>
-                    <span style="font-weight: bold; color: #fff;">+${stats.attackDamage.toFixed(1)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span style="color: #aaa;">🛡️ Defense</span>
-                    <span style="font-weight: bold; color: #fff;">${(stats.damageReduction * 100).toFixed(1)}%</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span style="color: #aaa;">❤️ Health</span>
-                    <span style="font-weight: bold; color: #fff;">${Math.floor(stats.maxHealth)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span style="color: #aaa;">⚡ Speed</span>
-                    <span style="font-weight: bold; color: #fff;">${stats.attackSpeed.toFixed(2)}/s</span>
-                </div>
-            </div>
-
-            <!-- Armor Type -->
-            <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
-                <div style="font-size: 0.7em; color: #888;">Armor Type</div>
-                <div style="font-size: 0.85em; font-weight: bold; color: ${GameEngine.definitions.armorTypes[GameEngine.getPlayerDominantArmorType()]?.color || '#fff'};">
-                    ${GameEngine.definitions.armorTypes[GameEngine.getPlayerDominantArmorType()]?.icon || '🛡️'}
-                    ${GameEngine.definitions.armorTypes[GameEngine.getPlayerDominantArmorType()]?.name || 'None'}
-                </div>
-            </div>
-        </div>
-        `;
-
-        return html;
-    },
-
-    /**
-     * Get icon for a skill
-     * @param {string} skillId - Skill ID
-     * @returns {string} - Icon emoji
-     */
-    getSkillIcon(skillId) {
-        const icons = {
-            navigation: '🧭',
-            combat: '⚔️',
-            mining: '⛏️',
-            logging: '🪓',
-            fishing: '🎣',
-            hunting: '🏹',
-            foraging: '🌿',
-            thieving: '🗡️',
-            smithing: '🔨',
-            mechanics: '⚙️',
-            electronics: '⚡',
-            cooking: '🍳',
-            chemistry: '⚗️',
-            textiles: '🧵',
-            engineering: '🔬'
-        };
-        return icons[skillId] || '⭐';
+    formatQuantity(num) {
+        if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+        return num.toString();
     }
 };

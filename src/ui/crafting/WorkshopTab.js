@@ -55,7 +55,7 @@ const WorkshopTab = {
      * Render workstation grid (2x3)
      */
     renderWorkstationGrid() {
-        const skills = ['smithing', 'mechanics', 'electronics', 'textiles', 'chemistry', 'cooking'];
+        const skills = ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking'];
 
         let html = '<div class="workstation-grid">';
 

@@ -213,21 +213,70 @@ const EquipmentSystem = {
             this.unequipItem(slot);
         }
 
-        // Equip new item
-        console.log(`✅ Setting equipment[${slot}] = ${itemId}`);
-        this.state.equipment[slot] = itemId;
-        console.log(`📊 Equipment state after setting:`, this.state.equipment[slot]);
+        // === CONSUMABLE SLOTS: Store quantity on equipment ===
+        // Food, potion, ammo slots store { itemId, quantity } objects
+        // Quantity is TRANSFERRED from bank to equipment (not a pointer)
+        const isConsumableSlot = ['food', 'potion', 'ammo'].includes(slot);
 
-        // DUAL-BANK: Remove from bank using appropriate method
-        if (instancedItem) {
-            console.log(`📦 Removing instanced item from bank: ${itemId}`);
-            this.removeEquipmentInstance(itemId);
-        } else if (stackableItem) {
-            console.log(`📦 Removing stackable item from bank: ${itemId}`);
-            this.removeStackableItem(itemId, 1);
+        if (isConsumableSlot && stackableItem) {
+            // Get quantity from bank (handle both number and object formats)
+            let bankQuantity = 0;
+            if (typeof stackableItem === 'number') {
+                bankQuantity = stackableItem;
+            } else if (typeof stackableItem === 'object') {
+                bankQuantity = stackableItem.quantity || 0;
+            }
+
+            if (bankQuantity <= 0) {
+                return { success: false, reason: "No items to equip" };
+            }
+
+            // Transfer ALL quantity from bank to equipment
+            this.state.equipment[slot] = {
+                itemId: itemId,
+                quantity: bankQuantity
+            };
+
+            // Remove from bank completely
+            delete this.state.bank.stackable[itemId];
+
+            console.log(`🍖 Equipped ${bankQuantity}x ${itemDef.name} to ${slot} (transferred from bank)`);
+        } else if (isConsumableSlot && legacyItem) {
+            // Legacy bank format support
+            let bankQuantity = typeof legacyItem === 'number' ? legacyItem : (legacyItem.quantity || 1);
+
+            this.state.equipment[slot] = {
+                itemId: itemId,
+                quantity: bankQuantity
+            };
+
+            // Remove from legacy bank
+            delete this.state.bank.items[itemId];
+
+            console.log(`🍖 Equipped ${bankQuantity}x ${itemDef.name} to ${slot} (transferred from legacy bank)`);
         } else {
-            console.log(`📦 Removing legacy item from bank: ${itemId}`);
-            this.removeItemFromBank(itemId, 1);
+            // Non-consumable slots: store item ID directly
+            console.log(`✅ Setting equipment[${slot}] = ${itemId}`);
+            this.state.equipment[slot] = itemId;
+            console.log(`📊 Equipment state after setting:`, this.state.equipment[slot]);
+
+            // DUAL-BANK: Remove from bank using appropriate method
+            if (instancedItem) {
+                console.log(`📦 Removing instanced item from bank: ${itemId}`);
+                this.removeEquipmentInstance(itemId);
+            } else if (stackableItem) {
+                // Non-consumable stackables (like materials used as equipment?)
+                console.log(`📦 Removing stackable item from bank: ${itemId}`);
+                if (typeof this.state.bank.stackable[itemId] === 'number') {
+                    this.state.bank.stackable[itemId]--;
+                    if (this.state.bank.stackable[itemId] <= 0) {
+                        delete this.state.bank.stackable[itemId];
+                    }
+                }
+            } else {
+                console.log(`📦 Removing legacy item from bank: ${itemId}`);
+                this.removeItemFromBank(itemId, 1);
+            }
         }
 
         console.log(`⚔️ Equipped ${itemDef.name} to slot '${slot}' (${itemId})`);
@@ -241,6 +290,15 @@ const EquipmentSystem = {
             this.compilePlayerStats();
         }
 
+        // Emit equipment-changed event for mission tracking
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('equipment-changed', {
+                itemId: lookupId,  // Use base item ID for matching (e.g., 'unityScoutSet')
+                instanceId: itemId, // Full instance ID if applicable
+                slot: slot
+            });
+        }
+
         return { success: true };
     },
 
@@ -248,11 +306,44 @@ const EquipmentSystem = {
      * Unequip an item and return it to bank
      */
     unequipItem(slot) {
-        const itemId = this.state.equipment[slot];
+        const equippedValue = this.state.equipment[slot];
 
-        if (!itemId) {
+        if (!equippedValue) {
             return { success: false, reason: "Nothing equipped in that slot" };
         }
+
+        // === CONSUMABLE SLOTS: Handle { itemId, quantity } objects ===
+        const isConsumableSlot = ['food', 'potion', 'ammo'].includes(slot);
+
+        if (isConsumableSlot && typeof equippedValue === 'object' && equippedValue.itemId) {
+            const { itemId, quantity } = equippedValue;
+
+            console.log(`🔄 [UNEQUIP] Returning ${quantity}x ${itemId} from ${slot} to bank`);
+
+            // Return remaining quantity to bank.stackable
+            if (quantity > 0) {
+                if (!this.state.bank.stackable) {
+                    this.state.bank.stackable = {};
+                }
+                this.state.bank.stackable[itemId] = (this.state.bank.stackable[itemId] || 0) + quantity;
+                console.log(`📦 Returned ${quantity}x ${itemId} to bank.stackable`);
+            }
+
+            // Clear equipment slot
+            this.state.equipment[slot] = null;
+
+            // Recalculate player stats
+            this.recalculatePlayerStats();
+
+            if (typeof this.compilePlayerStats === 'function') {
+                this.compilePlayerStats();
+            }
+
+            return { success: true };
+        }
+
+        // === NON-CONSUMABLE SLOTS: Handle string item IDs ===
+        const itemId = equippedValue;
 
         console.log(`🔄 [UNEQUIP v2] Unequipping from ${slot}: ${itemId}`);
 

@@ -13,6 +13,12 @@ class EnemyRegistryClass extends BaseRegistry {
     constructor() {
         super('enemy');
 
+        // Respawn time constants
+        this.BASE_RESPAWN_TIME = 3100;      // ms for Tier 1
+        this.RESPAWN_TIER_SCALING = 1000;   // +1000ms per tier above 1
+        this.MOBILITY_REDUCTION = 100;       // -100ms per mobility level
+        this.MIN_RESPAWN_TIME = 500;         // Hard floor
+
         // Map config names for backward compatibility
         Object.defineProperty(this.config, 'includeDevEnemies', {
             get() { return this.devMode; },
@@ -328,6 +334,61 @@ class EnemyRegistryClass extends BaseRegistry {
         if (power < 250) return 'Hard';
         if (power < 400) return 'Deadly';
         return 'Elite';
+    }
+
+    // ===== RESPAWN SYSTEM METHODS =====
+
+    /**
+     * Calculate respawn time for an enemy
+     * Formula: baseRespawnTime = 3100ms + (tier - 1) * 1000ms
+     * Mobility reduces: actualRespawnTime = baseRespawnTime - (mobilityLevel * 100ms)
+     * Minimum: 500ms
+     *
+     * @param {string} enemyId - Enemy ID
+     * @param {number} mobilityLevel - Player's mobility attribute (default 0)
+     * @returns {number} Respawn time in milliseconds
+     */
+    calculateRespawnTime(enemyId, mobilityLevel = 0) {
+        const enemy = this.get(enemyId);
+        if (!enemy) {
+            console.error(`[EnemyRegistry] Enemy not found: ${enemyId}`);
+            return this.BASE_RESPAWN_TIME;
+        }
+
+        // Use custom respawn time if specified in enemy definition, otherwise calculate from tier
+        let baseTime;
+        if (enemy.respawnTime !== undefined && enemy.respawnTime > 0) {
+            baseTime = enemy.respawnTime;
+        } else {
+            const tier = enemy.tier || 1;
+            baseTime = this.BASE_RESPAWN_TIME + ((tier - 1) * this.RESPAWN_TIER_SCALING);
+        }
+
+        // Apply mobility reduction
+        const mobilityReduction = Math.max(0, mobilityLevel) * this.MOBILITY_REDUCTION;
+        const finalTime = Math.max(baseTime - mobilityReduction, this.MIN_RESPAWN_TIME);
+
+        return finalTime;
+    }
+
+    /**
+     * Get respawn time formatted for display
+     * @param {string} enemyId - Enemy ID
+     * @param {number} mobilityLevel - Player's mobility attribute
+     * @returns {string} Formatted time (e.g., "3.1s")
+     */
+    getFormattedRespawnTime(enemyId, mobilityLevel = 0) {
+        const ms = this.calculateRespawnTime(enemyId, mobilityLevel);
+        return (ms / 1000).toFixed(1) + 's';
+    }
+
+    /**
+     * Get base respawn time for tier (without mobility reduction)
+     * @param {number} tier - Enemy tier (1-5)
+     * @returns {number} Base respawn time in ms
+     */
+    getBaseRespawnTimeForTier(tier) {
+        return this.BASE_RESPAWN_TIME + ((tier - 1) * this.RESPAWN_TIER_SCALING);
     }
 
     /**

@@ -80,13 +80,22 @@ const InventorySystem = {
             };
         } else {
             // For stackable items, add to stackable storage
-            const result = DualBankSystem.addStackable(itemId, quantity);
+            // DualBankSystem.addStackable returns boolean true/false
+            const addSuccess = DualBankSystem.addStackable(itemId, quantity);
 
-            if (result.success) {
+            if (addSuccess) {
+                // Get new quantity from bank state
+                const newQuantity = this.state.bank.stackable[itemId] || 0;
+
+                // Ensure newItems is an array (defensive fix for corrupted saves)
+                if (!Array.isArray(this.state.bank.newItems)) {
+                    this.state.bank.newItems = [];
+                }
+
                 // Track new items (backward compatibility)
-                const isNew = !this.state.bank.stackable[itemId] || this.state.bank.newItems.includes(itemId);
+                const isNew = !this.state.bank.newItems.includes(itemId);
 
-                if (isNew && !this.state.bank.newItems.includes(itemId)) {
+                if (isNew) {
                     this.state.bank.newItems.push(itemId);
                     console.log(`✨ New item discovered: ${itemDef.name}!`);
                 }
@@ -94,13 +103,13 @@ const InventorySystem = {
                 // Update old bank.items for backward compatibility during transition
                 if (!this.state.bank.items[itemId]) {
                     this.state.bank.items[itemId] = {
-                        quantity: result.newQuantity,
+                        quantity: newQuantity,
                         tab: targetTab,
                         isNew: isNew,
                         lastAddedTime: Date.now()
                     };
                 } else {
-                    this.state.bank.items[itemId].quantity = result.newQuantity;
+                    this.state.bank.items[itemId].quantity = newQuantity;
                     this.state.bank.items[itemId].lastAddedTime = Date.now();
                 }
 
@@ -117,7 +126,7 @@ const InventorySystem = {
                     EventBus.emit('item-added', {
                         itemId: itemId,
                         quantity: quantity,
-                        newQuantity: result.newQuantity,
+                        newQuantity: newQuantity,
                         tab: targetTab,
                         isNew: isNew
                     });
@@ -126,10 +135,13 @@ const InventorySystem = {
                 return {
                     success: true,
                     amountAdded: quantity,
-                    newQuantity: result.newQuantity
+                    newQuantity: newQuantity
                 };
             } else {
-                return result;
+                return {
+                    success: false,
+                    reason: "Failed to add stackable item"
+                };
             }
         }
     },
@@ -436,6 +448,12 @@ const InventorySystem = {
      * Items remain "new" for 30 seconds after being added
      */
     autoCleanNewItems() {
+        // Ensure newItems is an array (defensive fix for corrupted saves)
+        if (!Array.isArray(this.state.bank.newItems)) {
+            this.state.bank.newItems = [];
+            return;
+        }
+
         const now = Date.now();
         const newItemTimeout = 30000; // 30 seconds
 
@@ -469,6 +487,11 @@ const InventorySystem = {
         this.state.bank.equipmentInstances[instance.instanceId] = instance;
 
         console.log(`✨ Added equipment instance: ${instance.name} (${instance.instanceId})`);
+
+        // Ensure newItems is an array (defensive fix for corrupted saves)
+        if (!Array.isArray(this.state.bank.newItems)) {
+            this.state.bank.newItems = [];
+        }
 
         // Track as new item
         if (!this.state.bank.newItems.includes(instance.instanceId)) {

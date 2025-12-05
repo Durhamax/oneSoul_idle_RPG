@@ -162,7 +162,7 @@ class SkillCard extends UIComponent {
             mechanics: '#708090',
             cooking: '#ff8c00',
             chemistry: '#9370db',
-            textiles: '#db7093',
+            tailoring: '#db7093',
             electronics: '#4682b4',
             engineering: '#00d9ff'
         };
@@ -187,7 +187,7 @@ class SkillCard extends UIComponent {
             smithing: null,
             mechanics: null,
             electronics: null,
-            textiles: null,
+            tailoring: null,
             engineering: null,
             navigation: null
         };

@@ -77,9 +77,20 @@ const ItemModal = {
         const legacyItem = GameEngine.state.bank.items?.[itemId];
         const bankItem = instancedItem || stackableItem || legacyItem;
 
-        // Get rarity information (use baseItemId for instances)
+        // Get rarity information
+        // For instanced items, use the instance's rarity (rolled at craft time)
+        // For non-instanced items, use the base item definition's rarity
         const lookupId = bankItem?.baseItemId || itemId;
-        const rarity = GameEngine.getItemRarity(lookupId);
+        const itemDefForRarity = ItemAccessHelper.getItem(lookupId);
+        let rarityTier = 'common';
+        if (instancedItem && instancedItem.rarity) {
+            // Instanced item: use the rarity stored on the instance
+            rarityTier = instancedItem.rarity;
+        } else {
+            // Non-instanced item: get rarity from item definition
+            rarityTier = itemDefForRarity?.rarity || 'common';
+        }
+        const rarity = GameEngine.definitions.RARITY_TIERS[rarityTier] || GameEngine.definitions.RARITY_TIERS.common;
         const rarityColor = rarity ? rarity.color : '#9e9e9e';
         const rarityName = rarity ? rarity.name : 'Common';
         const rarityIcon = rarity ? rarity.icon : '⚪';

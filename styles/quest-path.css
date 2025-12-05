@@ -1,0 +1,670 @@
+/**
+ * QUEST PATH UI STYLES
+ *
+ * Visual timeline/path styling for main story progression.
+ * Includes:
+ * - Quest path container and layout
+ * - Node states (completed, active, available, locked)
+ * - Chapter groupings
+ * - Progress indicators
+ * - Objective notification animations
+ * - Completed missions tab styling
+ */
+
+/* ============================================
+   QUEST PATH CONTAINER
+   ============================================ */
+
+.quest-path-container {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.quest-path-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.quest-path-header h2 {
+    color: #e0e0e0;
+    margin: 0 0 15px 0;
+    font-size: 1.5rem;
+}
+
+.path-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.path-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #8bc34a);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.path-progress-text {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+/* ============================================
+   CHAPTER SECTIONS
+   ============================================ */
+
+.quest-path-chapters {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.quest-chapter {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 4px solid #888;
+    transition: border-color 0.3s ease;
+}
+
+.quest-chapter.started {
+    border-left-color: #2196F3;
+}
+
+.quest-chapter.complete {
+    border-left-color: #4caf50;
+}
+
+.chapter-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chapter-icon {
+    font-size: 1.5rem;
+}
+
+.chapter-name {
+    flex: 1;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.chapter-progress {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    color: #888;
+}
+
+/* ============================================
+   QUEST PATH - NODE LAYOUT
+   ============================================ */
+
+.chapter-path {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-left: 20px;
+}
+
+.path-connector {
+    display: flex;
+    justify-content: center;
+    padding: 0 0 0 30px;
+    height: 40px;
+}
+
+.connector-line {
+    width: 3px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+.path-connector.complete .connector-line {
+    background: #4caf50;
+}
+
+/* ============================================
+   QUEST NODES
+   ============================================ */
+
+.quest-node {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    position: relative;
+}
+
+.quest-node:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(5px);
+}
+
+/* Node states */
+.quest-node.completed {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.quest-node.active {
+    border-color: #2196F3;
+    background: rgba(33, 150, 243, 0.1);
+    animation: activePulse 2s infinite;
+}
+
+.quest-node.available {
+    border-color: #FF9800;
+    background: rgba(255, 152, 0, 0.1);
+}
+
+.quest-node.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #555;
+}
+
+.quest-node.locked:hover {
+    transform: none;
+}
+
+@keyframes activePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.3); }
+    50% { box-shadow: 0 0 15px 5px rgba(33, 150, 243, 0.3); }
+}
+
+.node-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+}
+
+.node-title {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #e0e0e0;
+}
+
+.node-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+}
+
+.node-progress-fill {
+    height: 100%;
+    background: #2196F3;
+    transition: width 0.3s ease;
+}
+
+/* ============================================
+   EXPANDED QUEST DETAILS
+   ============================================ */
+
+.quest-details-expanded {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    animation: expandIn 0.2s ease;
+}
+
+@keyframes expandIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.quest-description {
+    color: #aaa;
+    font-size: 0.9rem;
+    margin: 0 0 15px 0;
+    line-height: 1.5;
+}
+
+.quest-objectives {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.quest-objective {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.quest-objective.completed {
+    opacity: 0.7;
+}
+
+.quest-objective .obj-icon {
+    font-size: 1rem;
+}
+
+.quest-objective .obj-text {
+    flex: 1;
+    color: #ccc;
+}
+
+.quest-objective .obj-progress {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.quest-rewards-mini {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.quest-rewards-mini .reward {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    color: #aaa;
+}
+
+.quest-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.quest-action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quest-action-btn.accept {
+    background: #4caf50;
+    color: white;
+}
+
+.quest-action-btn.accept:hover {
+    background: #45a049;
+}
+
+.quest-action-btn.view {
+    background: #2196F3;
+    color: white;
+}
+
+.quest-action-btn.view:hover {
+    background: #1e88e5;
+}
+
+.quest-locked-hint {
+    color: #888;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+
+.quest-path-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #888;
+}
+
+.quest-path-empty .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.quest-path-empty h3 {
+    color: #aaa;
+    margin: 0 0 10px 0;
+}
+
+/* ============================================
+   OBJECTIVE NOTIFICATIONS
+   ============================================ */
+
+.objective-notifications-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 350px;
+    pointer-events: none;
+}
+
+.objective-notification {
+    display: flex;
+    gap: 12px;
+    padding: 15px;
+    background: rgba(30, 30, 30, 0.95);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    border-left: 4px solid #888;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    pointer-events: auto;
+}
+
+.objective-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.objective-notification.hide {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+/* Notification types */
+.objective-notification.objective-complete {
+    border-left-color: #4caf50;
+}
+
+.objective-notification.objective-progress {
+    border-left-color: #2196F3;
+}
+
+.objective-notification.mission-complete {
+    border-left-color: #FFD700;
+    background: linear-gradient(135deg, rgba(50, 50, 30, 0.98), rgba(30, 30, 30, 0.98));
+}
+
+.notification-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-title {
+    font-weight: 600;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+}
+
+.notification-message {
+    color: #aaa;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.notification-mission {
+    color: #888;
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+.notification-progress {
+    color: #4caf50;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.notification-rewards {
+    color: #FFD700;
+    font-size: 0.85rem;
+    margin-top: 5px;
+}
+
+.notification-time {
+    color: #888;
+    font-size: 0.8rem;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.notification-close:hover {
+    color: #fff;
+}
+
+/* ============================================
+   COMPLETED MISSIONS TAB
+   ============================================ */
+
+.completed-missions-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.completed-count {
+    color: #4caf50;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.completed-missions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.completed-mission-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    background: rgba(76, 175, 80, 0.05);
+    border: 1px solid rgba(76, 175, 80, 0.2);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.completed-mission-card:hover {
+    background: rgba(76, 175, 80, 0.1);
+    border-color: rgba(76, 175, 80, 0.4);
+}
+
+.completed-order {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #4caf50;
+    min-width: 50px;
+    text-align: center;
+}
+
+.completed-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.completed-chapter {
+    color: #888;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.completed-name {
+    color: #e0e0e0;
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0 4px 0;
+}
+
+.completed-desc {
+    color: #888;
+    font-size: 0.85rem;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.completed-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.completed-badge {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.completed-time {
+    color: #888;
+    font-size: 0.8rem;
+}
+
+/* Empty state hint */
+.empty-hint {
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 10px;
+}
+
+/* ============================================
+   OBJECTIVES COMPLETED SUMMARY (Dialog)
+   ============================================ */
+
+.objectives-completed-summary {
+    background: rgba(76, 175, 80, 0.1);
+    border: 2px solid rgba(76, 175, 80, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.completed-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 15px;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.completed-banner .completed-icon {
+    font-size: 2rem;
+}
+
+.completed-banner .completed-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #4caf50;
+}
+
+.completed-objectives-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 768px) {
+    .quest-path-container {
+        padding: 15px;
+    }
+
+    .quest-chapter {
+        padding: 15px;
+    }
+
+    .chapter-path {
+        padding-left: 10px;
+    }
+
+    .quest-node {
+        padding: 12px 15px;
+    }
+
+    .node-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1.2rem;
+    }
+
+    .objective-notifications-container {
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+
+    .completed-mission-card {
+        flex-wrap: wrap;
+    }
+
+    .completed-stats {
+        width: 100%;
+        flex-direction: row;
+        justify-content: flex-start;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}

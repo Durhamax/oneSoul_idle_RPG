@@ -75,7 +75,7 @@ class NodePanel extends UIComponent {
             smithing: null,
             mechanics: null,
             electronics: null,
-            textiles: null,
+            tailoring: null,
             engineering: null,
             navigation: null
         };

@@ -127,10 +127,26 @@ class NodeRegistryClass extends BaseRegistry {
             equipment: playerState.equipment
         });
 
+        // Consumable slots use { itemId, quantity } format - skip them for tool checks
+        const consumableSlots = ['food', 'potion', 'ammo'];
+
         // Check all equipment slots for a matching tool
         for (const slot in playerState.equipment) {
-            const equippedItemId = playerState.equipment[slot];
-            if (!equippedItemId) continue;
+            // Skip consumable slots - they can't be tools
+            if (consumableSlots.includes(slot)) continue;
+
+            const equippedValue = playerState.equipment[slot];
+            if (!equippedValue) continue;
+
+            // Handle both string IDs and object format { itemId, quantity }
+            let equippedItemId;
+            if (typeof equippedValue === 'object' && equippedValue.itemId) {
+                equippedItemId = equippedValue.itemId;
+            } else if (typeof equippedValue === 'string') {
+                equippedItemId = equippedValue;
+            } else {
+                continue; // Unknown format, skip
+            }
 
             console.log(`🔧 [NodeRegistry] Checking slot '${slot}': ${equippedItemId}`);
 

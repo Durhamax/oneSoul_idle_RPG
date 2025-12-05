@@ -1,0 +1,264 @@
+/**
+ * TOUR & WELCOME STYLES
+ *
+ * Styles for the tutorial tour overlay and welcome modal.
+ * These components are used for new player onboarding.
+ */
+
+/* =============================================================================
+   TOUR OVERLAY
+   ============================================================================= */
+
+.tour-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.tour-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tour-content {
+    background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+    border: 2px solid #58a6ff;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(88, 166, 255, 0.3),
+                0 0 60px rgba(88, 166, 255, 0.1);
+    animation: tourSlideIn 0.3s ease;
+}
+
+@keyframes tourSlideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.tour-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.tour-step {
+    color: #58a6ff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tour-close {
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.tour-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #c9d1d9;
+}
+
+.tour-title {
+    color: #f0f6fc;
+    font-size: 1.4rem;
+    margin: 0 0 12px 0;
+    font-weight: 600;
+}
+
+.tour-body {
+    color: #8b949e;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0 0 20px 0;
+}
+
+.tour-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.tour-continue {
+    background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+    border: none;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tour-continue:hover {
+    background: linear-gradient(135deg, #2ea043 0%, #3fb950 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 160, 67, 0.4);
+}
+
+.tour-continue:active {
+    transform: translateY(0);
+}
+
+
+/* =============================================================================
+   LEGACY WELCOME MODAL (tour-welcome- prefix to avoid conflicts)
+   ============================================================================= */
+
+.tour-welcome-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    opacity: 1;
+    transition: opacity 0.4s ease;
+}
+
+.tour-welcome-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tour-welcome-content {
+    background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+    border: 2px solid #8b5cf6;
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 12px 48px rgba(139, 92, 246, 0.3),
+                0 0 80px rgba(139, 92, 246, 0.15);
+    animation: welcomeFadeIn 0.5s ease;
+}
+
+@keyframes welcomeFadeIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.tour-welcome-title {
+    color: #f0f6fc;
+    font-size: 2rem;
+    margin: 0 0 16px 0;
+    font-weight: 700;
+    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.tour-welcome-body {
+    color: #8b949e;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    margin: 0 0 32px 0;
+}
+
+.tour-welcome-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tour-welcome-btn {
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 14px 28px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tour-welcome-btn.primary {
+    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+    color: #ffffff;
+}
+
+.tour-welcome-btn.primary:hover {
+    background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+.tour-welcome-btn.secondary {
+    background: transparent;
+    border: 1px solid #30363d;
+    color: #8b949e;
+}
+
+.tour-welcome-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: #8b949e;
+    color: #c9d1d9;
+}
+
+.tour-welcome-btn:active {
+    transform: translateY(0);
+}
+
+
+/* =============================================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================================= */
+
+@media (max-width: 480px) {
+    .tour-content {
+        padding: 20px;
+        margin: 16px;
+    }
+
+    .tour-title {
+        font-size: 1.2rem;
+    }
+
+    .tour-welcome-content {
+        padding: 28px 20px;
+        margin: 16px;
+    }
+
+    .tour-welcome-title {
+        font-size: 1.6rem;
+    }
+
+    .tour-welcome-body {
+        font-size: 1rem;
+    }
+}

@@ -10,7 +10,16 @@
       "Bash(start msedge \"C:\\Users\\durha\\oneSoul_idle_RPG\\test-weapon-accuracy.html\")",
       "Bash($null)",
       "Bash(del \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\data\\enemies\\production\\droids.js\")",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nImplement Unified Crafting UI and Combat UI restyling\n\nMajor features:\n- New Unified Crafting UI with skill pill filters, recipe cards, and queue sidebar\n- Combat UI restyled to match crafting UI patterns (tabs, pills, cards)\n- Enemy selection with difficulty filter pills\n- Combatant cards for active combat display\n- Loadout container with equipment cards and stats sidebar\n- New cooking recipes (Solfish Bake, Small Game Stew, Fish Oil)\n- Added minty herb and minnow materials\n\nUI Components:\n- src/ui/crafting/* - New crafting UI components\n- src/ui/combat/* - Updated combat UI components\n- styles/crafting-ui.css - Crafting UI styles\n- styles/combat-ui.css - Combat UI styles (2500+ lines)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(del:*)",
+      "Bash(if not exist \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\utils\" mkdir \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\utils\")",
+      "Bash(if not exist \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\data\\missions\\production\" mkdir \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\data\\missions\\production\")",
+      "Bash(if not exist \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\ui\\missions\" mkdir \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\ui\\missions\")",
+      "Bash(dir \"C:\\Users\\durha\\oneSoul_idle_RPG\\assets\\icons\\materials\" /b)",
+      "Bash(dir \"C:\\Users\\durha\\oneSoul_idle_RPG\\assets\\icons\" /b)"
     ],
     "deny": [],
     "ask": []

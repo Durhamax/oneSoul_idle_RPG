@@ -465,7 +465,7 @@ const StatCompiler = {
             smithingInterval: calcInterval(perks.smithingSpeed),
             mechanicsInterval: calcInterval(perks.mechanicsSpeed),
             electronicsInterval: calcInterval(perks.electronicsSpeed),
-            textilesInterval: calcInterval(perks.textilesSpeed),
+            tailoringInterval: calcInterval(perks.tailoringSpeed),
             engineeringInterval: calcInterval(perks.engineeringSpeed),
 
             // Yield multipliers (non-instanced only)
@@ -477,7 +477,7 @@ const StatCompiler = {
 
             // Rarity multipliers (instanced only)
             mechanicsRarity: getRarity(perks.mechanicsRarity),
-            textilesRarity: getRarity(perks.textilesRarity),
+            tailoringRarity: getRarity(perks.tailoringRarity),
 
             // Speed multipliers (for display)
             cookingSpeedMultiplier: perks.cookingSpeed || 1.0,
@@ -485,7 +485,7 @@ const StatCompiler = {
             smithingSpeedMultiplier: perks.smithingSpeed || 1.0,
             mechanicsSpeedMultiplier: perks.mechanicsSpeed || 1.0,
             electronicsSpeedMultiplier: perks.electronicsSpeed || 1.0,
-            textilesSpeedMultiplier: perks.textilesSpeed || 1.0,
+            tailoringSpeedMultiplier: perks.tailoringSpeed || 1.0,
             engineeringSpeedMultiplier: perks.engineeringSpeed || 1.0
         };
     },
@@ -544,11 +544,11 @@ const StatCompiler = {
             // Gathering Yield (6)
             'miningYield', 'loggingYield', 'fishingYield', 'huntingYield', 'foragingYield', 'thievingYield',
             // Crafting Speed (7)
-            'cookingSpeed', 'chemistrySpeed', 'smithingSpeed', 'mechanicsSpeed', 'electronicsSpeed', 'textilesSpeed', 'engineeringSpeed',
+            'cookingSpeed', 'chemistrySpeed', 'smithingSpeed', 'mechanicsSpeed', 'electronicsSpeed', 'tailoringSpeed', 'engineeringSpeed',
             // Crafting Yield (5)
             'cookingYield', 'chemistryYield', 'smithingYield', 'electronicsYield', 'engineeringYield',
             // Crafting Rarity (2)
-            'mechanicsRarity', 'textilesRarity',
+            'mechanicsRarity', 'tailoringRarity',
             // Experience (2)
             'combatXP', 'skillXP'
         ];

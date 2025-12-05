@@ -100,6 +100,12 @@ const UICore = {
                     GatheringUI.render();
                 }
                 break;
+            case 'gather':
+                // New GatherUI handles its own updates
+                if (typeof GatherUI !== 'undefined' && GatherUI.updateIntervalBar) {
+                    GatherUI.updateIntervalBar();
+                }
+                break;
             case 'bank':
                 EquipmentUI.updateBank();
                 break;
@@ -220,9 +226,10 @@ const UICore = {
         }
 
         // Update each currency with flash animation if changed
+        // Note: UI element "medalsAmount" displays medalFragments (from combat drops)
         const currencyElements = {
             gold: document.getElementById("goldAmount"),
-            medals: document.getElementById("medalsAmount"),
+            medalFragments: document.getElementById("medalsAmount"),  // medalFragments displayed as "Medals"
             tomes: document.getElementById("tomesAmount"),
             gems: document.getElementById("gemsAmount")
         };
@@ -311,7 +318,7 @@ const UICore = {
             progress = (state.activeNavigation.regionHealth / state.activeNavigation.maxRegionHealth) * 100;
             progressText = `${totalDiscoveryItems} Discoveries | ${Math.floor(state.activeNavigation.regionHealth)} HP`;
             barColor = "linear-gradient(90deg, #FF9800, #FFC107)";
-        } else if (state.currentActivity === 'combat' && state.combat.inCombat) {
+        } else if (state.currentActivity === 'combat' && state.combat?.inCombat) {
             // Show combat activity
             const enemy = state.combat.currentEnemy;
             const enemyDef = GameEngine.definitions.enemies[enemy.enemyId];
@@ -322,7 +329,7 @@ const UICore = {
                 progressText = `Enemy: ${Math.floor(enemy.currentHealth)} / ${enemyDef.health} HP`;
                 barColor = "linear-gradient(90deg, #f44336, #e91e63)";
             }
-        } else if (state.currentActivity === 'crafting' && state.crafting.activeCrafts.length > 0) {
+        } else if (state.currentActivity === 'crafting' && state.crafting?.activeCrafts?.length > 0) {
             // Show crafting activity (first active craft)
             const craft = state.crafting.activeCrafts[0];
             const recipeDef = GameEngine.definitions.recipes[craft.recipeId];
@@ -423,6 +430,13 @@ const UICore = {
             }
         }
 
+        // Special handling for gather view - render new GatherUI
+        if (viewName === 'gather') {
+            if (typeof GatherUI !== 'undefined' && GatherUI.render) {
+                GatherUI.render();
+            }
+        }
+
         // Special handling for perks view - render perk grid
         if (viewName === 'perks') {
             if (typeof PerkGridUI !== 'undefined' && PerkGridUI.render) {
@@ -441,6 +455,11 @@ const UICore = {
         // Update developer stats panel for the new view
         if (typeof DevStatsPanel !== 'undefined') {
             DevStatsPanel.update(viewName);
+        }
+
+        // Emit tab-visited event for mission objective tracking
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('tab-visited', { tab: viewName });
         }
 
         // Force update of the new view

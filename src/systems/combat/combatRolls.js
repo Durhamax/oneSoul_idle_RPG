@@ -103,7 +103,8 @@ const CombatRolls = {
      */
     calculateDefensePool(defender) {
         const mult = defender.perkMultipliers || {};
-        const compiled = defender.compiledStats || { defense: {} };
+        const compiled = defender.compiledStats || {};
+        const defense = compiled.defense || {};
         // Player uses combatAttributes, enemies use attributes
         const attributes = defender.attributes || defender.combatAttributes || {};
 
@@ -113,10 +114,10 @@ const CombatRolls = {
             * (mult.evasion || 1.0);
 
         // Flat evasion from equipment
-        evasion += compiled.defense.flatEvasionBonus || 0;
+        evasion += defense.flatEvasionBonus || 0;
 
         // Armor Rating
-        const armorRating = compiled.defense.armorRating || 0;
+        const armorRating = defense.armorRating || 0;
 
         return {
             evasion: Math.floor(evasion),

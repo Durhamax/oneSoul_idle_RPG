@@ -14,12 +14,14 @@ const CONSUMABLE_ITEMS = {
         description: 'A basic baked fish meal. Provides modest healing and endurance recovery.',
         icon: '🐟',
         category: 'consumable',
+        slot: 'consumable',      // Bank tab
+        equipSlot: 'food',       // Equipment slot
         instanced: false,
         rarity: 'common',
         stackLimit: 50,
         value: 8,
         effectType: 'heal',
-        effectValue: 75,
+        effectValue: 75,         // HP restored when consumed
         cooldown: 800,
         enduranceRecovery: 12,
         tags: ['consumable', 'food', 'healing', 'fish'],
@@ -31,12 +33,14 @@ const CONSUMABLE_ITEMS = {
         description: 'A hearty stew made from small game meat. Restores health and provides a temporary strength boost.',
         icon: '🍲',
         category: 'consumable',
+        slot: 'consumable',      // Bank tab
+        equipSlot: 'food',       // Equipment slot
         instanced: false,
         rarity: 'common',
         stackLimit: 40,
         value: 12,
         effectType: 'heal',
-        effectValue: 100,
+        effectValue: 100,        // HP restored when consumed
         effect: {
             stat: 'strength',
             amount: 1,

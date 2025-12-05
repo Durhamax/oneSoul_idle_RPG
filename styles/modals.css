@@ -3208,3 +3208,129 @@ button:disabled {
 }
 
 /* =================================================================== */
+/* QUICK EQUIP MODAL (Gathering Tool Selection) */
+/* =================================================================== */
+
+.quick-equip-modal {
+    max-width: 450px;
+    width: 90%;
+}
+
+.quick-equip-modal .modal-header h3 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.quick-equip-modal .modal-body p {
+    margin-bottom: var(--space-md);
+    color: var(--color-text-secondary);
+}
+
+.quick-equip-modal .modal-body p strong {
+    color: var(--color-primary);
+}
+
+.quick-equip-tools-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.quick-equip-tool-option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--color-bg-secondary);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.quick-equip-tool-option:hover {
+    border-color: var(--color-border-accent);
+    background: var(--color-bg-tertiary);
+}
+
+.quick-equip-tool-option.rarity-common {
+    border-left: 4px solid var(--rarity-common, #9d9d9d);
+}
+
+.quick-equip-tool-option.rarity-uncommon {
+    border-left: 4px solid var(--rarity-uncommon, #1eff00);
+}
+
+.quick-equip-tool-option.rarity-rare {
+    border-left: 4px solid var(--rarity-rare, #0070dd);
+}
+
+.quick-equip-tool-option.rarity-epic {
+    border-left: 4px solid var(--rarity-epic, #a335ee);
+}
+
+.quick-equip-tool-option.rarity-legendary {
+    border-left: 4px solid var(--rarity-legendary, #ff8000);
+}
+
+.quick-equip-tool-option .tool-icon {
+    font-size: 2em;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-sm);
+}
+
+.quick-equip-tool-option .tool-info {
+    flex: 1;
+}
+
+.quick-equip-tool-option .tool-name {
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+}
+
+.quick-equip-tool-option .tool-tier {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+}
+
+.quick-equip-tool-option .btn-equip-start {
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-success);
+    color: var(--color-bg-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-display);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quick-equip-tool-option .btn-equip-start:hover {
+    background: var(--color-success-hover, #45a049);
+    transform: translateY(-1px);
+}
+
+.quick-equip-no-tools {
+    text-align: center;
+    padding: var(--space-xl);
+    color: var(--color-text-muted);
+}
+
+.quick-equip-no-tools p {
+    margin: var(--space-sm) 0;
+}

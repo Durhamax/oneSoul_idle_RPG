@@ -51,22 +51,17 @@ const CombatUI = {
 
         const player = GameEngine.state;
         const inCombat = player.combat?.inCombat || false;
+        const isRespawning = player.combat?.respawn?.active || false;
+        const inCombatOrRespawning = inCombat || isRespawning;
 
-        // Auto-switch to combat tab if combat started
-        if (inCombat && this.currentTab === 'enemies') {
-            this.currentTab = 'combat';
-        }
-
-        // Auto-switch back to enemies tab if combat ended
-        if (!inCombat && this.currentTab === 'combat') {
-            this.currentTab = 'enemies';
-        }
+        // NOTE: No auto-switching tabs - let user stay on current tab
+        // Combat runs in background if user is on another tab
 
         combatArea.innerHTML = `
             <div class="combat-ui-wrapper">
-                ${this.renderTabs(inCombat)}
+                ${this.renderTabs(inCombatOrRespawning)}
                 <div class="combat-content-area">
-                    ${this.renderTabContent(player, inCombat)}
+                    ${this.renderTabContent(player, inCombatOrRespawning)}
                 </div>
             </div>
         `;
@@ -135,10 +130,12 @@ const CombatUI = {
         console.log(`🎯 CombatUI.switchTab called with: ${tabName}`);
         const player = GameEngine.state;
         const inCombat = player.combat?.inCombat || false;
+        const isRespawning = player.combat?.respawn?.active || false;
+        const inCombatOrRespawning = inCombat || isRespawning;
 
-        // Prevent switching to combat tab if not in combat
-        if (tabName === 'combat' && !inCombat) {
-            console.log('⚠️ Cannot switch to combat tab - not in combat');
+        // Prevent switching to combat tab if not in combat and not respawning
+        if (tabName === 'combat' && !inCombatOrRespawning) {
+            console.log('⚠️ Cannot switch to combat tab - not in combat or respawning');
             return;
         }
 
@@ -153,9 +150,10 @@ const CombatUI = {
     updateCombat() {
         const player = GameEngine.state;
         const inCombat = player.combat?.inCombat || false;
+        const isRespawning = player.combat?.respawn?.active || false;
 
-        // Only update if combat tab is active and in combat
-        if (this.currentTab === 'combat' && inCombat) {
+        // Only update if combat tab is active and in combat or respawning
+        if (this.currentTab === 'combat' && (inCombat || isRespawning)) {
             CombatContainer.update();
         }
 
@@ -168,14 +166,16 @@ const CombatUI = {
      */
     updateTabBadges(player) {
         const inCombat = player.combat?.inCombat || false;
-        const combatTab = document.querySelector('.combat-tab[onclick*="combat"]');
+        const isRespawning = player.combat?.respawn?.active || false;
+        const inCombatOrRespawning = inCombat || isRespawning;
+        const combatTab = document.querySelector('.combat-tab[data-tab="combat"]');
 
         if (combatTab) {
             const badge = combatTab.querySelector('.tab-badge');
-            if (inCombat && this.currentTab !== 'combat') {
+            if (inCombatOrRespawning && this.currentTab !== 'combat') {
                 if (!badge) {
                     const newBadge = document.createElement('span');
-                    newBadge.className = 'tab-badge';
+                    newBadge.className = 'tab-badge pulse';
                     newBadge.textContent = '!';
                     combatTab.appendChild(newBadge);
                 }
@@ -345,11 +345,14 @@ const CombatUI = {
 
     /**
      * Handle combat started event
+     * NOTE: Does NOT auto-switch to combat tab - combat runs in background
      */
     onCombatStarted(data) {
         console.log('Combat started:', data);
-        this.switchTab('combat');
-        this.render();
+        // Only re-render if on combat tab, otherwise let badge notify user
+        if (this.currentTab === 'combat') {
+            this.render();
+        }
     },
 
     /**
@@ -358,17 +361,16 @@ const CombatUI = {
     onCombatEnded(data) {
         console.log('Combat ended:', data);
 
-        // Show victory/defeat message
         if (data.result === 'victory') {
-            this.showCombatResult('VICTORY!', data);
+            // Re-render to show respawn state (no victory modal - too distracting)
+            this.render();
         } else if (data.result === 'defeat') {
             this.showCombatResult('DEFEAT!', data);
+            // Only switch back to enemies on defeat (player died)
+            setTimeout(() => {
+                this.switchTab('enemies');
+            }, 2000);
         }
-
-        // Switch back to enemies tab after delay
-        setTimeout(() => {
-            this.switchTab('enemies');
-        }, 2000);
     },
 
     /**
@@ -433,20 +435,34 @@ const CombatUI = {
      * Handle loot dropped event
      */
     onLootDropped(data) {
-        const { itemId, quantity, rarity } = data;
+        const { itemId, quantity, rarity, name, icon, isCurrency, isItem } = data;
 
-        // Get item definition
-        const itemDef = ItemRegistry.getItem(itemId);
-        if (!itemDef) return;
+        // Build loot data - use provided values or look up from registry
+        let lootData;
 
-        // Add to recent loot
-        const lootData = {
-            itemId: itemId,
-            name: itemDef.name,
-            icon: itemDef.icon || '📦',
-            quantity: quantity || 1,
-            rarity: rarity || itemDef.rarity || 'common'
-        };
+        if (isCurrency) {
+            // Currency drop (gold, fragments) - use provided data directly
+            lootData = {
+                itemId: itemId,
+                name: name || itemId,
+                icon: icon || '💰',
+                quantity: quantity || 1,
+                rarity: rarity || 'currency',
+                isCurrency: true
+            };
+        } else {
+            // Item drop - may need to look up from registry
+            const itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(itemId) : null;
+
+            lootData = {
+                itemId: itemId,
+                name: name || itemDef?.name || itemId,
+                icon: icon || itemDef?.icon || '📦',
+                quantity: quantity || 1,
+                rarity: rarity || itemDef?.rarity || 'common',
+                isItem: true
+            };
+        }
 
         CombatContainer.addLoot(lootData);
     },

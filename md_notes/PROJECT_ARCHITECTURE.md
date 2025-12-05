@@ -1,6 +1,6 @@
 # OneSoul Idle RPG - Complete Project Architecture
 
-**Last Updated:** 2025-11-29
+**Last Updated:** 2025-12-01
 **Purpose:** Comprehensive technical reference for AI assistants and future development
 
 ---
@@ -65,7 +65,9 @@ oneSoul_idle_RPG/
 │   ├── layout.css                  # Layout grid
 │   ├── game-ui.css                 # Game UI elements
 │   ├── modals.css                  # Modal dialogs
-│   └── developer.css               # Dev tools styling
+│   ├── developer.css               # Dev tools styling
+│   ├── combat-ui.css               # Combat UI styling (1,100+ lines)
+│   └── crafting-ui.css             # Unified Crafting UI styling
 │
 ├── src/
 │   ├── core/                       # Core game systems
@@ -179,14 +181,26 @@ oneSoul_idle_RPG/
 │   │   │   ├── PersistentActionBar.js # Sticky action bar
 │   │   │   ├── SkillCard.js        # Skill display cards
 │   │   │   └── NodePanel.js        # Node selection panel
+│   │   ├── combat/                 # Combat UI system (Rev1)
+│   │   │   ├── combatUI.js         # Main combat coordinator
+│   │   │   ├── enemySelectionPanel.js # Enemy browser
+│   │   │   ├── combatContainer.js  # Active combat display
+│   │   │   ├── loadoutContainer.js # Equipment/stats display
+│   │   │   ├── enemyModal.js       # Enemy details modal
+│   │   │   └── combatAnimations.js # Combat visual effects
+│   │   ├── crafting/               # Unified Crafting UI (2025-12-01)
+│   │   │   ├── UnifiedCraftingUI.js # Main crafting coordinator
+│   │   │   ├── RecipesTab.js       # Recipe browsing tab
+│   │   │   ├── WorkshopTab.js      # Workstation management tab
+│   │   │   ├── EngineeringTab.js   # Advanced features tab
+│   │   │   └── CraftQueue.js       # Queue sidebar component
 │   │   ├── utilities/
 │   │   │   └── itemAccessHelper.js # Item lookup utilities
 │   │   ├── animations.js           # Animation utilities
 │   │   ├── attachmentModal.js      # Weapon attachment UI
 │   │   ├── bankDevTools.js         # Bank dev tools
-│   │   ├── combatUI.js             # Combat view
 │   │   ├── offlineCombatUI.js      # Offline combat display
-│   │   ├── craftingUI.js           # Crafting view
+│   │   ├── craftingUI.js           # Legacy crafting view
 │   │   ├── developerUI.js          # Developer panel
 │   │   ├── devItemTools.js         # Item creation tools
 │   │   ├── devModal.js             # Developer modal
@@ -1303,18 +1317,93 @@ CombatUI.switchTab('combat');   // Active combat (disabled when not in combat)
 CombatUI.switchTab('loadout');  // Equipment and stats
 ```
 
-#### 4. CraftingUI
-**File:** `src/ui/craftingUI.js`
+#### 4. UnifiedCraftingUI (Implemented 2025-12-01)
+**Files:** `src/ui/crafting/` directory (5 files)
 
-**Purpose:** Recipe browsing and crafting.
+**Purpose:** Complete crafting UI system with 3-tab interface matching Combat UI patterns.
+
+**Architecture:**
+```
+UnifiedCraftingUI (Main Coordinator)
+├── RecipesTab (Recipes Tab - Default)
+├── WorkshopTab (Workshop Tab)
+├── EngineeringTab (Engineering Tab)
+└── CraftQueue (Queue Sidebar)
+```
 
 **Features:**
-- Station selection
-- Recipe list (filtered by station + skill)
-- Material requirements
-- Craft button
-- Active crafts progress bars
-- Auto-repeat toggle
+
+**1. Recipes Tab (`RecipesTab.js`)**
+- Skill pill filters at top (Smithing, Mechanics, Electronics, Textiles, Chemistry, Cooking)
+- Recipe cards in responsive grid (3-4 columns)
+- Material availability indicators (checkmarks/X)
+- Quick craft buttons (x1, x5, x10, Max)
+- Locked recipes shown grayed with requirements
+- Click recipe card to craft
+
+**2. Workshop Tab (`WorkshopTab.js`)**
+- All 6 workstations displayed as large cards
+- Current tier and max tier display (Tier X/5)
+- Active benefits clearly listed per tier
+- Upgrade requirements (blueprints + engineering level)
+- Visual progress toward next tier
+- Blueprint inventory display at bottom
+
+**3. Engineering Tab (`EngineeringTab.js`)**
+- Engineering level prominently displayed
+- Equipment Perfection panel (combine 10 → 1 higher rarity)
+- Technology Assembly panel (create tech items)
+- Salvaging panel (recover materials from items)
+- Success rates with engineering bonuses shown
+- Statistics tracking (perfections, technologies, materials saved)
+
+**4. Queue Sidebar (`CraftQueue.js`)**
+- Shows ALL active crafts across all skills (not just current)
+- Progress bars per craft
+- Skill-grouped sections
+- Cancel craft buttons
+- Auto-refreshes during crafting
+
+**Styling:**
+- `styles/crafting-ui.css` (comprehensive theming)
+- Skill color coding:
+  - Smithing: #8B4513 (brown)
+  - Mechanics: #708090 (steel gray)
+  - Electronics: #00CED1 (cyan)
+  - Textiles: #8B008B (purple)
+  - Chemistry: #32CD32 (lime)
+  - Cooking: #FF6347 (tomato)
+- Matches Combat UI design patterns (tabs, pills, cards)
+
+**Usage Pattern:**
+```javascript
+// Initialize (called in globalHandlers.js)
+UnifiedCraftingUI.init();
+
+// Render (called from uiCore.js)
+UnifiedCraftingUI.render();
+
+// Open to specific skill
+UnifiedCraftingUI.openToSkill('smithing');
+
+// Switch tabs
+UnifiedCraftingUI.switchTab('recipes');
+UnifiedCraftingUI.switchTab('workshop');
+UnifiedCraftingUI.switchTab('engineering');
+```
+
+**Integration:**
+- Skills UI links crafting skills to Crafting tab via `UnifiedCraftingUI.openToSkill()`
+- Engineering skill in Skills UI links directly to Engineering tab
+- Recipe progress tracked in `GameEngine.state.crafting.activeCrafts`
+- Workstation tiers in `GameEngine.state.engineering.workshops`
+
+#### 4b. CraftingUI (Legacy - Being Replaced)
+**File:** `src/ui/craftingUI.js`
+
+**Purpose:** Original recipe browsing (being superseded by UnifiedCraftingUI).
+
+**Note:** This legacy UI is still loaded but UnifiedCraftingUI is the primary interface.
 
 #### 5. NavigationUI
 **File:** `src/ui/navigationUI.js`

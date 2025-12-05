@@ -241,6 +241,8 @@
     border-radius: 8px;
     padding: 1rem;
     transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .recipe-card:hover {
@@ -1007,6 +1009,58 @@
     cursor: not-allowed;
 }
 
+/* ===========================
+   CRAFTING NOTIFICATIONS
+   =========================== */
+
+/* XP Drop Animation */
+@keyframes craftXpFloat {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -80%) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -120%) scale(0.8);
+    }
+}
+
+.crafting-xp-drop {
+    font-family: var(--font-display, 'Cinzel', serif);
+}
+
+/* Item Notification Animation */
+@keyframes craftItemSlide {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    15% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    85% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+}
+
+.crafting-item-notification .item-icon {
+    font-size: 1.2em;
+}
+
+.crafting-item-notification .item-text {
+    white-space: nowrap;
+}
+
 /* Technology Recipes */
 .tech-recipes {
     display: flex;
@@ -1200,4 +1254,106 @@
     .workstation-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* ===========================
+   STOP CRAFTING CONTROLS
+   =========================== */
+
+/* Queue header with stop all button */
+.queue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.stop-all-btn {
+    background: rgba(244, 67, 54, 0.2);
+    border: 1px solid rgba(244, 67, 54, 0.4);
+    color: #f44336;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.stop-all-btn:hover {
+    background: rgba(244, 67, 54, 0.4);
+    border-color: #f44336;
+}
+
+/* Active crafting recipe card styling */
+.recipe-card.active-crafting {
+    border-color: var(--accent-primary, #4a9eff);
+    box-shadow: 0 0 15px rgba(74, 158, 255, 0.3);
+}
+
+.recipe-card.active-crafting::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #4a9eff, #9c27b0);
+    animation: craftingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes craftingPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* Active craft controls in recipe card */
+.active-craft-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.crafting-indicator {
+    color: var(--accent-primary, #4a9eff);
+    font-size: 0.85rem;
+    font-weight: 500;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+
+.stop-craft-btn {
+    background: rgba(244, 67, 54, 0.2);
+    border: 1px solid rgba(244, 67, 54, 0.4);
+    color: #f44336;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.stop-craft-btn:hover {
+    background: rgba(244, 67, 54, 0.4);
+    border-color: #f44336;
+    transform: scale(1.05);
+}
+
+/* Switch craft button styling */
+.quick-craft-btn.switch-craft {
+    background: var(--accent-primary, #4a9eff);
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+.quick-craft-btn.switch-craft:hover {
+    background: #6ab3ff;
 }

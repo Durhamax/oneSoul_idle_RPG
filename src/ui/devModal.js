@@ -1313,7 +1313,7 @@ const DevModal = {
             'lightPickaxe', 'utilityHatchet', 'caneRod', 'huntingBlade', 'wovenBasket', 'lockpick',
 
             // Basic materials (always useful)
-            'pinewood', 'normalLogs', 'oakLogs', 'willowLogs', 'mapleLogs',
+            'pinewood', 'normalLogs', 'willowLogs', 'mapleLogs',
             'copperOre', 'tinOre', 'ironOre', 'coal', 'goldOre',
             'copperBar', 'bronzeBar', 'ironBar', 'steelBar', 'goldBar',
             'wool', 'thread', 'leather', 'hardLeather',
@@ -1794,18 +1794,28 @@ const DevModal = {
 
     /**
      * Scenario: Fresh Start
+     * Complete reset to new player state for playtesting early game
      */
     scenarioFreshStart() {
-        // Set all skills to level 1
-        this.setAllSkillsLevel(1);
-        // Set all attributes to 1
-        this.setAllAttributes(1);
-        // Clear bank
-        if (GameEngine?.state?.bank) {
-            for (let tab in GameEngine.state.bank) {
-                GameEngine.state.bank[tab] = {};
-            }
+        console.log("🗑️ Initiating fresh start...");
+
+        // CRITICAL: Set flag to skip loading on next page load
+        // This is checked FIRST in SaveSystem.init() before any loading happens
+        localStorage.setItem("idleRpg_skipLoad", "true");
+
+        // Also delete the save file now
+        localStorage.removeItem("idleRpgSave_v1");
+
+        // Prevent any further saves
+        if (typeof SaveSystem !== 'undefined') {
+            SaveSystem.preventSave = true;
+            SaveSystem.stopAutoSave();
         }
+
+        console.log("🔄 Reloading for fresh start...");
+
+        // Reload the page for a true fresh start
+        window.location.reload();
     },
 
     /**

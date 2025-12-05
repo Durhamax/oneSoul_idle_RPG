@@ -9,12 +9,30 @@ const SaveSystem = {
     SAVE_KEY: "idleRpgSave_v1",
     AUTO_SAVE_INTERVAL: 30000, // Auto-save every 30 seconds
     autoSaveTimer: null,
+    preventSave: false, // Flag to prevent saving during reset
+
+    SKIP_LOAD_FLAG: "idleRpg_skipLoad",
 
     /**
      * Initialize the save system
      */
     init() {
         console.log("💾 Save System Initialized");
+
+        // Check if we should skip loading (fresh start requested)
+        const skipLoad = localStorage.getItem(this.SKIP_LOAD_FLAG);
+        if (skipLoad) {
+            console.log("🔄 Fresh start detected - skipping save load");
+            localStorage.removeItem(this.SKIP_LOAD_FLAG);
+            localStorage.removeItem(this.SAVE_KEY);
+            console.log("📝 Starting new game (fresh start)");
+            DualBankSystem.initialize();
+            this.startAutoSave();
+            window.addEventListener("beforeunload", () => {
+                this.save();
+            });
+            return false;
+        }
 
         // Try to load existing save
         const loaded = this.load();
@@ -66,6 +84,12 @@ const SaveSystem = {
      * Save the current game state to localStorage
      */
     save() {
+        // Skip save if preventSave flag is set (used during reset)
+        if (this.preventSave) {
+            console.log("💾 Save skipped (reset in progress)");
+            return false;
+        }
+
         try {
             // Update lastSaveTime before saving
             GameEngine.state.lastSaveTime = Date.now();

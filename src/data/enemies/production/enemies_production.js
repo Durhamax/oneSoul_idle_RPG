@@ -22,7 +22,7 @@ const ProductionEnemies = {
         category: 'droid',        // Category is a PROPERTY, not file organization
 
         // Health - Low for entry enemy
-        maxHP: 80,
+        maxHP: 20,
 
         // Offense - Low damage, pierce type, fast attacks
         baseDamage: 8,
@@ -35,9 +35,9 @@ const ProductionEnemies = {
         damageType: 'pierce',       // Pierce damage from scanning lasers
 
         // Defense - Airborne type, low armor, some evasion from mobility
-        evasion: 35,                // Nimble flyer
-        armorRating: 15,            // Light construction
-        damageReduction: 0.05,      // Minimal plating (5% DR)
+        evasion: 1,                 // Reduced for testing
+        armorRating: 1,             // Reduced for testing
+        damageReduction: 0.01,      // Reduced for testing (1% DR)
         armorType: 'airborne',      // Flying unit - weak to cryo
 
         // Rewards - Entry level drops
@@ -50,7 +50,7 @@ const ProductionEnemies = {
             { itemId: 'lens_fragment', chance: 0.15, quantity: 1 },
             { itemId: 'survey_data_chip', chance: 0.08, quantity: 1 }
         ],
-        respawnTime: 15000,         // 15 second respawn
+        respawnTime: 500,           // 500ms for testing
 
         // Metadata
         description: 'A small reconnaissance drone used by Elaran forces to map terrain and monitor movement. Lightly armed with a scanning laser that can be weaponized.',

@@ -99,44 +99,91 @@ const EquipmentComponent = {
     },
 
     /**
-     * Render 3-1-3 equipment grid (unified armor slot in center column)
+     * Render 3-1-3 equipment grid (standardized format)
+     * Layout:
+     *   Left Column:   Weapon, Gloves, Boots (3 slots)
+     *   Middle Column: Armor Set (1 tall slot)
+     *   Right Column:  Back, Neck, Ring (3 slots)
      */
     renderEquipmentGrid(showLabels, interactive) {
-        // New layout: 3 columns, center column is a tall armor slot spanning 3 rows
-        const leftColumn = ['weapon', 'gloves', 'boots'];
-        const centerColumn = ['armor']; // Single tall slot
-        const rightColumn = ['back', 'neck', 'ring'];
-
         const slotLabels = {
-            weapon: '⚔️ Weapon',
-            armor: '🛡️ Armor Set',
             back: '🎒 Back',
+            weapon: '⚔️ Weapon',
             gloves: '🧤 Gloves',
-            neck: '📿 Neck',
             boots: '👢 Boots',
-            ring: '💍 Ring'
+            neck: '📿 Neck',
+            ring: '💍 Ring',
+            armor: '🛡️ Armor Set'
         };
 
-        let html = `<div class="equipment-grid equipment-grid-3-1-3">`;
+        let html = `<div class="equipment-grid equipment-main-grid">`;
 
-        // Render 3 rows
-        for (let rowIndex = 0; rowIndex < 3; rowIndex++) {
-            // Left slot
-            const leftSlot = leftColumn[rowIndex];
-            html += this.renderSlot(leftSlot, slotLabels[leftSlot], showLabels, interactive);
+        // Left Column: Weapon, Gloves, Boots (3 slots)
+        html += `<div class="loadout-column">`;
+        html += this.renderSlot('weapon', slotLabels['weapon'], showLabels, interactive);
+        html += this.renderSlot('gloves', slotLabels['gloves'], showLabels, interactive);
+        html += this.renderSlot('boots', slotLabels['boots'], showLabels, interactive);
+        html += `</div>`;
 
-            // Center armor slot (only render on first row, spans 3 rows)
-            if (rowIndex === 0) {
-                html += this.renderSlot('armor', slotLabels['armor'], showLabels, interactive, true); // tall=true
-            }
+        // Middle Column: Armor Set (1 tall slot)
+        html += `<div class="loadout-column loadout-column--armor">`;
+        html += this.renderArmorSlot(slotLabels['armor'], showLabels, interactive);
+        html += `</div>`;
 
-            // Right slot
-            const rightSlot = rightColumn[rowIndex];
-            html += this.renderSlot(rightSlot, slotLabels[rightSlot], showLabels, interactive);
-        }
+        // Right Column: Back, Neck, Ring (3 slots)
+        html += `<div class="loadout-column">`;
+        html += this.renderSlot('back', slotLabels['back'], showLabels, interactive);
+        html += this.renderSlot('neck', slotLabels['neck'], showLabels, interactive);
+        html += this.renderSlot('ring', slotLabels['ring'], showLabels, interactive);
+        html += `</div>`;
 
         html += `</div>`;
         return html;
+    },
+
+    /**
+     * Render tall armor slot
+     */
+    renderArmorSlot(label, showLabels, interactive) {
+        const equippedItemId = GameEngine.state.equipment.armor;
+
+        let lookupId = equippedItemId;
+        if (equippedItemId) {
+            if (equippedItemId.includes('_instance_')) {
+                lookupId = equippedItemId.split('_instance_')[0];
+            } else if (equippedItemId.includes('_')) {
+                const parts = equippedItemId.split('_');
+                if (parts.length >= 3 && /^\d{13}$/.test(parts[parts.length - 2])) {
+                    lookupId = parts.slice(0, -2).join('_');
+                }
+            }
+        }
+
+        const itemDef = lookupId ? ItemAccessHelper.getItem(lookupId) : null;
+        const isEquipped = equippedItemId !== null && itemDef !== null;
+
+        // Get rarity from the equipped INSTANCE, not base item definition
+        const equippedInstance = equippedItemId ? GameEngine.state.bank.instanced?.[equippedItemId] : null;
+        const rarityTier = equippedInstance?.rarity || itemDef?.rarity || 'common';
+        const rarity = isEquipped ? (GameEngine.definitions.RARITY_TIERS[rarityTier] || GameEngine.definitions.RARITY_TIERS.common) : null;
+        const rarityColor = rarity ? rarity.color : null;
+        const rarityGlow = rarity && rarity.glow;
+
+        return `
+            <div class="equipment-slot equipment-slot--armor ${isEquipped ? 'equipped' : ''} ${interactive ? 'clickable' : ''}"
+                 style="${rarityColor ? `border-color: ${rarityColor};` : ''} ${rarityGlow ? `box-shadow: 0 0 8px ${rarityColor};` : ''}"
+                 ${interactive ? `onclick="openEquipModal('armor', event)"` : ''}>
+                ${showLabels ? `<div class="equipment-slot-label">${label}</div>` : ''}
+                ${isEquipped ? `
+                    <div class="equipment-slot-icon">${IconHelper.getItemIconHTML(itemDef, {size: 64, className: 'equipment-icon'})}</div>
+                    <div class="equipment-slot-item" style="${rarityColor ? `color: ${rarityColor};` : ''}">${itemDef.name}</div>
+                    ${this.renderItemStats(itemDef)}
+                ` : `
+                    <div class="equipment-slot-empty">🛡️</div>
+                    <div class="equipment-slot-label-empty">Armor Set</div>
+                `}
+            </div>
+        `;
     },
 
     /**
@@ -145,10 +192,9 @@ const EquipmentComponent = {
      * @param {string} label - Display label
      * @param {boolean} showLabels - Show slot label
      * @param {boolean} interactive - Allow clicking
-     * @param {boolean} tall - Tall slot (spans 3 rows) for armor
      * @returns {string} HTML string
      */
-    renderSlot(slot, label, showLabels, interactive, tall = false) {
+    renderSlot(slot, label, showLabels, interactive) {
         const equippedItemId = GameEngine.state.equipment[slot];
 
         // Parse instance ID to get base item ID for definition lookup
@@ -175,20 +221,27 @@ const EquipmentComponent = {
         // Check if this is a weapon slot with a gun equipped
         const isGunEquipped = slot === 'weapon' && itemDef && itemDef.weaponType === 'gun';
 
-        // Get rarity for border color
-        const rarity = isEquipped ? GameEngine.getItemRarity(lookupId) : null;
+        // Get rarity from the equipped INSTANCE, not base item definition
+        const equippedInstance = equippedItemId ? GameEngine.state.bank.instanced?.[equippedItemId] : null;
+        const rarityTier = equippedInstance?.rarity || itemDef?.rarity || 'common';
+        const rarity = isEquipped ? (GameEngine.definitions.RARITY_TIERS[rarityTier] || GameEngine.definitions.RARITY_TIERS.common) : null;
         const rarityColor = rarity ? rarity.color : null;
         const rarityGlow = rarity && rarity.glow;
 
-        const tallClass = tall ? 'equipment-slot-tall' : '';
+        // Get slot icon for empty state
+        const slotIcons = {
+            helmet: '🪖', chest: '👕', back: '🎒', weapon: '⚔️',
+            gloves: '🧤', boots: '👢', legs: '👖', neck: '📿', ring: '💍'
+        };
+        const emptyIcon = slotIcons[slot] || '📦';
 
         return `
-            <div class="equipment-slot ${tallClass} ${isEquipped ? 'equipped' : ''} ${interactive ? 'clickable' : ''}"
+            <div class="equipment-slot ${isEquipped ? 'equipped' : ''} ${interactive ? 'clickable' : ''}"
                  style="${rarityColor ? `border-color: ${rarityColor};` : ''} ${rarityGlow ? `box-shadow: 0 0 8px ${rarityColor};` : ''}"
                  ${interactive ? `onclick="openEquipModal('${slot}', event)"` : ''}>
                 ${showLabels ? `<div class="equipment-slot-label">${label}</div>` : ''}
                 ${isEquipped ? `
-                    <div class="equipment-slot-icon">${IconHelper.getItemIconHTML(itemDef, {size: tall ? 64 : 48, className: 'equipment-icon'})}</div>
+                    <div class="equipment-slot-icon">${IconHelper.getItemIconHTML(itemDef, {size: 48, className: 'equipment-icon'})}</div>
                     <div class="equipment-slot-item" style="${rarityColor ? `color: ${rarityColor};` : ''}">${itemDef.name}</div>
                     ${this.renderItemStats(itemDef)}
                     ${isGunEquipped ? `
@@ -197,7 +250,7 @@ const EquipmentComponent = {
                         </button>
                     ` : ''}
                 ` : `
-                    <div class="equipment-slot-empty">${tall ? '🛡️' : '📦'}</div>
+                    <div class="equipment-slot-empty">${emptyIcon}</div>
                 `}
             </div>
         `;
@@ -217,11 +270,24 @@ const EquipmentComponent = {
         let html = `<div class="consumable-slots">`;
 
         for (let slot of slots) {
-            const equippedItemId = GameEngine.state.equipment[slot];
+            const equippedValue = GameEngine.state.equipment[slot];
+
+            // Handle consumable slots with { itemId, quantity } format
+            let equippedItemId = null;
+            let quantity = 0;
+
+            if (equippedValue && typeof equippedValue === 'object') {
+                // New consumable format: { itemId, quantity }
+                equippedItemId = equippedValue.itemId;
+                quantity = equippedValue.quantity || 0;
+            } else if (equippedValue && typeof equippedValue === 'string') {
+                // Standard equipment format: string ID
+                equippedItemId = equippedValue;
+            }
 
             // Parse instance ID to get base item ID for definition lookup
             let lookupId = equippedItemId;
-            if (equippedItemId && equippedItemId.includes('_instance_')) {
+            if (equippedItemId && typeof equippedItemId === 'string' && equippedItemId.includes('_instance_')) {
                 lookupId = equippedItemId.split('_instance_')[0];
             }
 
@@ -229,12 +295,6 @@ const EquipmentComponent = {
 
             // Check if item definition exists (might be null if item was removed/renamed)
             const isEquipped = equippedItemId !== null && itemDef !== null;
-
-            // Get quantity for consumables
-            let quantity = 0;
-            if (isEquipped && GameEngine.state.bank.items[equippedItemId]) {
-                quantity = GameEngine.state.bank.items[equippedItemId].quantity;
-            }
 
             html += `
                 <div class="consumable-slot ${isEquipped ? 'equipped' : ''} ${interactive ? 'clickable' : ''}"

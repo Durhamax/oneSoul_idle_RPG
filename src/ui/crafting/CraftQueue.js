@@ -11,10 +11,17 @@ const CraftQueue = {
      * Render the queue sidebar
      */
     render() {
+        const totalActive = this.getTotalActive();
+
         return `
             <div class="craft-queue-sidebar">
                 <div class="queue-header">
                     <h3>⏳ Active Crafts</h3>
+                    ${totalActive > 0 ? `
+                        <button class="stop-all-btn" onclick="CraftQueue.stopAllCrafting()" title="Stop all crafting">
+                            🛑 Stop All
+                        </button>
+                    ` : ''}
                 </div>
                 <div id="queue-content" class="queue-content">
                     ${this.renderQueueContent()}
@@ -49,7 +56,7 @@ const CraftQueue = {
         let html = '';
 
         // Render queues by skill
-        const skills = ['smithing', 'mechanics', 'electronics', 'textiles', 'chemistry', 'cooking'];
+        const skills = ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking'];
 
         for (const skill of skills) {
             const queue = queues[skill];
@@ -96,8 +103,9 @@ const CraftQueue = {
     renderQueueItem(craft, skill, index) {
         // Get recipe definition
         let recipe = null;
-        if (skill && typeof RecipeRegistry !== 'undefined') {
-            recipe = RecipeRegistry.get(skill, craft.recipeId);
+        if (typeof RecipeRegistry !== 'undefined') {
+            // RecipeRegistry.get() only takes recipeId, not skill
+            recipe = RecipeRegistry.get(craft.recipeId);
         }
         if (!recipe) {
             recipe = GameEngine.definitions?.recipes?.[craft.recipeId] || { name: craft.recipeId, icon: '📦' };
@@ -186,6 +194,50 @@ const CraftQueue = {
             total += queues[skill]?.length || 0;
         }
         return total;
+    },
+
+    /**
+     * Stop all crafting across all skills
+     */
+    stopAllCrafting() {
+        console.log('[CraftQueue] Stopping all crafts');
+
+        // Clear all skill queues
+        const skills = ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking'];
+        for (const skill of skills) {
+            if (GameEngine.state.crafting?.activeQueues?.[skill]) {
+                GameEngine.state.crafting.activeQueues[skill] = [];
+            }
+        }
+
+        // Clear legacy crafts
+        if (GameEngine.state.crafting?.activeCrafts) {
+            GameEngine.state.crafting.activeCrafts = [];
+        }
+
+        // Clear auto-repeat
+        if (GameEngine.state.crafting) {
+            GameEngine.state.crafting.autoRecipe = null;
+        }
+
+        // Clear current activity
+        if (GameEngine.state.currentActivity === 'crafting') {
+            GameEngine.state.currentActivity = null;
+        }
+
+        // Update UI
+        this.update();
+
+        // Re-render the whole crafting UI to update buttons
+        if (UnifiedCraftingUI.currentTab === 'recipes') {
+            UnifiedCraftingUI.renderCurrentTab();
+        }
+
+        // Re-render the sidebar to remove the Stop All button
+        const sidebar = document.querySelector('.craft-queue-sidebar');
+        if (sidebar) {
+            sidebar.outerHTML = this.render();
+        }
     }
 };
 

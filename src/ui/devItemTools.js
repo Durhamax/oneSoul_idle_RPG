@@ -1283,3 +1283,350 @@ const DevItemTools = {
         return { granted, failed };
     }
 };
+
+/**
+ * QUICK TEST EQUIP UTILITY
+ *
+ * Console utility for quickly equipping combat gear for testing.
+ * Usage: TestEquip.combatKit() - equips weapon, armor, food, and ammo
+ */
+const TestEquip = {
+    /**
+     * Equip a full combat kit for testing
+     * Creates instances for weapons/armor, adds consumables, and equips everything
+     */
+    combatKit() {
+        console.log('\n🎮 === COMBAT TEST KIT ===\n');
+
+        const results = {
+            weapon: null,
+            armor: null,
+            food: null,
+            ammo: null
+        };
+
+        // 1. Create and equip weapon (Sidekick 22 pistol)
+        results.weapon = this._equipInstancedItem('sidekick22', 'weapon');
+
+        // 2. Create and equip armor (Unity Scout Set)
+        results.armor = this._equipInstancedItem('unityScoutSet', 'armor');
+
+        // 3. Add and equip food (Solfish Bake - 50 units)
+        results.food = this._equipStackableItem('solfishBake', 50, 'food');
+
+        // 4. Add and equip ammo (Copperite Rounds - 100 units)
+        results.ammo = this._equipStackableItem('copperiteRounds', 100, 'ammo');
+
+        // Summary
+        console.log('\n📊 COMBAT KIT SUMMARY');
+        console.log('='.repeat(40));
+        console.log(`Weapon: ${results.weapon ? '✅' : '❌'} Sidekick 22`);
+        console.log(`Armor:  ${results.armor ? '✅' : '❌'} Unity Scout Set`);
+        console.log(`Food:   ${results.food ? '✅' : '❌'} Solfish Bake x50`);
+        console.log(`Ammo:   ${results.ammo ? '✅' : '❌'} Copperite Rounds x100`);
+        console.log('\n🎯 Ready for combat testing!\n');
+
+        return results;
+    },
+
+    /**
+     * Equip a melee combat kit (sword + armor + food)
+     */
+    meleeKit() {
+        console.log('\n⚔️ === MELEE TEST KIT ===\n');
+
+        const results = {
+            weapon: null,
+            armor: null,
+            food: null
+        };
+
+        results.weapon = this._equipInstancedItem('unityBlade', 'weapon');
+        results.armor = this._equipInstancedItem('unityScoutSet', 'armor');
+        results.food = this._equipStackableItem('smallGameStew', 30, 'food');
+
+        console.log('\n📊 MELEE KIT SUMMARY');
+        console.log('='.repeat(40));
+        console.log(`Weapon: ${results.weapon ? '✅' : '❌'} Unity Blade`);
+        console.log(`Armor:  ${results.armor ? '✅' : '❌'} Unity Scout Set`);
+        console.log(`Food:   ${results.food ? '✅' : '❌'} Small Game Stew x30`);
+        console.log('\n⚔️ Ready for melee combat!\n');
+
+        return results;
+    },
+
+    /**
+     * Equip a ranged combat kit (bow + arrows + armor)
+     */
+    rangedKit() {
+        console.log('\n🏹 === RANGED TEST KIT ===\n');
+
+        const results = {
+            weapon: null,
+            armor: null,
+            food: null,
+            ammo: null
+        };
+
+        results.weapon = this._equipInstancedItem('greensmanTrainingBow', 'weapon');
+        results.armor = this._equipInstancedItem('unityScoutSet', 'armor');
+        results.food = this._equipStackableItem('solfishBake', 50, 'food');
+        results.ammo = this._equipStackableItem('flintheadArrows', 100, 'ammo');
+
+        console.log('\n📊 RANGED KIT SUMMARY');
+        console.log('='.repeat(40));
+        console.log(`Weapon: ${results.weapon ? '✅' : '❌'} Greensman Training Bow`);
+        console.log(`Armor:  ${results.armor ? '✅' : '❌'} Unity Scout Set`);
+        console.log(`Food:   ${results.food ? '✅' : '❌'} Solfish Bake x50`);
+        console.log(`Ammo:   ${results.ammo ? '✅' : '❌'} Flinthead Arrows x100`);
+        console.log('\n🏹 Ready for ranged combat!\n');
+
+        return results;
+    },
+
+    /**
+     * Just add food and ammo (when you already have weapon/armor)
+     */
+    resupply(foodQty = 50, ammoQty = 100) {
+        console.log('\n📦 === RESUPPLY ===\n');
+
+        const results = {
+            food: null,
+            ammo: null
+        };
+
+        results.food = this._equipStackableItem('solfishBake', foodQty, 'food');
+        results.ammo = this._equipStackableItem('copperiteRounds', ammoQty, 'ammo');
+
+        console.log(`\n✅ Resupplied: ${foodQty} food, ${ammoQty} ammo\n`);
+
+        return results;
+    },
+
+    /**
+     * Internal: Create and equip an instanced item (weapon, armor)
+     */
+    _equipInstancedItem(baseItemId, slot) {
+        const itemDef = ItemRegistry?.getItem(baseItemId);
+        if (!itemDef) {
+            console.error(`❌ Item not found: ${baseItemId}`);
+            return false;
+        }
+
+        // Create equipment instance
+        const rarity = itemDef.rarity || 'common';
+        const stats = {};
+
+        if (typeof GameEngine.createEquipmentInstance !== 'function') {
+            console.error('❌ createEquipmentInstance not available');
+            return false;
+        }
+
+        const instance = GameEngine.createEquipmentInstance(baseItemId, rarity, stats);
+        if (!instance) {
+            console.error(`❌ Failed to create instance: ${baseItemId}`);
+            return false;
+        }
+
+        // Add to bank
+        const addResult = GameEngine.addEquipmentInstance(instance);
+        if (!addResult?.success) {
+            console.error(`❌ Failed to add instance to bank: ${baseItemId}`);
+            return false;
+        }
+
+        console.log(`📦 Added ${instance.name} to bank (${instance.instanceId})`);
+
+        // Equip it
+        const equipResult = GameEngine.equipItem(instance.instanceId);
+        if (!equipResult?.success) {
+            console.error(`❌ Failed to equip: ${equipResult?.reason || 'unknown error'}`);
+            return false;
+        }
+
+        console.log(`✅ Equipped ${instance.name} to ${slot}`);
+        return true;
+    },
+
+    /**
+     * Internal: Add and equip a stackable item (food, ammo)
+     */
+    _equipStackableItem(itemId, quantity, slot) {
+        const itemDef = ItemRegistry?.getItem(itemId);
+        if (!itemDef) {
+            console.error(`❌ Item not found: ${itemId}`);
+            return false;
+        }
+
+        // Add to bank first
+        const addResult = GameEngine.addItemToBank(itemId, quantity);
+        if (!addResult?.success) {
+            console.error(`❌ Failed to add ${itemId}: ${addResult?.reason || 'unknown error'}`);
+            return false;
+        }
+
+        console.log(`📦 Added ${quantity}x ${itemDef.name} to bank`);
+
+        // Equip it
+        const equipResult = GameEngine.equipItem(itemId);
+        if (!equipResult?.success) {
+            console.error(`❌ Failed to equip: ${equipResult?.reason || 'unknown error'}`);
+            return false;
+        }
+
+        console.log(`✅ Equipped ${itemDef.name} to ${slot}`);
+        return true;
+    },
+
+    /**
+     * Show available test kits
+     */
+    help() {
+        console.log(`
+🎮 TestEquip - Quick Combat Test Utility
+========================================
+
+Available commands:
+  TestEquip.combatKit()     - Full kit: pistol + armor + food + ammo
+  TestEquip.meleeKit()      - Melee kit: sword + armor + food
+  TestEquip.rangedKit()     - Ranged kit: bow + armor + arrows + food
+  TestEquip.resupply(50,100) - Add food and ammo only
+
+All kits will:
+  1. Create equipment instances for weapons/armor
+  2. Add items to bank
+  3. Equip everything automatically
+
+Ready for combat testing! ⚔️
+        `);
+    }
+};
+
+// Make TestEquip available globally
+if (typeof window !== 'undefined') {
+    window.TestEquip = TestEquip;
+}
+
+/**
+ * SAVE DIAGNOSTIC UTILITY
+ * Helps debug save/load issues
+ */
+const SaveDebug = {
+    /**
+     * Check if save exists and show key data
+     */
+    check() {
+        const saveKey = 'idleRpgSave_v1';
+        const savedData = localStorage.getItem(saveKey);
+
+        if (!savedData) {
+            console.log('❌ No save found in localStorage');
+            return null;
+        }
+
+        try {
+            const saveData = JSON.parse(savedData);
+            console.log('\n📊 === SAVE DEBUG INFO ===\n');
+            console.log('Save timestamp:', new Date(saveData.timestamp).toLocaleString());
+            console.log('Version:', saveData.version);
+
+            const state = saveData.state;
+            console.log('\n🎮 Skills:');
+            for (const [skill, data] of Object.entries(state.skills || {})) {
+                if (data.level > 1) {
+                    console.log(`  ${skill}: Level ${data.level}, XP ${data.exp}`);
+                }
+            }
+
+            console.log('\n💰 Currencies:', state.currencies);
+            console.log('👤 Character Level:', state.characterLevel?.level);
+            console.log('⚔️ Combat Attributes:', state.combatAttributes);
+
+            console.log('\n📦 Bank:');
+            console.log('  Stackable items:', Object.keys(state.bank?.stackable || {}).length);
+            console.log('  Instanced items:', Object.keys(state.bank?.instanced || {}).length);
+
+            return saveData;
+        } catch (e) {
+            console.error('❌ Error parsing save:', e);
+            return null;
+        }
+    },
+
+    /**
+     * Compare current state vs saved state
+     */
+    compare() {
+        const saveKey = 'idleRpgSave_v1';
+        const savedData = localStorage.getItem(saveKey);
+
+        if (!savedData) {
+            console.log('❌ No save to compare');
+            return;
+        }
+
+        const saveData = JSON.parse(savedData);
+        const savedState = saveData.state;
+        const currentState = GameEngine.state;
+
+        console.log('\n🔍 === STATE COMPARISON ===\n');
+
+        // Compare skills
+        console.log('📚 Skills:');
+        for (const skillId of Object.keys({...savedState.skills, ...currentState.skills})) {
+            const saved = savedState.skills?.[skillId]?.level || 0;
+            const current = currentState.skills?.[skillId]?.level || 0;
+            if (saved !== current) {
+                console.log(`  ❌ ${skillId}: Saved=${saved}, Current=${current}`);
+            }
+        }
+
+        // Compare character level
+        const savedLevel = savedState.characterLevel?.level || 1;
+        const currentLevel = currentState.characterLevel?.level || 1;
+        if (savedLevel !== currentLevel) {
+            console.log(`❌ Character Level: Saved=${savedLevel}, Current=${currentLevel}`);
+        } else {
+            console.log(`✅ Character Level: ${currentLevel}`);
+        }
+
+        // Compare currencies
+        console.log('\n💰 Currencies:');
+        for (const currency of ['gold', 'medals', 'tomes', 'gems']) {
+            const saved = savedState.currencies?.[currency] || 0;
+            const current = currentState.currencies?.[currency] || 0;
+            if (saved !== current) {
+                console.log(`  ❌ ${currency}: Saved=${saved}, Current=${current}`);
+            }
+        }
+    },
+
+    /**
+     * Force reload from save
+     */
+    reload() {
+        console.log('🔄 Force reloading from save...');
+        SaveSystem.load();
+        UICore.update();
+        console.log('✅ Reload complete');
+    },
+
+    /**
+     * Show help
+     */
+    help() {
+        console.log(`
+📊 SaveDebug - Save Diagnostic Utility
+======================================
+
+Commands:
+  SaveDebug.check()    - Show saved data summary
+  SaveDebug.compare()  - Compare saved vs current state
+  SaveDebug.reload()   - Force reload from save
+        `);
+    }
+};
+
+if (typeof window !== 'undefined') {
+    window.SaveDebug = SaveDebug;
+}

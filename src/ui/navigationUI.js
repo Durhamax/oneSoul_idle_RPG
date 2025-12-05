@@ -549,14 +549,15 @@ const NavigationUI = {
 
             <!-- Rest Resource Equipment -->
             <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px;">
-                <div style="margin-bottom: 10px; font-size: 0.9em; font-weight: bold;">🔥 Camping Resources</div>
+                <div style="margin-bottom: 10px; font-size: 0.9em; font-weight: bold;">🔥 Campfire Resources</div>
                 <div style="font-size: 0.75em; color: #888; margin-bottom: 10px;">
-                    Equip food and wood for recovery. Consumes during rest mode.
+                    Select fuel and food for campfire recovery. Better fuel = faster recovery.
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     ${this.renderRestEquipmentSlot('food')}
-                    ${this.renderRestEquipmentSlot('wood')}
+                    ${this.renderFuelSelector()}
                 </div>
+                ${this.renderCampfireStatus()}
             </div>
         `;
 
@@ -1229,61 +1230,164 @@ const NavigationUI = {
     },
 
     /**
-     * Render rest equipment slot (food or wood)
+     * Render fuel selector slot for campfire system (matches food slot pattern)
      */
-    renderRestEquipmentSlot(slotType) {
-        // Safety check: initialize restEquipment if it doesn't exist (old saves)
-        if (!GameEngine.state.activeNavigation.restEquipment) {
-            GameEngine.state.activeNavigation.restEquipment = {
-                food: null,
-                wood: null
-            };
+    renderFuelSelector() {
+        // Check if CampfireSystem is available
+        if (typeof CampfireSystem === 'undefined' || !GameEngine.getCampfireStats) {
+            // Fallback to old wood slot if CampfireSystem not loaded
+            return this.renderRestEquipmentSlot('wood');
         }
 
-        const equippedItemId = GameEngine.state.activeNavigation.restEquipment[slotType];
-        const itemDef = equippedItemId ? ItemRegistry.getItem(equippedItemId) : null;
-        const isEquipped = equippedItemId !== null && itemDef !== null;
+        const campfireStats = GameEngine.getCampfireStats();
+        const selectedFuelId = campfireStats?.selectedFuelId || null;
+        const selectedFuel = selectedFuelId ? GameEngine.getFuelDefinition(selectedFuelId) : null;
 
-        // Get quantity for consumables
+        // Get quantity in bank for selected fuel
+        // DualBankSystem stores stackable items as { itemId: quantity } (direct numbers)
         let quantity = 0;
-        if (isEquipped && GameEngine.state.bank.items[equippedItemId]) {
-            quantity = GameEngine.state.bank.items[equippedItemId].quantity;
+        if (selectedFuelId && GameEngine.state.bank.stackable) {
+            quantity = GameEngine.state.bank.stackable[selectedFuelId] || 0;
         }
 
-        const slotLabels = {
-            food: '🍖 Food',
-            wood: '🪵 Wood'
-        };
-
-        const slotIcons = {
-            food: '🍖',
-            wood: '🪵'
-        };
+        const isEquipped = selectedFuelId !== null && selectedFuel !== null;
 
         return `
             <div class="rest-equipment-slot ${isEquipped ? 'equipped' : ''}"
-                 onclick="openRestEquipModal('${slotType}', event)"
+                 onclick="openFuelModal(event)"
                  style="background: rgba(0, 0, 0, 0.3);
-                        border: 2px solid ${isEquipped ? 'rgba(0, 217, 255, 0.5)' : '#444'};
+                        border: 2px solid ${isEquipped ? 'rgba(255, 152, 0, 0.5)' : '#444'};
                         border-radius: 8px;
                         padding: 10px;
                         cursor: pointer;
                         transition: all 0.2s ease;">
                 <div style="font-size: 0.75em; color: #888; margin-bottom: 5px; font-weight: 600;">
-                    ${slotLabels[slotType]}
+                    🔥 Fuel
+                </div>
+                ${isEquipped ? `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="font-size: 2rem;">${selectedFuel.icon || '🪵'}</div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.85em; font-weight: 600; color: #fff;">${selectedFuel.name}</div>
+                            <div style="font-size: 0.75em; color: #FF9800;">×${quantity}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 6px; font-size: 0.7em; color: #aaa;">
+                        ⚡ ${selectedFuel.fuelStats?.efficiency || 1.0}x efficiency
+                    </div>
+                ` : `
+                    <div style="text-align: center; padding: 20px; color: #666;">
+                        <div style="font-size: 2.5rem; margin-bottom: 5px;">🪵</div>
+                        <div style="font-size: 0.75em;">Empty Slot</div>
+                    </div>
+                `}
+            </div>
+        `;
+    },
+
+    /**
+     * Render campfire status display
+     */
+    renderCampfireStatus() {
+        // Check if CampfireSystem is available
+        if (typeof CampfireSystem === 'undefined' || !GameEngine.getCampfireStats) {
+            return '';
+        }
+
+        const stats = GameEngine.getCampfireStats();
+        const isRecovering = GameEngine.state.activeNavigation?.isRecovering || false;
+
+        if (!isRecovering && !stats.active) {
+            return ''; // Don't show status when not camping
+        }
+
+        const fuelPercent = stats.fuelRemaining > 0
+            ? Math.min(100, (stats.fuelRemaining / 120) * 100) // Normalize to ~2 min max display
+            : 0;
+
+        return `
+            <div style="margin-top: 10px; padding: 10px; background: rgba(255, 152, 0, 0.1);
+                        border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 0.8em; font-weight: 600; color: #FF9800;">
+                        🔥 Campfire ${stats.active ? 'Active' : 'Inactive'}
+                    </span>
+                    <span style="font-size: 0.75em; color: #aaa;">
+                        ${stats.selectedFuelName || 'No fuel'}
+                    </span>
+                </div>
+                <div style="background: #1a1a1a; border-radius: 4px; height: 8px; overflow: hidden;">
+                    <div style="width: ${fuelPercent}%;
+                                height: 100%;
+                                background: linear-gradient(90deg, #FF9800, #FFC107);
+                                transition: width 0.3s ease;">
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.7em; color: #888;">
+                    <span>🌡️ Warmth: ${stats.warmth}</span>
+                    <span>⚡ ${stats.efficiency}x recovery</span>
+                    <span>⏱️ ${Math.floor(stats.fuelRemaining)}s remaining</span>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Render rest equipment slot (food) - uses equipment.food from loadout
+     * Food is shared between combat and navigation - same slot, same quantity
+     */
+    renderRestEquipmentSlot(slotType) {
+        // Food slot now reads from equipment.food (shared with combat loadout)
+        // equipment.food is { itemId: string, quantity: number }
+        const foodSlot = GameEngine.state.equipment?.food;
+
+        let equippedItemId = null;
+        let quantity = 0;
+        let itemDef = null;
+        let isEquipped = false;
+
+        if (foodSlot && typeof foodSlot === 'object' && foodSlot.itemId) {
+            equippedItemId = foodSlot.itemId;
+            quantity = foodSlot.quantity || 0;
+            itemDef = ItemRegistry.getItem(equippedItemId);
+            isEquipped = itemDef !== null && quantity > 0;
+        } else if (foodSlot && typeof foodSlot === 'string') {
+            // Legacy format: just the item ID, quantity in bank
+            equippedItemId = foodSlot;
+            itemDef = ItemRegistry.getItem(equippedItemId);
+            // Check bank for quantity (DualBankSystem uses stackable)
+            quantity = GameEngine.state.bank?.stackable?.[equippedItemId] || 0;
+            isEquipped = itemDef !== null && quantity > 0;
+        }
+
+        return `
+            <div class="rest-equipment-slot ${isEquipped ? 'equipped' : ''}"
+                 onclick="openFoodEquipModal(event)"
+                 style="background: rgba(0, 0, 0, 0.3);
+                        border: 2px solid ${isEquipped ? 'rgba(76, 175, 80, 0.5)' : '#444'};
+                        border-radius: 8px;
+                        padding: 10px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;">
+                <div style="font-size: 0.75em; color: #888; margin-bottom: 5px; font-weight: 600;">
+                    🍖 Food
                 </div>
                 ${isEquipped ? `
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div style="font-size: 2rem;">${IconHelper.getItemIconHTML(itemDef, {size: 32})}</div>
                         <div style="flex: 1;">
                             <div style="font-size: 0.85em; font-weight: 600; color: #fff;">${itemDef.name}</div>
-                            <div style="font-size: 0.75em; color: #4a9eff;">×${quantity}</div>
+                            <div style="font-size: 0.75em; color: #4caf50;">×${quantity}</div>
                         </div>
+                    </div>
+                    <div style="margin-top: 6px; font-size: 0.7em; color: #aaa;">
+                        Shared with combat loadout
                     </div>
                 ` : `
                     <div style="text-align: center; padding: 20px; color: #666;">
-                        <div style="font-size: 2.5rem; margin-bottom: 5px;">${slotIcons[slotType]}</div>
-                        <div style="font-size: 0.75em;">Empty Slot</div>
+                        <div style="font-size: 2.5rem; margin-bottom: 5px;">🍖</div>
+                        <div style="font-size: 0.75em;">No Food Equipped</div>
+                        <div style="font-size: 0.65em; color: #555; margin-top: 4px;">Equip via Loadout</div>
                     </div>
                 `}
             </div>

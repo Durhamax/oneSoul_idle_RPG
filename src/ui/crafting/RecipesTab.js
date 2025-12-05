@@ -14,13 +14,37 @@ const RecipesTab = {
      */
     init() {
         console.log('[RecipesTab] Initialized');
+
+        // Use event delegation for craft buttons (more reliable than inline onclick)
+        document.addEventListener('click', (e) => {
+            // Handle quick craft buttons
+            const btn = e.target.closest('.quick-craft-btn');
+            if (btn) {
+                const recipeId = btn.dataset.recipeId;
+                const quantity = parseInt(btn.dataset.quantity, 10) || 1;
+                if (recipeId) {
+                    console.log(`🔨 [RecipesTab] Button clicked via delegation: ${recipeId} x${quantity}`);
+                    this.startCraft(recipeId, quantity);
+                }
+            }
+
+            // Handle stop craft button
+            const stopBtn = e.target.closest('.stop-craft-btn');
+            if (stopBtn) {
+                const skill = stopBtn.dataset.skill;
+                if (skill) {
+                    console.log(`🛑 [RecipesTab] Stop craft clicked for skill: ${skill}`);
+                    this.stopCraftingForSkill(skill);
+                }
+            }
+        });
     },
 
     /**
      * Render the recipes tab content
      */
     render(selectedSkill) {
-        const skills = ['smithing', 'mechanics', 'electronics', 'textiles', 'chemistry', 'cooking'];
+        const skills = ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking'];
 
         return `
             <div class="recipes-tab">
@@ -39,7 +63,7 @@ const RecipesTab = {
             smithing: '🔨',
             mechanics: '⚙️',
             electronics: '⚡',
-            textiles: '🧵',
+            tailoring: '🧵',
             chemistry: '⚗️',
             cooking: '🍳'
         };
@@ -162,6 +186,10 @@ const RecipesTab = {
         const icon = recipe.icon || '📦';
         const skillColor = UnifiedCraftingUI.getSkillColor(recipe.skill);
 
+        // Check if this recipe is currently being crafted
+        const isActivelyCrafting = this.isRecipeActive(recipe.id, recipe.skill);
+        const queueCount = this.getQueueCount(recipe.skill);
+
         // Determine output display
         let outputDisplay = '';
         if (recipe.outputs.quantity) {
@@ -205,22 +233,57 @@ const RecipesTab = {
             `;
         }
 
-        // Quick craft buttons
+        // Build action buttons based on state
+        let actionsHtml = '';
         const maxCraftable = this.getMaxCraftable(recipe);
-        let quickCraftHtml = '';
-        if (canCraft.canCraft) {
-            quickCraftHtml = `
+
+        if (isActivelyCrafting) {
+            // Show stop button when this recipe is being crafted
+            actionsHtml = `
+                <div class="active-craft-controls">
+                    <span class="crafting-indicator">⏳ Crafting...</span>
+                    <button class="stop-craft-btn" data-skill="${recipe.skill}" title="Stop crafting">
+                        🛑 Stop
+                    </button>
+                </div>
+            `;
+        } else if (meetsLevel && canCraft.canCraft) {
+            // Normal craft buttons
+            actionsHtml = `
                 <div class="quick-craft-buttons">
-                    <button class="quick-craft-btn" onclick="RecipesTab.startCraft('${recipe.id}', 1)">×1</button>
-                    ${maxCraftable >= 5 ? `<button class="quick-craft-btn" onclick="RecipesTab.startCraft('${recipe.id}', 5)">×5</button>` : ''}
-                    ${maxCraftable >= 10 ? `<button class="quick-craft-btn" onclick="RecipesTab.startCraft('${recipe.id}', 10)">×10</button>` : ''}
-                    ${maxCraftable > 1 ? `<button class="quick-craft-btn max" onclick="RecipesTab.startCraft('${recipe.id}', ${maxCraftable})">MAX (${maxCraftable})</button>` : ''}
+                    <button class="quick-craft-btn" data-recipe-id="${recipe.id}" data-quantity="1">×1</button>
+                    ${maxCraftable >= 5 ? `<button class="quick-craft-btn" data-recipe-id="${recipe.id}" data-quantity="5">×5</button>` : ''}
+                    ${maxCraftable >= 10 ? `<button class="quick-craft-btn" data-recipe-id="${recipe.id}" data-quantity="10">×10</button>` : ''}
+                    ${maxCraftable > 1 ? `<button class="quick-craft-btn max" data-recipe-id="${recipe.id}" data-quantity="${maxCraftable}">MAX (${maxCraftable})</button>` : ''}
+                </div>
+            `;
+        } else if (meetsLevel && canCraft.reason === 'Queue full') {
+            // Queue is full but recipe is valid - allow switching
+            actionsHtml = `
+                <div class="quick-craft-buttons">
+                    <button class="quick-craft-btn switch-craft" data-recipe-id="${recipe.id}" data-quantity="1" title="Stop current craft and start this one">
+                        🔄 Switch to this
+                    </button>
+                </div>
+            `;
+        } else if (meetsLevel) {
+            // Can't craft for other reasons (missing materials)
+            actionsHtml = `
+                <div class="craft-blocked">
+                    <span class="blocked-reason">${canCraft.reason}</span>
+                </div>
+            `;
+        } else {
+            // Level locked
+            actionsHtml = `
+                <div class="craft-locked">
+                    <span class="locked-text">Requires ${UnifiedCraftingUI.capitalizeFirst(recipe.skill)} Lv.${recipe.skillLevelRequired}</span>
                 </div>
             `;
         }
 
         return `
-            <div class="recipe-card ${meetsLevel ? '' : 'locked'} ${canCraft.canCraft ? 'craftable' : ''}"
+            <div class="recipe-card ${meetsLevel ? '' : 'locked'} ${canCraft.canCraft ? 'craftable' : ''} ${isActivelyCrafting ? 'active-crafting' : ''}"
                  style="--skill-color: ${skillColor};">
                 <div class="recipe-card-header">
                     <div class="recipe-icon">${icon}</div>
@@ -245,15 +308,7 @@ const RecipesTab = {
                         <span class="recipe-xp">⭐ ${recipe.experienceGain} XP</span>
                     </div>
 
-                    ${meetsLevel ? (canCraft.canCraft ? quickCraftHtml : `
-                        <div class="craft-blocked">
-                            <span class="blocked-reason">${canCraft.reason}</span>
-                        </div>
-                    `) : `
-                        <div class="craft-locked">
-                            <span class="locked-text">Requires ${UnifiedCraftingUI.capitalizeFirst(recipe.skill)} Lv.${recipe.skillLevelRequired}</span>
-                        </div>
-                    `}
+                    ${actionsHtml}
                 </div>
             </div>
         `;
@@ -263,14 +318,35 @@ const RecipesTab = {
      * Start crafting a recipe
      */
     startCraft(recipeId, quantity = 1) {
-        console.log(`[RecipesTab] Starting craft: ${recipeId} x${quantity}`);
+        console.log(`🔨 [RecipesTab] startCraft called: ${recipeId} x${quantity}`);
 
+        // Get the recipe to find its skill
+        const recipe = typeof RecipeRegistry !== 'undefined' ? RecipeRegistry.get(recipeId) : null;
+        if (!recipe) {
+            console.warn(`[RecipesTab] Recipe not found: ${recipeId}`);
+            return;
+        }
+
+        const skill = recipe.skill;
+
+        // Check if queue is full - if so, stop current crafts first (switch behavior)
+        const currentQueueCount = this.getQueueCount(skill);
+        const workstation = GameEngine.state.crafting?.workstations?.[skill] || { tier: 1 };
+        const tier = workstation.tier;
+        const queueSlots = Math.min(5, 1 + Math.floor(tier / 2));
+
+        if (currentQueueCount >= queueSlots) {
+            console.log(`🔄 [RecipesTab] Queue full, switching to new recipe: ${recipeId}`);
+            // Stop current crafts for this skill first
+            this.stopCraftingForSkill(skill);
+        }
+
+        // Now start the new craft(s)
         for (let i = 0; i < quantity; i++) {
             let result;
 
-            if (typeof CraftingSystem !== 'undefined' && CraftingSystem.startCraft) {
-                result = CraftingSystem.startCraft(recipeId);
-            } else if (typeof GameEngine !== 'undefined' && GameEngine.startCraft) {
+            // Use GameEngine.startCraft - CraftingSystem methods are bound to GameEngine
+            if (typeof GameEngine !== 'undefined' && GameEngine.startCraft) {
                 result = GameEngine.startCraft(recipeId);
             }
 
@@ -284,10 +360,7 @@ const RecipesTab = {
         CraftQueue.update();
 
         // Re-render recipes to update material availability
-        const content = document.getElementById('crafting-content');
-        if (content) {
-            content.innerHTML = this.render(UnifiedCraftingUI.selectedSkill);
-        }
+        this.refreshRecipes();
     },
 
     /**
@@ -350,6 +423,64 @@ const RecipesTab = {
         const queues = GameEngine.state.crafting?.activeQueues;
         if (!queues) return 0;
         return queues[skill]?.length || 0;
+    },
+
+    /**
+     * Check if a specific recipe is currently being crafted
+     */
+    isRecipeActive(recipeId, skill) {
+        const queues = GameEngine.state.crafting?.activeQueues;
+        if (!queues || !queues[skill]) return false;
+
+        return queues[skill].some(craft => craft.recipeId === recipeId);
+    },
+
+    /**
+     * Stop all crafting for a specific skill
+     */
+    stopCraftingForSkill(skill) {
+        console.log(`[RecipesTab] Stopping all crafts for skill: ${skill}`);
+
+        // Clear the queue for this skill
+        if (GameEngine.state.crafting?.activeQueues?.[skill]) {
+            GameEngine.state.crafting.activeQueues[skill] = [];
+        }
+
+        // Clear auto-repeat if it was for this skill
+        const autoRecipe = GameEngine.state.crafting?.autoRecipe;
+        if (autoRecipe) {
+            const recipe = typeof RecipeRegistry !== 'undefined' ? RecipeRegistry.get(autoRecipe) : null;
+            if (recipe && recipe.skill === skill) {
+                GameEngine.state.crafting.autoRecipe = null;
+            }
+        }
+
+        // Clear current activity if no other crafts
+        let hasOtherCrafts = false;
+        const queues = GameEngine.state.crafting?.activeQueues || {};
+        for (const s in queues) {
+            if (queues[s]?.length > 0) {
+                hasOtherCrafts = true;
+                break;
+            }
+        }
+        if (!hasOtherCrafts && GameEngine.state.currentActivity === 'crafting') {
+            GameEngine.state.currentActivity = null;
+        }
+
+        // Update UI
+        CraftQueue.update();
+        this.refreshRecipes();
+    },
+
+    /**
+     * Refresh recipes display
+     */
+    refreshRecipes() {
+        const content = document.getElementById('crafting-content');
+        if (content && UnifiedCraftingUI.currentTab === 'recipes') {
+            content.innerHTML = this.render(UnifiedCraftingUI.selectedSkill);
+        }
     }
 };
 

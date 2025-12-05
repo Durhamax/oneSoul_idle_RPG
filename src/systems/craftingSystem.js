@@ -53,6 +53,7 @@ const CraftingSystem = {
         engine.startCraft = this.startCraft.bind(engine);
         engine.checkCraftCompletion = this.checkCraftCompletion.bind(engine);
         engine.completeCraft = this.completeCraft.bind(engine);
+        engine.completeCraftLegacy = this.completeCraftLegacy.bind(engine);
         engine.cancelCraft = this.cancelCraft.bind(engine);
         engine.stopAutoCraft = this.stopAutoCraft.bind(engine);
         engine.discoverCraftingStation = this.discoverCraftingStation.bind(engine);
@@ -61,6 +62,7 @@ const CraftingSystem = {
         engine.rollItemRarity = this.rollItemRarity.bind(engine);
         engine.setCraftingSkillFilter = this.setCraftingSkillFilter.bind(engine);
         engine.rollItemStats = this.rollItemStats.bind(engine);
+        engine.rollRarityFromWeights = this.rollRarityFromWeights.bind(engine);
         engine.createEquipmentInstance = this.createEquipmentInstance.bind(engine);
         engine.calculateCraftTime = this.calculateCraftTime.bind(engine);
         engine.getWorkstationBenefits = this.getWorkstationBenefits.bind(engine);
@@ -308,11 +310,6 @@ const CraftingSystem = {
             this.state.crafting.activeQueues[skill] = [];
         }
         this.state.crafting.activeQueues[skill].push(craftJob);
-
-        // Legacy compatibility: also add to activeCrafts if it exists
-        if (this.state.crafting.activeCrafts) {
-            this.state.crafting.activeCrafts.push(craftJob);
-        }
 
         // Set this recipe as the auto-repeat recipe
         this.state.crafting.autoRecipe = recipeId;

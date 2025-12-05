@@ -67,8 +67,15 @@ class MissionRegistryClass extends BaseRegistry {
             return;
         }
 
-        // Use BaseRegistry's registerBatch for batch registration
-        this.registerBatch(missions, environment);
+        // Directly register each mission using BaseRegistry's register method
+        let successCount = 0;
+        for (const [id, definition] of Object.entries(missions)) {
+            // Call parent class register method directly
+            if (BaseRegistry.prototype.register.call(this, id, definition, environment)) {
+                successCount++;
+            }
+        }
+        console.log(`✅ Registered ${successCount}/${Object.keys(missions).length} mission(s) in ${environment}`);
         console.log(`📦 Registered ${Object.keys(missions).length} missions to ${registry} registry`);
     }
 

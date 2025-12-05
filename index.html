@@ -22,6 +22,13 @@
     <link rel="stylesheet" href="styles/modals.css">
     <link rel="stylesheet" href="styles/combat-ui.css">
     <link rel="stylesheet" href="styles/crafting-ui.css">
+    <link rel="stylesheet" href="styles/interval-bar.css">
+    <link rel="stylesheet" href="styles/gather-ui.css">
+    <link rel="stylesheet" href="styles/overview-ui.css">
+    <link rel="stylesheet" href="styles/missions-ui.css">
+    <link rel="stylesheet" href="styles/quest-path.css">
+    <link rel="stylesheet" href="styles/tour.css">
+    <link rel="stylesheet" href="styles/tutorial-spotlight.css">
     <link rel="stylesheet" href="styles/developer.css">
 </head>
 <body>
@@ -93,14 +100,10 @@
 
     <!-- Vertical Sidebar Navigation -->
     <nav class="sidebar-nav">
-        <!-- Primary Navigation (New Order) -->
+        <!-- Navigation Order: Overview, Items, Loadout, Combat, Explore, Gather, Craft, Missions, Perks -->
         <button class="sidebar-item active" data-action="switch-view" data-view="overview" title="Dashboard">
             <span class="sidebar-icon">📊</span>
             <span class="sidebar-label">OVERVIEW</span>
-        </button>
-        <button class="sidebar-item" data-action="switch-view" data-view="skills" title="Skills">
-            <span class="sidebar-icon">⭐</span>
-            <span class="sidebar-label">SKILLS</span>
         </button>
         <button class="sidebar-item" data-action="switch-view" data-view="bank" title="Inventory">
             <span class="sidebar-icon">🎒</span>
@@ -110,23 +113,25 @@
             <span class="sidebar-icon">🛡️</span>
             <span class="sidebar-label">LOADOUT</span>
         </button>
-        <button class="sidebar-item" data-action="switch-view" data-view="navigation" title="Explore">
-            <span class="sidebar-icon">🧭</span>
-            <span class="sidebar-label">EXPLORE</span>
-        </button>
-
-        <!-- Secondary Navigation -->
         <button class="sidebar-item" data-action="switch-view" data-view="combat" title="Combat">
             <span class="sidebar-icon">⚔️</span>
             <span class="sidebar-label">COMBAT</span>
         </button>
-        <button class="sidebar-item" data-action="switch-view" data-view="missions" title="Missions">
-            <span class="sidebar-icon">📋</span>
-            <span class="sidebar-label">MISSIONS</span>
+        <button class="sidebar-item" data-action="switch-view" data-view="navigation" title="Explore">
+            <span class="sidebar-icon">🧭</span>
+            <span class="sidebar-label">EXPLORE</span>
+        </button>
+        <button class="sidebar-item" data-action="switch-view" data-view="gather" title="Gather Resources">
+            <span class="sidebar-icon">🌿</span>
+            <span class="sidebar-label">GATHER</span>
         </button>
         <button class="sidebar-item" data-action="switch-view" data-view="crafting" title="Crafting">
             <span class="sidebar-icon">🔨</span>
-            <span class="sidebar-label">CRAFTING</span>
+            <span class="sidebar-label">CRAFT</span>
+        </button>
+        <button class="sidebar-item" data-action="switch-view" data-view="missions" title="Missions">
+            <span class="sidebar-icon">📋</span>
+            <span class="sidebar-label">MISSIONS</span>
         </button>
         <button class="sidebar-item" data-action="switch-view" data-view="perks" title="Perk Grid">
             <span class="sidebar-icon">🌟</span>
@@ -171,34 +176,26 @@
             </div>
         </div>
 
-        <!-- Skills View -->
+        <!-- DEPRECATED: Skills View - functionality split between gather/craft UIs and overview tracking
         <div id="view-skills" class="view">
-            <!-- DOPAMINE-OPTIMIZED SKILLING UI -->
             <div class="skilling-container">
-
-                <!-- PERSISTENT ACTION BAR (Sticky Top) -->
                 <div class="action-zone-persistent" id="persistentActionBar">
-                    <div class="active-gathering-display" id="activeGatheringDisplay">
-                        <!-- Populated by PersistentActionBar component -->
-                    </div>
+                    <div class="active-gathering-display" id="activeGatheringDisplay"></div>
                 </div>
-
-                <!-- SKILLS GRID -->
                 <div class="skills-grid-container">
                     <h2>🎯 Skills</h2>
-                    <div class="skills-grid" id="skillsGrid">
-                        <!-- Populated by SkillCard components -->
-                    </div>
+                    <div class="skills-grid" id="skillsGrid"></div>
                 </div>
-
-                <!-- NODE SELECTION PANEL (Slides from right) -->
                 <div class="node-panel" id="nodePanel">
-                    <div class="node-panel-content">
-                        <!-- Populated by NodePanel component -->
-                    </div>
+                    <div class="node-panel-content"></div>
                 </div>
-
             </div>
+        </div>
+        -->
+
+        <!-- Gather View (New Gathering UI) -->
+        <div id="view-gather" class="view">
+            <!-- GatherUI renders here -->
         </div>
 
         <!-- Navigation View -->
@@ -574,11 +571,11 @@
 
     <!-- 3. GAME SYSTEMS (load in dependency order) -->
     <script src="src/systems/backgroundSystem.js"></script>
-    <script src="src/systems/migrationSystem.js"></script>
+    <script src="src/systems/migrationSystem.js?v=2"></script>
     <script src="src/systems/dualBankSystem.js"></script>
     <script src="src/systems/inventorySystem.js"></script>
     <script src="src/systems/skillSystem.js"></script>
-    <script src="src/systems/equipmentSystem.js"></script>
+    <script src="src/systems/equipmentSystem.js?v=2"></script>
     <script src="src/systems/equipmentPresetSystem.js"></script>
     <script src="src/systems/typeEffectivenessSystem.js"></script>
     <script src="src/systems/resourceSystem.js"></script>
@@ -587,6 +584,7 @@
     <!-- Map renderer disabled - using static world map image instead -->
     <!-- <script src="src/ui/mapRenderer.js"></script> -->
     <script src="src/systems/navigationSystem.js"></script>
+    <script src="src/systems/campfireSystem.js"></script>
     <script src="src/systems/globalDiscoverySystem.js"></script>
     <!-- DEPRECATED: restRecoverySystem.js - Not in use -->
     <script src="src/systems/nodeCollectionSystem.js"></script>
@@ -594,22 +592,22 @@
     <script src="src/systems/miningSystem.js"></script>
     <!-- DEPRECATED: harvestSystem.js - Replaced by gatheringSystem.js -->
 
-    <!-- Combat System (Rev1) -->
-    <script src="src/systems/combat/combatRolls.js"></script>
+    <!-- Combat System (Rev1) - v2 cache bust for food system changes -->
+    <script src="src/systems/combat/combatRolls.js?v=2"></script>
     <script src="src/systems/combat/typeEffectiveness.js"></script>
-    <script src="src/systems/combat/damageCalculator.js"></script>
-    <script src="src/systems/combat/autoConsumption.js"></script>
+    <script src="src/systems/combat/damageCalculator.js?v=2"></script>
+    <script src="src/systems/combat/autoConsumption.js?v=3"></script>
     <script src="src/systems/combat/combatTimers.js"></script>
     <script src="src/systems/combat/weaponStats.js"></script>
     <script src="src/systems/combat/enemyStats.js"></script>
-    <script src="src/systems/combat/combatSystem.js"></script>
+    <script src="src/systems/combat/combatSystem.js?v=2"></script>
 
     <!-- Combat UI (Rev1) -->
     <script src="src/ui/combat/combatAnimations.js"></script>
     <script src="src/ui/combat/enemyModal.js"></script>
     <script src="src/ui/combat/enemySelectionPanel.js"></script>
     <script src="src/ui/combat/combatContainer.js"></script>
-    <script src="src/ui/combat/loadoutContainer.js"></script>
+    <script src="src/ui/combat/loadoutContainer.js?v=3"></script>
     <script src="src/ui/combat/combatUI.js"></script>
 
     <!-- DEPRECATED: Old combat system - Replaced by Rev1 -->
@@ -679,7 +677,9 @@
     <!-- Developer Tools Modal -->
     <script src="src/ui/devModal.js"></script>
 
-    <!-- Production Nodes (organized by skill type) -->
+    <!-- Production Nodes -->
+    <script src="src/data/nodes/production/nodes.js"></script>
+    <!-- Placeholder files for future tiers -->
     <script src="src/data/nodes/production/mining.js"></script>
     <script src="src/data/nodes/production/logging.js"></script>
     <script src="src/data/nodes/production/fishing.js"></script>
@@ -705,15 +705,27 @@
     <!-- Enemy Initialization -->
     <script src="src/data/enemies/enemyInit.js"></script>
 
-    <!-- Mission Registry System -->
+    <!-- Mission System Architecture -->
+    <script src="src/utils/missionIdUtils.js"></script>
+    <script src="src/data/missions/objectiveTypes.js"></script>
+    <script src="src/data/missions/missionSchema.js"></script>
     <script src="src/data/missions/missionRegistry_NEW.js"></script>
+
+    <!-- Mission Data Files -->
+    <script src="src/data/missions/test/testMissions.js"></script>
+    <script src="src/data/missions/production/main_story.js"></script>
+    <script src="src/data/missions/production/tutorial_missions.js"></script>
+
+    <!-- Mission Initialization -->
     <script src="src/data/missions/missionInit.js"></script>
 
     <!-- Recipe Registry System -->
     <script src="src/data/recipes/recipeSchema.js"></script>
     <script src="src/data/recipes/recipeRegistry_NEW.js"></script>
 
-    <!-- Recipe Data Files (by skill) -->
+    <!-- Production Recipes -->
+    <script src="src/data/recipes/production/recipes.js"></script>
+    <!-- Placeholder files for future skill-specific recipes -->
     <script src="src/data/recipes/production/smithing_recipes.js"></script>
     <script src="src/data/recipes/production/mechanics_recipes.js"></script>
     <script src="src/data/recipes/production/electronics_recipes.js"></script>
@@ -775,13 +787,14 @@
 
     <!-- 5. UI MODULES -->
     <script src="src/ui/modal.js"></script>
-    <script src="src/ui/devTools.js"></script>
+    <script src="src/ui/devTools.js?v=2"></script>
     <script src="src/ui/animations.js"></script>
     <script src="src/ui/itemConsumptionAnimation.js"></script>
     <script src="src/ui/uiCore.js"></script>
 
     <!-- NEW: Dopamine-Optimized Skilling Components -->
     <!-- ItemCard.js loaded below (line 8061) - object-based version with .create() method -->
+    <script src="src/ui/components/IntervalBar.js"></script>
     <script src="src/ui/components/PersistentActionBar.js"></script>
     <script src="src/ui/components/SkillCard.js"></script>
     <script src="src/ui/components/NodePanel.js"></script>
@@ -789,9 +802,11 @@
     <script src="src/ui/nodeCollectionUI.js"></script>
     <script src="src/ui/harvestStatsPanel.js"></script>
     <script src="src/ui/itemCard.js"></script>
-    <script src="src/ui/equipmentComponent.js"></script>
+    <script src="src/ui/equipmentComponent.js?v=2"></script>
     <script src="src/ui/equipmentPresetsUI.js"></script>
     <script src="src/ui/skillsUI.js"></script>
+    <script src="src/ui/GatherUI.js"></script>
+    <script src="src/ui/gatheringUI.js"></script>
     <script src="src/ui/skillNodeModal.js"></script>
     <script src="src/ui/equipmentUI.js"></script>
     <script src="src/ui/itemModal.js"></script>
@@ -812,6 +827,14 @@
     <script src="src/ui/navigationUI.js"></script>
     <script src="src/ui/regionModal.js"></script>
     <script src="src/ui/missionsUI.js"></script>
+    <!-- Mission UI Components -->
+    <script src="src/ui/missions/ObjectiveNotification.js"></script>
+    <script src="src/ui/missions/MissionDebriefModal.js"></script>
+    <script src="src/ui/missions/CompletedMissionsTab.js"></script>
+    <script src="src/ui/missions/QuestPathUI.js"></script>
+    <script src="src/ui/TourOverlay.js"></script>
+    <script src="src/ui/TutorialSpotlight.js"></script>
+    <script src="src/ui/WelcomeModal.js"></script>
     <script src="src/ui/engineeringUI.js"></script>
     <script src="src/ui/devItemTools.js"></script>
     <script src="src/ui/developerUI.js"></script>
@@ -820,7 +843,9 @@
     <script src="src/ui/medalCraftingModal.js"></script>
     <script src="src/ui/medalSelectionModal.js"></script>
     <script src="src/ui/bankDevTools.js"></script>
+    <!-- DEPRECATED: Dev stats panel script - commented out with the panel div
     <script src="src/ui/devStatsPanel.js"></script>
+    -->
 
     <!-- Enhancement System & Tooltips -->
     <script src="src/systems/enhancementSystem.js"></script>
@@ -832,13 +857,13 @@
     <!-- 7. SAVE SYSTEM -->
     <script src="saveSystem.js"></script>
 
-    <!-- 7.5 CLEANUP LEGACY ITEMS -->
-    <script src="clean-legacy-items.js"></script>
+    <!-- REMOVED: clean-legacy-items.js was corrupting saves by auto-saving before load -->
 
     <!-- 8. INITIALIZE DOPAMINE UI COMPONENTS -->
     <script src="src/ui/init.js"></script>
 
-    <!-- Developer Statistics Panel (Fixed at bottom) -->
+    <!-- DEPRECATED: Developer Statistics Panel (Fixed at bottom) - commented out to allow full UI visibility
     <div id="devStatsPanel"></div>
+    -->
 </body>
 </html>

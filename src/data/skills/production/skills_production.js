@@ -24,7 +24,7 @@ const productionSkills = {
         category: 'vertical',
         type: 'support',
         bonusPerLevel: 0.02,  // +2% all crafting effectiveness per level
-        enhancesSkills: ["cooking", "chemistry", "smithing", "mechanics", "electronics", "textiles"]
+        enhancesSkills: ["cooking", "chemistry", "smithing", "mechanics", "electronics", "tailoring"]
     },
 
     // Gathering Skills
@@ -163,9 +163,9 @@ const productionSkills = {
         craftingSkill: true
     },
 
-    textiles: {
-        id: 'textiles',
-        name: "Textiles",
+    tailoring: {
+        id: 'tailoring',
+        name: "Tailoring",
         description: "Produces cloth armor, bags, cloaks. Consumes fibers, leather, thread.",
         icon: '🧵',
         category: 'crafting',

@@ -111,8 +111,9 @@ const AttachmentModal = {
             return;
         }
 
-        // Get rarity directly from item (it's already the rarity key like 'rare', 'epic', etc.)
-        const rarityName = baseItem.rarity || 'common';
+        // Get rarity from the weapon INSTANCE (not base item definition)
+        // This determines how many attachment slots are available
+        const rarityName = weapon.rarity || baseItem.rarity || 'common';
         const maxSlots = AttachmentSystem.ATTACHMENT_SLOTS_BY_RARITY[rarityName];
 
         let html = `
@@ -217,7 +218,10 @@ const AttachmentModal = {
             }
 
             const attachmentItem = baseItemId ? ItemAccessHelper.getItem(baseItemId) : null;
-            const rarity = attachmentItem ? GameEngine.getItemRarity(baseItemId) : null;
+            // For instanced attachments, get rarity from the instance, not base definition
+            const attachmentInstance = currentAttachment ? GameEngine.state.bank.instanced?.[currentAttachment] : null;
+            const rarityTier = attachmentInstance?.rarity || attachmentItem?.rarity || 'common';
+            const rarity = GameEngine.definitions.RARITY_TIERS[rarityTier] || GameEngine.definitions.RARITY_TIERS.common;
 
             html += `
                 <div class="attachment-slot ${currentAttachment ? 'filled' : 'empty'}"
@@ -285,7 +289,8 @@ const AttachmentModal = {
             html += '<div class="no-attachments">No compatible attachments in bank</div>';
         } else {
             availableAttachments.forEach(({id, item, definition}) => {
-                const rarityName = definition.rarity || 'common';
+                // For instanced attachments, use instance rarity; fallback to definition
+                const rarityName = item.rarity || definition.rarity || 'common';
                 const bonusStat = definition.bonusStat || 'unknown';
                 const bonusValue = definition.bonusValue || 0;
 

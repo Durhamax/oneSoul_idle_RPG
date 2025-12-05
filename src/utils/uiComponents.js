@@ -137,7 +137,7 @@ const UIComponents = {
                 borderColor: '#4a8b4a',
                 barGradient: 'linear-gradient(90deg, #5acd5a 0%, #00ff00 100%)'
             },
-            textiles: {
+            tailoring: {
                 color: '#e94560',
                 bgGradient: 'linear-gradient(135deg, #2a1a2a 0%, #3a2a3a 100%)',
                 borderColor: '#8b4a8b',

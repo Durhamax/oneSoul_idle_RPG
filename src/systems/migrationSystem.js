@@ -48,10 +48,11 @@ const MigrationSystem = {
             this.migrateNavigationRequirements,
             this.autoDiscoverStartingNodes,
             this.fixNegativeNodeHP,
-            this.grantStartingMiningTool,
+            // this.grantStartingMiningTool,  // Disabled - Mission 102 now grants all tools
             this.migrateEquipmentPresets,
             this.migrateAttachmentSystem,
-            this.migrateDualBankStructure  // ✅ Phase 4 complete - re-enabled
+            this.migrateDualBankStructure,  // ✅ Phase 4 complete - re-enabled
+            this.fixNewItemsArray  // Fix corrupted newItems array
         ];
 
         let totalMigrations = 0;
@@ -244,6 +245,10 @@ const MigrationSystem = {
             GameEngine.state.currencies.medals = 0;
             changes++;
         }
+        if (GameEngine.state.currencies.medalFragments === undefined) {
+            GameEngine.state.currencies.medalFragments = 0;
+            changes++;
+        }
         if (GameEngine.state.currencies.tomes === undefined) {
             GameEngine.state.currencies.tomes = 0;
             changes++;
@@ -301,7 +306,7 @@ const MigrationSystem = {
         }
 
         // Add new crafting skills if missing (using NEW names)
-        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'textiles', 'engineering'];
+        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'tailoring', 'engineering'];
         for (let skill of craftingSkills) {
             if (!GameEngine.state.skills[skill]) {
                 GameEngine.state.skills[skill] = { level: 1, exp: 0, unlocked: true };
@@ -320,10 +325,31 @@ const MigrationSystem = {
             }
         }
 
-        // Ensure all skills start at level 1 minimum
+        // Ensure all skills start at level 1 minimum (handles 0, undefined, null)
         for (let skillId in GameEngine.state.skills) {
-            if (GameEngine.state.skills[skillId].level === 0) {
+            const skill = GameEngine.state.skills[skillId];
+            if (!skill.level || skill.level < 1) {
                 GameEngine.state.skills[skillId].level = 1;
+                console.log(`  ✅ Fixed skill ${skillId} level: was ${skill.level}, now 1`);
+                changes++;
+            }
+            // Ensure exp exists
+            if (skill.exp === undefined || skill.exp === null) {
+                GameEngine.state.skills[skillId].exp = 0;
+            }
+            // Ensure unlocked exists
+            if (skill.unlocked === undefined) {
+                GameEngine.state.skills[skillId].unlocked = true;
+            }
+        }
+
+        // Also ensure ALL gathering skills exist (including logging which might be named woodcutting in old saves)
+        const allSkills = ['navigation', 'mining', 'logging', 'fishing', 'hunting', 'foraging', 'thieving',
+                          'cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'tailoring', 'engineering'];
+        for (let skillName of allSkills) {
+            if (!GameEngine.state.skills[skillName]) {
+                GameEngine.state.skills[skillName] = { level: 1, exp: 0, unlocked: true };
+                console.log(`  ✅ Added missing skill: ${skillName}`);
                 changes++;
             }
         }
@@ -722,7 +748,7 @@ const MigrationSystem = {
                     smithing: 0,
                     mechanics: 0,
                     electronics: 0,
-                    textiles: 0
+                    tailoring: 0
                 },
                 paths: {},
                 reversedRecipes: []
@@ -742,7 +768,7 @@ const MigrationSystem = {
                     smithing: 0,
                     mechanics: 0,
                     electronics: 0,
-                    textiles: 0
+                    tailoring: 0
                 },
                 paths: {},
                 reversedRecipes: []
@@ -924,11 +950,19 @@ const MigrationSystem = {
     migrateInvalidEquipment() {
         let changes = 0;
 
+        // Consumable slots use { itemId, quantity } format - don't convert these
+        const consumableSlots = ['food', 'potion', 'ammo'];
+
         // Check all equipment slots
         for (let slot in GameEngine.state.equipment) {
             const equippedItemId = GameEngine.state.equipment[slot];
 
-            // Fix: If equipment slot contains an object instead of a string
+            // Skip consumable slots - they use object format { itemId, quantity }
+            if (consumableSlots.includes(slot)) {
+                continue;
+            }
+
+            // Fix: If non-consumable equipment slot contains an object instead of a string
             if (equippedItemId && typeof equippedItemId === 'object') {
                 if (equippedItemId.itemId || equippedItemId.instanceId) {
                     const newId = equippedItemId.instanceId || equippedItemId.itemId;
@@ -1259,8 +1293,8 @@ const MigrationSystem = {
                     const baseItem = GameEngine.getItem(baseId);
 
                     if (baseItem && baseItem.equipSlot === 'weapon') {
-                        const rarity = GameEngine.getItemRarity(baseId);
-                        const rarityName = rarity ? rarity.id : 'common';
+                        // Use instance rarity if available, otherwise base item rarity
+                        const rarityName = item.rarity || baseItem.rarity || 'common';
                         const maxSlots = AttachmentSystem.ATTACHMENT_SLOTS_BY_RARITY[rarityName];
                         const slotTypes = Object.keys(AttachmentSystem.ATTACHMENT_TYPES);
 
@@ -1457,6 +1491,27 @@ const MigrationSystem = {
             console.log(`  📦 Stackable items: ${Object.keys(GameEngine.state.bank.stackable).length}`);
             console.log(`  ⚔️ Instanced items: ${Object.keys(GameEngine.state.bank.instanced).length}`);
             console.log(`  💾 Old structure backed up to bank.items_backup`);
+        }
+
+        return changes;
+    },
+
+    /**
+     * Fix corrupted newItems array
+     * Some saves have newItems as an object or undefined instead of an array
+     */
+    fixNewItemsArray() {
+        let changes = 0;
+
+        if (!GameEngine.state.bank) {
+            return 0;
+        }
+
+        // Check if newItems is not an array
+        if (!Array.isArray(GameEngine.state.bank.newItems)) {
+            console.log(`  🔧 Fixing corrupted newItems (was: ${typeof GameEngine.state.bank.newItems})`);
+            GameEngine.state.bank.newItems = [];
+            changes = 1;
         }
 
         return changes;

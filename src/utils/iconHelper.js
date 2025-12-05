@@ -22,16 +22,19 @@ const IconHelper = {
         const size = options.size || 32;
         const className = options.className || '';
 
+        // Check if icon is a PNG path (starts with 'assets/' or ends with '.png')
+        const iconPath = item.iconPath || (item.icon && (item.icon.startsWith('assets/') || item.icon.endsWith('.png')) ? item.icon : null);
+
         // Use PNG icon if available
         // Scale PNG icons 1.5x larger than specified size to match emoji visual weight
-        if (item.iconPath) {
+        if (iconPath) {
             const pngSize = Math.round(size * 1.5);
-            return `<img src="${item.iconPath}"
+            return `<img src="${iconPath}"
                          alt="${item.name}"
                          class="item-icon ${className}"
                          style="width: ${pngSize}px; height: ${pngSize}px; object-fit: contain;"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-                    <span class="item-icon-fallback" style="display: none; font-size: ${size * 0.75}px;">${item.icon || '📦'}</span>`;
+                    <span class="item-icon-fallback" style="display: none; font-size: ${size * 0.75}px;">📦</span>`;
         }
 
         // Fallback to emoji
@@ -46,9 +49,12 @@ const IconHelper = {
     getItemIconSrc(item) {
         if (!item) return '';
 
+        // Check if icon is a PNG path
+        const iconPath = item.iconPath || (item.icon && (item.icon.startsWith('assets/') || item.icon.endsWith('.png')) ? item.icon : null);
+
         // Return PNG path if available
-        if (item.iconPath) {
-            return item.iconPath;
+        if (iconPath) {
+            return iconPath;
         }
 
         // For emoji, return as text (caller should handle display)
@@ -61,7 +67,8 @@ const IconHelper = {
      * @returns {boolean}
      */
     hasPNGIcon(item) {
-        return !!(item && item.iconPath);
+        if (!item) return false;
+        return !!(item.iconPath || (item.icon && (item.icon.startsWith('assets/') || item.icon.endsWith('.png'))));
     },
 
     /**
@@ -74,7 +81,7 @@ const IconHelper = {
         if (!item) return '📦';
 
         // If has PNG, don't show emoji
-        if (item.iconPath) return '';
+        if (this.hasPNGIcon(item)) return '';
 
         return item.icon || '📦';
     }

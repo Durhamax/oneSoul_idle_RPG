@@ -219,10 +219,12 @@ const CombatSystem = {
             this.state.combat.currentEnemy.reloadStartTime = 0;
         }
 
-        // Initialize food quantity for auto-eat system
+        // Initialize food quantity for auto-eat system (use base ID for bank lookup)
         const equippedFood = this.state.equipment.food;
-        if (equippedFood && this.state.bank.items[equippedFood]) {
-            this.state.combat.equippedFoodQuantity = this.state.bank.items[equippedFood].quantity;
+        if (equippedFood) {
+            const foodBaseId = ItemIdUtils.getBaseItemId(equippedFood);
+            const bankItem = foodBaseId ? this.state.bank.items[foodBaseId] : null;
+            this.state.combat.equippedFoodQuantity = bankItem?.quantity || 0;
         } else {
             this.state.combat.equippedFoodQuantity = 0;
         }
@@ -955,6 +957,46 @@ const CombatSystem = {
             return;
         }
 
+        // Check for dev infinite food mode (skip all consumption logic)
+        if (typeof DevFoodTools !== 'undefined' && DevFoodTools.infiniteFoodEnabled) {
+            // In infinite mode, just heal without consuming
+            const equippedFood = this.state.equipment.food;
+            if (!equippedFood) return;
+
+            const baseId = ItemIdUtils.getBaseItemId(equippedFood);
+            const foodDef = ItemIdUtils.getItemDefinition(baseId);
+            if (!foodDef) return;
+
+            const playerStats = this.getPlayerCombatStats();
+            const combat = this.state.combat;
+            const healthPercent = combat.player.currentHealth / playerStats.maxHealth;
+            const effectiveThreshold = Math.min(0.95, combat.autoEatThreshold + playerStats.autoEatThresholdBonus);
+
+            if (healthPercent >= effectiveThreshold) return;
+
+            const now = Date.now();
+            if (now - combat.lastAutoEatTime < combat.autoEatCooldown) return;
+
+            // Get heal amount (supports both healAmount and effectValue)
+            const baseHealAmount = foodDef.healAmount || foodDef.effectValue || 20;
+            const healAmount = Math.floor(baseHealAmount * (1 + playerStats.consumableEfficiency));
+
+            const oldHealth = combat.player.currentHealth;
+            combat.player.currentHealth = Math.min(combat.player.currentHealth + healAmount, playerStats.maxHealth);
+            const actualHeal = combat.player.currentHealth - oldHealth;
+
+            combat.lastAutoEatTime = now;
+
+            const foodName = foodDef.name || baseId;
+            this.addCombatLog(`🍎 <span style="color: #4caf50;">[AUTO] Consumed ${foodName} (+${Math.floor(actualHeal)} HP) [DEV: Infinite]</span>`);
+
+            // Emit event for UI
+            if (typeof EventBus !== 'undefined') {
+                EventBus.emit('player-healed', { amount: actualHeal, source: 'food', item: foodName });
+            }
+            return;
+        }
+
         const now = Date.now();
         const playerStats = this.getPlayerCombatStats();
         const combat = this.state.combat;
@@ -977,19 +1019,36 @@ const CombatSystem = {
             return; // No food equipped
         }
 
-        // Check if we have food quantity remaining
-        if (combat.equippedFoodQuantity <= 0) {
+        // Extract base item ID from instance ID (handles both formats)
+        const baseId = ItemIdUtils.getBaseItemId(equippedFood);
+        if (!baseId) {
+            console.warn(`[CombatSystem] Could not parse food ID: ${equippedFood}`);
+            return;
+        }
+
+        // Check if we have food quantity remaining in bank (by BASE ID)
+        const bankItem = this.state.bank.items[baseId];
+        if (!bankItem || bankItem.quantity <= 0) {
+            // Also update combat state
+            combat.equippedFoodQuantity = 0;
             return; // Out of food
         }
 
-        // Get food definition
-        const foodDef = CombatSystem._getItemDef(equippedFood, this);
-        if (!foodDef || !foodDef.healAmount) {
-            return; // Invalid food item
+        // Get food definition using base ID
+        const foodDef = ItemIdUtils.getItemDefinition(baseId);
+        if (!foodDef) {
+            console.warn(`[CombatSystem] Food item not found in registry: ${baseId}`);
+            return;
+        }
+
+        // Get heal amount - supports both healAmount and effectValue (consumables use effectValue)
+        const baseHealAmount = foodDef.healAmount || foodDef.effectValue || 20;
+        if (!baseHealAmount) {
+            console.warn(`[CombatSystem] Food has no heal value: ${baseId}`);
+            return;
         }
 
         // Consume the food (with INTELLECT consumable efficiency bonus)
-        const baseHealAmount = foodDef.healAmount;
         const healAmount = Math.floor(baseHealAmount * (1 + playerStats.consumableEfficiency));
 
         // Heal the player
@@ -1000,28 +1059,33 @@ const CombatSystem = {
         );
         const actualHeal = combat.player.currentHealth - oldHealth;
 
-        // Decrement food quantity in bank
-        if (this.state.bank.items[equippedFood]) {
-            this.state.bank.items[equippedFood].quantity--;
+        // Decrement food quantity in bank (by BASE ID)
+        bankItem.quantity--;
 
-            // Remove from bank if depleted
-            if (this.state.bank.items[equippedFood].quantity <= 0) {
-                delete this.state.bank.items[equippedFood];
-                this.state.equipment.food = null; // Unequip depleted food
-            }
+        // Remove from bank if depleted
+        if (bankItem.quantity <= 0) {
+            delete this.state.bank.items[baseId];
+            this.state.equipment.food = null; // Unequip depleted food
+            combat.equippedFoodQuantity = 0;
+        } else {
+            // Update combat state quantity
+            combat.equippedFoodQuantity = bankItem.quantity;
         }
-
-        // Decrement food quantity in combat state
-        combat.equippedFoodQuantity--;
 
         // Update last auto-eat time
         combat.lastAutoEatTime = now;
 
         // Log the auto-consume
-        const foodName = foodDef.name || equippedFood;
+        const foodName = foodDef.name || baseId;
         this.addCombatLog(`🍎 <span style="color: #4caf50;">[AUTO] Consumed ${foodName} (+${Math.floor(actualHeal)} HP)</span>`);
 
         console.log(`🍎 Auto-consumed ${foodName} for ${actualHeal} HP (${combat.equippedFoodQuantity} remaining)`);
+
+        // Emit event for UI updates
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('player-healed', { amount: actualHeal, source: 'food', item: foodName });
+            EventBus.emit('food-consumed', { itemId: baseId, remaining: combat.equippedFoodQuantity });
+        }
     },
 
     /**

@@ -15,7 +15,7 @@ const EQUIPMENT_ITEMS = {
         id: 'greensmanTrainingBow',
         name: 'Greensman Training Bow',
         description: 'A basic bow crafted from riverwillow and plant fibers. Perfect for beginners learning archery.',
-        icon: '🏹',
+        icon: 'assets/icons/weapons/wooden-bow.png',
         category: 'equipment',
         instanced: true,
         rarity: 'common',
@@ -56,13 +56,13 @@ const EQUIPMENT_ITEMS = {
         weaponCategory: 'pistol',
         requiresAmmo: true,
         ammoType: 'pistol',
-        baseDamage: 7,
-        attackInterval: 2000,
+        baseDamage: 25,
+        attackInterval: 800,
         combatStats: {
-            damage: 7,
-            attackSpeed: 1.2,
-            accuracy: 65,
-            critChance: 8,
+            damage: 25,
+            attackSpeed: 2.5,
+            accuracy: 500,
+            critChance: 15,
         },
         requirements: {
             characterLevel: 1,
@@ -132,7 +132,7 @@ const EQUIPMENT_ITEMS = {
         id: 'flintheadArrows',
         name: 'Flinthead Arrows',
         description: 'Basic arrows with flint tips. Essential ammunition for bows.',
-        icon: '🏹',
+        icon: 'assets/icons/Crafted Materials/flint-arrowheads.png',
         category: 'equipment',
         instanced: false,
         rarity: 'common',
@@ -160,6 +160,11 @@ const EQUIPMENT_ITEMS = {
         equipSlot: 'ammo',
         tier: 'starter',
         ammoType: 'pistol',
+        combatStats: {
+            damage: 10,
+            accuracy: 5,
+            critChance: 5,
+        },
         tags: ['ammo', 'pistol', 'ranged', 'firearm'],
     },
 
@@ -256,13 +261,12 @@ const EQUIPMENT_ITEMS = {
     // TOOLS
     // =================================================================
 
-    // Starter Tools (with custom icons)
+    // Starter Tools
     caneRod: {
         id: 'caneRod',
         name: 'Cane Rod',
         description: 'A simple fishing rod made from river cane. Perfect for catching small fish.',
-        icon: '🎣',
-        iconPath: 'assets/icons/tools/cane-rod.png',
+        icon: 'assets/icons/tools/cane-rod.png',
         category: 'equipment',
         instanced: true,
         rarity: 'common',
@@ -285,8 +289,7 @@ const EQUIPMENT_ITEMS = {
         id: 'huntingBlade',
         name: 'Hunting Blade',
         description: 'A sharp blade designed for hunting and field dressing game.',
-        icon: '🔪',
-        iconPath: 'assets/icons/tools/hunting blade.png',
+        icon: 'assets/icons/tools/hunting blade.png',
         category: 'equipment',
         instanced: true,
         rarity: 'common',
@@ -309,8 +312,7 @@ const EQUIPMENT_ITEMS = {
         id: 'lightPickaxe',
         name: 'Light Pickaxe',
         description: 'A lightweight pickaxe ideal for beginners. Can mine basic ores.',
-        icon: '⛏️',
-        iconPath: 'assets/icons/tools/light-pickaxe.png',
+        icon: 'assets/icons/tools/light-pickaxe.png',
         category: 'equipment',
         instanced: true,
         rarity: 'common',
@@ -333,8 +335,7 @@ const EQUIPMENT_ITEMS = {
         id: 'lockpick',
         name: 'Lockpick',
         description: 'A set of basic lockpicking tools. Essential for opening locked containers.',
-        icon: '🔓',
-        iconPath: 'assets/icons/tools/lockpick.png',
+        icon: 'assets/icons/tools/lockpick.png',
         category: 'equipment',
         instanced: true,
         rarity: 'common',
@@ -347,6 +348,9 @@ const EQUIPMENT_ITEMS = {
         weaponCategory: 'tool',
         toolType: 'lockpicking',
         toolTier: 1,
+        requirements: {
+            thieving: 1,        // Skill name is 'thieving', not 'lockpicking'
+        },
         tags: ['tool', 'lockpicking', 'starter'],
     },
 
@@ -354,8 +358,7 @@ const EQUIPMENT_ITEMS = {
         id: 'utilityHatchet',
         name: 'Utility Hatchet',
         description: 'A versatile hatchet for chopping wood and basic tasks.',
-        icon: '🪓',
-        iconPath: 'assets/icons/tools/utility-hatchet.png',
+        icon: 'assets/icons/tools/utility-hatchet.png',
         category: 'equipment',
         instanced: true,
         rarity: 'common',
@@ -369,7 +372,7 @@ const EQUIPMENT_ITEMS = {
         toolType: 'woodcutting',
         toolTier: 1,
         requirements: {
-            woodcutting: 1,
+            logging: 1,         // Skill name is 'logging', not 'woodcutting'
         },
         tags: ['tool', 'woodcutting', 'starter'],
     },
@@ -378,8 +381,7 @@ const EQUIPMENT_ITEMS = {
         id: 'wovenBasket',
         name: 'Woven Basket',
         description: 'A sturdy basket woven from natural fibers. Useful for gathering plants.',
-        icon: '🧺',
-        iconPath: 'assets/icons/tools/woven-basket.png',
+        icon: 'assets/icons/tools/woven-basket.png',
         category: 'equipment',
         instanced: true,
         rarity: 'common',

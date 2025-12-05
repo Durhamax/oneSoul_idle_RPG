@@ -486,6 +486,28 @@ const ITEM_SCHEMA = {
      */
     gatherLevel: 1,
 
+    /**
+     * Whether this material can be used as fuel for campfires
+     * @type {boolean}
+     * @category material
+     * @optional
+     * @default false
+     */
+    fuel: false,
+
+    /**
+     * Fuel properties for campfire system (only if fuel: true)
+     * @type {Object}
+     * @category material
+     * @optional
+     * @example { burnTime: 60, warmth: 10, efficiency: 1.0 }
+     */
+    fuelStats: {
+        burnTime: 30,       // Seconds of burn time per unit
+        warmth: 5,          // Warmth bonus provided
+        efficiency: 1.0,    // Recovery efficiency multiplier
+    },
+
     // =================================================================
     // CRAFTING PROPERTIES
     // =================================================================

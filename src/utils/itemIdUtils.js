@@ -14,23 +14,28 @@
 const ItemIdUtils = {
 
     /**
-     * Instance ID pattern: {baseItemId}_{13-digit-timestamp}_{randomString}
+     * Instance ID patterns:
+     * Format 1: {baseItemId}_{13-digit-timestamp}_{randomString} (craftingSystem)
+     * Format 2: {baseItemId}_instance_{13-digit-timestamp}_{randomString} (dualBankSystem)
      *
      * The timestamp is always exactly 13 digits (JavaScript Date.now()).
-     * This regex captures everything before _XXXXXXXXXXXXX_ pattern.
-     * Uses non-greedy matching to handle base IDs with underscores.
      */
     INSTANCE_ID_PATTERN: /^(.+)_(\d{13})_([a-z0-9]+)$/i,
+    INSTANCE_ID_PATTERN_ALT: /^(.+)_instance_(\d{13})_([a-z0-9]+)$/i,
 
     /**
      * Extract base item ID from an instance ID or return as-is if already base ID
+     *
+     * Handles BOTH instance ID formats:
+     * - Format 1: baseId_timestamp_random (e.g., 'cookedMeat_1763928759179_abc123')
+     * - Format 2: baseId_instance_timestamp_random (e.g., 'cookedMeat_instance_1763928759179_abc123')
      *
      * @param {string|object} itemIdOrInstanceId - Either a base ID, instance ID, or object with baseItemId/itemId
      * @returns {string|null} The base item ID or null if invalid input
      *
      * @example
      * getBaseItemId('sidekick22_1764441114356_r431m1xvb') // Returns: 'sidekick22'
-     * getBaseItemId('unityScoutSet_1764441114453_hshzdfe80') // Returns: 'unityScoutSet'
+     * getBaseItemId('cookedMeat_instance_1763928759179_abc123') // Returns: 'cookedMeat'
      * getBaseItemId('flintheadArrows') // Returns: 'flintheadArrows'
      * getBaseItemId({ baseItemId: 'sidekick22' }) // Returns: 'sidekick22'
      * getBaseItemId(null) // Returns: null
@@ -50,7 +55,12 @@ const ItemIdUtils = {
             return null;
         }
 
-        // Try to match instance ID pattern
+        // Check Format 2 first: baseId_instance_timestamp_random
+        if (itemIdOrInstanceId.includes('_instance_')) {
+            return itemIdOrInstanceId.split('_instance_')[0];
+        }
+
+        // Try Format 1: baseId_timestamp_random
         const match = itemIdOrInstanceId.match(this.INSTANCE_ID_PATTERN);
 
         if (match) {
@@ -64,6 +74,7 @@ const ItemIdUtils = {
 
     /**
      * Check if a string is an instance ID (vs base ID)
+     * Handles both formats.
      *
      * @param {string} itemId - Item ID to check
      * @returns {boolean} True if instance ID format
@@ -72,28 +83,43 @@ const ItemIdUtils = {
         if (!itemId || typeof itemId !== 'string') {
             return false;
         }
-        return this.INSTANCE_ID_PATTERN.test(itemId);
+        // Check both formats
+        return this.INSTANCE_ID_PATTERN_ALT.test(itemId) || this.INSTANCE_ID_PATTERN.test(itemId);
     },
 
     /**
      * Parse an instance ID into its components
+     * Handles both formats.
      *
      * @param {string} instanceId - Full instance ID
-     * @returns {Object|null} { baseItemId, timestamp, randomId, fullId } or null if not instance ID
+     * @returns {Object|null} { baseItemId, timestamp, randomId, fullId, format } or null if not instance ID
      */
     parseInstanceId(instanceId) {
         if (!instanceId || typeof instanceId !== 'string') {
             return null;
         }
 
-        const match = instanceId.match(this.INSTANCE_ID_PATTERN);
+        // Try Format 2 first: baseId_instance_timestamp_random
+        const matchAlt = instanceId.match(this.INSTANCE_ID_PATTERN_ALT);
+        if (matchAlt) {
+            return {
+                baseItemId: matchAlt[1],
+                timestamp: parseInt(matchAlt[2], 10),
+                randomId: matchAlt[3],
+                fullId: instanceId,
+                format: 'instance'
+            };
+        }
 
+        // Try Format 1: baseId_timestamp_random
+        const match = instanceId.match(this.INSTANCE_ID_PATTERN);
         if (match) {
             return {
                 baseItemId: match[1],
                 timestamp: parseInt(match[2], 10),
                 randomId: match[3],
-                fullId: instanceId
+                fullId: instanceId,
+                format: 'standard'
             };
         }
 

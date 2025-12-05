@@ -83,7 +83,7 @@ const SkillsUI = {
         // Define skill order and groups
         const prioritySkills = ['navigation', 'engineering'];
         const gatheringSkills = ['mining', 'logging', 'fishing', 'hunting', 'foraging', 'thieving'];
-        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'textiles'];
+        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'tailoring'];
 
         // Helper function to render a skill card
         const renderSkill = (skillId, icon) => {
@@ -202,7 +202,7 @@ const SkillsUI = {
                 smithing: '🔨',
                 mechanics: '⚙️',
                 electronics: '⚡',
-                textiles: '🧵'
+                tailoring: '🧵'
             };
             return renderSkill(skillId, icons[skillId] || '🔧');
         }).join('');

@@ -2,6 +2,12 @@
  * AUTO CONSUMPTION
  *
  * Auto-eat and ammo consumption systems
+ *
+ * Food System:
+ * - Equipment slot stores { itemId, quantity } object
+ * - Auto-eat: Triggers when HP <= threshold, consumes multiple items until full HP (at efficiency rate)
+ * - Manual eat: Consumes 1 item at 100% heal value
+ * - Effects: Applied each attack interval while food quantity > 0
  */
 
 const AutoConsumption = {
@@ -51,59 +57,47 @@ const AutoConsumption = {
     },
 
     /**
-     * Helper: Extract base item ID from instanced ID
-     * Delegates to centralized ItemIdUtils for consistent ID parsing
-     * e.g., "sidekick22_1764441114356_r431m1xvb" -> "sidekick22"
+     * Get food definition from equipped food slot
+     * Handles new { itemId, quantity } format
      */
-    getBaseItemId(itemIdOrSlot) {
-        // Use centralized utility for consistent ID parsing
+    getFoodDefinition(foodSlot) {
+        if (!foodSlot) return null;
+
+        // New format: { itemId, quantity }
+        const itemId = typeof foodSlot === 'object' ? foodSlot.itemId : foodSlot;
+        if (!itemId) return null;
+
+        // Use ItemIdUtils for item lookup
         if (typeof ItemIdUtils !== 'undefined') {
-            return ItemIdUtils.getBaseItemId(itemIdOrSlot);
+            return ItemIdUtils.getItemDefinition(itemId);
         }
 
-        // Fallback if ItemIdUtils not loaded yet
-        if (!itemIdOrSlot) return null;
-
-        if (typeof itemIdOrSlot === 'object') {
-            return itemIdOrSlot.baseItemId || itemIdOrSlot.itemId || null;
-        }
-
-        if (typeof itemIdOrSlot === 'string') {
-            // Match pattern: baseId_13digitTimestamp_randomId
-            const match = itemIdOrSlot.match(/^(.+)_(\d{13})_([a-z0-9]+)$/i);
-            if (match) {
-                return match[1];
-            }
-            return itemIdOrSlot;
-        }
-
-        return null;
-    },
-
-    /**
-     * Helper: Get item definition from equipment slot (handles instanced items)
-     * Uses ItemIdUtils for consistent ID resolution
-     */
-    getItemDef(slot) {
-        if (!slot) return null;
-
-        // Use centralized utility for consistent item lookup
-        if (typeof ItemIdUtils !== 'undefined') {
-            return ItemIdUtils.getItemDefinition(slot);
-        }
-
-        // Fallback to manual lookup
-        const baseId = this.getBaseItemId(slot);
-        if (!baseId) return null;
-
+        // Fallback to ItemRegistry
         if (typeof ItemRegistry !== 'undefined') {
-            return ItemRegistry.getItem(baseId);
+            return ItemRegistry.getItem(itemId);
         }
+
         return null;
     },
 
     /**
-     * Calculate auto-eat threshold (20% of max HP)
+     * Get equipped food quantity
+     */
+    getEquippedFoodQuantity(player) {
+        const foodSlot = player.equipment?.food;
+        if (!foodSlot) return 0;
+
+        // New format: { itemId, quantity }
+        if (typeof foodSlot === 'object' && foodSlot.quantity !== undefined) {
+            return foodSlot.quantity;
+        }
+
+        // Legacy format: string ID (shouldn't happen with new system)
+        return 0;
+    },
+
+    /**
+     * Calculate auto-eat threshold (20% of max HP by default)
      */
     calculateAutoEatThreshold(player) {
         const mult = player.perkMultipliers || {};
@@ -114,7 +108,7 @@ const AutoConsumption = {
     },
 
     /**
-     * Calculate auto-eat efficiency
+     * Calculate auto-eat efficiency (base 50% + intellect bonus)
      */
     calculateAutoEatEfficiency(player) {
         const mult = player.perkMultipliers || {};
@@ -128,29 +122,43 @@ const AutoConsumption = {
 
     /**
      * Calculate max HP
-     * Applies both healthScaling (on attribute contribution) and maxHealth (on total)
+     * Prefers pre-compiled maxHP from combat start, falls back to calculation
      */
     calculateMaxHP(player) {
+        // Use pre-compiled maxHP if available (includes equipment bonuses, perks, etc.)
+        if (player.maxHP && player.maxHP > 0) {
+            return player.maxHP;
+        }
+
+        // Fallback: try to get from GameEngine's compiled stats
+        if (typeof GameEngine !== 'undefined' && GameEngine.state?.compiledStats?.maxHealth) {
+            return GameEngine.state.compiledStats.maxHealth;
+        }
+
+        // Last resort: calculate manually (won't include equipment bonuses)
         const mult = player.perkMultipliers || {};
         const health = player.combatAttributes?.health || 0;
 
-        // Base HP of 100 + (health attribute * 10 * healthScaling)
         const baseHP = 100;
         const attributeHP = health * 10 * (mult.healthScaling || 1.0);
         const totalHP = baseHP + attributeHP;
 
-        // Apply maxHealth multiplier to final total
         return Math.floor(totalHP * (mult.maxHealth || 1.0));
     },
 
     /**
      * Process auto-eat attempt
-     * Returns healing info or null if no food consumed
-     * Applies foodHealing multiplier for heal amount
-     * Applies foodConservation for chance to not consume
+     * When HP <= threshold, consume items until full HP (at efficiency rate)
+     * Returns healing info or null if no action taken
      */
     processAutoEat(player, combat) {
+        // Check for dev infinite food mode
+        if (typeof DevFoodTools !== 'undefined' && DevFoodTools.infiniteFoodEnabled) {
+            return this.processInfiniteAutoEat(player, combat);
+        }
+
         const threshold = this.calculateAutoEatThreshold(player);
+        const maxHP = this.calculateMaxHP(player);
 
         // Check if HP is below threshold
         if (player.currentHP > threshold) {
@@ -162,57 +170,236 @@ const AutoConsumption = {
             return null;
         }
 
+        // Get food from equipment slot (new format: { itemId, quantity })
+        const foodSlot = player.equipment?.food;
+        if (!foodSlot || typeof foodSlot !== 'object') {
+            return { success: false, reason: 'No food equipped' };
+        }
+
+        const { itemId, quantity } = foodSlot;
+        if (!itemId || quantity <= 0) {
+            return { success: false, reason: 'No food remaining' };
+        }
+
+        // Get food definition
+        const foodDef = this.getFoodDefinition(foodSlot);
+        if (!foodDef) {
+            return { success: false, reason: 'Food definition not found' };
+        }
+
+        // Get consumable perk multipliers
+        const consumablePerks = this.getConsumablePerkMultipliers();
+        const efficiency = this.calculateAutoEatEfficiency(player);
+
+        // Calculate heal per item (at efficiency rate for auto-eat)
+        const healValue = foodDef.healAmount || foodDef.effectValue || 0;
+        const healPerItem = Math.floor(healValue * efficiency * consumablePerks.foodHealing);
+
+        if (healPerItem <= 0) {
+            return { success: false, reason: 'Food has no heal value' };
+        }
+
+        // Calculate how much HP we need to restore
+        const hpNeeded = maxHP - player.currentHP;
+
+        // Calculate how many items needed to reach full HP
+        let itemsNeeded = Math.ceil(hpNeeded / healPerItem);
+
+        // Limit to available quantity
+        let itemsToConsume = Math.min(itemsNeeded, quantity);
+
+        // Apply conservation - each item has a chance to not be consumed
+        let itemsActuallyConsumed = 0;
+        let totalHealed = 0;
+
+        for (let i = 0; i < itemsToConsume; i++) {
+            // Check if we're already at full HP
+            if (player.currentHP >= maxHP) break;
+
+            // Apply healing
+            const oldHP = player.currentHP;
+            player.currentHP = Math.min(maxHP, player.currentHP + healPerItem);
+            totalHealed += (player.currentHP - oldHP);
+
+            // Check conservation - only consume if roll fails
+            if (this.shouldConsumeItem('food')) {
+                itemsActuallyConsumed++;
+            }
+        }
+
+        // Decrement equipped food quantity
+        foodSlot.quantity -= itemsActuallyConsumed;
+
+        // Track in session stats
+        if (combat.session) {
+            combat.session.foodConsumed = (combat.session.foodConsumed || 0) + itemsActuallyConsumed;
+            combat.session.foodConserved = (combat.session.foodConserved || 0) + (itemsToConsume - itemsActuallyConsumed);
+        }
+
+        combat.lastAutoEat = Date.now();
+
+        // Emit event for UI updates
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('food-consumed', {
+                itemId: itemId,
+                consumed: itemsActuallyConsumed,
+                remaining: foodSlot.quantity
+            });
+        }
+
+        return {
+            success: true,
+            healed: totalHealed,
+            itemsConsumed: itemsActuallyConsumed,
+            itemsUsed: itemsToConsume,
+            foodId: itemId,
+            foodName: foodDef.name,
+            remaining: foodSlot.quantity,
+            efficiency: efficiency,
+            threshold: threshold,
+            healMultiplier: consumablePerks.foodHealing
+        };
+    },
+
+    /**
+     * Manual eat - consume 1 food item at 100% efficiency
+     * Called when player clicks "Eat" button
+     */
+    manualEat(player) {
+        const maxHP = this.calculateMaxHP(player);
+
+        // Already at full HP
+        if (player.currentHP >= maxHP) {
+            return { success: false, reason: 'Already at full HP' };
+        }
+
         // Get food from equipment slot
-        const food = player.equipment?.food;
-        if (!food || !food.quantity || food.quantity <= 0) {
-            return {
-                success: false,
-                reason: 'No food equipped'
-            };
+        const foodSlot = player.equipment?.food;
+        if (!foodSlot || typeof foodSlot !== 'object') {
+            return { success: false, reason: 'No food equipped' };
+        }
+
+        const { itemId, quantity } = foodSlot;
+        if (!itemId || quantity <= 0) {
+            return { success: false, reason: 'No food remaining' };
+        }
+
+        // Get food definition
+        const foodDef = this.getFoodDefinition(foodSlot);
+        if (!foodDef) {
+            return { success: false, reason: 'Food definition not found' };
         }
 
         // Get consumable perk multipliers
         const consumablePerks = this.getConsumablePerkMultipliers();
 
-        // Calculate healing with foodHealing multiplier
-        const efficiency = this.calculateAutoEatEfficiency(player);
-        const healValue = food.healValue || 0;
-        const baseHealAmount = Math.floor(healValue * efficiency);
-        const healAmount = Math.floor(baseHealAmount * consumablePerks.foodHealing);
+        // Calculate heal at 100% efficiency (manual eat is full value)
+        const healValue = foodDef.healAmount || foodDef.effectValue || 0;
+        const healAmount = Math.floor(healValue * consumablePerks.foodHealing);
 
         // Apply healing
-        const maxHP = this.calculateMaxHP(player);
         const oldHP = player.currentHP;
         player.currentHP = Math.min(maxHP, player.currentHP + healAmount);
         const actualHealed = player.currentHP - oldHP;
 
-        // Check food conservation - only consume if roll fails
-        const wasConsumed = this.shouldConsumeItem('food');
-        if (wasConsumed) {
-            food.quantity--;
-        }
-
-        combat.lastAutoEat = Date.now();
+        // Always consume 1 item for manual eat (no conservation)
+        foodSlot.quantity--;
 
         // Track in session stats
-        if (combat.session) {
-            if (wasConsumed) {
-                combat.session.foodConsumed = (combat.session.foodConsumed || 0) + 1;
-            } else {
-                combat.session.foodConserved = (combat.session.foodConserved || 0) + 1;
-            }
+        if (player.combat?.session) {
+            player.combat.session.foodConsumed = (player.combat.session.foodConsumed || 0) + 1;
+        }
+
+        // Emit event for UI updates
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('food-consumed', {
+                itemId: itemId,
+                consumed: 1,
+                remaining: foodSlot.quantity,
+                manual: true
+            });
         }
 
         return {
             success: true,
             healed: actualHealed,
-            foodUsed: food.id,
-            foodName: food.name,
-            remaining: food.quantity,
+            foodId: itemId,
+            foodName: foodDef.name,
+            remaining: foodSlot.quantity,
+            efficiency: 1.0,
+            healMultiplier: consumablePerks.foodHealing
+        };
+    },
+
+    /**
+     * Get active food effects
+     * Effects are active while food quantity > 0
+     */
+    getActiveFoodEffects(player) {
+        const foodSlot = player.equipment?.food;
+        if (!foodSlot || typeof foodSlot !== 'object') {
+            return null;
+        }
+
+        const { itemId, quantity } = foodSlot;
+        if (!itemId || quantity <= 0) {
+            return null;
+        }
+
+        const foodDef = this.getFoodDefinition(foodSlot);
+        if (!foodDef || !foodDef.effect) {
+            return null;
+        }
+
+        // Return effect (e.g., { stat: 'strength', amount: 1 })
+        return {
+            ...foodDef.effect,
+            source: 'food',
+            foodId: itemId,
+            foodName: foodDef.name
+        };
+    },
+
+    /**
+     * Process auto-eat in infinite food mode (dev tool)
+     * Heals without consuming food
+     */
+    processInfiniteAutoEat(player, combat) {
+        const threshold = this.calculateAutoEatThreshold(player);
+        const maxHP = this.calculateMaxHP(player);
+
+        if (player.currentHP > threshold) {
+            return null;
+        }
+
+        if (combat.lastAutoEat && Date.now() - combat.lastAutoEat < 1000) {
+            return null;
+        }
+
+        const foodSlot = player.equipment?.food;
+        const foodDef = this.getFoodDefinition(foodSlot);
+
+        const consumablePerks = this.getConsumablePerkMultipliers();
+        const efficiency = this.calculateAutoEatEfficiency(player);
+        const healValue = foodDef?.healAmount || foodDef?.effectValue || 50;
+
+        // Heal to full HP instantly in dev mode
+        const oldHP = player.currentHP;
+        player.currentHP = maxHP;
+        const actualHealed = player.currentHP - oldHP;
+
+        combat.lastAutoEat = Date.now();
+
+        return {
+            success: true,
+            healed: actualHealed,
+            itemsConsumed: 0,
+            foodId: foodSlot?.itemId || 'dev_food',
+            foodName: (foodDef?.name || 'Dev Food') + ' [INFINITE]',
+            remaining: foodSlot?.quantity || 999,
             efficiency: efficiency,
             threshold: threshold,
-            wasConsumed: wasConsumed,
-            healMultiplier: consumablePerks.foodHealing
+            devMode: true
         };
     },
 
@@ -232,51 +419,16 @@ const AutoConsumption = {
             }
         } else {
             // Fallback: resolve from equipment
-            const weaponDef = this.getItemDef(player.equipment?.weapon);
+            const weaponSlot = player.equipment?.weapon;
+            const weaponDef = this.getWeaponDefinition(weaponSlot);
             if (!weaponDef || !weaponDef.requiresAmmo) {
                 return { success: true, reason: 'Weapon does not require ammo' };
             }
         }
 
-        // Use combat ammo state if available
-        const ammoState = combat?.playerAmmo;
-        if (ammoState) {
-            if (ammoState.currentAmmo <= 0) {
-                return {
-                    success: false,
-                    reason: 'Out of ammo',
-                    weaponName: compiledWeapon?.name || 'weapon'
-                };
-            }
-
-            // Check ammo conservation - only consume if roll fails
-            const wasConsumed = this.shouldConsumeItem('ammo');
-            if (wasConsumed) {
-                // Consume ammo from combat state
-                ammoState.currentAmmo--;
-            }
-
-            // Track in session stats
-            if (combat.session) {
-                if (wasConsumed) {
-                    combat.session.ammoConsumed = (combat.session.ammoConsumed || 0) + 1;
-                } else {
-                    combat.session.ammoConserved = (combat.session.ammoConserved || 0) + 1;
-                }
-            }
-
-            return {
-                success: true,
-                ammoUsed: ammoState.ammoId,
-                ammoName: ammoState.ammoName,
-                remaining: ammoState.currentAmmo,
-                wasConsumed: wasConsumed
-            };
-        }
-
-        // Fallback: use equipment slot directly
+        // Get ammo from equipment slot (new format: { itemId, quantity })
         const ammoSlot = player.equipment?.ammo;
-        if (!ammoSlot) {
+        if (!ammoSlot || typeof ammoSlot !== 'object') {
             return {
                 success: false,
                 reason: 'No ammo equipped',
@@ -284,9 +436,8 @@ const AutoConsumption = {
             };
         }
 
-        // Check quantity
-        const quantity = ammoSlot.quantity || 0;
-        if (quantity <= 0) {
+        const { itemId, quantity } = ammoSlot;
+        if (!itemId || quantity <= 0) {
             return {
                 success: false,
                 reason: 'Out of ammo',
@@ -297,7 +448,6 @@ const AutoConsumption = {
         // Check ammo conservation - only consume if roll fails
         const wasConsumed = this.shouldConsumeItem('ammo');
         if (wasConsumed) {
-            // Consume ammo
             ammoSlot.quantity--;
         }
 
@@ -310,10 +460,10 @@ const AutoConsumption = {
             }
         }
 
-        const ammoDef = this.getItemDef(ammoSlot);
+        const ammoDef = this.getAmmoDefinition(ammoSlot);
         return {
             success: true,
-            ammoUsed: this.getBaseItemId(ammoSlot),
+            ammoUsed: itemId,
             ammoName: ammoDef?.name || 'ammo',
             remaining: ammoSlot.quantity,
             wasConsumed: wasConsumed
@@ -321,21 +471,53 @@ const AutoConsumption = {
     },
 
     /**
+     * Get weapon definition helper
+     */
+    getWeaponDefinition(weaponSlot) {
+        if (!weaponSlot) return null;
+        const itemId = typeof weaponSlot === 'string' ? weaponSlot : weaponSlot.itemId;
+        if (!itemId) return null;
+
+        if (typeof ItemIdUtils !== 'undefined') {
+            return ItemIdUtils.getItemDefinition(itemId);
+        }
+        if (typeof ItemRegistry !== 'undefined') {
+            return ItemRegistry.getItem(itemId);
+        }
+        return null;
+    },
+
+    /**
+     * Get ammo definition helper
+     */
+    getAmmoDefinition(ammoSlot) {
+        if (!ammoSlot) return null;
+        const itemId = typeof ammoSlot === 'object' ? ammoSlot.itemId : ammoSlot;
+        if (!itemId) return null;
+
+        if (typeof ItemIdUtils !== 'undefined') {
+            return ItemIdUtils.getItemDefinition(itemId);
+        }
+        if (typeof ItemRegistry !== 'undefined') {
+            return ItemRegistry.getItem(itemId);
+        }
+        return null;
+    },
+
+    /**
      * Check if player can attack (has ammo if needed)
-     * Uses pre-compiled combat stats when available
      */
     canAttack(player) {
-        // First check: use compiled weapon data if available (set at combat start)
+        // First check: use compiled weapon data if available
         const compiledWeapon = player.combat?.compiledWeapon;
         if (compiledWeapon) {
-            // Weapon was pre-compiled at combat start
             if (!compiledWeapon.requiresAmmo) {
                 return { canAttack: true };
             }
 
             // Check ammo
-            const ammoState = player.combat?.playerAmmo;
-            if (!ammoState || ammoState.currentAmmo <= 0) {
+            const ammoSlot = player.equipment?.ammo;
+            if (!ammoSlot || typeof ammoSlot !== 'object' || ammoSlot.quantity <= 0) {
                 return {
                     canAttack: false,
                     reason: 'Out of ammo',
@@ -346,55 +528,28 @@ const AutoConsumption = {
             return { canAttack: true };
         }
 
-        // Fallback: resolve from equipment (used if combat not properly initialized)
+        // Fallback: resolve from equipment
         const weaponSlot = player.equipment?.weapon;
         if (!weaponSlot) {
             return { canAttack: false, reason: 'No weapon equipped' };
         }
 
-        // Get weapon definition using helper (handles instanced IDs)
-        const weaponDef = this.getItemDef(weaponSlot);
+        const weaponDef = this.getWeaponDefinition(weaponSlot);
         if (!weaponDef) {
-            const baseId = this.getBaseItemId(weaponSlot);
-            console.warn(`⚠️ [AutoConsumption] Could not find weapon definition for: ${baseId}`);
             return { canAttack: false, reason: 'Weapon not found in registry' };
         }
 
-        // Check if weapon requires ammo
         if (!weaponDef.requiresAmmo) {
             return { canAttack: true };
         }
 
-        // Get ammo from equipment slot
+        // Check ammo
         const ammoSlot = player.equipment?.ammo;
-        if (!ammoSlot) {
+        if (!ammoSlot || typeof ammoSlot !== 'object' || ammoSlot.quantity <= 0) {
             return {
                 canAttack: false,
                 reason: 'Out of ammo',
                 weaponName: weaponDef.name
-            };
-        }
-
-        // Resolve ammo definition
-        const ammoDef = this.getItemDef(ammoSlot);
-
-        // Check ammo quantity
-        const ammoQuantity = ammoSlot.quantity || player.combat?.playerAmmo?.currentAmmo || 0;
-        if (ammoQuantity <= 0) {
-            return {
-                canAttack: false,
-                reason: 'Out of ammo',
-                weaponName: weaponDef.name
-            };
-        }
-
-        // Check ammo compatibility
-        if (weaponDef.ammoType && ammoDef?.ammoType !== weaponDef.ammoType) {
-            return {
-                canAttack: false,
-                reason: 'Incompatible ammo',
-                weaponAmmoType: weaponDef.ammoType,
-                equippedAmmoType: ammoDef?.ammoType
             };
         }
 

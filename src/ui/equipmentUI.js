@@ -9,6 +9,9 @@ const EquipmentUI = {
     // State caching for performance optimization
     lastBankState: null,
     lastEquipmentState: null,
+    // Debounce timer for bank updates
+    bankUpdatePending: false,
+    bankUpdateTimeout: null,
 
     /**
      * Initialize event listeners for instant updates
@@ -25,11 +28,20 @@ const EquipmentUI = {
 
     /**
      * Handle inventory change events for instant UI updates
+     * Uses debouncing to prevent rapid re-renders during crafting
      */
     handleItemChanged(data) {
         // Only update if we're currently viewing the bank tab
         if (UICore.currentView === 'bank') {
-            this.updateBank();
+            // Debounce: wait 150ms before updating to batch rapid changes
+            if (this.bankUpdateTimeout) {
+                clearTimeout(this.bankUpdateTimeout);
+            }
+            this.bankUpdatePending = true;
+            this.bankUpdateTimeout = setTimeout(() => {
+                this.bankUpdatePending = false;
+                this.updateBank();
+            }, 150);
         }
     },
 
@@ -37,6 +49,11 @@ const EquipmentUI = {
      * Update bank display
      */
     updateBank() {
+        // Skip if a debounced update is already pending (prevents double updates)
+        if (this.bankUpdatePending) {
+            return;
+        }
+
         const bank = GameEngine.state.bank;
 
         // DUAL-BANK: Create a snapshot of current bank state (all storage locations)

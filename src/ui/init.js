@@ -28,4 +28,21 @@ window.addEventListener('DOMContentLoaded', () => {
         nodePanel.init();
         console.log('✅ NodePanel initialized');
     }
+
+    // Initialize TourOverlay (for UI tour missions)
+    if (typeof TourOverlay !== 'undefined') {
+        TourOverlay.init();
+    }
+
+    // Initialize WelcomeModal (for new player greeting)
+    if (typeof WelcomeModal !== 'undefined') {
+        WelcomeModal.init();
+    }
+
+    // Check for new player after a short delay (after game load completes)
+    setTimeout(() => {
+        if (typeof GameEngine !== 'undefined' && GameEngine.checkNewPlayer) {
+            GameEngine.checkNewPlayer();
+        }
+    }, 500);
 });

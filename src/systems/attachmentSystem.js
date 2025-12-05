@@ -348,8 +348,8 @@ const AttachmentSystem = {
 
         if (!weapon) return 0;
 
-        const rarity = this.getItemRarity(weapon.baseItemId || weaponId);
-        const rarityName = rarity ? rarity.id : 'common';
+        // For instanced weapons, use the instance rarity; otherwise use base item rarity
+        const rarityName = weapon.rarity || 'common';
         return AttachmentSystem.ATTACHMENT_SLOTS_BY_RARITY[rarityName];
     }
 };

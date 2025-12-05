@@ -56,6 +56,14 @@ const DualBankSystem = {
             return false;
         }
 
+        // Ensure bank.stackable exists (defensive)
+        if (!GameEngine.state.bank) {
+            GameEngine.state.bank = {};
+        }
+        if (!GameEngine.state.bank.stackable) {
+            GameEngine.state.bank.stackable = {};
+        }
+
         // Initialize if doesn't exist
         if (!GameEngine.state.bank.stackable[itemId]) {
             GameEngine.state.bank.stackable[itemId] = 0;
@@ -204,6 +212,14 @@ const DualBankSystem = {
         // Ensure instance has both properties for compatibility
         instance.uniqueId = id;
         instance.instanceId = id;
+
+        // Ensure bank.instanced exists (defensive)
+        if (!GameEngine.state.bank) {
+            GameEngine.state.bank = {};
+        }
+        if (!GameEngine.state.bank.instanced) {
+            GameEngine.state.bank.instanced = {};
+        }
 
         // Add to instanced storage
         GameEngine.state.bank.instanced[id] = instance;

@@ -28,6 +28,7 @@ const NavigationSystem = {
         engine.exploreRegion = this.exploreRegion.bind(engine);
         engine.checkForDiscoveries = this.checkForDiscoveries.bind(engine);
         engine.checkRegionUnlocks = this.checkRegionUnlocks.bind(engine);
+        engine.processLegacyRecovery = this.processLegacyRecovery.bind(engine);
     },
 
     /**
@@ -346,74 +347,80 @@ const NavigationSystem = {
             activeNav.lastRecoveryTick = 0;
         }
 
-        // RECOVERY MODE: Camping system with resource consumption
+        // RECOVERY MODE: Campfire system with fuel consumption
         if (activeNav.isRecovering) {
-            const timeSinceRecovery = now - (activeNav.lastRecoveryTick || now);
-            const recoveryInterval = 1000; // Recover every 1 second
-            const consumptionInterval = 6000; // Consume resources every 6 seconds
+            // Use CampfireSystem for fuel-based recovery
+            if (typeof CampfireSystem !== 'undefined' && this.processCampfireTick) {
+                const campfireResult = this.processCampfireTick(now - (activeNav.lastRecoveryTick || now));
 
-            if (timeSinceRecovery >= recoveryInterval) {
-                activeNav.lastRecoveryTick = now;
+                if (campfireResult.processed) {
+                    activeNav.lastRecoveryTick = now;
 
-                // Check if it's time to consume resources (every 6 seconds)
-                if (!activeNav.lastConsumptionTime) {
-                    activeNav.lastConsumptionTime = now;
-                }
-                const timeSinceConsumption = now - activeNav.lastConsumptionTime;
+                    // Food consumption (separate from fuel)
+                    if (!activeNav.lastFoodConsumptionTime) {
+                        activeNav.lastFoodConsumptionTime = now;
+                    }
+                    const timeSinceFoodConsumption = now - activeNav.lastFoodConsumptionTime;
+                    const foodConsumptionInterval = 6000; // Consume food every 6 seconds
 
-                if (timeSinceConsumption >= consumptionInterval) {
-                    activeNav.lastConsumptionTime = now;
+                    if (timeSinceFoodConsumption >= foodConsumptionInterval) {
+                        activeNav.lastFoodConsumptionTime = now;
 
-                    // Try to consume equipped food and wood
-                    const foodId = activeNav.restEquipment?.food;
-                    const woodId = activeNav.restEquipment?.wood;
+                        // Try to consume equipped food from equipment.food slot (shared with combat)
+                        // equipment.food format: { itemId: string, quantity: number }
+                        const foodSlot = this.state.equipment?.food;
+                        if (foodSlot && foodSlot.itemId && foodSlot.quantity > 0) {
+                            // Consume from equipped food quantity
+                            foodSlot.quantity -= 1;
+                            const foodDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(foodSlot.itemId) : null;
+                            console.log(`🍖 Camping: Consumed 1 ${foodDef?.name || foodSlot.itemId} (${foodSlot.quantity} remaining)`);
 
-                    let canConsume = true;
-
-                    // Check if we have the resources
-                    if (!foodId || !woodId) {
-                        console.warn('⚠️ Missing camping resources! Recovery paused.');
-                        canConsume = false;
-                    } else {
-                        const foodQty = this.state.bank.items[foodId]?.quantity || 0;
-                        const woodQty = this.state.bank.items[woodId]?.quantity || 0;
-
-                        if (foodQty < 1 || woodQty < 1) {
-                            console.warn('⚠️ Out of camping resources! Recovery paused.');
-                            canConsume = false;
+                            // Unequip if depleted
+                            if (foodSlot.quantity <= 0) {
+                                this.state.equipment.food = null;
+                                console.warn('⚠️ Food depleted! Equip more food for recovery bonus.');
+                            }
+                        } else {
+                            console.warn('⚠️ No food equipped! Recovery continues but slower.');
                         }
                     }
 
-                    if (canConsume) {
-                        // Consume 1 food and 1 wood
-                        this.removeItem(foodId, 1);
-                        this.removeItem(woodId, 1);
-
-                        const foodDef = ItemRegistry.getItem(foodId);
-                        const woodDef = ItemRegistry.getItem(woodId);
-                        console.log(`🔥 Camping: Consumed 1 ${foodDef?.name} + 1 ${woodDef?.name}`);
-                    } else {
-                        // No resources = no recovery
+                    // Check if campfire is providing recovery
+                    if (!campfireResult.active || campfireResult.recoveryAmount <= 0) {
+                        // Only warn once every 5 seconds to avoid console spam
+                        if (!activeNav.lastCampfireWarning || now - activeNav.lastCampfireWarning >= 5000) {
+                            activeNav.lastCampfireWarning = now;
+                            console.warn('⚠️ Campfire not active! Select fuel to continue recovery.');
+                        }
                         return;
                     }
+
+                    // Apply campfire recovery with base stats
+                    const baseRecovery = stats.recoveryRate || 3;
+                    const campfireBonus = campfireResult.efficiency || 1.0;
+                    const totalRecovery = baseRecovery * campfireBonus;
+
+                    activeNav.endurance += totalRecovery;
+
+                    // Check if fully recovered
+                    if (activeNav.endurance >= activeNav.maxEndurance) {
+                        activeNav.endurance = activeNav.maxEndurance;
+                        activeNav.isRecovering = false;
+                        activeNav.lastFoodConsumptionTime = null;
+
+                        // Extinguish campfire when done
+                        if (this.extinguishCampfire) {
+                            this.extinguishCampfire();
+                        }
+
+                        console.log(`✅ Endurance restored! Resuming exploration... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance})`);
+                    } else {
+                        console.log(`⏳ Recovering endurance... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}) [Campfire: ${campfireResult.warmth} warmth, ${campfireResult.efficiency}x efficiency]`);
+                    }
                 }
-
-                // Recover endurance over time
-                // Formula: (base 3 + (health * 0.5)) * enduranceRecovery perk
-                const recoveryRate = stats.recoveryRate || 3;
-
-                activeNav.endurance += recoveryRate;
-
-                // Check if fully recovered
-                if (activeNav.endurance >= activeNav.maxEndurance) {
-                    activeNav.endurance = activeNav.maxEndurance;
-                    activeNav.isRecovering = false;
-                    activeNav.lastConsumptionTime = null;
-                    console.log(`✅ Endurance restored! Resuming exploration... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance})`);
-                } else {
-                    // Still recovering
-                    console.log(`⏳ Recovering endurance... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance})`);
-                }
+            } else {
+                // Fallback: Legacy recovery (without CampfireSystem)
+                this.processLegacyRecovery(now, activeNav, stats);
             }
             return;
         }
@@ -812,5 +819,76 @@ const NavigationSystem = {
 
         console.log(`🗺️ Traveled to ${targetHexDef.name}`);
         return { success: true, region: targetHexDef };
+    },
+
+    /**
+     * Legacy recovery mode (fallback when CampfireSystem is not available)
+     * Uses the old wood + food consumption system
+     */
+    processLegacyRecovery(now, activeNav, stats) {
+        const timeSinceRecovery = now - (activeNav.lastRecoveryTick || now);
+        const recoveryInterval = 1000; // Recover every 1 second
+        const consumptionInterval = 6000; // Consume resources every 6 seconds
+
+        if (timeSinceRecovery >= recoveryInterval) {
+            activeNav.lastRecoveryTick = now;
+
+            // Check if it's time to consume resources (every 6 seconds)
+            if (!activeNav.lastConsumptionTime) {
+                activeNav.lastConsumptionTime = now;
+            }
+            const timeSinceConsumption = now - activeNav.lastConsumptionTime;
+
+            if (timeSinceConsumption >= consumptionInterval) {
+                activeNav.lastConsumptionTime = now;
+
+                // Try to consume equipped food and wood
+                const foodId = activeNav.restEquipment?.food;
+                const woodId = activeNav.restEquipment?.wood;
+
+                let canConsume = true;
+
+                // Check if we have the resources
+                if (!foodId || !woodId) {
+                    console.warn('⚠️ Missing camping resources! Recovery paused.');
+                    canConsume = false;
+                } else {
+                    const foodQty = this.state.bank.items[foodId]?.quantity || 0;
+                    const woodQty = this.state.bank.items[woodId]?.quantity || 0;
+
+                    if (foodQty < 1 || woodQty < 1) {
+                        console.warn('⚠️ Out of camping resources! Recovery paused.');
+                        canConsume = false;
+                    }
+                }
+
+                if (canConsume) {
+                    // Consume 1 food and 1 wood
+                    this.removeItem(foodId, 1);
+                    this.removeItem(woodId, 1);
+
+                    const foodDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(foodId) : null;
+                    const woodDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(woodId) : null;
+                    console.log(`🔥 Camping: Consumed 1 ${foodDef?.name} + 1 ${woodDef?.name}`);
+                } else {
+                    // No resources = no recovery
+                    return;
+                }
+            }
+
+            // Recover endurance over time
+            const recoveryRate = stats.recoveryRate || 3;
+            activeNav.endurance += recoveryRate;
+
+            // Check if fully recovered
+            if (activeNav.endurance >= activeNav.maxEndurance) {
+                activeNav.endurance = activeNav.maxEndurance;
+                activeNav.isRecovering = false;
+                activeNav.lastConsumptionTime = null;
+                console.log(`✅ Endurance restored! Resuming exploration... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance})`);
+            } else {
+                console.log(`⏳ Recovering endurance... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance})`);
+            }
+        }
     }
 };

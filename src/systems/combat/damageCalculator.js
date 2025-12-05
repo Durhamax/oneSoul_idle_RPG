@@ -127,11 +127,12 @@ const DamageCalculator = {
      */
     calculateTotalDamageReduction(defender) {
         const mult = defender.perkMultipliers || {};
-        const compiled = defender.compiledStats || { defense: {} };
+        const compiled = defender.compiledStats || {};
+        const defense = compiled.defense || {};
         const attributes = defender.attributes || {};
 
         // Source 1: Armor DR (from armor set + accessories)
-        let armorDR = compiled.defense.damageReduction || 0;
+        let armorDR = defense.damageReduction || 0;
 
         // Source 2: Defense Attribute
         const defenseBase = ((attributes.defense || 0) * this.COMBAT_BALANCE.defensePerPoint)

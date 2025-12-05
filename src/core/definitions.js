@@ -358,7 +358,7 @@ const GameDefinitions = {
                 }
             ]
         },
-        textiles: {
+        tailoring: {
             name: "Tailoring Shop",
             tiers: [
                 {
@@ -474,7 +474,7 @@ const GameDefinitions = {
                 bonuses: { shieldCapacity: 1.40, rechargeSpeed: 1.25 }
             }
         ],
-        textiles: [
+        tailoring: [
             {
                 id: "light_armor",
                 name: "Light Armor Specialist",
@@ -576,8 +576,8 @@ const GameDefinitions = {
                 producesTypes: ["energyWeapon", "shield", "augment"],
                 equipSlots: ["weapon", "neck", "ring"]
             },
-            textiles: {
-                name: "Textiles",
+            tailoring: {
+                name: "Tailoring",
                 description: "Produces cloth armor, bags, cloaks. Consumes fibers, leather, thread.",
                 bonusPerLevel: 0.03,  // +3% crafting quality per level
                 category: "crafting",
@@ -592,7 +592,7 @@ const GameDefinitions = {
                 description: "Unlocks workshop upgrades, reverse engineering, and advanced assembly. Enhances all crafting skills.",
                 bonusPerLevel: 0.02,  // +2% all crafting effectiveness per level
                 category: "vertical",
-                enhancesSkills: ["cooking", "chemistry", "smithing", "mechanics", "electronics", "textiles"]
+                enhancesSkills: ["cooking", "chemistry", "smithing", "mechanics", "electronics", "tailoring"]
             }
         },
 
@@ -872,7 +872,7 @@ const GameDefinitions = {
                     machining: ["basicWorkbench"],
                     cooking: ["campfire"],
                     chemistry: ["chemTable"],
-                    textiles: ["sewingKit"],
+                    tailoring: ["sewingKit"],
                     engineering: ["engineeringDesk"]
                 },
                 exitPathChance: 0.15  // 15% chance per discovery to find exit path
@@ -895,7 +895,7 @@ const GameDefinitions = {
                     machining: ["basicWorkbench", "machineShop"],
                     cooking: ["campfire", "fieldKitchen"],
                     chemistry: ["chemTable", "chemLab"],
-                    textiles: ["sewingKit", "tailorShop"],
+                    tailoring: ["sewingKit", "tailorShop"],
                     engineering: ["engineeringDesk", "techBench"]
                 },
                 exitPathChance: 0.12
@@ -918,7 +918,7 @@ const GameDefinitions = {
                     machining: ["machineShop", "precisionLab"],
                     cooking: ["fieldKitchen", "fullKitchen"],
                     chemistry: ["chemLab", "researchLab"],
-                    textiles: ["tailorShop", "fabricMill"],
+                    tailoring: ["tailorShop", "fabricMill"],
                     engineering: ["techBench", "innovationCenter"]
                 },
                 exitPathChance: 0.10
@@ -941,7 +941,7 @@ const GameDefinitions = {
                     machining: ["machineShop"],
                     cooking: ["fieldKitchen"],
                     chemistry: ["chemLab"],
-                    textiles: ["tailorShop"],
+                    tailoring: ["tailorShop"],
                     engineering: ["techBench"]
                 },
                 exitPathChance: 0.10
@@ -964,7 +964,7 @@ const GameDefinitions = {
                     machining: ["machineShop"],
                     cooking: ["campfire"],
                     chemistry: ["chemTable"],
-                    textiles: ["sewingKit"],
+                    tailoring: ["sewingKit"],
                     engineering: ["techBench"]
                 },
                 exitPathChance: 0.08
@@ -987,7 +987,7 @@ const GameDefinitions = {
                     machining: ["basicWorkbench"],
                     cooking: ["fieldKitchen"],
                     chemistry: ["chemLab"],
-                    textiles: ["sewingKit"],
+                    tailoring: ["sewingKit"],
                     engineering: ["engineeringDesk"]
                 },
                 exitPathChance: 0.10
@@ -1010,7 +1010,7 @@ const GameDefinitions = {
                     machining: ["basicWorkbench"],
                     cooking: ["campfire", "fieldKitchen"],
                     chemistry: ["chemTable"],
-                    textiles: ["sewingKit"],
+                    tailoring: ["sewingKit"],
                     engineering: ["engineeringDesk"]
                 },
                 exitPathChance: 0.12
@@ -1037,7 +1037,7 @@ const GameDefinitions = {
                     machining: ["basicWorkbench"],
                     cooking: ["campfire"],
                     chemistry: ["chemTable"],
-                    textiles: ["sewingKit"],
+                    tailoring: ["sewingKit"],
                     engineering: ["engineeringDesk"]
                 },
                 // Special locations to discover
@@ -1065,7 +1065,7 @@ const GameDefinitions = {
                     machining: ["basicWorkbench", "machineShop"],
                     cooking: ["campfire", "fieldKitchen"],
                     chemistry: ["chemTable", "chemLab"],
-                    textiles: ["sewingKit", "tailorShop"],
+                    tailoring: ["sewingKit", "tailorShop"],
                     engineering: ["engineeringDesk", "techBench"]
                 },
                 locations: [
@@ -1092,7 +1092,7 @@ const GameDefinitions = {
                     machining: ["machineShop", "precisionLab"],
                     cooking: ["fieldKitchen", "fullKitchen"],
                     chemistry: ["chemLab", "researchLab"],
-                    textiles: ["tailorShop", "fabricMill"],
+                    tailoring: ["tailorShop", "fabricMill"],
                     engineering: ["techBench", "innovationCenter"]
                 },
                 locations: [
@@ -4481,12 +4481,12 @@ const GameDefinitions = {
                 expReward: 50
             },
 
-            // === TEXTILES RECIPES ===
+            // === TAILORING RECIPES ===
             // Clothing and tactical gear
             textileCloth: {
                 name: "Processed Cloth",
                 description: "Clean, processed cloth for crafting",
-                skill: "textiles",
+                skill: "tailoring",
                 skillLevel: 1,
                 craftingTime: 2000,
                 station: ["sewingKit", "tailorShop", "fabricMill"],
@@ -4501,7 +4501,7 @@ const GameDefinitions = {
             textileClothHood: {
                 name: "Cloth Hood",
                 description: "Simple cloth hood for basic protection",
-                skill: "textiles",
+                skill: "tailoring",
                 skillLevel: 1,
                 craftingTime: 1500,
                 station: ["sewingKit", "tailorShop", "fabricMill"],
@@ -4517,7 +4517,7 @@ const GameDefinitions = {
             textileClothPants: {
                 name: "Cloth Pants",
                 description: "Basic cloth pants",
-                skill: "textiles",
+                skill: "tailoring",
                 skillLevel: 1,
                 craftingTime: 1500,
                 station: ["sewingKit", "tailorShop", "fabricMill"],
@@ -4533,7 +4533,7 @@ const GameDefinitions = {
             textileLeatherArmor: {
                 name: "Leather Armor",
                 description: "Durable leather chest armor",
-                skill: "textiles",
+                skill: "tailoring",
                 skillLevel: 3,
                 craftingTime: 3000,
                 station: ["sewingKit", "tailorShop", "fabricMill"],
@@ -4549,7 +4549,7 @@ const GameDefinitions = {
             textileHuntingJacket: {
                 name: "Hunting Jacket",
                 description: "Warm jacket with pockets",
-                skill: "textiles",
+                skill: "tailoring",
                 skillLevel: 2,
                 craftingTime: 2500,
                 station: ["sewingKit", "tailorShop", "fabricMill"],
@@ -4566,7 +4566,7 @@ const GameDefinitions = {
             textileTacticalVest: {
                 name: "Tactical Vest",
                 description: "Lightweight vest with pockets",
-                skill: "textiles",
+                skill: "tailoring",
                 skillLevel: 8,
                 craftingTime: 10000,
                 station: ["sewingKit", "tailorShop", "fabricMill"],
@@ -4583,7 +4583,7 @@ const GameDefinitions = {
             textileCamo: {
                 name: "Camouflage Uniform",
                 description: "Stealth-enhancing camo clothing",
-                skill: "textiles",
+                skill: "tailoring",
                 skillLevel: 15,
                 craftingTime: 12000,
                 station: ["tailorShop", "fabricMill"],
@@ -5627,12 +5627,12 @@ const GameDefinitions = {
                 requiresDiscovery: true
             },
 
-            // TEXTILES STATIONS
+            // TAILORING STATIONS
             sewingKit: {
                 name: "Sewing Kit",
                 description: "Basic sewing and textile tools",
                 image: "🧵",
-                skill: "textiles",
+                skill: "tailoring",
                 skillLevel: 1,
                 availableIn: ["startingPlains", "darkForest"],
                 requiresDiscovery: true
@@ -5641,7 +5641,7 @@ const GameDefinitions = {
                 name: "Tailor Shop",
                 description: "Professional textile crafting station",
                 image: "🪡",
-                skill: "textiles",
+                skill: "tailoring",
                 skillLevel: 15,
                 availableIn: ["darkForest", "mountainPass"],
                 requiresDiscovery: true
@@ -5650,7 +5650,7 @@ const GameDefinitions = {
                 name: "Fabric Mill",
                 description: "Industrial textile production facility",
                 image: "🏭",
-                skill: "textiles",
+                skill: "tailoring",
                 skillLevel: 30,
                 availableIn: ["mountainPass"],
                 requiresDiscovery: true

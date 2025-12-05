@@ -232,12 +232,19 @@ const GatheringSystem = {
       // SUCCESS - Award resources ONLY if node has health
       const resources = this.rollResources(nodeDef, toolDef, playerSkill);
 
-      // Add to bank
+      // Add to bank and show notifications
       for (const [itemId, amount] of Object.entries(resources)) {
         this.engine.addItemToBank(itemId, amount);
 
         // Track in session
         session.totalResources[itemId] = (session.totalResources[itemId] || 0) + amount;
+
+        // Show green notification toast for each item gained
+        const itemDef = ItemRegistry.getItem(itemId);
+        const itemName = itemDef?.name || itemId;
+        if (typeof AnimationSystem !== 'undefined' && AnimationSystem.showNotification) {
+          AnimationSystem.showNotification(`+${amount} ${itemName}`, 'success', 2000);
+        }
       }
 
       // Award XP (with perk multiplier)
@@ -486,6 +493,18 @@ const GatheringSystem = {
   // ========================================
 
   getEquippedToolForSkill(skill) {
+    // Map skill names to toolType values (handles naming mismatches)
+    const skillToToolType = {
+      mining: 'mining',
+      logging: 'woodcutting',    // logging skill uses woodcutting tools
+      fishing: 'fishing',
+      hunting: 'hunting',
+      foraging: 'foraging',
+      thieving: 'lockpicking'    // thieving skill uses lockpicking tools
+    };
+
+    const targetToolType = skillToToolType[skill] || skill;
+
     // Check weapon slot first (most gathering tools are weapons)
     const weaponId = this.state.equipment.weapon;
 
@@ -504,7 +523,7 @@ const GatheringSystem = {
       const weapon = ItemRegistry.getItem(lookupId);
 
       // Check both 'skill' and 'toolType' properties for compatibility
-      if (weapon && (weapon.skill === skill || weapon.toolType === skill)) {
+      if (weapon && (weapon.skill === skill || weapon.toolType === targetToolType)) {
         return weapon;
       }
     }
@@ -525,7 +544,7 @@ const GatheringSystem = {
 
       const tool = ItemRegistry.getItem(lookupId);
       // Check both 'skill' and 'toolType' properties for compatibility
-      if (tool && (tool.skill === skill || tool.toolType === skill)) {
+      if (tool && (tool.skill === skill || tool.toolType === targetToolType)) {
         return tool;
       }
     }
@@ -537,22 +556,36 @@ const GatheringSystem = {
     const tools = [];
     const bank = this.state.bank || {};
 
-    // Search through all items in bank
-    for (const [itemId, quantity] of Object.entries(bank)) {
-      if (quantity > 0) {
-        const item = ItemRegistry.getItem(itemId);
+    // Map skill names to toolType values (handles naming mismatches)
+    const skillToToolType = {
+      mining: 'mining',
+      logging: 'woodcutting',    // logging skill uses woodcutting tools
+      fishing: 'fishing',
+      hunting: 'hunting',
+      foraging: 'foraging',
+      thieving: 'lockpicking'    // thieving skill uses lockpicking tools
+    };
 
-        // Check if item has matching skill property
-        if (item && item.skill === skill) {
-          tools.push({
-            id: itemId,
-            name: item.name,
-            icon: item.icon || '🔧',
-            quantity: quantity,
-            // Include relevant stats for display
-            gatheringBonus: item.gatheringBonus || {}
-          });
-        }
+    const targetToolType = skillToToolType[skill] || skill;
+
+    // Search through instanced items (tools are instanced)
+    const instanced = bank.instanced || {};
+    for (const [instanceId, instance] of Object.entries(instanced)) {
+      const baseItemId = instance.baseItemId || instanceId;
+      const item = ItemRegistry.getItem(baseItemId);
+
+      // Check if item has matching toolType property for the skill
+      if (item && item.toolType === targetToolType) {
+        tools.push({
+          id: instanceId,
+          baseItemId: baseItemId,
+          name: item.name,
+          icon: item.icon || '🔧',
+          tier: item.tier || 1,
+          rarity: instance.rarity || item.rarity || 'common',
+          // Include relevant stats for display
+          gatheringBonus: item.gatheringBonus || {}
+        });
       }
     }
 
@@ -562,33 +595,61 @@ const GatheringSystem = {
   showQuickEquipModal(skill, nodeId, validation) {
     const { requiredSkill, alternativeTools } = validation;
 
+    // Skill display names and icons
+    const skillNames = {
+      mining: 'Mining', logging: 'Logging', fishing: 'Fishing',
+      hunting: 'Hunting', foraging: 'Foraging', thieving: 'Thieving'
+    };
+    const skillIcons = {
+      mining: '⛏️', logging: '🪓', fishing: '🎣',
+      hunting: '🗡️', foraging: '🧺', thieving: '🔓'
+    };
+
+    const skillName = skillNames[skill] || skill;
+    const skillIcon = skillIcons[skill] || '🔧';
+
     // Build modal HTML
     let toolsHTML = '';
-    for (const tool of alternativeTools) {
-      toolsHTML += `
-        <div class="quick-equip-tool-option" data-tool-id="${tool.id}">
-          <div class="tool-icon">${tool.icon}</div>
-          <div class="tool-info">
-            <div class="tool-name">${tool.name}</div>
-            <div class="tool-quantity">Owned: ${tool.quantity}</div>
-          </div>
-          <button class="btn-equip-start" onclick="gameEngine.equipAndStartGathering('${skill}', '${nodeId}', '${tool.id}')">
-            Equip & Start
-          </button>
+    if (alternativeTools.length === 0) {
+      toolsHTML = `
+        <div class="quick-equip-no-tools">
+          <p>No ${skillName.toLowerCase()} tools found in your bank.</p>
+          <p>Craft or acquire a tool first!</p>
         </div>
       `;
+    } else {
+      for (const tool of alternativeTools) {
+        const rarityClass = tool.rarity || 'common';
+        // Use IconHelper for proper PNG/emoji icon rendering
+        const iconHtml = (typeof IconHelper !== 'undefined')
+          ? IconHelper.getItemIconHTML({ icon: tool.icon, name: tool.name }, { size: 36 })
+          : `<span class="tool-icon-emoji">${tool.icon || '🔧'}</span>`;
+
+        toolsHTML += `
+          <div class="quick-equip-tool-option rarity-${rarityClass}" data-tool-id="${tool.id}">
+            <div class="tool-icon">${iconHtml}</div>
+            <div class="tool-info">
+              <div class="tool-name">${tool.name}</div>
+              <div class="tool-tier">Tier ${tool.tier}</div>
+            </div>
+            <button class="btn-equip-start" onclick="GameEngine.equipAndStartGathering('${skill}', '${nodeId}', '${tool.id}')">
+              Equip & Start
+            </button>
+          </div>
+        `;
+      }
     }
 
     const modalHTML = `
       <div class="modal-overlay" id="quickEquipModal" style="display: flex;">
         <div class="modal-content quick-equip-modal">
           <div class="modal-header">
-            <h3>⚠️ Tool Required</h3>
+            <h3>${skillIcon} Tool Required</h3>
             <button class="modal-close" onclick="closeQuickEquipModal()">&times;</button>
           </div>
           <div class="modal-body">
-            <p>You need a <strong>${requiredToolType}</strong> equipped to ${skill}.</p>
-            <p>Select a tool from your inventory:</p>
+            <p>You need a <strong>${skillName} tool</strong> equipped to gather from this node.</p>
+            ${alternativeTools.length > 0 ? '<p>Select a tool from your bank:</p>' : ''}
             <div class="quick-equip-tools-list">
               ${toolsHTML}
             </div>
@@ -618,21 +679,44 @@ const GatheringSystem = {
       if (modal) modal.remove();
     };
 
-    // Add equip & start function to game engine
-    this.engine.equipAndStartGathering = (skill, nodeId, toolId) => {
-      // Equip the tool
-      this.state.equipment.weapon = toolId;
-      console.log(`✅ Equipped ${toolId}`);
+    // Add equip & start function to game engine (global for onclick)
+    window.GameEngine = window.GameEngine || this.engine;
+    this.engine.equipAndStartGathering = (skill, nodeId, toolInstanceId) => {
+      // Use GameEngine.equipItem which is properly bound to GameEngine context
+      if (this.engine.equipItem) {
+        const result = this.engine.equipItem(toolInstanceId);
+        if (result.success) {
+          console.log(`✅ Equipped tool: ${toolInstanceId}`);
+        } else {
+          console.warn(`⚠️ Failed to equip tool: ${result.reason}`);
+          return;
+        }
+      } else {
+        // Fallback: direct assignment and remove from bank
+        this.state.equipment.weapon = toolInstanceId;
+        if (typeof DualBankSystem !== 'undefined') {
+          DualBankSystem.removeInstance(toolInstanceId);
+        }
+        console.log(`✅ Equipped ${toolInstanceId} (fallback)`);
+      }
 
       // Close modal
       window.closeQuickEquipModal();
+
+      // Recompile stats after equipping
+      if (typeof StatCompiler !== 'undefined' && StatCompiler.compile) {
+        StatCompiler.compile();
+      }
 
       // Start gathering
       this.startGathering(skill, nodeId);
 
       // Refresh UI if available
-      if (typeof refreshEquipmentUI === 'function') {
-        refreshEquipmentUI();
+      if (typeof GatherUI !== 'undefined' && GatherUI.render) {
+        GatherUI.render();
+      }
+      if (typeof UICore !== 'undefined' && UICore.update) {
+        UICore.update();
       }
     };
   },

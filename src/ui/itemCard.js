@@ -44,8 +44,19 @@ const ItemCard = {
         const quantity = options.quantity !== undefined ? options.quantity : (bankItem ? bankItem.quantity || 1 : 0);
         const isNew = options.isNew !== undefined ? options.isNew : (bankItem ? bankItem.isNew : false);
 
-        // Get rarity information (use lookupId for instances)
-        const rarity = GameEngine.getItemRarity(lookupId);
+        // Get rarity information
+        // For instanced items, use the instance's rarity (rolled at craft time)
+        // For non-instanced items, use the base item definition's rarity
+        let rarityTier = 'common';
+        if (instancedItem && instancedItem.rarity) {
+            // Instanced item: use the rarity stored on the instance
+            rarityTier = instancedItem.rarity;
+        } else {
+            // Non-instanced item: get rarity from item definition
+            const itemDefRarity = itemDef.rarity || 'common';
+            rarityTier = itemDefRarity;
+        }
+        const rarity = GameEngine.definitions.RARITY_TIERS[rarityTier] || GameEngine.definitions.RARITY_TIERS.common;
         const rarityColor = rarity ? rarity.color : '#9e9e9e';
         const rarityGlow = rarity && rarity.glow;
         const rarityName = rarity ? rarity.name : 'Common';

@@ -38,18 +38,14 @@ const WorldRegions = {
         // ===== DISCOVERABLE CONTENT =====
         // What players can find through Navigation discoveries
 
-        // Gathering nodes - Only NodeRegistry nodes (new system)
+        // Gathering nodes - Tier 1 nodes (new naming: node_[tier]_[index])
         discoverableNodes: [
-            // Mining
-            "riverbed",
-            // Logging
-            "evergreen_forest",
-            // Fishing
-            "cradle_lake_shallows",
-            // Hunting
-            "cradle_woodlands",
-            // Foraging
-            "fallen_timber"
+            "node_1_1",  // Lake Shallows (Fishing)
+            "node_1_2",  // Meadow Game Trail (Hunting)
+            "node_1_3",  // Fallen Timber (Foraging)
+            "node_1_4",  // Lakeside Forest (Logging)
+            "node_1_5",  // Riverbed (Mining)
+            "node_1_6"   // Meadow Herb Patch (Foraging)
         ],
 
         // Crafting stations

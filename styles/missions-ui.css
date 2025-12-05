@@ -1,0 +1,791 @@
+/**
+ * MISSIONS UI STYLES
+ *
+ * Styling for the 3-tab mission interface.
+ * Follows the game's dark theme with accent colors for mission types.
+ */
+
+/* === CONTAINER === */
+.missions-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 16px;
+    gap: 16px;
+}
+
+/* === HEADER === */
+.missions-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #3a3a4a;
+}
+
+.missions-title {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #fff;
+}
+
+.missions-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.missions-stats .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.missions-stats .stat-value {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #4a9eff;
+}
+
+.missions-stats .stat-label {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+}
+
+/* === TABS === */
+.missions-tabs {
+    display: flex;
+    gap: 8px;
+    background: #1a1a2a;
+    padding: 4px;
+    border-radius: 8px;
+}
+
+.mission-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #888;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mission-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ccc;
+}
+
+.mission-tab.active {
+    background: #2a2a3a;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tab-icon {
+    font-size: 1.1rem;
+}
+
+.tab-badge {
+    background: #4a9eff;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.tab-badge.available {
+    background: #ff9800;
+}
+
+.tab-badge.completed {
+    background: #4caf50;
+}
+
+/* === TAB CONTENT === */
+.missions-tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+/* === EMPTY STATE === */
+.missions-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: #888;
+}
+
+.missions-empty .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.missions-empty h3 {
+    color: #aaa;
+    margin: 0 0 8px 0;
+}
+
+.missions-empty p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* === MISSION SECTION === */
+.mission-section {
+    margin-bottom: 24px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid;
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.section-icon {
+    font-size: 1.2rem;
+}
+
+.section-count {
+    font-size: 0.85rem;
+    color: #888;
+    font-weight: normal;
+}
+
+/* === MISSIONS GRID === */
+.missions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+}
+
+.missions-grid.completed {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+/* === MISSION CARD === */
+.mission-card {
+    background: #2a2a3a;
+    border: 2px solid #3a3a4a;
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mission-card:hover {
+    border-color: #4a9eff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.mission-card.active {
+    border-color: #4a9eff;
+}
+
+.mission-card.available {
+    border-color: #ff9800;
+}
+
+.mission-card.completed {
+    border-color: #4caf50;
+    opacity: 0.8;
+}
+
+/* === CARD HEADER === */
+.mission-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.mission-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+}
+
+.mission-type-badge.large {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+}
+
+.mission-difficulty {
+    color: #ffd700;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+.completed-badge {
+    font-size: 1.2rem;
+}
+
+/* === CARD CONTENT === */
+.mission-name {
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.mission-description {
+    margin: 0 0 12px 0;
+    font-size: 0.85rem;
+    color: #aaa;
+    line-height: 1.4;
+}
+
+/* === PROGRESS === */
+.mission-progress {
+    margin-bottom: 12px;
+}
+
+.progress-bar {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4a9eff, #2196F3);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    color: #888;
+}
+
+/* === OBJECTIVES === */
+.mission-objectives {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 12px;
+}
+
+.objective {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 0.85rem;
+    color: #ccc;
+}
+
+.objective.completed {
+    color: #4caf50;
+}
+
+.objective-icon {
+    font-size: 1rem;
+}
+
+.objective-text {
+    flex: 1;
+}
+
+.objective-progress {
+    font-size: 0.8rem;
+    color: #888;
+    min-width: 50px;
+    text-align: right;
+}
+
+/* === REWARDS PREVIEW === */
+.mission-rewards-preview {
+    padding: 10px;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 0.85rem;
+}
+
+.rewards-label {
+    color: #ffd700;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.rewards-items {
+    color: #aaa;
+}
+
+/* === CARD ACTIONS === */
+.mission-card-actions {
+    margin-top: auto;
+}
+
+.mission-action-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mission-action-btn.accept {
+    background: #4caf50;
+    color: #fff;
+}
+
+.mission-action-btn.accept:hover {
+    background: #45a049;
+}
+
+.mission-action-btn.abandon {
+    background: #f44336;
+    color: #fff;
+}
+
+.mission-action-btn.abandon:hover {
+    background: #d32f2f;
+}
+
+.mission-submit-btn {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #4caf50, #45a049);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(76, 175, 80, 0); }
+}
+
+/* === COMPLETION STATS === */
+.completion-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 8px;
+}
+
+/* === MISSION DIALOG === */
+.mission-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    padding: 20px;
+}
+
+.mission-dialog-content {
+    background: #2a2a3a;
+    border: 2px solid #4a4a5a;
+    border-radius: 12px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+.mission-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.dialog-close-btn {
+    background: transparent;
+    border: none;
+    color: #888;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.dialog-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.mission-dialog-title {
+    margin: 0 0 8px 0;
+    font-size: 1.5rem;
+    color: #fff;
+}
+
+.mission-dialog-difficulty {
+    font-size: 0.9rem;
+    color: #ffd700;
+    margin-bottom: 16px;
+}
+
+.mission-dialog-description {
+    font-size: 1rem;
+    color: #ccc;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.mission-narrative {
+    background: rgba(0, 0, 0, 0.3);
+    border-left: 3px solid #4a9eff;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-style: italic;
+    color: #aaa;
+}
+
+/* === DIALOG SECTIONS === */
+.mission-dialog-section {
+    margin-bottom: 20px;
+}
+
+.mission-dialog-section h3 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.mission-dialog-section.requirements {
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.requirement-warning {
+    color: #f44336;
+    font-size: 0.9rem;
+}
+
+/* === DIALOG OBJECTIVES === */
+.objectives-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dialog-objective {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #3a3a4a;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.dialog-objective.completed {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.objective-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.objective-progress-bar {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.objective-progress-text {
+    font-size: 0.8rem;
+    color: #4a9eff;
+    text-align: right;
+}
+
+.objective-requirement {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.objective-progress-text.completed {
+    color: #4caf50;
+    font-weight: bold;
+}
+
+/* === COMPLETED OBJECTIVES SUMMARY === */
+.objectives-completed-summary {
+    background: rgba(76, 175, 80, 0.1);
+    border: 2px solid #4caf50;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.completed-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(76, 175, 80, 0.1));
+    border-radius: 6px;
+    margin-bottom: 16px;
+}
+
+.completed-banner .completed-icon {
+    font-size: 2rem;
+}
+
+.completed-banner .completed-text {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #4caf50;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.completed-objectives-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.completed-objectives-list .dialog-objective {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.05);
+}
+
+.completed-objectives-list .objective-header {
+    margin-bottom: 0;
+}
+
+.completed-objectives-list .objective-progress-text {
+    margin-left: auto;
+}
+
+/* === DIALOG REWARDS === */
+.rewards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.reward-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #3a3a4a;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.reward-item.gold {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.reward-item.xp {
+    border-color: #4a9eff;
+    background: rgba(74, 158, 255, 0.1);
+}
+
+.reward-item.skill {
+    border-color: #9c27b0;
+    background: rgba(156, 39, 176, 0.1);
+}
+
+.reward-item.item {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.reward-icon {
+    font-size: 2rem;
+    margin-bottom: 4px;
+}
+
+.reward-amount {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #4caf50;
+}
+
+.reward-label {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: capitalize;
+}
+
+.no-rewards {
+    color: #888;
+    font-style: italic;
+}
+
+/* === DIALOG ACTIONS === */
+.mission-dialog-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #3a3a4a;
+}
+
+.dialog-action-btn {
+    padding: 14px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dialog-action-btn.accept {
+    background: #4caf50;
+    color: #fff;
+}
+
+.dialog-action-btn.accept:hover {
+    background: #45a049;
+}
+
+.dialog-action-btn.submit {
+    background: linear-gradient(135deg, #4caf50, #45a049);
+    color: #fff;
+}
+
+.dialog-action-btn.submit:hover {
+    background: linear-gradient(135deg, #45a049, #388e3c);
+}
+
+.dialog-action-btn.abandon {
+    background: #f44336;
+    color: #fff;
+}
+
+.dialog-action-btn.abandon:hover {
+    background: #d32f2f;
+}
+
+.dialog-action-btn.close {
+    background: #3a3a4a;
+    color: #ccc;
+}
+
+.dialog-action-btn.close:hover {
+    background: #4a4a5a;
+}
+
+.completed-message {
+    text-align: center;
+    padding: 16px;
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid #4caf50;
+    border-radius: 6px;
+    color: #4caf50;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.turnin-warning {
+    text-align: center;
+    padding: 12px;
+    background: rgba(255, 152, 0, 0.1);
+    border: 1px solid #ff9800;
+    border-radius: 6px;
+    color: #ff9800;
+    font-size: 0.9rem;
+}
+
+/* === SCROLLBAR === */
+.missions-tab-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.missions-tab-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.missions-tab-content::-webkit-scrollbar-thumb {
+    background: #3a3a4a;
+    border-radius: 3px;
+}
+
+.missions-tab-content::-webkit-scrollbar-thumb:hover {
+    background: #4a4a5a;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .missions-container {
+        padding: 12px;
+    }
+
+    .missions-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .mission-tab {
+        padding: 10px 12px;
+    }
+
+    .tab-label {
+        display: none;
+    }
+
+    .missions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mission-dialog-content {
+        padding: 16px;
+    }
+
+    .rewards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

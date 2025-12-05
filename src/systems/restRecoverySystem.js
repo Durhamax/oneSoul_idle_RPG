@@ -106,7 +106,7 @@ const RestRecoverySystem = {
         }
 
         // Check for logs in bank (any basic log item will work)
-        const logItems = ['pinewood', 'log', 'normalLogs', 'oakLog', 'oakLogs', 'willowLog', 'willowLogs', 'birchLog', 'mapleLog', 'mapleLogs', 'wood'];
+        const logItems = ['pinewood', 'log', 'normalLogs', 'oakLog', 'willowLog', 'willowLogs', 'birchLog', 'mapleLog', 'mapleLogs', 'wood'];
         let hasLogs = false;
 
         for (let logId of logItems) {
@@ -162,7 +162,7 @@ const RestRecoverySystem = {
         }
 
         // Consume 1 log (prioritize basic logs first) and get its recovery value
-        const logItems = ['pinewood', 'log', 'normalLogs', 'oakLogs', 'willowLogs', 'mapleLogs'];
+        const logItems = ['pinewood', 'log', 'normalLogs', 'willowLogs', 'mapleLogs'];
         let logRecovery = 0;
         for (let logId of logItems) {
             const bankItem = this.state.bank.items[logId];
@@ -232,7 +232,7 @@ const RestRecoverySystem = {
 
         // Count all logs
         let logsCount = 0;
-        const logItems = ['pinewood', 'log', 'normalLogs', 'oakLog', 'oakLogs', 'willowLog', 'willowLogs', 'birchLog', 'mapleLog', 'mapleLogs'];
+        const logItems = ['pinewood', 'log', 'normalLogs', 'oakLog', 'willowLog', 'willowLogs', 'birchLog', 'mapleLog', 'mapleLogs'];
         for (let logId of logItems) {
             const bankItem = this.state.bank.items[logId];
             if (bankItem) {
