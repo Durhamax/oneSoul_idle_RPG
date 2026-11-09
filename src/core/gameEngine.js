@@ -322,6 +322,7 @@ const GameEngine = {
             available: [],           // Mission IDs available to start in current region
             active: [],              // Mission IDs currently active
             completed: [],           // Mission IDs that have been completed (forever)
+            seenMissions: [],        // Mission IDs user has viewed in Missions UI (for notification badge)
 
             // Active mission progress tracking
             activeProgress: {},      // { missionId: { objectives: {objId: {current, required}}, startTime, completionTimes: [] } }
@@ -1820,6 +1821,7 @@ const GameEngine = {
                 available: [],
                 active: [],
                 completed: [],
+                seenMissions: [],
                 activeProgress: {},
                 cooldowns: {},
                 analytics: {

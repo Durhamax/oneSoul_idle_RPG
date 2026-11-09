@@ -45,7 +45,7 @@ NodeRegistry.production.node_1_1 = {
     baseXP: 15,
     icon: '🎣',
     color: '#4FC3F7',
-    regions: ['region_1'],
+    regions: ['region_-3_-4'],
     tags: ['water', 'fishing', 'tier1', 'cradle']
 };
 
@@ -80,7 +80,7 @@ NodeRegistry.production.node_1_2 = {
     baseXP: 18,
     icon: '🦌',
     color: '#8D6E63',
-    regions: ['region_1'],
+    regions: ['region_-3_-4'],
     tags: ['land', 'hunting', 'tier1', 'cradle']
 };
 
@@ -116,7 +116,7 @@ NodeRegistry.production.node_1_3 = {
     baseXP: 12,
     icon: '🌿',
     color: '#81C784',
-    regions: ['region_1'],
+    regions: ['region_-3_-4'],
     tags: ['forest', 'foraging', 'tier1', 'cradle']
 };
 
@@ -151,7 +151,7 @@ NodeRegistry.production.node_1_4 = {
     baseXP: 16,
     icon: '🪓',
     color: '#A1887F',
-    regions: ['region_1'],
+    regions: ['region_-3_-4'],
     tags: ['forest', 'logging', 'tier1', 'cradle']
 };
 
@@ -187,7 +187,7 @@ NodeRegistry.production.node_1_5 = {
     baseXP: 20,
     icon: '⛏️',
     color: '#78909C',
-    regions: ['region_1'],
+    regions: ['region_-3_-4'],
     tags: ['river', 'mining', 'tier1', 'cradle']
 };
 
@@ -222,7 +222,7 @@ NodeRegistry.production.node_1_6 = {
     baseXP: 12,
     icon: '🌻',
     color: '#AED581',
-    regions: ['region_1'],
+    regions: ['region_-3_-4'],
     tags: ['meadow', 'foraging', 'tier1', 'cradle']
 };
 

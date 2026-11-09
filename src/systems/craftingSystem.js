@@ -44,6 +44,60 @@ const CraftingSystem = {
     },
 
     /**
+     * Stop other activities (gathering, combat, navigation) when starting crafting
+     * @param {object} engine - GameEngine reference
+     */
+    _stopOtherActivities(engine) {
+        // Stop navigation - use engine.stopNavigation if available
+        if (engine.state.currentActivity === 'navigation' || engine.state.activeNavigation?.isNavigating) {
+            if (typeof engine.stopNavigation === 'function') {
+                engine.stopNavigation();
+            } else {
+                // Fallback: manually stop
+                if (engine.state.activeNavigation) {
+                    engine.state.activeNavigation.isNavigating = false;
+                }
+                if (engine.state.currentActivity === 'navigation') {
+                    engine.state.currentActivity = null;
+                }
+            }
+            console.log('[CraftingSystem] Stopped navigation to start crafting');
+        }
+
+        // Stop gathering - use engine.stopGathering if available
+        if (engine.state.currentActivity === 'gathering' || engine.state.activeGathering) {
+            if (typeof engine.stopGathering === 'function') {
+                engine.stopGathering();
+            } else {
+                // Fallback: manually stop
+                if (engine.state.activeGathering) {
+                    engine.state.activeGathering = null;
+                }
+                if (engine.state.currentActivity === 'gathering') {
+                    engine.state.currentActivity = null;
+                }
+            }
+            console.log('[CraftingSystem] Stopped gathering to start crafting');
+        }
+
+        // Stop combat - use engine.stopCombat if available
+        if (engine.state.currentActivity === 'combat' || engine.state.combat?.isActive) {
+            if (typeof engine.stopCombat === 'function') {
+                engine.stopCombat();
+            } else {
+                // Fallback: manually stop
+                if (engine.state.combat) {
+                    engine.state.combat.isActive = false;
+                }
+                if (engine.state.currentActivity === 'combat') {
+                    engine.state.currentActivity = null;
+                }
+            }
+            console.log('[CraftingSystem] Stopped combat to start crafting');
+        }
+    },
+
+    /**
      * Initialize crafting system functions on the GameEngine
      * @param {object} engine - Reference to GameEngine
      */
@@ -91,7 +145,13 @@ const CraftingSystem = {
                 },
                 discoveredStations: [],
                 autoRecipe: null,
-                selectedSkill: null
+                selectedSkill: null,
+                sessionStats: {
+                    outputs: {},
+                    craftsCompleted: 0,
+                    totalXP: 0,
+                    startTime: null
+                }
             };
         }
 
@@ -104,6 +164,16 @@ const CraftingSystem = {
                 tailoring: [],
                 chemistry: [],
                 cooking: []
+            };
+        }
+
+        // Ensure sessionStats structure exists
+        if (!engine.state.crafting.sessionStats) {
+            engine.state.crafting.sessionStats = {
+                outputs: {},
+                craftsCompleted: 0,
+                totalXP: 0,
+                startTime: null
             };
         }
 
@@ -269,6 +339,9 @@ const CraftingSystem = {
         const recipe = CraftingSystem._getRecipeDef(recipeId, this);
         const skill = recipe.skill;
 
+        // Stop other activities before starting crafting
+        CraftingSystem._stopOtherActivities(this);
+
         // Get workstation benefits
         const workstationTier = this.state.workstations?.[skill]?.tier || 1;
         const benefits = this.getWorkstationBenefits(skill, workstationTier);
@@ -316,6 +389,18 @@ const CraftingSystem = {
 
         // Set current activity to crafting
         this.state.currentActivity = 'crafting';
+
+        // Initialize session stats if this is the first craft of the session
+        if (!this.state.crafting.sessionStats) {
+            this.state.crafting.sessionStats = {
+                outputs: {},
+                craftsCompleted: 0,
+                totalXP: 0,
+                startTime: Date.now()
+            };
+        } else if (!this.state.crafting.sessionStats.startTime) {
+            this.state.crafting.sessionStats.startTime = Date.now();
+        }
 
         // Emit event
         if (typeof EventBus !== 'undefined') {
@@ -467,14 +552,17 @@ const CraftingSystem = {
             }
 
             // Determine if equipment or consumable
-            const isEquipment = output.rarityWeights ||
-                              itemDef?.equipSlot ||
-                              (itemDef?.category && this.definitions?.ITEM_CATEGORIES?.[itemDef.category]?.hasInstances);
+            // Equipment is identified by: explicit instanced:true flag, or rarityWeights in recipe
+            // Items with instanced:false are NOT equipment (e.g., consumables with equipSlot: 'food')
+            const isEquipment = itemDef?.instanced === true ||
+                              output.rarityWeights ||
+                              (itemDef?.category === 'equipment' && itemDef?.instanced !== false);
 
-            if (isEquipment && output.rarityWeights) {
-                // Equipment crafting: roll rarity
+            if (isEquipment) {
+                // Equipment crafting: roll rarity (use rarityWeights if provided, else default)
                 const rarityBonus = (benefits?.rarityBonus || 0) + ((this.state.skills?.[skill]?.level || 0) * 0.5);
-                const rarity = this.rollRarityFromWeights(output.rarityWeights, rarityBonus);
+                const defaultWeights = { common: 70, uncommon: 20, rare: 8, epic: 2 };
+                const rarity = this.rollRarityFromWeights(output.rarityWeights || defaultWeights, rarityBonus);
                 const quantity = (output.quantity || 1) * craft.quantity;
 
                 for (let i = 0; i < quantity; i++) {
@@ -516,6 +604,18 @@ const CraftingSystem = {
         const xp = recipe.experienceGain || recipe.expReward || 10;
         this.gainSkillExp(skill, xp * craft.quantity);
 
+        // Update session stats
+        if (!this.state.crafting.sessionStats) {
+            this.state.crafting.sessionStats = { outputs: {}, craftsCompleted: 0, totalXP: 0, startTime: Date.now() };
+        }
+        this.state.crafting.sessionStats.craftsCompleted += craft.quantity;
+        this.state.crafting.sessionStats.totalXP += xp * craft.quantity;
+        for (const output of outputs) {
+            const itemId = output.itemId;
+            const qty = output.quantity || 1;
+            this.state.crafting.sessionStats.outputs[itemId] = (this.state.crafting.sessionStats.outputs[itemId] || 0) + qty;
+        }
+
         // Trigger mission objective check
         if (this.checkMissionObjectives) {
             for (const output of outputs) {
@@ -526,9 +626,18 @@ const CraftingSystem = {
             }
         }
 
-        // Emit event
+        // Emit event for each output (for mission objectives)
         if (typeof EventBus !== 'undefined') {
-            EventBus.emit('crafting-complete', { outputs, recipe, skill });
+            for (const output of outputs) {
+                EventBus.emit('crafting-complete', {
+                    itemId: output.itemId,
+                    recipeId: recipe.id,
+                    skill: skill,
+                    quantity: output.quantity || 1,
+                    outputs,
+                    recipe
+                });
+            }
         }
 
         // Remove from queue

@@ -42,7 +42,10 @@ class SkillRegistryClass extends BaseRegistry {
                 'unlockLevel', 'unlockRequirement', 'passiveBonus',
                 'activeAbilities', 'synergies', 'masteryBonus',
                 'color', 'displayOrder', 'tags', 'trainable',
-                'combatSkill', 'gatheringSkill', 'craftingSkill'
+                'combatSkill', 'gatheringSkill', 'craftingSkill',
+                // Additional fields used in production skills
+                'explorationSpeed', 'bonusPerLevel', 'enhancesSkills',
+                'consumesResources', 'producesTypes', 'equipSlots'
             ]
         };
     }

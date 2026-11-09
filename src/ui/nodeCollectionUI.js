@@ -278,6 +278,11 @@ const NodeCollectionUI = {
         let html = '<div style="display: flex; flex-wrap: wrap; gap: 6px;">';
 
         topResources.forEach(resource => {
+            const itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(resource.itemId) : null;
+            const iconHtml = (typeof IconHelper !== 'undefined' && itemDef)
+                ? IconHelper.getItemIconHTML(itemDef, { size: 16 })
+                : '';
+            const itemName = itemDef?.name || resource.itemId;
             html += `
                 <div style="
                     display: flex;
@@ -288,7 +293,8 @@ const NodeCollectionUI = {
                     border-radius: 4px;
                     font-size: 0.7em;
                 ">
-                    <span style="color: #4caf50;">${resource.itemId}</span>
+                    ${iconHtml}
+                    <span style="color: #4caf50;">${itemName}</span>
                     <span style="color: #888;">x${resource.minYield}-${resource.maxYield}</span>
                 </div>
             `;

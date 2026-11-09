@@ -43,7 +43,9 @@ class MissionRegistryClass extends BaseRegistry {
                 'repeatable', 'cooldown', 'timeLimit', 'autoComplete',
                 'chains', 'branches', 'successText', 'failureText',
                 'acceptText', 'completeText', 'icon', 'tags', 'level',
-                'questGiver', 'location', 'experience', 'gold', 'items'
+                'questGiver', 'location', 'experience', 'gold', 'items',
+                // Additional fields used in tutorial/production missions
+                'regionRequired', 'dialog'
             ]
         };
     }

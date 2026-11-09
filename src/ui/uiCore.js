@@ -472,29 +472,43 @@ const UICore = {
     updateNotificationBadges() {
         const state = GameEngine.state;
 
-        // Skills tab: Unassigned attribute points
-        const skillsCount = state.characterLevel.unassignedAttributePoints;
-        this.updateTabBadge('skills', skillsCount);
+        // Overview tab: Unassigned attribute points (attributes are assigned on overview)
+        const attributePoints = state.characterLevel.unassignedAttributePoints;
+        this.updateTabBadge('overview', attributePoints);
 
-        // Missions tab: Available missions (not started yet)
-        let availableMissionsCount = 0;
+        // Show/update persistent banner if points available
+        this.updateAttributePointsBanner(attributePoints);
+
+        // Missions tab: Only show badge for actionable items
+        // 1. New available missions user hasn't seen yet
+        // 2. Active missions ready to complete
+        let missionBadgeCount = 0;
         if (state.missions) {
-            // Get missions from MissionRegistry
-            const missions = typeof MissionRegistry !== 'undefined'
-                ? MissionRegistry.getAllActive()
-                : (GameEngine.definitions?.missions || {});
+            const seenMissions = state.missions.seenMissions || [];
+            const available = state.missions.available || [];
+            const active = state.missions.active || [];
 
-            const missionIds = Array.isArray(missions)
-                ? missions.map(m => m.id)
-                : Object.keys(missions);
+            // Count new unseen available missions
+            for (const missionId of available) {
+                if (!seenMissions.includes(missionId)) {
+                    missionBadgeCount++;
+                }
+            }
 
-            for (let missionId of missionIds) {
-                if (!state.missions[missionId] || state.missions[missionId].status === 'available') {
-                    availableMissionsCount++;
+            // Count active missions that are ready to complete
+            for (const missionId of active) {
+                const progress = state.missions.activeProgress?.[missionId];
+                if (progress?.objectives) {
+                    const allComplete = Object.values(progress.objectives).every(obj =>
+                        (obj.current || 0) >= (obj.required || 1)
+                    );
+                    if (allComplete) {
+                        missionBadgeCount++;
+                    }
                 }
             }
         }
-        this.updateTabBadge('missions', availableMissionsCount);
+        this.updateTabBadge('missions', missionBadgeCount);
 
         // Bank tab: New items count
         const newItemsCount = state.bank.newItems.length;
@@ -536,6 +550,63 @@ const UICore = {
             badge.classList.remove('hidden');
         } else {
             badge.classList.add('hidden');
+        }
+    },
+
+    /**
+     * Show/hide a prominent banner for unassigned attribute points
+     * @param {number} points - Number of unassigned points
+     */
+    updateAttributePointsBanner(points) {
+        const bannerId = 'attribute-points-banner';
+        let banner = document.getElementById(bannerId);
+
+        if (points > 0) {
+            // Create banner if it doesn't exist
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = bannerId;
+                banner.className = 'attribute-points-banner';
+                banner.innerHTML = `
+                    <div class="banner-content">
+                        <span class="banner-icon">✨</span>
+                        <span class="banner-text">
+                            <strong>${points}</strong> Attribute Point${points !== 1 ? 's' : ''} Available!
+                        </span>
+                        <span class="banner-action">Click to assign</span>
+                    </div>
+                `;
+                banner.addEventListener('click', () => {
+                    if (typeof switchView === 'function') {
+                        switchView('overview');
+                    }
+                    // Scroll to attributes panel after a brief delay
+                    setTimeout(() => {
+                        const panel = document.querySelector('.panel-attributes');
+                        if (panel) {
+                            panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            panel.classList.add('highlight-pulse');
+                            setTimeout(() => panel.classList.remove('highlight-pulse'), 2000);
+                        }
+                    }, 100);
+                });
+
+                // Insert at top of main content area
+                const mainContent = document.querySelector('.main-content') || document.body;
+                mainContent.insertBefore(banner, mainContent.firstChild);
+            } else {
+                // Update existing banner text
+                const textEl = banner.querySelector('.banner-text');
+                if (textEl) {
+                    textEl.innerHTML = `<strong>${points}</strong> Attribute Point${points !== 1 ? 's' : ''} Available!`;
+                }
+                banner.classList.remove('hidden');
+            }
+        } else {
+            // Hide banner if no points
+            if (banner) {
+                banner.classList.add('hidden');
+            }
         }
     }
 };

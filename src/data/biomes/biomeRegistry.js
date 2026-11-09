@@ -17,7 +17,9 @@ class BiomeRegistryClass extends BaseRegistry {
             optional: [
                 'color', 'icon', 'description', 'temperature', 'humidity',
                 'gatheringNodes', 'enemies', 'hazards', 'resourceMultipliers',
-                'movementSpeed', 'discoveryChanceModifier', 'assetPath'
+                'movementSpeed', 'discoveryChanceModifier', 'assetPath',
+                // Additional fields used in production biomes
+                'climate', 'terrain', 'difficulty', 'tier', 'resources', 'tags'
             ]
         };
     }

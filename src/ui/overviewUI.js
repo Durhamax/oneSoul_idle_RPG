@@ -522,7 +522,7 @@ const OverviewUI = {
     },
 
     /**
-     * Render loadout panel (3-1-3 grid)
+     * Render loadout panel (3-1-3 grid) using LoadoutSlotRenderer
      */
     renderLoadoutPanel() {
         const equipment = GameEngine.state.equipment || {};
@@ -531,6 +531,14 @@ const OverviewUI = {
         const currentWeight = GameEngine.getTotalEquippedWeight?.() || 0;
         const maxWeight = GameEngine.getMaxEquipmentWeight?.() || 100;
 
+        // Use LoadoutSlotRenderer for consistent slot rendering
+        const renderer = typeof LoadoutSlotRenderer !== 'undefined' ? LoadoutSlotRenderer : null;
+
+        // Fallback to legacy rendering if LoadoutSlotRenderer not available
+        if (!renderer) {
+            return this._renderLoadoutPanelLegacy(equipment, intellect, currentWeight, maxWeight);
+        }
+
         return `
             <div class="overview-panel panel-loadout">
                 <div class="panel-header">
@@ -538,46 +546,40 @@ const OverviewUI = {
                     <span class="panel-title">Loadout</span>
                     <span class="panel-badge ${currentWeight >= maxWeight ? 'badge-warning' : ''}">${currentWeight}/${maxWeight}</span>
                 </div>
-                <div class="panel-content">
-                    <!-- 3-1-3 Equipment Grid: Left (3) | Middle (1 tall armor) | Right (3) -->
-                    <div class="loadout-equipment-grid">
-                        <!-- Left Column: Weapon, Gloves, Boots (3 slots) -->
-                        <div class="loadout-column">
-                            ${this.renderLoadoutSlot(equipment.weapon, 'weapon')}
-                            ${this.renderLoadoutSlot(equipment.gloves, 'gloves')}
-                            ${this.renderLoadoutSlot(equipment.boots, 'boots')}
-                        </div>
-                        <!-- Middle Column: Armor Set (1 tall slot) -->
-                        <div class="loadout-column loadout-column--armor">
-                            ${this.renderArmorSlot(equipment.armor)}
-                        </div>
-                        <!-- Right Column: Back, Neck, Ring (3 slots) -->
-                        <div class="loadout-column">
-                            ${this.renderLoadoutSlot(equipment.back, 'back')}
-                            ${this.renderLoadoutSlot(equipment.neck, 'neck')}
-                            ${this.renderLoadoutSlot(equipment.ring, 'ring')}
-                        </div>
-                    </div>
+                <div class="panel-content unified-slots--compact">
+                    <!-- 3-1-3 Equipment Grid -->
+                    ${renderer.renderEquipmentGrid({
+                        equipment,
+                        size: 'auto',
+                        showLabels: false,
+                        showNames: false,
+                        interactive: false,
+                        onSlotClick: null
+                    })}
 
                     <!-- Consumables -->
-                    <div class="loadout-section">
-                        <div class="loadout-section-label">CONSUMABLES</div>
-                        <div class="loadout-consumables-row">
-                            ${this.renderLoadoutSlot(equipment.food, 'food', true)}
-                            ${this.renderLoadoutSlot(equipment.potion, 'potion', true)}
-                            ${this.renderLoadoutSlot(equipment.ammo, 'ammo', true)}
-                        </div>
+                    <div class="unified-loadout-section">
+                        <div class="unified-loadout-section__label">CONSUMABLES</div>
+                        ${renderer.renderConsumablesRow({
+                            equipment,
+                            size: 'auto',
+                            showLabels: false,
+                            interactive: false,
+                            onSlotClick: null
+                        })}
                     </div>
 
                     <!-- Technology -->
-                    <div class="loadout-section">
-                        <div class="loadout-section-label">TECHNOLOGY</div>
-                        <div class="loadout-tech-row">
-                            ${this.renderTechSlot(equipment.tech1, 'tech1', 0, intellect)}
-                            ${this.renderTechSlot(equipment.tech2, 'tech2', 3, intellect)}
-                            ${this.renderTechSlot(equipment.tech3, 'tech3', 6, intellect)}
-                            ${this.renderTechSlot(equipment.tech4, 'tech4', 9, intellect)}
-                        </div>
+                    <div class="unified-loadout-section">
+                        <div class="unified-loadout-section__label">TECHNOLOGY</div>
+                        ${renderer.renderTechRow({
+                            equipment,
+                            intellect,
+                            size: 'auto',
+                            showLabels: false,
+                            interactive: false,
+                            onSlotClick: null
+                        })}
                     </div>
 
                     <button class="loadout-view-btn" onclick="switchView('equipment')">
@@ -589,12 +591,66 @@ const OverviewUI = {
     },
 
     /**
-     * Render loadout slot (unified for equipment and consumables)
+     * Legacy loadout panel rendering (fallback if LoadoutSlotRenderer not available)
+     * @private
      */
-    renderLoadoutSlot(itemData, slotName, isConsumable = false) {
+    _renderLoadoutPanelLegacy(equipment, intellect, currentWeight, maxWeight) {
+        return `
+            <div class="overview-panel panel-loadout">
+                <div class="panel-header">
+                    <span class="panel-icon">🎒</span>
+                    <span class="panel-title">Loadout</span>
+                    <span class="panel-badge ${currentWeight >= maxWeight ? 'badge-warning' : ''}">${currentWeight}/${maxWeight}</span>
+                </div>
+                <div class="panel-content">
+                    <div class="loadout-equipment-grid">
+                        <div class="loadout-column">
+                            ${this.renderLoadoutSlotLegacy(equipment.weapon, 'weapon')}
+                            ${this.renderLoadoutSlotLegacy(equipment.gloves, 'gloves')}
+                            ${this.renderLoadoutSlotLegacy(equipment.boots, 'boots')}
+                        </div>
+                        <div class="loadout-column loadout-column--armor">
+                            ${this.renderArmorSlotLegacy(equipment.armor)}
+                        </div>
+                        <div class="loadout-column">
+                            ${this.renderLoadoutSlotLegacy(equipment.back, 'back')}
+                            ${this.renderLoadoutSlotLegacy(equipment.neck, 'neck')}
+                            ${this.renderLoadoutSlotLegacy(equipment.ring, 'ring')}
+                        </div>
+                    </div>
+                    <div class="loadout-section">
+                        <div class="loadout-section-label">CONSUMABLES</div>
+                        <div class="loadout-consumables-row">
+                            ${this.renderLoadoutSlotLegacy(equipment.food, 'food', true)}
+                            ${this.renderLoadoutSlotLegacy(equipment.potion, 'potion', true)}
+                            ${this.renderLoadoutSlotLegacy(equipment.ammo, 'ammo', true)}
+                        </div>
+                    </div>
+                    <div class="loadout-section">
+                        <div class="loadout-section-label">TECHNOLOGY</div>
+                        <div class="loadout-tech-row">
+                            ${this.renderTechSlotLegacy(equipment.tech1, 'tech1', 0, intellect)}
+                            ${this.renderTechSlotLegacy(equipment.tech2, 'tech2', 3, intellect)}
+                            ${this.renderTechSlotLegacy(equipment.tech3, 'tech3', 6, intellect)}
+                            ${this.renderTechSlotLegacy(equipment.tech4, 'tech4', 9, intellect)}
+                        </div>
+                    </div>
+                    <button class="loadout-view-btn" onclick="switchView('equipment')">
+                        View Full Loadout
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Legacy loadout slot rendering (fallback)
+     * @private
+     */
+    renderLoadoutSlotLegacy(itemData, slotName, isConsumable = false) {
         const icon = this.SLOT_ICONS[slotName] || '❓';
         let itemDef = null;
-        let itemIcon = icon;
+        let itemIconHtml = `<span class="slot-icon-emoji">${icon}</span>`;
         let quantity = 0;
         let itemId = null;
 
@@ -606,7 +662,13 @@ const OverviewUI = {
             if (itemId) {
                 const baseId = this.parseInstanceId(itemId);
                 itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(baseId) : null;
-                if (itemDef?.icon) itemIcon = itemDef.icon;
+                if (itemDef) {
+                    if (typeof IconHelper !== 'undefined') {
+                        itemIconHtml = IconHelper.getItemIconHTML(itemDef, { size: 28, className: 'slot-icon-img' });
+                    } else if (itemDef.icon) {
+                        itemIconHtml = `<span class="slot-icon-emoji">${itemDef.icon}</span>`;
+                    }
+                }
             }
         }
 
@@ -614,7 +676,6 @@ const OverviewUI = {
         const isFilled = itemDef !== null;
         const title = itemDef?.name || slotName.charAt(0).toUpperCase() + slotName.slice(1);
 
-        // Get rarity from instance if available, otherwise from item definition
         const instancedItem = itemId ? GameEngine.state.bank?.instanced?.[itemId] : null;
         const rarity = instancedItem?.rarity || itemDef?.rarity || 'common';
         const rarityData = GameEngine.definitions?.RARITY_TIERS?.[rarity] || { color: '#9e9e9e' };
@@ -625,18 +686,19 @@ const OverviewUI = {
             <div class="loadout-slot ${isEmpty ? 'loadout-slot--empty' : ''} ${isFilled ? 'loadout-slot--filled' : ''} ${hasGlow ? 'loadout-slot--glow' : ''} rarity-${rarity}"
                  ${isFilled ? `style="--rarity-color: ${rarityColor};"` : ''}
                  title="${title}${isFilled ? ` (${rarity})` : ''}" data-slot="${slotName}">
-                <span class="slot-icon">${itemIcon}</span>
+                <span class="slot-icon">${itemIconHtml}</span>
                 ${isConsumable && quantity > 0 ? `<span class="slot-qty">${this.formatQuantity(quantity)}</span>` : ''}
             </div>
         `;
     },
 
     /**
-     * Render armor slot (tall slot for armor set)
+     * Legacy armor slot rendering (fallback)
+     * @private
      */
-    renderArmorSlot(armorData) {
+    renderArmorSlotLegacy(armorData) {
         let itemDef = null;
-        let itemIcon = '🛡️';
+        let itemIconHtml = `<span class="slot-icon-emoji">🛡️</span>`;
         let itemId = null;
 
         if (armorData) {
@@ -644,7 +706,13 @@ const OverviewUI = {
             if (itemId) {
                 const baseId = this.parseInstanceId(itemId);
                 itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(baseId) : null;
-                if (itemDef?.icon) itemIcon = itemDef.icon;
+                if (itemDef) {
+                    if (typeof IconHelper !== 'undefined') {
+                        itemIconHtml = IconHelper.getItemIconHTML(itemDef, { size: 40, className: 'slot-icon-img' });
+                    } else if (itemDef.icon) {
+                        itemIconHtml = `<span class="slot-icon-emoji">${itemDef.icon}</span>`;
+                    }
+                }
             }
         }
 
@@ -652,7 +720,6 @@ const OverviewUI = {
         const isFilled = itemDef !== null;
         const title = itemDef?.name || 'Armor Set';
 
-        // Get rarity from instance if available, otherwise from item definition
         const instancedItem = itemId ? GameEngine.state.bank?.instanced?.[itemId] : null;
         const rarity = instancedItem?.rarity || itemDef?.rarity || 'common';
         const rarityData = GameEngine.definitions?.RARITY_TIERS?.[rarity] || { color: '#9e9e9e' };
@@ -663,8 +730,44 @@ const OverviewUI = {
             <div class="loadout-slot loadout-slot--armor ${isEmpty ? 'loadout-slot--empty' : ''} ${isFilled ? 'loadout-slot--filled' : ''} ${hasGlow ? 'loadout-slot--glow' : ''} rarity-${rarity}"
                  ${isFilled ? `style="--rarity-color: ${rarityColor};"` : ''}
                  title="${title}${isFilled ? ` (${rarity})` : ''}" data-slot="armor">
-                <span class="slot-icon">${itemIcon}</span>
+                <span class="slot-icon">${itemIconHtml}</span>
                 <span class="slot-label">Armor</span>
+            </div>
+        `;
+    },
+
+    /**
+     * Legacy tech slot rendering (fallback)
+     * @private
+     */
+    renderTechSlotLegacy(itemData, slotName, requiredInt, currentInt) {
+        const isLocked = currentInt < requiredInt;
+        const icon = this.SLOT_ICONS[slotName] || '💾';
+        let itemDef = null;
+        let itemIconHtml = `<span class="slot-icon-emoji">${icon}</span>`;
+
+        if (!isLocked && itemData) {
+            const itemId = typeof itemData === 'string' ? itemData : itemData.itemId;
+            if (itemId) {
+                const baseId = this.parseInstanceId(itemId);
+                itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(baseId) : null;
+                if (itemDef) {
+                    if (typeof IconHelper !== 'undefined') {
+                        itemIconHtml = IconHelper.getItemIconHTML(itemDef, { size: 24, className: 'slot-icon-img' });
+                    } else if (itemDef.icon) {
+                        itemIconHtml = `<span class="slot-icon-emoji">${itemDef.icon}</span>`;
+                    }
+                }
+            }
+        }
+
+        const isEmpty = isLocked || !itemDef;
+        const title = isLocked ? `Requires ${requiredInt} Intellect` : (itemDef?.name || slotName);
+
+        return `
+            <div class="tech-slot ${isEmpty ? 'tech-slot--empty' : ''} ${isLocked ? 'tech-slot--locked' : ''}"
+                 title="${title}" data-slot="${slotName}">
+                ${isLocked ? `<span class="slot-lock">🔒</span>` : `<span class="slot-icon">${itemIconHtml}</span>`}
             </div>
         `;
     },
@@ -737,104 +840,6 @@ const OverviewUI = {
             return parts.slice(0, -2).join('_');
         }
         return fullId;
-    },
-
-    /**
-     * Render equipment slot
-     */
-    renderEquipSlot(itemData, slotName) {
-        const icon = this.SLOT_ICONS[slotName] || '❓';
-        let itemDef = null;
-        let itemIcon = icon;
-        let itemId = null;
-
-        if (itemData) {
-            itemId = typeof itemData === 'string' ? itemData : itemData.itemId;
-            if (itemId) {
-                const baseId = this.parseInstanceId(itemId);
-                itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(baseId) : null;
-                if (itemDef?.icon) itemIcon = itemDef.icon;
-            }
-        }
-
-        const isEmpty = !itemDef;
-        const title = itemDef?.name || slotName.charAt(0).toUpperCase() + slotName.slice(1);
-
-        // Get rarity from instance if available, otherwise from item definition
-        const instancedItem = itemId ? GameEngine.state.bank?.instanced?.[itemId] : null;
-        const rarity = instancedItem?.rarity || itemDef?.rarity || 'common';
-        const rarityData = GameEngine.definitions?.RARITY_TIERS?.[rarity] || { color: '#9e9e9e' };
-        const rarityColor = rarityData.color;
-        const hasGlow = rarityData.glow;
-
-        return `
-            <div class="equip-slot ${isEmpty ? 'equip-slot--empty' : ''} ${hasGlow ? 'equip-slot--glow' : ''} rarity-${rarity}"
-                 ${!isEmpty ? `style="--rarity-color: ${rarityColor};"` : ''}
-                 title="${title}${!isEmpty ? ` (${rarity})` : ''}" data-slot="${slotName}">
-                <span class="slot-icon">${itemIcon}</span>
-            </div>
-        `;
-    },
-
-    /**
-     * Render consumable slot
-     */
-    renderConsumableSlot(itemData, slotName) {
-        const icon = this.SLOT_ICONS[slotName] || '❓';
-        let itemDef = null;
-        let quantity = 0;
-        let itemIcon = icon;
-
-        if (itemData) {
-            const itemId = typeof itemData === 'string' ? itemData : itemData.itemId;
-            quantity = itemData?.quantity || 0;
-
-            if (itemId) {
-                const baseId = this.parseInstanceId(itemId);
-                itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(baseId) : null;
-                if (itemDef?.icon) itemIcon = itemDef.icon;
-            }
-        }
-
-        const isEmpty = !itemDef || quantity <= 0;
-        const title = itemDef ? `${itemDef.name} (${quantity})` : slotName;
-
-        return `
-            <div class="consumable-slot ${isEmpty ? 'consumable-slot--empty' : ''}"
-                 title="${title}" data-slot="${slotName}">
-                <span class="slot-icon">${itemIcon}</span>
-                ${quantity > 0 ? `<span class="slot-qty">${this.formatQuantity(quantity)}</span>` : ''}
-            </div>
-        `;
-    },
-
-    /**
-     * Render technology slot
-     */
-    renderTechSlot(itemData, slotName, requiredInt, currentInt) {
-        const isLocked = currentInt < requiredInt;
-        const icon = this.SLOT_ICONS[slotName] || '💾';
-        let itemDef = null;
-        let itemIcon = icon;
-
-        if (!isLocked && itemData) {
-            const itemId = typeof itemData === 'string' ? itemData : itemData.itemId;
-            if (itemId) {
-                const baseId = this.parseInstanceId(itemId);
-                itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(baseId) : null;
-                if (itemDef?.icon) itemIcon = itemDef.icon;
-            }
-        }
-
-        const isEmpty = isLocked || !itemDef;
-        const title = isLocked ? `Requires ${requiredInt} Intellect` : (itemDef?.name || slotName);
-
-        return `
-            <div class="tech-slot ${isEmpty ? 'tech-slot--empty' : ''} ${isLocked ? 'tech-slot--locked' : ''}"
-                 title="${title}" data-slot="${slotName}">
-                ${isLocked ? `<span class="slot-lock">🔒</span>` : `<span class="slot-icon">${itemIcon}</span>`}
-            </div>
-        `;
     },
 
     // ===========================

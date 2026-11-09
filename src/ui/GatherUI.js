@@ -51,7 +51,13 @@ const GatherUI = {
         if (typeof EventBus !== 'undefined') {
             EventBus.on('gathering-started', this.onGatheringStarted.bind(this));
             EventBus.on('gathering-completed', this.onGatheringCompleted.bind(this));
-            EventBus.on('gathering-action', this.onGatheringAction.bind(this));
+            EventBus.on('gathering-success', this.onGatheringAction.bind(this));
+            EventBus.on('gathering-miss', this.onGatheringMiss.bind(this));
+            console.log('[GatherUI] ✅ Event subscriptions registered');
+        } else {
+            console.warn('[GatherUI] ⚠️ EventBus not available, will retry...');
+            // Retry after a short delay if EventBus isn't ready yet
+            setTimeout(() => this.init(), 100);
         }
     },
 
@@ -213,7 +219,7 @@ const GatherUI = {
                     <div class="stat-box">
                         <div class="stat-box-label">Node Health</div>
                         <div class="stat-box-value ${isRecovering ? 'stat-warning' : ''}">
-                            ${session.nodeHealth || 0}/${session.maxNodeHealth || 10}
+                            ${session.nodeHealth !== undefined ? session.nodeHealth : 0}/${session.maxNodeHealth !== undefined ? session.maxNodeHealth : 10}
                         </div>
                     </div>
                 </div>
@@ -374,9 +380,12 @@ const GatherUI = {
 
         return topResources.map(resource => {
             const itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(resource.itemId) : null;
+            const iconHtml = (typeof IconHelper !== 'undefined' && itemDef)
+                ? IconHelper.getItemIconHTML(itemDef, { size: 16 })
+                : (itemDef?.icon || '📦');
             return `
                 <span class="resource-tag">
-                    ${itemDef?.icon || '📦'} ${itemDef?.name || resource.itemId}
+                    ${iconHtml} ${itemDef?.name || resource.itemId}
                 </span>
             `;
         }).join('');
@@ -465,9 +474,12 @@ const GatherUI = {
 
         return Object.entries(resources).map(([itemId, qty]) => {
             const itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(itemId) : null;
+            const iconHtml = (typeof IconHelper !== 'undefined' && itemDef)
+                ? IconHelper.getItemIconHTML(itemDef, { size: 24 })
+                : (itemDef?.icon || '📦');
             return `
                 <div class="loot-item">
-                    <span class="loot-icon">${itemDef?.icon || '📦'}</span>
+                    <span class="loot-icon">${iconHtml}</span>
                     <span class="loot-name">${itemDef?.name || itemId}</span>
                     <span class="loot-qty">+${qty}</span>
                 </div>
@@ -749,22 +761,51 @@ const GatherUI = {
     },
 
     onGatheringAction(data) {
-        // Update loot sidebar
-        const sidebar = document.querySelector('.gather-sidebar .sidebar-content');
-        if (sidebar && GameEngine.state.gatheringSession?.totalResources) {
-            sidebar.innerHTML = this.renderSessionLoot(GameEngine.state.gatheringSession.totalResources);
+        // Update loot sidebar - find the sidebar container
+        const sidebarContainer = document.querySelector('.gather-sidebar');
+        if (sidebarContainer && GameEngine.state.gatheringSession?.totalResources) {
+            // Check if sidebar-content exists, if not we need to add it
+            let sidebarContent = sidebarContainer.querySelector('.sidebar-content');
+            if (!sidebarContent) {
+                // Replace sidebar-empty with sidebar-content
+                const emptyDiv = sidebarContainer.querySelector('.sidebar-empty');
+                if (emptyDiv) {
+                    emptyDiv.remove();
+                }
+                sidebarContent = document.createElement('div');
+                sidebarContent.className = 'sidebar-content';
+                sidebarContainer.appendChild(sidebarContent);
+            }
+            sidebarContent.innerHTML = this.renderSessionLoot(GameEngine.state.gatheringSession.totalResources);
         }
 
         // Update stats
         const actionsEl = document.querySelector('.gather-session-stats .stat-box:first-child .stat-box-value');
         const xpEl = document.querySelector('.gather-session-stats .stat-box:nth-child(2) .stat-box-value');
+        const healthEl = document.querySelector('.gather-session-stats .stat-box:nth-child(4) .stat-box-value');
 
         if (actionsEl) actionsEl.textContent = GameEngine.state.gatheringSession?.totalActions || 0;
         if (xpEl) xpEl.textContent = GameEngine.state.gatheringSession?.totalXP || 0;
+        if (healthEl && data) {
+            healthEl.textContent = `${data.nodeHealth}/${data.maxHealth}`;
+        }
+    },
+
+    onGatheringMiss(data) {
+        // Update stats on miss (action count still increments)
+        const actionsEl = document.querySelector('.gather-session-stats .stat-box:first-child .stat-box-value');
+        if (actionsEl) actionsEl.textContent = GameEngine.state.gatheringSession?.totalActions || 0;
     }
 };
 
 // Initialize on load
 if (typeof window !== 'undefined') {
     window.GatherUI = GatherUI;
+
+    // Auto-initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => GatherUI.init());
+    } else {
+        GatherUI.init();
+    }
 }

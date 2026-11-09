@@ -1266,7 +1266,7 @@ const NavigationUI = {
                 </div>
                 ${isEquipped ? `
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="font-size: 2rem;">${selectedFuel.icon || '🪵'}</div>
+                        <div style="font-size: 2rem;">${IconHelper.getItemIconHTML(selectedFuel, {size: 32})}</div>
                         <div style="flex: 1;">
                             <div style="font-size: 0.85em; font-weight: 600; color: #fff;">${selectedFuel.name}</div>
                             <div style="font-size: 0.75em; color: #FF9800;">×${quantity}</div>

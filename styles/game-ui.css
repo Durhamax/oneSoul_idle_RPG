@@ -1,9 +1,106 @@
-/* HORIZONTAL EQUIPMENT LAYOUT - 4 Equal-Width Containers */
+/* =====================================================================
+   ATTRIBUTE POINTS BANNER - Prominent notification for unassigned points
+   ===================================================================== */
+
+.attribute-points-banner {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 165, 0, 0.1));
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    border-radius: 8px;
+    margin: 8px 16px;
+    padding: 12px 20px;
+    cursor: pointer;
+    animation: banner-pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.attribute-points-banner:hover {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 165, 0, 0.2));
+    border-color: rgba(255, 215, 0, 0.8);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    transform: translateY(-2px);
+}
+
+.attribute-points-banner.hidden {
+    display: none;
+}
+
+.attribute-points-banner .banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.attribute-points-banner .banner-icon {
+    font-size: 1.5em;
+    animation: icon-sparkle 1s ease-in-out infinite;
+}
+
+.attribute-points-banner .banner-text {
+    color: #fff;
+    font-size: 1.1em;
+    font-weight: 500;
+}
+
+.attribute-points-banner .banner-text strong {
+    color: #FFD700;
+    font-size: 1.2em;
+    font-weight: 700;
+}
+
+.attribute-points-banner .banner-action {
+    color: rgba(255, 215, 0, 0.9);
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 4px 12px;
+    background: rgba(255, 215, 0, 0.2);
+    border-radius: 4px;
+}
+
+@keyframes banner-pulse {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    }
+}
+
+@keyframes icon-sparkle {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+    }
+    50% {
+        transform: scale(1.2) rotate(10deg);
+    }
+}
+
+/* Highlight pulse animation for attributes panel */
+.panel-attributes.highlight-pulse {
+    animation: panel-highlight 0.5s ease-in-out 3;
+}
+
+@keyframes panel-highlight {
+    0%, 100% {
+        box-shadow: 0 0 0 rgba(255, 215, 0, 0);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 10px rgba(255, 215, 0, 0.1);
+    }
+}
+
+/* HORIZONTAL EQUIPMENT LAYOUT - 3 Equal-Width Containers */
 /* ===================================================================== */
 
 .equipment-horizontal-layout {
     display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
+    grid-template-columns: repeat(3, 1fr) !important;
     gap: var(--space-md);
     width: 100% !important;
     max-width: 100% !important;
@@ -12,7 +109,7 @@
 }
 
 /* Responsive layout for equipment containers */
-@media (max-width: 1400px) {
+@media (max-width: 1200px) {
     .equipment-horizontal-layout {
         grid-template-columns: repeat(2, 1fr) !important;
     }
@@ -65,6 +162,13 @@
     margin: 0 !important;
     width: 100% !important;
     gap: var(--space-sm);
+}
+
+/* When equipment-grid contains the unified loadout grid, use block display */
+/* The unified-loadout-grid handles its own 3-column layout internally */
+.equipment-grid:has(.unified-loadout-grid),
+.equipment-main-grid:has(.unified-loadout-grid) {
+    display: block !important;
 }
 
 .equipment-horizontal-layout .equipment-slot {
@@ -2167,15 +2271,126 @@
 }
 
 /* ===================================================================
+   EQUIPMENT VIEW - SPLIT LAYOUT (Equipment Left, Presets Right)
+   Desktop: Side-by-side (50/50)
+   Below 1000px: Stack vertically
+   ================================================================ */
+
+.equipment-view-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Below 1000px: Stack vertically */
+@media (max-width: 999px) {
+    .equipment-view-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Left side: Equipment sections stacked vertically */
+.equipment-main-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Equipment section cards */
+.equipment-section-card {
+    background: rgba(20, 30, 50, 0.8);
+    border: 1px solid rgba(58, 124, 165, 0.5);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.equipment-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(58, 124, 165, 0.3);
+}
+
+.equipment-section-header .section-icon {
+    font-size: 1.2em;
+}
+
+.equipment-section-header .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #3a7ca5;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.equipment-section-header .section-subtitle {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-left: auto;
+}
+
+.equipment-section-content {
+    display: flex;
+    justify-content: center;
+}
+
+/* Right side: Presets panel */
+.equipment-presets-panel {
+    background: rgba(20, 30, 50, 0.8);
+    border: 1px solid rgba(58, 124, 165, 0.5);
+    border-radius: 8px;
+    padding: 16px;
+    height: fit-content;
+}
+
+.equipment-presets-header {
+    color: #3a7ca5;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(58, 124, 165, 0.3);
+}
+
+.equipment-presets-header .presets-icon {
+    font-size: 1.2em;
+}
+
+.equipment-presets-header .presets-title {
+    flex: 1;
+}
+
+/* ===================================================================
    EQUIPMENT PRESETS
    ================================================================ */
 
 .equipment-presets-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: var(--space-md);
-    margin-bottom: var(--space-lg);
-    padding: var(--space-md);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 0;
+}
+
+/* In the presets panel: 2 columns, 5 rows (10 presets) */
+.equipment-presets-panel .equipment-presets-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* On wide screens (1400px+): 5 columns, 2 rows */
+@media (min-width: 1400px) {
+    .equipment-presets-panel .equipment-presets-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
 }
 
 .preset-tile {
@@ -2279,22 +2494,33 @@
     margin-top: 2px;
 }
 
-/* Responsive preset grid */
+/* Responsive preset grid - when NOT in split layout */
 @media (max-width: 1200px) {
-    .equipment-presets-grid {
+    .equipment-presets-grid:not(.equipment-presets-panel .equipment-presets-grid) {
         grid-template-columns: repeat(4, 1fr);
     }
 }
 
 @media (max-width: 900px) {
-    .equipment-presets-grid {
+    .equipment-presets-grid:not(.equipment-presets-panel .equipment-presets-grid) {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
 @media (max-width: 600px) {
-    .equipment-presets-grid {
+    .equipment-presets-grid:not(.equipment-presets-panel .equipment-presets-grid) {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Preset grid in split layout panel - 2 columns by default, 5 on wide */
+.equipment-presets-panel .equipment-presets-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 1400px) {
+    .equipment-presets-panel .equipment-presets-grid {
+        grid-template-columns: repeat(5, 1fr);
     }
 }
 

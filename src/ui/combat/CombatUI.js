@@ -1,10 +1,11 @@
 /**
  * COMBAT UI - Main Coordinator
  *
- * Manages the combat tab with 3-tab system:
+ * Manages the combat tab with 2-tab system:
  * - Enemies: Enemy selection and incursion browser
  * - Combat: Active combat display
- * - Loadout: Equipment and stats display
+ *
+ * NOTE: Loadout tab removed (2025-12-06) - use Equipment Tab instead
  */
 
 const CombatUI = {
@@ -68,13 +69,13 @@ const CombatUI = {
     },
 
     /**
-     * Render tab navigation (crafting-style tabs)
+     * Render tab navigation (2 tabs only: Enemies + Combat)
      */
     renderTabs(inCombat) {
         const tabs = [
             { id: 'enemies', icon: '👾', label: 'Enemies', disabled: false },
-            { id: 'combat', icon: '⚔️', label: 'Combat', disabled: !inCombat, badge: inCombat },
-            { id: 'loadout', icon: '🎽', label: 'Loadout', disabled: false }
+            { id: 'combat', icon: '⚔️', label: 'Combat', disabled: !inCombat, badge: inCombat }
+            // NOTE: Loadout tab removed - use Equipment Tab instead
         ];
 
         return `
@@ -93,7 +94,7 @@ const CombatUI = {
     },
 
     /**
-     * Render tab content
+     * Render tab content (Enemies or Combat only)
      */
     renderTabContent(player, inCombat) {
         let content = '';
@@ -115,8 +116,11 @@ const CombatUI = {
                     `;
                 }
                 break;
-            case 'loadout':
-                content = LoadoutContainer.render();
+            // NOTE: 'loadout' case removed - use Equipment Tab instead
+            default:
+                // Fallback to enemies if somehow on invalid tab
+                this.currentTab = 'enemies';
+                content = EnemySelectionPanel.render();
                 break;
         }
 

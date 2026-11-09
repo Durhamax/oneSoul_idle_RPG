@@ -1,100 +1,73 @@
 /**
  * CRAFT QUEUE COMPONENT
  *
- * Persistent sidebar showing active crafts across ALL skills.
+ * Persistent sidebar showing session output (total crafted items).
+ * Similar to GatherUI's Session Loot sidebar.
  * Always visible in the Recipes tab.
- * Shows progress bars, time remaining, and cancel buttons.
  */
 
 const CraftQueue = {
     /**
-     * Render the queue sidebar
+     * Render the queue sidebar (now shows session output like GatherUI)
      */
     render() {
-        const totalActive = this.getTotalActive();
+        const sessionOutputs = GameEngine.state.crafting?.sessionStats?.outputs || {};
+        const hasOutputs = Object.keys(sessionOutputs).length > 0;
 
         return `
             <div class="craft-queue-sidebar">
                 <div class="queue-header">
-                    <h3>⏳ Active Crafts</h3>
-                    ${totalActive > 0 ? `
-                        <button class="stop-all-btn" onclick="CraftQueue.stopAllCrafting()" title="Stop all crafting">
-                            🛑 Stop All
-                        </button>
-                    ` : ''}
+                    <h3>📦 Session Output</h3>
                 </div>
                 <div id="queue-content" class="queue-content">
-                    ${this.renderQueueContent()}
+                    ${this.renderSessionOutput()}
                 </div>
             </div>
         `;
     },
 
     /**
-     * Render queue content (called on updates)
+     * Render session output (total crafted items)
      */
-    renderQueueContent() {
-        const queues = GameEngine.state.crafting?.activeQueues || {};
-        const legacyCrafts = GameEngine.state.crafting?.activeCrafts || [];
+    renderSessionOutput() {
+        const sessionOutputs = GameEngine.state.crafting?.sessionStats?.outputs || {};
 
-        let totalActive = 0;
-        for (const skill in queues) {
-            totalActive += queues[skill]?.length || 0;
-        }
-        totalActive += legacyCrafts.length;
-
-        if (totalActive === 0) {
+        if (Object.keys(sessionOutputs).length === 0) {
             return `
                 <div class="queue-empty">
-                    <div class="empty-icon">📭</div>
-                    <div class="empty-text">No active crafts</div>
-                    <div class="empty-hint">Select a recipe to start crafting</div>
+                    <div class="empty-icon">📦</div>
+                    <div class="empty-text">No items crafted</div>
+                    <div class="empty-hint">Start crafting to track output</div>
                 </div>
             `;
         }
 
-        let html = '';
+        let html = '<div class="session-output-list">';
 
-        // Render queues by skill
-        const skills = ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking'];
-
-        for (const skill of skills) {
-            const queue = queues[skill];
-            if (!queue || queue.length === 0) continue;
-
-            const skillColor = UnifiedCraftingUI.getSkillColor(skill);
+        for (const [itemId, qty] of Object.entries(sessionOutputs)) {
+            const itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(itemId) : null;
+            const iconHtml = (typeof IconHelper !== 'undefined' && itemDef)
+                ? IconHelper.getItemIconHTML(itemDef, { size: 24 })
+                : (itemDef?.icon || '📦');
 
             html += `
-                <div class="queue-section" style="--skill-color: ${skillColor};">
-                    <div class="queue-section-header">
-                        <span class="queue-skill-icon">${UnifiedCraftingUI.getSkillIcon(skill)}</span>
-                        <span class="queue-skill-name">${UnifiedCraftingUI.capitalizeFirst(skill)}</span>
-                        <span class="queue-skill-count">${queue.length}</span>
-                    </div>
-                    <div class="queue-items">
-                        ${queue.map((craft, index) => this.renderQueueItem(craft, skill, index)).join('')}
-                    </div>
+                <div class="output-item">
+                    <span class="output-icon">${iconHtml}</span>
+                    <span class="output-name">${itemDef?.name || itemId}</span>
+                    <span class="output-qty">+${qty}</span>
                 </div>
             `;
         }
 
-        // Render legacy crafts (if any)
-        if (legacyCrafts.length > 0) {
-            html += `
-                <div class="queue-section legacy">
-                    <div class="queue-section-header">
-                        <span class="queue-skill-icon">📦</span>
-                        <span class="queue-skill-name">Legacy</span>
-                        <span class="queue-skill-count">${legacyCrafts.length}</span>
-                    </div>
-                    <div class="queue-items">
-                        ${legacyCrafts.map((craft, index) => this.renderQueueItem(craft, null, index)).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
+        html += '</div>';
         return html;
+    },
+
+    /**
+     * Legacy: Render queue content for backward compatibility
+     */
+    renderQueueContent() {
+        return this.renderSessionOutput();
     },
 
     /**

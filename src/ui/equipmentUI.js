@@ -300,101 +300,15 @@ const EquipmentUI = {
             this.lastEquipmentState.weight !== currentState.weight;
 
         if (hasChanged) {
-            this.updatePlayerStats();
             this.updateEquipmentSlots();
             this.lastEquipmentState = currentState;
         }
     },
 
     /**
-     * Update player stats display
-     */
-    updatePlayerStats() {
-        // Use new summary stats container in horizontal layout
-        let container = document.getElementById("equipmentSummaryStats");
-
-        // Fallback to old playerStats container if horizontal layout not present
-        if (!container) {
-            container = document.getElementById("playerStats");
-        }
-
-        if (!container) return;
-
-        const stats = GameEngine.getPlayerCombatStats();
-        const currentWeight = GameEngine.getTotalEquippedWeight();
-        const maxWeight = GameEngine.getMaxEquipmentWeight();
-
-        // Get type information
-        const weaponDamageType = GameEngine.getWeaponDamageType();
-        const playerArmorType = GameEngine.getPlayerDominantArmorType();
-        const weaponTypeDef = GameEngine.definitions.damageTypes[weaponDamageType];
-        const armorTypeDef = GameEngine.definitions.armorTypes[playerArmorType];
-
-        // Determine weight color based on capacity
-        let weightColor = "#4a9eff"; // Default blue
-        const weightPercent = (currentWeight / maxWeight) * 100;
-        const isOverCapacity = currentWeight > maxWeight;
-
-        if (isOverCapacity) {
-            weightColor = "#f44336"; // Red when over capacity
-        } else if (weightPercent >= 80) {
-            weightColor = "#ff9800"; // Orange when near capacity
-        }
-
-        let html = `
-            <div class="stat-row">
-                <span class="stat-label">⚖️ Equipment Weight:</span>
-                <span class="stat-value" style="color: ${weightColor};">
-                    ${currentWeight.toFixed(1)} / ${maxWeight}
-                    ${isOverCapacity ? ' ⚠️' : ''}
-                </span>
-            </div>
-            ${isOverCapacity ? `
-                <div class="stat-row" style="background: rgba(244, 67, 54, 0.1); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
-                    <span style="color: #f44336; font-size: 0.85em;">
-                        ⚠️ Over capacity! Cannot equip more items.
-                    </span>
-                </div>
-            ` : ''}
-            <div style="margin-bottom: 15px;">
-                <div style="background: #1a1a1a; border-radius: 4px; overflow: hidden; height: 8px;">
-                    <div style="background: ${weightColor}; width: ${Math.min(100, weightPercent)}%; height: 100%; transition: width 0.3s ease;"></div>
-                </div>
-                <div style="font-size: 0.75em; color: #888; margin-top: 4px; text-align: right;">
-                    ${weightPercent.toFixed(0)}% capacity used
-                </div>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">${weaponTypeDef.icon} Weapon Type:</span>
-                <span class="stat-value" style="color: ${weaponTypeDef.color};">${weaponTypeDef.name}</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">${armorTypeDef.icon} Armor Type:</span>
-                <span class="stat-value" style="color: ${armorTypeDef.color};">${armorTypeDef.name}</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">⚔️ Attack Damage:</span>
-                <span class="stat-value">${stats.attackDamage.toFixed(1)}</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">⚡ Attack Speed:</span>
-                <span class="stat-value">${stats.attackSpeed.toFixed(2)}/s</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">🎯 Accuracy:</span>
-                <span class="stat-value">${stats.accuracy.toFixed(0)}%</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">❤️ Health:</span>
-                <span class="stat-value">${Math.floor(stats.currentHealth)}/${Math.floor(stats.maxHealth)}</span>
-            </div>
-        `;
-
-        container.innerHTML = html;
-    },
-
-    /**
      * Update equipment slots display
+     * Uses split layout: Equipment (vertical stack) on left, Presets on right
+     * Below 1000px: Everything stacks vertically
      */
     updateEquipmentSlots() {
         const container = document.getElementById("equipmentGrid");
@@ -403,27 +317,105 @@ const EquipmentUI = {
             return;
         }
 
+        const equipment = GameEngine.state.equipment || {};
+        const intellect = GameEngine.state.combatAttributes?.intellect || 0;
+        const renderer = typeof LoadoutSlotRenderer !== 'undefined' ? LoadoutSlotRenderer : null;
+
         let html = '';
 
-        // Add equipment display using EquipmentComponent
-        html += EquipmentComponent.render({
-            mode: 'horizontal',
-            showLabels: true,
-            interactive: true
-        });
+        // Split layout: Equipment (left) | Presets (right)
+        html += `<div class="equipment-view-container">`;
 
-        // Add equipment presets section at the bottom (if EquipmentPresetsUI is available)
+        // Left side: Equipment panels stacked vertically
+        html += `<div class="equipment-main-panel">`;
+
+        // Equipment Grid Container
+        html += `
+            <div class="equipment-section-card">
+                <div class="equipment-section-header">
+                    <span class="section-icon">⚔️</span>
+                    <span class="section-title">Equipment</span>
+                    <span class="section-subtitle">Main Gear</span>
+                </div>
+                <div class="equipment-section-content">
+                    ${renderer ? renderer.renderEquipmentGrid({
+                        equipment,
+                        size: 'lg',
+                        showLabels: true,
+                        showNames: true,
+                        interactive: true,
+                        onSlotClick: (slot) => `openEquipModal('${slot}', event)`
+                    }) : this._renderEquipmentGridFallback()}
+                </div>
+            </div>
+        `;
+
+        // Consumables Container
+        html += `
+            <div class="equipment-section-card">
+                <div class="equipment-section-header">
+                    <span class="section-icon">🍖</span>
+                    <span class="section-title">Consumables</span>
+                    <span class="section-subtitle">Food • Potions • Ammo</span>
+                </div>
+                <div class="equipment-section-content">
+                    ${renderer ? renderer.renderConsumablesRow({
+                        equipment,
+                        size: 'lg',
+                        showLabels: true,
+                        interactive: true,
+                        onSlotClick: (slot) => `openEquipModal('${slot}', event)`
+                    }) : ''}
+                </div>
+            </div>
+        `;
+
+        // Technology Container
+        html += `
+            <div class="equipment-section-card">
+                <div class="equipment-section-header">
+                    <span class="section-icon">⚡</span>
+                    <span class="section-title">Technology</span>
+                    <span class="section-subtitle">Advanced Tech Slots</span>
+                </div>
+                <div class="equipment-section-content">
+                    ${renderer ? renderer.renderTechRow({
+                        equipment,
+                        intellect,
+                        size: 'lg',
+                        showLabels: true,
+                        interactive: true,
+                        onSlotClick: (slot) => `openEquipModal('${slot}', event)`
+                    }) : ''}
+                </div>
+            </div>
+        `;
+
+        html += `</div>`; // Close equipment-main-panel
+
+        // Right side: Presets panel (if EquipmentPresetsUI is available)
         if (typeof EquipmentPresetsUI !== 'undefined') {
             html += `
-                <div class="equipment-presets-section" style="margin-top: var(--space-xl);">
-                    <h3 style="font-family: var(--font-display); font-size: var(--font-size-lg); color: var(--color-primary); margin: 0 0 var(--space-md) 0; text-transform: uppercase; letter-spacing: var(--letter-spacing-wider);">
-                        💾 Equipment Presets
-                    </h3>
+                <div class="equipment-presets-panel">
+                    <div class="equipment-presets-header">
+                        <span class="presets-icon">💾</span>
+                        <span class="presets-title">Equipment Presets</span>
+                    </div>
                     ${EquipmentPresetsUI.render()}
                 </div>
             `;
         }
 
+        html += `</div>`; // Close equipment-view-container
+
         container.innerHTML = html;
+    },
+
+    /**
+     * Fallback equipment grid rendering
+     * @private
+     */
+    _renderEquipmentGridFallback() {
+        return EquipmentComponent.renderEquipmentGrid(true, true);
     }
 };

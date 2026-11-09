@@ -65,7 +65,11 @@ const EnemySchema = {
         // Metadata
         'description',        // Flavor text
         'region',             // Associated region(s)
-        'discoveryHint'       // Hint for how to find this enemy
+        'regions',            // Array of region IDs for discovery
+        'discoveryHint',      // Hint for how to find this enemy
+        'assetPath',          // Path to enemy image asset
+        'image',              // Emoji or image reference (alias for icon)
+        'tags'                // Tags for filtering/categorization
     ],
 
     // Valid values for enum fields

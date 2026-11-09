@@ -49,7 +49,7 @@ const MATERIAL_ITEMS = {
         stackable: true,
         stackLimit: 999,
         value: 3,
-        icon: '🐠',
+        icon: 'assets/icons/materials/minnows.png',
         tags: ['fish', 'bait']
     },
 
@@ -103,7 +103,7 @@ const MATERIAL_ITEMS = {
         stackable: true,
         stackLimit: 999,
         value: 5,
-        icon: '🧶',
+        icon: 'assets/icons/materials/small_pelt.png',
         tags: ['hide', 'leather', 'tailoring', 'crafting']
     },
 
@@ -140,7 +140,7 @@ const MATERIAL_ITEMS = {
         stackable: true,
         stackLimit: 999,
         value: 2,
-        icon: '🌿',
+        icon: 'assets/icons/materials/minty_herb.png',
         tags: ['herb', 'food-ingredient', 'cooking', 'chemistry']
     },
 
@@ -212,7 +212,13 @@ const MATERIAL_ITEMS = {
         stackLimit: 999,
         value: 2,
         icon: 'assets/icons/materials/pinewood.png',
-        tags: ['wood', 'crafting', 'construction']
+        tags: ['wood', 'crafting', 'construction'],
+        fuel: true,
+        fuelStats: {
+            burnTime: 30,
+            warmth: 5,
+            efficiency: 1.0
+        }
     },
 
     riverwillow: {
@@ -229,7 +235,13 @@ const MATERIAL_ITEMS = {
         stackLimit: 999,
         value: 5,
         icon: 'assets/icons/materials/riverwillow.png',
-        tags: ['wood', 'crafting', 'mechanics', 'flexible']
+        tags: ['wood', 'crafting', 'mechanics', 'flexible'],
+        fuel: true,
+        fuelStats: {
+            burnTime: 35,
+            warmth: 6,
+            efficiency: 1.1
+        }
     },
 
     resin: {
@@ -299,7 +311,7 @@ const MATERIAL_ITEMS = {
         stackable: true,
         stackLimit: 999,
         value: 10,
-        icon: '🔶',
+        icon: 'assets/icons/materials/copperite_ore.png',
         tags: ['ore', 'metal', 'smithing', 'smelting']
     },
 

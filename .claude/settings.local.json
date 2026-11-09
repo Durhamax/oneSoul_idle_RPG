@@ -19,7 +19,10 @@
       "Bash(if not exist \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\data\\missions\\production\" mkdir \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\data\\missions\\production\")",
       "Bash(if not exist \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\ui\\missions\" mkdir \"C:\\Users\\durha\\oneSoul_idle_RPG\\src\\ui\\missions\")",
       "Bash(dir \"C:\\Users\\durha\\oneSoul_idle_RPG\\assets\\icons\\materials\" /b)",
-      "Bash(dir \"C:\\Users\\durha\\oneSoul_idle_RPG\\assets\\icons\" /b)"
+      "Bash(dir \"C:\\Users\\durha\\oneSoul_idle_RPG\\assets\\icons\" /b)",
+      "Bash(git commit:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

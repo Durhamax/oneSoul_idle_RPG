@@ -1181,7 +1181,7 @@ function openFuelModal(event) {
     // Sort by tier (higher tier fuels first)
     fuelItems.sort((a, b) => (b.def.tier || 0) - (a.def.tier || 0));
 
-    // Render items
+    // Render items using ItemCard component for consistency
     let html = "";
 
     if (fuelItems.length === 0) {
@@ -1191,27 +1191,15 @@ function openFuelModal(event) {
         </div>`;
     } else {
         for (let item of fuelItems) {
-            const stats = item.def.fuelStats || {};
-            const efficiency = stats.efficiency || 1.0;
-            const burnTime = stats.burnTime || 30;
+            // Use ItemCard.create for consistent styling with bank items
+            const cardHtml = ItemCard.create(item.itemId, 'bank', {
+                quantity: item.quantity,
+                onClick: `equipFuelItem('${item.itemId}')`
+            });
 
-            // Custom card for fuel showing stats
-            html += `
-                <div class="item-card tier-${item.def.tier || 1}"
-                     onclick="equipFuelItem('${item.itemId}')"
-                     style="cursor: pointer; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid #444;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="font-size: 2.5rem;">${item.def.icon || '🪵'}</div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: bold; color: #fff;">${item.def.name}</div>
-                            <div style="color: #FF9800; font-size: 0.9em;">×${item.quantity}</div>
-                            <div style="font-size: 0.8em; color: #aaa; margin-top: 4px;">
-                                🔥 ${burnTime}s burn • ⚡ ${(efficiency * 100).toFixed(0)}% efficiency
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            if (cardHtml) {
+                html += cardHtml;
+            }
         }
     }
 
@@ -3508,6 +3496,65 @@ const GlobalEventDelegation = {
             const missionId = target.dataset.missionId;
             if (missionId && typeof completeMission === 'function') {
                 completeMission(missionId);
+            }
+        },
+
+        // Mission Path (Quest Path UI)
+        'select-mission'(target) {
+            const missionId = target.dataset.mission || target.dataset.missionId;
+            if (missionId && typeof MissionsUI !== 'undefined' && MissionsUI.selectMission) {
+                MissionsUI.selectMission(missionId);
+            }
+        },
+
+        'toggle-mission'(target, e) {
+            const missionId = target.closest('[data-mission]')?.getAttribute('data-mission');
+            if (missionId && typeof MissionsUI !== 'undefined' && MissionsUI.toggleMission) {
+                MissionsUI.toggleMission(missionId);
+            }
+        },
+
+        'close-mission-detail'() {
+            if (typeof MissionsUI !== 'undefined' && MissionsUI.hideDetailPanel) {
+                MissionsUI.hideDetailPanel();
+            }
+        },
+
+        'start-mission'(target, e) {
+            if (e) e.stopPropagation(); // Don't toggle the row
+            const missionId = target.getAttribute('data-mission') || target.dataset.missionId;
+            if (missionId && typeof GameEngine !== 'undefined' && GameEngine.startMission) {
+                GameEngine.startMission(missionId);
+                if (typeof MissionsUI !== 'undefined') {
+                    MissionsUI.expandedMission = missionId;
+                    MissionsUI.render();
+                }
+            }
+        },
+
+        'complete-mission'(target, e) {
+            if (e) e.stopPropagation(); // Don't toggle the row
+            const missionId = target.getAttribute('data-mission') || target.dataset.missionId;
+            if (missionId && typeof GameEngine !== 'undefined' && GameEngine.completeMission) {
+                GameEngine.completeMission(missionId);
+                if (typeof MissionsUI !== 'undefined') {
+                    MissionsUI.expandedMission = null;
+                    MissionsUI.render();
+                }
+            }
+        },
+
+        'abandon-mission'(target, e) {
+            if (e) e.stopPropagation(); // Don't toggle the row
+            const missionId = target.getAttribute('data-mission') || target.dataset.missionId;
+            if (missionId && confirm('Abandon this mission?')) {
+                if (typeof GameEngine !== 'undefined' && GameEngine.abandonMission) {
+                    GameEngine.abandonMission(missionId);
+                }
+                if (typeof MissionsUI !== 'undefined') {
+                    MissionsUI.expandedMission = null;
+                    MissionsUI.render();
+                }
             }
         },
 

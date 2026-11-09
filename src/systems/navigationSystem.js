@@ -285,14 +285,36 @@ const NavigationSystem = {
             return { success: false, reason: "Already navigating" };
         }
 
-        // Stop other activities
+        // Stop ALL other activities including crafting
         if (this.state.currentActivity === 'combat') {
             this.endCombat();
         }
         if (this.state.currentActivity === 'nodeCollection') {
             this.stopNodeHarvesting();
         }
-        // Crafting continues in background, doesn't block navigation
+        if (this.state.currentActivity === 'gathering') {
+            if (typeof this.stopGathering === 'function') {
+                this.stopGathering();
+            }
+        }
+
+        // Stop crafting - navigation takes priority
+        if (this.state.crafting?.activeQueues) {
+            const skills = ['cooking', 'smithing', 'mechanics', 'tailoring', 'chemistry', 'electronics'];
+            for (const skill of skills) {
+                const queue = this.state.crafting.activeQueues[skill];
+                if (queue && queue.length > 0) {
+                    // Clear the queue for this skill
+                    this.state.crafting.activeQueues[skill] = [];
+                    console.log(`🗺️ Stopped ${skill} crafting to start navigation`);
+                }
+            }
+            // Clear auto-repeat
+            this.state.crafting.autoRecipe = null;
+        }
+        if (this.state.currentActivity === 'crafting') {
+            this.state.currentActivity = null;
+        }
 
         // Calculate and set endurance based on character attributes
         const stats = this.getNavigationStats();
@@ -494,6 +516,15 @@ const NavigationSystem = {
         regionState.discoveryProgress = Math.min(100, regionState.discoveryProgress + discoveryIncrease);
 
         console.log(`✨ Discovery made! Region now ${regionState.discoveryProgress.toFixed(1)}% explored`);
+
+        // Emit discovery progress event for mission tracking
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('discovery-progress', {
+                regionId: currentRegionId,
+                progress: regionState.discoveryProgress,
+                increase: discoveryIncrease
+            });
+        }
 
         // Gain navigation exp
         this.gainSkillExp('navigation', 5);

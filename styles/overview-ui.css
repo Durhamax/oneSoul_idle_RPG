@@ -752,6 +752,16 @@
     flex: 1;
 }
 
+/* =========================================================================
+ * LEGACY LOADOUT SLOT STYLES (DEPRECATED)
+ *
+ * These styles are deprecated and will be removed in a future update.
+ * Use styles/loadout-slots.css and the .unified-slot classes instead.
+ * Kept for backwards compatibility with legacy rendering paths.
+ *
+ * Updated: 2025-12-06 - See LoadoutSlotRenderer.js for unified rendering
+ * ========================================================================= */
+
 /* All slots (equipment, consumables, tech) - uniform 100px square */
 .loadout-slot {
     width: 100px;

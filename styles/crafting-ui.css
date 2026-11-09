@@ -1357,3 +1357,186 @@
 .quick-craft-btn.switch-craft:hover {
     background: #6ab3ff;
 }
+
+/* ===========================
+   ACTIVE CRAFTING PANEL
+   (Matches GatherUI pattern)
+   =========================== */
+
+.craft-active-empty {
+    text-align: center;
+    padding: 2rem;
+    background: var(--bg-secondary, #2a2a2a);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px dashed var(--border-color, #444);
+}
+
+.craft-active-empty .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.6;
+}
+
+.craft-active-empty .empty-text {
+    font-size: 1rem;
+    color: var(--text-secondary, #aaa);
+    margin-bottom: 0.25rem;
+}
+
+.craft-active-empty .empty-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted, #666);
+}
+
+.craft-active-error {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: 8px;
+    color: #f44336;
+    margin-bottom: 1rem;
+}
+
+.craft-active-panel {
+    background: var(--bg-secondary, #2a2a2a);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color, #444);
+    border-left: 4px solid var(--skill-color, #4a9eff);
+}
+
+.craft-active-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.craft-active-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.craft-recipe-icon {
+    font-size: 2rem;
+}
+
+.craft-active-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.craft-recipe-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary, #e0e0e0);
+}
+
+.craft-recipe-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #888);
+}
+
+.btn-stop-craft {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: rgba(244, 67, 54, 0.2);
+    border: 1px solid rgba(244, 67, 54, 0.4);
+    border-radius: 6px;
+    color: #f44336;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-stop-craft:hover {
+    background: rgba(244, 67, 54, 0.4);
+}
+
+#craft-interval-bar {
+    margin-bottom: 1rem;
+}
+
+.craft-session-stats {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.craft-session-stats .stat-box {
+    flex: 1;
+    min-width: 80px;
+    padding: 0.5rem 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    text-align: center;
+}
+
+.craft-session-stats .stat-box-label {
+    font-size: 0.7rem;
+    color: var(--text-muted, #666);
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+
+.craft-session-stats .stat-box-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary, #e0e0e0);
+}
+
+.craft-session-stats .stat-box-value.stat-success {
+    color: var(--accent-success, #4caf50);
+}
+
+.craft-session-stats .stat-box-value.stat-warning {
+    color: var(--accent-warning, #ff9800);
+}
+
+/* ===========================
+   SESSION OUTPUT SIDEBAR
+   (Matches GatherUI loot sidebar)
+   =========================== */
+
+.session-output-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.output-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+}
+
+.output-icon {
+    font-size: 1.25rem;
+    width: 28px;
+    text-align: center;
+}
+
+.output-name {
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--text-primary, #e0e0e0);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.output-qty {
+    font-weight: 600;
+    color: var(--accent-success, #4caf50);
+    font-size: 0.9rem;
+}

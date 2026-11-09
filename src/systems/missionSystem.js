@@ -78,9 +78,15 @@ const MissionSystem = {
         engine.isMissionUnlocked = this.isMissionUnlocked.bind(engine);
         engine.checkTurnInObjectives = this.checkTurnInObjectives.bind(engine);
         engine.consumeTurnInItems = this.consumeTurnInItems.bind(engine);
+        engine.syncExploreObjectives = () => this.syncExploreObjectives(engine);
 
         // Subscribe to EventBus for automatic tracking
         this._subscribeToEvents(engine);
+
+        // Sync explore objectives on init (handles missions started before this feature)
+        setTimeout(() => {
+            this.syncExploreObjectives(engine);
+        }, 100);
 
         console.log('✅ MissionSystem initialized');
     },
@@ -151,6 +157,13 @@ const MissionSystem = {
         this._eventSubscriptions.push(
             EventBus.on('tile-moved', (data) => {
                 this._handleTileMoved(engine, data);
+            })
+        );
+
+        // Discovery progress events (for explore objectives)
+        this._eventSubscriptions.push(
+            EventBus.on('discovery-progress', (data) => {
+                this._handleDiscoveryProgress(engine, data);
             })
         );
 
@@ -286,8 +299,11 @@ const MissionSystem = {
      */
     _handleCraftingComplete(engine, data) {
         const { recipeId, itemId, skill, quantity } = data;
-        const activeMissions = engine.state.missions.active;
+        const activeMissions = engine.state.missions?.active || [];
         const craftedId = itemId || recipeId;
+
+        console.log(`[MissionSystem] Crafting complete event: itemId=${itemId}, recipeId=${recipeId}, skill=${skill}, quantity=${quantity}`);
+        console.log(`[MissionSystem] Active missions: ${activeMissions.join(', ')}`);
 
         for (const missionId of activeMissions) {
             const progress = engine.state.missions.activeProgress[missionId];
@@ -297,12 +313,16 @@ const MissionSystem = {
                 const obj = progress.objectives[objId];
                 if (obj.completed) continue;
 
+                console.log(`[MissionSystem] Checking objective ${objId}: type=${obj.type}, target=${obj.target}, craftedId=${craftedId}`);
+
                 // CRAFT - specific item
                 if (obj.type === 'craft' && obj.target === craftedId) {
+                    console.log(`[MissionSystem] ✅ Match! Advancing objective ${objId}`);
                     engine.advanceObjective(missionId, objId, quantity || 1);
                 }
                 // CRAFT_SKILL - any item from skill
                 else if (obj.type === 'craftSkill' && obj.skill === skill) {
+                    console.log(`[MissionSystem] ✅ Skill match! Advancing objective ${objId}`);
                     engine.advanceObjective(missionId, objId, quantity || 1);
                 }
             }
@@ -384,12 +404,13 @@ const MissionSystem = {
                 const obj = progress.objectives[objId];
                 if (obj.completed) continue;
 
-                // EXPLORE - visit region
-                if (obj.type === 'explore' && obj.target === regionId) {
+                // VISIT_REGION - specific region visit (one-time, not explore %)
+                if (obj.type === 'visitRegion' && obj.target === regionId) {
                     engine.advanceObjective(missionId, objId, 1);
                 }
             }
         }
+        // Note: 'explore' objectives with discovery % are handled by _handleDiscoveryProgress
     },
 
     /**
@@ -409,6 +430,65 @@ const MissionSystem = {
                 // TRAVEL - track distance
                 if (obj.type === 'travel') {
                     engine.advanceObjective(missionId, objId, 1);
+                }
+            }
+        }
+    },
+
+    /**
+     * Handle discovery progress event (for explore objectives tracking discovery %)
+     */
+    _handleDiscoveryProgress(engine, data) {
+        const { regionId, progress } = data;
+        const activeMissions = engine.state.missions.active;
+
+        for (const missionId of activeMissions) {
+            const missionProgress = engine.state.missions.activeProgress[missionId];
+            if (!missionProgress) continue;
+
+            for (const objId in missionProgress.objectives) {
+                const obj = missionProgress.objectives[objId];
+                if (obj.completed) continue;
+
+                // EXPLORE - track discovery progress percentage
+                if (obj.type === 'explore' && obj.target === regionId) {
+                    // Set progress to the actual discovery percentage (floored)
+                    const currentProgress = Math.floor(progress);
+                    // Only update if the discovery % exceeds current progress
+                    if (currentProgress > obj.current) {
+                        engine.advanceObjective(missionId, objId, currentProgress - obj.current);
+                    }
+                }
+            }
+        }
+    },
+
+    /**
+     * Sync all explore objectives with current region discovery progress
+     * Call this on game load to fix any stale explore objectives
+     */
+    syncExploreObjectives(engine) {
+        const activeMissions = engine.state.missions.active;
+
+        for (const missionId of activeMissions) {
+            const missionProgress = engine.state.missions.activeProgress[missionId];
+            if (!missionProgress) continue;
+
+            for (const objId in missionProgress.objectives) {
+                const obj = missionProgress.objectives[objId];
+                if (obj.completed) continue;
+
+                // EXPLORE - sync with current region discovery %
+                if (obj.type === 'explore' && obj.target) {
+                    const regionState = engine.state.regions?.[obj.target];
+                    if (regionState && regionState.discoveryProgress) {
+                        const currentProgress = Math.floor(regionState.discoveryProgress);
+                        if (currentProgress > obj.current) {
+                            const advancement = currentProgress - obj.current;
+                            engine.advanceObjective(missionId, objId, advancement);
+                            console.log(`📋 Synced explore objective: ${objId} now at ${currentProgress}%`);
+                        }
+                    }
                 }
             }
         }
@@ -775,8 +855,20 @@ const MissionSystem = {
         const objectives = mission.objectives || [];
         objectives.forEach((objective, index) => {
             const objId = objective.id || `obj_${index + 1}`;
+
+            // Determine initial progress based on objective type
+            let initialCurrent = 0;
+
+            // For explore objectives, initialize with current region discovery %
+            if (objective.type === 'explore' && objective.target) {
+                const regionState = this.state.regions?.[objective.target];
+                if (regionState && regionState.discoveryProgress) {
+                    initialCurrent = Math.floor(regionState.discoveryProgress);
+                }
+            }
+
             progress.objectives[objId] = {
-                current: 0,
+                current: initialCurrent,
                 required: objective.count || objective.required || 1,
                 type: objective.type,
                 target: objective.target,
@@ -790,7 +882,7 @@ const MissionSystem = {
                 optional: objective.optional || false,
                 hidden: objective.hidden || false,
                 isTurnIn: objective.isTurnIn || false,  // For turn-in objectives
-                completed: false
+                completed: initialCurrent >= (objective.count || objective.required || 1)
             };
         });
 

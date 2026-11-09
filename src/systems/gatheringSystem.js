@@ -102,6 +102,9 @@ const GatheringSystem = {
       return false;
     }
 
+    // Stop any other active activities before starting gathering
+    this._stopOtherActivities();
+
     // Get node definition
     const nodeDef = NodeRegistry.getAllActive()[nodeId];
 
@@ -167,6 +170,58 @@ const GatheringSystem = {
     EventBus.emit('gathering-stopped', { reason });
 
     console.log(`Stopped gathering: ${reason}`);
+  },
+
+  /**
+   * Stop any other active activities (crafting, combat) before starting gathering
+   */
+  _stopOtherActivities() {
+    // Stop crafting - clear all skill queues
+    if (this.state.crafting) {
+      const skills = ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking'];
+      for (const skill of skills) {
+        if (this.state.crafting.activeQueues?.[skill]?.length > 0) {
+          console.log(`⏹️ Stopping ${skill} crafting to start gathering`);
+          this.state.crafting.activeQueues[skill] = [];
+        }
+      }
+      // Clear legacy crafts
+      if (this.state.crafting.activeCrafts?.length > 0) {
+        this.state.crafting.activeCrafts = [];
+      }
+      // Clear auto-repeat
+      this.state.crafting.autoRecipe = null;
+    }
+
+    // Stop combat
+    if (this.state.currentActivity === 'combat' || this.state.combat?.inCombat) {
+      console.log('⏹️ Stopping combat to start gathering');
+      if (typeof this.endCombat === 'function') {
+        this.endCombat();
+      } else if (this.state.combat) {
+        this.state.combat.inCombat = false;
+        this.state.combat.currentEnemy = null;
+      }
+    }
+
+    // Clear navigation if active
+    if (this.state.currentActivity === 'navigation' || this.state.activeNavigation?.isNavigating) {
+      console.log('⏹️ Stopping navigation to start gathering');
+      if (typeof this.stopNavigation === 'function') {
+        this.stopNavigation();
+      } else {
+        // Direct state manipulation if function not available
+        if (this.state.activeNavigation) {
+          this.state.activeNavigation.isNavigating = false;
+        }
+        this.state.currentActivity = null;
+      }
+    }
+
+    // Clear current activity
+    if (this.state.currentActivity && this.state.currentActivity !== 'gathering') {
+      this.state.currentActivity = null;
+    }
   },
 
   // ========================================

@@ -24,7 +24,7 @@ const TUTORIAL_MISSIONS = {
         type: 'main',
         tier: 1,
 
-        regionRequired: 'region_1',
+        regionRequired: 'region_-3_-4',
         prerequisites: [],
 
         dialog: {
@@ -188,7 +188,7 @@ const TUTORIAL_MISSIONS = {
         type: 'main',
         tier: 1,
 
-        regionRequired: 'region_1',
+        regionRequired: 'region_-3_-4',
         requirements: {
             missions: ['mission_101']
         },
@@ -260,7 +260,7 @@ const TUTORIAL_MISSIONS = {
         type: 'main',
         tier: 1,
 
-        regionRequired: 'region_1',
+        regionRequired: 'region_-3_-4',
         requirements: {
             missions: ['mission_102']
         },
@@ -360,7 +360,7 @@ const TUTORIAL_MISSIONS = {
         type: 'main',
         tier: 1,
 
-        regionRequired: 'region_1',
+        regionRequired: 'region_-3_-4',
         requirements: {
             missions: ['mission_103']
         },
@@ -414,16 +414,16 @@ const TUTORIAL_MISSIONS = {
     },
 
     // ==========================================
-    // MISSION 105: Back On Shift
+    // MISSION 105: Find Your Way
     // ==========================================
     mission_105: {
         id: 'mission_105',
-        name: 'Back On Shift',
+        name: 'Find Your Way',
         description: 'Learn the navigation system by exploring The Cradle.',
         type: 'main',
         tier: 1,
 
-        regionRequired: 'region_1',
+        regionRequired: 'region_-3_-4',
         requirements: {
             missions: ['mission_104']
         },
@@ -440,7 +440,7 @@ const TUTORIAL_MISSIONS = {
             {
                 id: 'explore_region',
                 type: 'explore',
-                target: 'region_1',
+                target: 'region_-3_-4',
                 count: 10,
                 description: 'Explore The Cradle to 10% discovery',
                 required: 10
@@ -488,7 +488,7 @@ const TUTORIAL_MISSIONS = {
         type: 'main',
         tier: 1,
 
-        regionRequired: 'region_1',
+        regionRequired: 'region_-3_-4',
         requirements: {
             missions: ['mission_105']
         },

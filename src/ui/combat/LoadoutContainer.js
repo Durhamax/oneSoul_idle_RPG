@@ -3,6 +3,8 @@
  *
  * Equipment and stats display for combat loadout
  * Uses crafting-style UI patterns (cards, sections)
+ *
+ * Updated: 2025-12-06 - Now uses LoadoutSlotRenderer for consistent styling
  */
 
 const LoadoutContainer = {
@@ -27,12 +29,82 @@ const LoadoutContainer = {
 
     /**
      * Render equipment grid (3-1-3 format: Left 3 slots | Middle 1 tall armor | Right 3 slots)
+     * Uses LoadoutSlotRenderer if available for unified styling
      */
     renderEquipmentGrid(player) {
         const equipment = player.equipment || {};
         const attrs = player.combatAttributes || {};
         const intellect = attrs.intellect || 0;
 
+        // Use LoadoutSlotRenderer if available
+        const renderer = typeof LoadoutSlotRenderer !== 'undefined' ? LoadoutSlotRenderer : null;
+
+        if (renderer) {
+            // Get food and ammo quantities for display
+            const foodQuantity = player.combat?.equippedFoodQuantity;
+            const ammoQuantity = player.combat?.playerAmmo?.currentAmmo;
+
+            return `
+                <div class="loadout-equipment">
+                    <!-- Core Equipment Card (3-1-3 Layout) -->
+                    <div class="loadout-section-card">
+                        <div class="loadout-section-header">
+                            <span class="section-icon">🎽</span>
+                            <span class="section-title">Equipment</span>
+                        </div>
+                        <div class="loadout-section-content unified-slots--compact">
+                            ${renderer.renderEquipmentGrid({
+                                equipment,
+                                size: 'auto',
+                                showNames: false,
+                                showStats: false,
+                                interactive: true
+                            })}
+                        </div>
+                    </div>
+
+                    <!-- Consumables Card -->
+                    <div class="loadout-section-card">
+                        <div class="loadout-section-header">
+                            <span class="section-icon">🍖</span>
+                            <span class="section-title">Consumables</span>
+                        </div>
+                        <div class="loadout-section-content unified-slots--compact">
+                            ${renderer.renderConsumablesRow({
+                                equipment,
+                                foodQuantity,
+                                ammoQuantity,
+                                interactive: true
+                            })}
+                        </div>
+                    </div>
+
+                    <!-- Technology Card -->
+                    <div class="loadout-section-card">
+                        <div class="loadout-section-header">
+                            <span class="section-icon">⚡</span>
+                            <span class="section-title">Technology</span>
+                        </div>
+                        <div class="loadout-section-content unified-slots--compact">
+                            ${renderer.renderTechRow({
+                                equipment,
+                                intellect,
+                                interactive: true
+                            })}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Legacy fallback if LoadoutSlotRenderer not available
+        return this._renderEquipmentGridLegacy(player, equipment, intellect);
+    },
+
+    /**
+     * Legacy equipment grid rendering (fallback)
+     */
+    _renderEquipmentGridLegacy(player, equipment, intellect) {
         return `
             <div class="loadout-equipment">
                 <!-- Core Equipment Card (3-1-3 Layout) -->
@@ -45,19 +117,19 @@ const LoadoutContainer = {
                         <div class="combat-loadout-grid">
                             <!-- Left Column: Weapon, Gloves, Boots (3 slots) -->
                             <div class="loadout-column">
-                                ${this.renderEquipmentSlot('weapon', equipment.weapon, '⚔️')}
-                                ${this.renderEquipmentSlot('gloves', equipment.gloves, '🧤')}
-                                ${this.renderEquipmentSlot('boots', equipment.boots, '👢')}
+                                ${this._renderEquipmentSlotLegacy('weapon', equipment.weapon, '⚔️')}
+                                ${this._renderEquipmentSlotLegacy('gloves', equipment.gloves, '🧤')}
+                                ${this._renderEquipmentSlotLegacy('boots', equipment.boots, '👢')}
                             </div>
                             <!-- Middle Column: Armor Set (1 tall slot) -->
                             <div class="loadout-column loadout-column--armor">
-                                ${this.renderArmorSlot(equipment.armor)}
+                                ${this._renderArmorSlotLegacy(equipment.armor)}
                             </div>
                             <!-- Right Column: Back, Neck, Ring (3 slots) -->
                             <div class="loadout-column">
-                                ${this.renderEquipmentSlot('back', equipment.back, '🎒')}
-                                ${this.renderEquipmentSlot('neck', equipment.neck, '📿')}
-                                ${this.renderEquipmentSlot('ring', equipment.ring, '💍')}
+                                ${this._renderEquipmentSlotLegacy('back', equipment.back, '🎒')}
+                                ${this._renderEquipmentSlotLegacy('neck', equipment.neck, '📿')}
+                                ${this._renderEquipmentSlotLegacy('ring', equipment.ring, '💍')}
                             </div>
                         </div>
                     </div>
@@ -71,9 +143,9 @@ const LoadoutContainer = {
                     </div>
                     <div class="loadout-section-content">
                         <div class="consumables-row">
-                            ${this.renderConsumableSlot('food', equipment.food, '🍖', player.combat?.equippedFoodQuantity)}
-                            ${this.renderConsumableSlot('potion', equipment.potion, '🧪', null)}
-                            ${this.renderConsumableSlot('ammo', equipment.ammo, '🎯', player.combat?.playerAmmo?.currentAmmo)}
+                            ${this._renderConsumableSlotLegacy('food', equipment.food, '🍖', player.combat?.equippedFoodQuantity)}
+                            ${this._renderConsumableSlotLegacy('potion', equipment.potion, '🧪', null)}
+                            ${this._renderConsumableSlotLegacy('ammo', equipment.ammo, '🎯', player.combat?.playerAmmo?.currentAmmo)}
                         </div>
                     </div>
                 </div>
@@ -86,10 +158,10 @@ const LoadoutContainer = {
                     </div>
                     <div class="loadout-section-content">
                         <div class="tech-row">
-                            ${this.renderTechSlot('tech1', equipment.tech1, 0, intellect)}
-                            ${this.renderTechSlot('tech2', equipment.tech2, 3, intellect)}
-                            ${this.renderTechSlot('tech3', equipment.tech3, 6, intellect)}
-                            ${this.renderTechSlot('tech4', equipment.tech4, 9, intellect)}
+                            ${this._renderTechSlotLegacy('tech1', equipment.tech1, 0, intellect)}
+                            ${this._renderTechSlotLegacy('tech2', equipment.tech2, 3, intellect)}
+                            ${this._renderTechSlotLegacy('tech3', equipment.tech3, 6, intellect)}
+                            ${this._renderTechSlotLegacy('tech4', equipment.tech4, 9, intellect)}
                         </div>
                     </div>
                 </div>
@@ -98,10 +170,10 @@ const LoadoutContainer = {
     },
 
     /**
-     * Render tall armor slot (fills middle column)
+     * Legacy: Render tall armor slot (fills middle column)
      * @param {string|object|null} item - Instance ID string, item object, or null
      */
-    renderArmorSlot(item) {
+    _renderArmorSlotLegacy(item) {
         if (!item) {
             return `
                 <div class="loadout-slot loadout-slot--armor empty" data-slot="armor">
@@ -139,7 +211,7 @@ const LoadoutContainer = {
                  onclick="ItemModal.open('${itemId}')"
                  style="--rarity-color: ${rarityColor};">
                 <div class="slot-icon-container">
-                    <span class="slot-icon">${itemDef.icon || '🛡️'}</span>
+                    ${this._getIconHTML(itemDef, 48, '🛡️')}
                 </div>
                 <div class="slot-info">
                     <span class="slot-name">${itemDef.name}</span>
@@ -151,12 +223,12 @@ const LoadoutContainer = {
     },
 
     /**
-     * Render equipment slot (card-based style)
+     * Legacy: Render equipment slot (card-based style)
      * @param {string} slotId - The slot identifier
      * @param {string|object|null} item - Instance ID string, item object, or null
      * @param {string} defaultIcon - Default icon if slot empty
      */
-    renderEquipmentSlot(slotId, item, defaultIcon) {
+    _renderEquipmentSlotLegacy(slotId, item, defaultIcon) {
         const slotName = this.capitalizeFirst(slotId);
 
         if (!item) {
@@ -199,7 +271,7 @@ const LoadoutContainer = {
                  onclick="ItemModal.open('${itemId}')"
                  style="--rarity-color: ${rarityColor};">
                 <div class="slot-icon-container">
-                    <span class="slot-icon">${itemDef.icon || defaultIcon}</span>
+                    ${this._getIconHTML(itemDef, 32, defaultIcon)}
                 </div>
                 <div class="slot-info">
                     <span class="slot-name">${itemDef.name}</span>
@@ -211,13 +283,13 @@ const LoadoutContainer = {
     },
 
     /**
-     * Render consumable slot (card-based style)
+     * Legacy: Render consumable slot (card-based style)
      * @param {string} slotId - The slot identifier
      * @param {string|object|null} item - Instance ID string, item object, or null
      * @param {string} defaultIcon - Default icon if slot empty
      * @param {number|null} quantity - Override quantity to display
      */
-    renderConsumableSlot(slotId, item, defaultIcon, quantity) {
+    _renderConsumableSlotLegacy(slotId, item, defaultIcon, quantity) {
         const slotName = this.capitalizeFirst(slotId);
 
         if (!item) {
@@ -255,7 +327,7 @@ const LoadoutContainer = {
         return `
             <div class="loadout-slot consumable filled" data-slot="${slotId}" onclick="ItemModal.open('${itemId}')">
                 <div class="slot-icon-container">
-                    <span class="slot-icon">${itemDef.icon || defaultIcon}</span>
+                    ${this._getIconHTML(itemDef, 32, defaultIcon)}
                     <span class="slot-quantity">x${displayQuantity}</span>
                 </div>
                 <div class="slot-info">
@@ -266,9 +338,9 @@ const LoadoutContainer = {
     },
 
     /**
-     * Render technology slot (card-based style)
+     * Legacy: Render technology slot (card-based style)
      */
-    renderTechSlot(slotId, item, requiredInt, currentInt = null) {
+    _renderTechSlotLegacy(slotId, item, requiredInt, currentInt = null) {
         const player = GameEngine.state;
         const intellect = currentInt !== null ? currentInt : (player.combatAttributes?.intellect || player.attributes?.intellect || 0);
         const isLocked = intellect < requiredInt;
@@ -312,13 +384,13 @@ const LoadoutContainer = {
             : (typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(itemId) : null);
 
         if (!itemDef) {
-            return this.renderTechSlot(slotId, null, requiredInt);
+            return this._renderTechSlotLegacy(slotId, null, requiredInt);
         }
 
         return `
             <div class="loadout-slot tech filled" data-slot="${slotId}" onclick="ItemModal.open('${itemId}')">
                 <div class="slot-icon-container">
-                    <span class="slot-icon">${itemDef.icon || '⚡'}</span>
+                    ${this._getIconHTML(itemDef, 32, '⚡')}
                 </div>
                 <div class="slot-info">
                     <span class="slot-name">${itemDef.name}</span>
@@ -629,6 +701,32 @@ const LoadoutContainer = {
                 ratings: { plated: 100 }
             }
         };
+    },
+
+    /**
+     * Get icon HTML using IconHelper (FIX: properly renders PNG icons)
+     * @param {Object} itemDef - Item definition
+     * @param {number} size - Icon size in pixels
+     * @param {string} fallbackEmoji - Emoji to use if no icon available
+     * @returns {string} HTML for the icon
+     */
+    _getIconHTML(itemDef, size, fallbackEmoji) {
+        // Use IconHelper if available - THIS FIXES THE ICON BUG
+        if (typeof IconHelper !== 'undefined' && IconHelper.getItemIconHTML) {
+            return IconHelper.getItemIconHTML(itemDef, {
+                size: size,
+                className: 'slot-item-icon'
+            });
+        }
+
+        // Fallback: Check if icon is a PNG path
+        const icon = itemDef?.icon;
+        if (icon && (icon.endsWith('.png') || icon.endsWith('.jpg') || icon.startsWith('assets/'))) {
+            return `<img src="${icon}" alt="${itemDef.name || ''}" class="slot-item-icon" style="width: ${size}px; height: ${size}px; object-fit: contain;">`;
+        }
+
+        // Final fallback: emoji
+        return `<span class="slot-icon">${icon || fallbackEmoji}</span>`;
     },
 
     /**

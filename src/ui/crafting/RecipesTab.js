@@ -49,10 +49,178 @@ const RecipesTab = {
         return `
             <div class="recipes-tab">
                 ${this.renderSkillSelector(skills, selectedSkill)}
+                ${this.renderActiveCrafting()}
                 ${this.renderSkillHeader(selectedSkill)}
                 ${this.renderRecipeGrid(selectedSkill)}
             </div>
         `;
+    },
+
+    /**
+     * Render active crafting section with interval bar (similar to GatherUI)
+     */
+    renderActiveCrafting() {
+        // Find the first active craft across all skills
+        const queues = GameEngine.state.crafting?.activeQueues || {};
+        let activeCraft = null;
+        let activeSkill = null;
+
+        const skills = ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking'];
+        for (const skill of skills) {
+            if (queues[skill] && queues[skill].length > 0) {
+                activeCraft = queues[skill][0];
+                activeSkill = skill;
+                break;
+            }
+        }
+
+        if (!activeCraft) {
+            return `
+                <div class="craft-active-empty">
+                    <div class="empty-icon">🔨</div>
+                    <div class="empty-text">No Active Crafting</div>
+                    <div class="empty-hint">Select a recipe below to start crafting</div>
+                </div>
+            `;
+        }
+
+        // Get recipe info
+        const recipe = typeof RecipeRegistry !== 'undefined' ? RecipeRegistry.get(activeCraft.recipeId) : null;
+        if (!recipe) {
+            return `<div class="craft-active-error">Error: Invalid crafting session</div>`;
+        }
+
+        const skillIcon = this.getSkillIcon(activeSkill);
+        const skillName = UnifiedCraftingUI.capitalizeFirst(activeSkill);
+        const skillColor = UnifiedCraftingUI.getSkillColor(activeSkill);
+
+        // Calculate progress
+        const now = Date.now();
+        const elapsed = now - activeCraft.startTime;
+        const totalTime = activeCraft.completionTime - activeCraft.startTime;
+        const progress = Math.min(elapsed, totalTime);
+
+        // Get skill level
+        const skill = GameEngine.state.skills[activeSkill];
+
+        return `
+            <div class="craft-active-panel" data-activity="crafting" data-skill="${activeSkill}">
+                <div class="craft-active-header">
+                    <div class="craft-active-info">
+                        <span class="craft-recipe-icon">${recipe.icon || skillIcon}</span>
+                        <div class="craft-active-details">
+                            <div class="craft-recipe-name">${recipe.name}</div>
+                            <div class="craft-recipe-meta">
+                                ${skillIcon} ${skillName} • Level ${skill?.level || 1}
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-stop-craft" onclick="RecipesTab.stopCraftingForSkill('${activeSkill}')">
+                        <span>⏹️</span> Stop
+                    </button>
+                </div>
+
+                <!-- Interval Bar -->
+                <div id="craft-interval-bar">
+                    ${IntervalBar.render({
+                        id: 'craft-progress',
+                        label: this.getSkillActionVerb(activeSkill) + 'ing',
+                        icon: skillIcon,
+                        current: progress,
+                        max: totalTime,
+                        color: skillColor,
+                        gradient: 'linear-gradient(90deg, ' + skillColor + ', ' + skillColor + 'aa)',
+                        animated: true,
+                        showTime: true,
+                        variant: 'default',
+                        stats: {
+                            'Duration': (totalTime / 1000).toFixed(1) + 's',
+                            'XP': '+' + (recipe.experienceGain || 0)
+                        }
+                    })}
+                </div>
+
+                <!-- Session Stats -->
+                <div class="craft-session-stats">
+                    <div class="stat-box">
+                        <div class="stat-box-label">Crafts</div>
+                        <div class="stat-box-value">${this.getSessionCraftCount()}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">XP Gained</div>
+                        <div class="stat-box-value stat-success">${this.getSessionXP()}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">Duration</div>
+                        <div class="stat-box-value">${this.formatDuration(this.getSessionDuration())}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-box-label">In Queue</div>
+                        <div class="stat-box-value">${this.getTotalQueueCount()}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Get skill icon
+     */
+    getSkillIcon(skill) {
+        const icons = {
+            smithing: '🔨',
+            mechanics: '⚙️',
+            electronics: '⚡',
+            tailoring: '🧵',
+            chemistry: '⚗️',
+            cooking: '🍳'
+        };
+        return icons[skill] || '📦';
+    },
+
+    /**
+     * Get total queue count across all skills
+     */
+    getTotalQueueCount() {
+        const queues = GameEngine.state.crafting?.activeQueues || {};
+        let total = 0;
+        for (const skill in queues) {
+            total += queues[skill]?.length || 0;
+        }
+        return total;
+    },
+
+    /**
+     * Get session craft count
+     */
+    getSessionCraftCount() {
+        return GameEngine.state.crafting?.sessionStats?.craftsCompleted || 0;
+    },
+
+    /**
+     * Get session XP
+     */
+    getSessionXP() {
+        return GameEngine.state.crafting?.sessionStats?.totalXP || 0;
+    },
+
+    /**
+     * Get session duration
+     */
+    getSessionDuration() {
+        const startTime = GameEngine.state.crafting?.sessionStats?.startTime;
+        if (!startTime) return 0;
+        return Date.now() - startTime;
+    },
+
+    /**
+     * Format duration
+     */
+    formatDuration(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     },
 
     /**
@@ -248,13 +416,11 @@ const RecipesTab = {
                 </div>
             `;
         } else if (meetsLevel && canCraft.canCraft) {
-            // Normal craft buttons
+            // Single craft button with skill-specific verb
+            const actionVerb = this.getSkillActionVerb(recipe.skill);
             actionsHtml = `
                 <div class="quick-craft-buttons">
-                    <button class="quick-craft-btn" data-recipe-id="${recipe.id}" data-quantity="1">×1</button>
-                    ${maxCraftable >= 5 ? `<button class="quick-craft-btn" data-recipe-id="${recipe.id}" data-quantity="5">×5</button>` : ''}
-                    ${maxCraftable >= 10 ? `<button class="quick-craft-btn" data-recipe-id="${recipe.id}" data-quantity="10">×10</button>` : ''}
-                    ${maxCraftable > 1 ? `<button class="quick-craft-btn max" data-recipe-id="${recipe.id}" data-quantity="${maxCraftable}">MAX (${maxCraftable})</button>` : ''}
+                    <button class="quick-craft-btn" data-recipe-id="${recipe.id}" data-quantity="1">${actionVerb}</button>
                 </div>
             `;
         } else if (meetsLevel && canCraft.reason === 'Queue full') {
@@ -466,6 +632,15 @@ const RecipesTab = {
         }
         if (!hasOtherCrafts && GameEngine.state.currentActivity === 'crafting') {
             GameEngine.state.currentActivity = null;
+            // Reset session stats for next session
+            if (GameEngine.state.crafting?.sessionStats) {
+                GameEngine.state.crafting.sessionStats = {
+                    outputs: {},
+                    craftsCompleted: 0,
+                    totalXP: 0,
+                    startTime: null
+                };
+            }
         }
 
         // Update UI
@@ -481,6 +656,21 @@ const RecipesTab = {
         if (content && UnifiedCraftingUI.currentTab === 'recipes') {
             content.innerHTML = this.render(UnifiedCraftingUI.selectedSkill);
         }
+    },
+
+    /**
+     * Get skill-specific action verb for craft buttons
+     */
+    getSkillActionVerb(skill) {
+        const verbs = {
+            smithing: 'Smelt',
+            mechanics: 'Build',
+            electronics: 'Assemble',
+            tailoring: 'Sew',
+            chemistry: 'Mix',
+            cooking: 'Cook'
+        };
+        return verbs[skill] || 'Craft';
     }
 };
 

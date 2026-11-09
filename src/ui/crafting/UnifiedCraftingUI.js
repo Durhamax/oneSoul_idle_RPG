@@ -166,8 +166,60 @@ const UnifiedCraftingUI = {
      * Update the UI (called from game loop)
      */
     update() {
-        // Only update queue sidebar (progress bars change frequently)
+        // Update queue sidebar
         CraftQueue.update();
+
+        // Update interval bar if crafting
+        this.updateIntervalBar();
+    },
+
+    /**
+     * Update the interval bar progress
+     */
+    updateIntervalBar() {
+        const queues = GameEngine.state.crafting?.activeQueues || {};
+        let activeCraft = null;
+        let activeSkill = null;
+
+        const skills = ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking'];
+        for (const skill of skills) {
+            if (queues[skill] && queues[skill].length > 0) {
+                activeCraft = queues[skill][0];
+                activeSkill = skill;
+                break;
+            }
+        }
+
+        if (!activeCraft) return;
+
+        const now = Date.now();
+        const elapsed = now - activeCraft.startTime;
+        const totalTime = activeCraft.completionTime - activeCraft.startTime;
+        const progress = Math.min(elapsed, totalTime);
+
+        // Update interval bar
+        if (typeof IntervalBar !== 'undefined') {
+            IntervalBar.update('craft-progress', progress, totalTime);
+        }
+
+        // Update duration stat
+        const durationEl = document.querySelector('.craft-session-stats .stat-box:nth-child(3) .stat-box-value');
+        if (durationEl) {
+            const sessionStart = GameEngine.state.crafting?.sessionStats?.startTime;
+            if (sessionStart) {
+                durationEl.textContent = this.formatDuration(now - sessionStart);
+            }
+        }
+    },
+
+    /**
+     * Format duration
+     */
+    formatDuration(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     },
 
     /**

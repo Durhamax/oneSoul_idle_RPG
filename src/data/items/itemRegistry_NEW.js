@@ -45,11 +45,14 @@ class ItemRegistryClass extends BaseRegistry {
      */
     _initSchema() {
         this.schema = {
-            required: ['id', 'name', 'description', 'icon', 'category', 'stackLimit'],
+            required: ['id', 'name', 'description', 'icon', 'category'],
             optional: [
-                'itemType', 'subcategory', 'rarity', 'tier', 'quality', 'value', 'weight',
+                // Core item fields
+                'type', 'itemType', 'subcategory', 'rarity', 'tier', 'quality', 'value', 'weight',
+                'stackable', 'stackLimit',
+                // Equipment slots and types
                 'slot', 'equipSlot', 'stats', 'damageType', 'armorRatings', 'armorType',
-                'attachmentSlot', 'weaponType', 'magazineSize', 'reloadTime',
+                'attachmentSlot', 'weaponType', 'weaponCategory', 'magazineSize', 'reloadTime',
                 'specialAttack', 'gatheringBonus', 'craftingBonus', 'experienceBonus',
                 'healAmount', 'buffs', 'debuffs', 'effects', 'unlockRequirement',
                 'tags', 'assetPath', 'image', 'defaultTab', 'questItem', 'tradeable',
@@ -58,7 +61,7 @@ class ItemRegistryClass extends BaseRegistry {
                 'statusEffects', 'passive', 'active', 'cooldown', 'charges', 'consumeOnUse',
                 'resourceType', 'gatherSkill', 'gatherLevel', 'craftingUse',
                 'tutorialItem', 'questReward', 'toolType', 'toolTier',
-                // NEW: Skill-based tool system
+                // Skill-based tool system
                 'skill',
                 // Equipment fields from itemSchema.js
                 'attributes', 'combatStats', 'requirements', 'setId',
@@ -69,7 +72,13 @@ class ItemRegistryClass extends BaseRegistry {
                 // DUAL-BANK: Instance management
                 'instanced', 'iconPath', 'modType', 'modStat', 'bonusValue', 'bonusStat',
                 // Legacy/migration fields
-                'deprecated', 'replacedBy', 'removed', 'planned', 'plannedVersion'
+                'deprecated', 'replacedBy', 'removed', 'planned', 'plannedVersion',
+                // Fuel system fields
+                'fuel', 'fuelStats',
+                // Currency fields
+                'currencyId',
+                // Weapon/ammo fields
+                'requiresAmmo', 'ammoType', 'baseDamage', 'attackInterval'
             ]
         };
     }

@@ -32,7 +32,9 @@ const mimeTypes = {
 const server = http.createServer((req, res) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
 
-    let filePath = '.' + req.url;
+    // Strip query string (e.g. cache-busters like ?v=2) and decode the path
+    const urlPath = decodeURIComponent(req.url.split('?')[0]);
+    let filePath = '.' + urlPath;
     if (filePath === './') {
         filePath = './index.html';
     }

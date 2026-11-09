@@ -178,6 +178,13 @@
     width: 100%;
 }
 
+/* When equipment-grid wraps the unified loadout grid, use block display */
+/* The unified-loadout-grid handles its own 3-column layout internally */
+.equipment-grid:has(.unified-loadout-grid) {
+    display: block;
+    max-width: none;
+}
+
 /* Column for 3 stacked slots */
 .equipment-grid .loadout-column {
     display: flex;

@@ -30,10 +30,14 @@ class NodeRegistryClass extends BaseRegistry {
         this.schema = {
             required: ['id', 'name', 'nodeType', 'requiredSkillLevel', 'baseHealth'],
             optional: [
-                'description', 'icon', 'category', 'tier', 'rarity', 'biome',
+                'description', 'icon', 'image', 'category', 'tier', 'rarity', 'biome',
                 'harvestTime', 'respawnTime', 'resourceTable', 'baseXP',
                 'resistance', 'evasion', 'critEvasion', 'minHealth', 'maxHealth',
-                'status', 'recommendedLevel', 'assetPath', 'tags'
+                'status', 'recommendedLevel', 'assetPath', 'tags',
+                // Skill-based tool system
+                'skill', 'requiredTools', 'minToolTier', 'harvestsPerCapacity',
+                // Visual/region properties
+                'color', 'regions'
             ]
         };
     }

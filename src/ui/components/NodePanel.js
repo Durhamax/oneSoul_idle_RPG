@@ -245,8 +245,10 @@ class NodePanel extends UIComponent {
                 ${topResources.map(res => {
                     const itemDef = res.itemDef || ItemRegistry?.get?.(res.itemId);
                     const itemName = itemDef?.name || res.itemId;
-                    const itemIcon = itemDef?.icon || '📦';
-                    return `<span class="resource-tag">${itemIcon} ${itemName}</span>`;
+                    const iconHtml = (typeof IconHelper !== 'undefined' && itemDef)
+                        ? IconHelper.getItemIconHTML(itemDef, { size: 16 })
+                        : (itemDef?.icon || '📦');
+                    return `<span class="resource-tag">${iconHtml} ${itemName}</span>`;
                 }).join('')}
             </div>
         `;

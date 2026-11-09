@@ -1,0 +1,689 @@
+/**
+ * UNIFIED LOADOUT SLOT STYLES
+ *
+ * Single source of truth for equipment slot styling across:
+ * - Overview Page (overviewUI.js)
+ * - Equipment Tab (equipmentComponent.js)
+ * - Combat Loadout (loadoutContainer.js)
+ *
+ * Created: 2025-12-06
+ */
+
+/* ===================================================================== */
+/* CSS CUSTOM PROPERTIES - Slot Sizing & Grid Spacing                    */
+/* ===================================================================== */
+
+:root {
+    /* Slot sizing - responsive base values (~10% larger than previous) */
+    --slot-size-sm: 77px;      /* Was 70px */
+    --slot-size-base: 88px;    /* Was 80px */
+    --slot-size-md: 99px;      /* Was 90px */
+    --slot-size-lg: 110px;     /* Was 100px */
+    --slot-size-xl: 121px;     /* Was 110px */
+
+    /* Armor slot - 85% of side column total height */
+    /* Side column height = 3 slots + 2 row gaps */
+    /* Armor multiplier = (3 slots * 0.85) + (2 gaps * 0.85 / slot) ~= 2.55 */
+    --slot-armor-multiplier: 2.55;
+
+    /* Icon sizes relative to slot */
+    --slot-icon-ratio: 0.5;
+
+    /* Grid spacing - fluid scaling with clamp() */
+    /* Increased minimum for more spread */
+    --grid-column-gap: clamp(20px, 5vw, 48px);
+    --grid-row-gap: 8px;
+
+    /* Rarity colors - matches definitions.js RARITY_TIERS */
+    --rarity-common: #9e9e9e;
+    --rarity-uncommon: #4caf50;
+    --rarity-rare: #2196f3;
+    --rarity-epic: #9c27b0;
+    --rarity-legendary: #ff9800;
+    --rarity-mythic: #f44336;
+    --rarity-divine: #ffd700;
+    --rarity-transcendent: #00ffff;
+    --rarity-creator: #ff00ff;
+
+    /* Slot styling */
+    --slot-bg-empty: rgba(255, 255, 255, 0.03);
+    --slot-bg-filled: rgba(0, 0, 0, 0.3);
+    --slot-border-empty: rgba(255, 255, 255, 0.1);
+    --slot-border-radius: 8px;
+    --slot-border-width: 2px;
+    --slot-border-width-filled: 2px;
+    --slot-transition: all 0.2s ease;
+}
+
+/* ===================================================================== */
+/* BASE LOADOUT SLOT                                                     */
+/* ===================================================================== */
+
+.unified-slot {
+    position: relative;
+    width: var(--slot-size-base);
+    height: var(--slot-size-base);
+    aspect-ratio: 1 / 1;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+
+    background: var(--slot-bg-empty);
+    border: var(--slot-border-width) solid var(--slot-border-empty);
+    border-radius: var(--slot-border-radius);
+
+    cursor: pointer;
+    transition: var(--slot-transition);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* NOTE: Responsive sizing is handled in RESPONSIVE BREAKPOINTS section below */
+
+/* Size variants for explicit control */
+.unified-slot--sm {
+    width: var(--slot-size-sm) !important;
+    height: var(--slot-size-sm) !important;
+}
+
+.unified-slot--md {
+    width: var(--slot-size-md) !important;
+    height: var(--slot-size-md) !important;
+}
+
+.unified-slot--lg {
+    width: var(--slot-size-lg) !important;
+    height: var(--slot-size-lg) !important;
+}
+
+/* ===================================================================== */
+/* SLOT STATES                                                           */
+/* ===================================================================== */
+
+/* Empty state */
+.unified-slot--empty {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.unified-slot--empty:hover {
+    opacity: 0.7;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Filled state - rarity border and background gradient */
+.unified-slot--filled {
+    border-color: var(--rarity-color, var(--rarity-common));
+    border-width: var(--slot-border-width-filled);
+    background: linear-gradient(
+        135deg,
+        var(--slot-bg-filled) 0%,
+        color-mix(in srgb, var(--rarity-color, var(--rarity-common)) 15%, transparent) 100%
+    );
+}
+
+.unified-slot--filled:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3),
+                0 0 8px color-mix(in srgb, var(--rarity-color) 40%, transparent);
+}
+
+/* Locked state (tech slots) */
+.unified-slot--locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.unified-slot--locked:hover {
+    transform: none;
+}
+
+/* Interactive state */
+.unified-slot--interactive {
+    cursor: pointer;
+}
+
+.unified-slot--interactive:active {
+    transform: scale(0.98);
+}
+
+/* ===================================================================== */
+/* GLOW EFFECTS (Epic+ rarities)                                         */
+/* ===================================================================== */
+
+.unified-slot--glow {
+    box-shadow: 0 0 12px var(--rarity-color, var(--rarity-epic)),
+                0 0 24px color-mix(in srgb, var(--rarity-color) 30%, transparent);
+    animation: unified-slot-glow 2s ease-in-out infinite;
+}
+
+@keyframes unified-slot-glow {
+    0%, 100% {
+        box-shadow: 0 0 8px var(--rarity-color, var(--rarity-epic)),
+                    0 0 16px color-mix(in srgb, var(--rarity-color) 20%, transparent);
+    }
+    50% {
+        box-shadow: 0 0 16px var(--rarity-color, var(--rarity-epic)),
+                    0 0 32px color-mix(in srgb, var(--rarity-color) 40%, transparent);
+    }
+}
+
+/* ===================================================================== */
+/* RARITY CLASSES                                                        */
+/* ===================================================================== */
+
+.unified-slot.rarity-common { --rarity-color: var(--rarity-common); }
+.unified-slot.rarity-uncommon { --rarity-color: var(--rarity-uncommon); }
+.unified-slot.rarity-rare { --rarity-color: var(--rarity-rare); }
+.unified-slot.rarity-epic { --rarity-color: var(--rarity-epic); }
+.unified-slot.rarity-legendary { --rarity-color: var(--rarity-legendary); }
+.unified-slot.rarity-mythic { --rarity-color: var(--rarity-mythic); }
+.unified-slot.rarity-divine { --rarity-color: var(--rarity-divine); }
+.unified-slot.rarity-transcendent { --rarity-color: var(--rarity-transcendent); }
+.unified-slot.rarity-creator { --rarity-color: var(--rarity-creator); }
+
+/* ===================================================================== */
+/* SLOT INNER ELEMENTS                                                   */
+/* ===================================================================== */
+
+/* Icon container */
+.unified-slot__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+}
+
+.unified-slot__icon .item-icon {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+}
+
+/* Empty slot icon (emoji placeholder) */
+.unified-slot__empty-icon {
+    font-size: calc(var(--slot-size-base) * 0.4);
+    opacity: 0.5;
+    line-height: 1;
+}
+
+@media (min-width: 768px) {
+    .unified-slot__empty-icon {
+        font-size: calc(var(--slot-size-md) * 0.4);
+    }
+}
+
+@media (min-width: 1200px) {
+    .unified-slot__empty-icon {
+        font-size: calc(var(--slot-size-lg) * 0.4);
+    }
+}
+
+/* Slot label (optional, below icon) */
+.unified-slot__label {
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+    line-height: 1.2;
+    padding: 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.unified-slot--filled .unified-slot__label {
+    color: var(--rarity-color, rgba(255, 255, 255, 0.7));
+}
+
+/* Quantity badge (consumables) */
+.unified-slot__quantity {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 9px;
+
+    line-height: 1;
+}
+
+.unified-slot__quantity[data-visible="false"] {
+    display: none;
+}
+
+/* Lock icon (tech slots) */
+.unified-slot__lock {
+    font-size: 20px;
+    opacity: 0.6;
+}
+
+.unified-slot__requirement {
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+/* ===================================================================== */
+/* ARMOR SLOT (Tall variant)                                             */
+/* Same WIDTH as other slots, just TALLER (1.8x height)                  */
+/* ===================================================================== */
+
+.unified-slot--armor {
+    /* SAME width as standard slots */
+    width: var(--slot-size-base);
+
+    /* Height is multiplied - makes it taller */
+    height: calc(var(--slot-size-base) * var(--slot-armor-multiplier));
+
+    /* DO NOT use aspect-ratio - it constrains width incorrectly */
+    aspect-ratio: unset !important;
+
+    /* Remove flex: 1 which was causing the slot to stretch */
+    flex: 0 0 auto;
+
+    padding: 8px;
+    gap: 6px;
+}
+
+/* NOTE: Responsive armor sizing is handled in RESPONSIVE BREAKPOINTS section below */
+
+.unified-slot--armor .unified-slot__icon {
+    flex: 1;
+}
+
+.unified-slot--armor .unified-slot__empty-icon {
+    font-size: 48px;
+}
+
+.unified-slot--armor .unified-slot__label {
+    font-size: 10px;
+}
+
+/* ===================================================================== */
+/* SLOT TYPE VARIANTS                                                    */
+/* ===================================================================== */
+
+/* Consumable slots */
+.unified-slot--consumable {
+    /* Same base styling, quantity badge is visible */
+}
+
+/* Tech slots */
+.unified-slot--tech {
+    /* Base styling with lock state support */
+}
+
+/* ===================================================================== */
+/* RESPONSIVE EQUIPMENT GRID                                             */
+/* Fluid scaling with generous column gaps for armor prominence          */
+/* ===================================================================== */
+
+/* 3-1-3 Equipment Grid - Base (Mobile First) */
+.unified-loadout-grid {
+    display: grid;
+    grid-template-columns: auto auto auto;
+
+    /* Fluid gap that scales with viewport */
+    column-gap: var(--grid-column-gap, clamp(20px, 5vw, 48px));
+    row-gap: var(--grid-row-gap, 8px);
+
+    /* Center the grid in its container */
+    justify-content: center;
+    justify-items: center;
+
+    /* Vertical centering - armor aligns with middle row of side columns */
+    align-items: center;
+
+    /* Prevent overflow on tiny screens */
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0 8px;
+}
+
+.unified-loadout-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Middle column (armor) - center the armor slot */
+.unified-loadout-column--armor {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Consumables row */
+.unified-consumables-row {
+    display: flex;
+    gap: var(--grid-column-gap, 8px);
+    justify-content: center;
+}
+
+/* Tech row */
+.unified-tech-row {
+    display: flex;
+    gap: var(--grid-column-gap, 8px);
+    justify-content: center;
+}
+
+/* Section separator */
+.unified-loadout-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.unified-loadout-section__label {
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.35);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+/* ===================================================================== */
+/* RESPONSIVE BREAKPOINTS - Grid Spacing & Slot Sizing                   */
+/* ===================================================================== */
+
+/* Mobile - Small Screens (<480px) */
+@media (max-width: 479px) {
+    .unified-loadout-grid {
+        column-gap: 8px;
+    }
+
+    .unified-consumables-row,
+    .unified-tech-row {
+        gap: 8px;
+    }
+
+    .unified-slot {
+        width: var(--slot-size-sm);
+        height: var(--slot-size-sm);
+    }
+
+    .unified-slot--armor {
+        width: var(--slot-size-sm);
+        height: calc(var(--slot-size-sm) * var(--slot-armor-multiplier));
+    }
+}
+
+/* Small Tablets / Large Phones (480px - 767px) */
+@media (min-width: 480px) and (max-width: 767px) {
+    .unified-loadout-grid {
+        column-gap: 16px;
+    }
+
+    .unified-consumables-row,
+    .unified-tech-row {
+        gap: 12px;
+    }
+
+    .unified-slot {
+        width: var(--slot-size-base);
+        height: var(--slot-size-base);
+    }
+
+    .unified-slot--armor {
+        width: var(--slot-size-base);
+        height: calc(var(--slot-size-base) * var(--slot-armor-multiplier));
+    }
+}
+
+/* Tablets (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .unified-loadout-grid {
+        column-gap: 28px;
+    }
+
+    .unified-consumables-row,
+    .unified-tech-row {
+        gap: 16px;
+    }
+
+    .unified-slot {
+        width: var(--slot-size-md);
+        height: var(--slot-size-md);
+    }
+
+    .unified-slot--armor {
+        width: var(--slot-size-md);
+        height: calc(var(--slot-size-md) * var(--slot-armor-multiplier));
+    }
+}
+
+/* Desktop (1024px - 1439px) */
+@media (min-width: 1024px) and (max-width: 1439px) {
+    .unified-loadout-grid {
+        column-gap: 40px;
+    }
+
+    .unified-consumables-row,
+    .unified-tech-row {
+        gap: 20px;
+    }
+
+    .unified-slot {
+        width: var(--slot-size-lg);
+        height: var(--slot-size-lg);
+    }
+
+    .unified-slot--armor {
+        width: var(--slot-size-lg);
+        height: calc(var(--slot-size-lg) * var(--slot-armor-multiplier));
+    }
+}
+
+/* Large Desktop (1440px+) */
+@media (min-width: 1440px) {
+    .unified-loadout-grid {
+        column-gap: 56px;
+    }
+
+    .unified-consumables-row,
+    .unified-tech-row {
+        gap: 24px;
+    }
+
+    .unified-slot {
+        width: var(--slot-size-xl);
+        height: var(--slot-size-xl);
+    }
+
+    .unified-slot--armor {
+        width: var(--slot-size-xl);
+        height: calc(var(--slot-size-xl) * var(--slot-armor-multiplier));
+    }
+}
+
+/* ===================================================================== */
+/* COMPACT MODE (for smaller containers like Overview panel)             */
+/* ===================================================================== */
+
+.unified-slots--compact .unified-loadout-grid {
+    column-gap: 8px;
+}
+
+.unified-slots--compact .unified-consumables-row,
+.unified-slots--compact .unified-tech-row {
+    gap: 6px;
+}
+
+.unified-slots--compact .unified-slot {
+    width: var(--slot-size-sm);
+    height: var(--slot-size-sm);
+}
+
+.unified-slots--compact .unified-slot--armor {
+    width: var(--slot-size-sm);
+    height: calc(var(--slot-size-sm) * var(--slot-armor-multiplier));
+}
+
+.unified-slots--compact .unified-slot__empty-icon {
+    font-size: calc(var(--slot-size-sm) * 0.4);
+}
+
+.unified-slots--compact .unified-slot__label {
+    font-size: 8px;
+}
+
+/* ===================================================================== */
+/* EXPANDED MODE (for larger containers like Equipment Tab)              */
+/* ===================================================================== */
+
+.unified-slots--expanded .unified-loadout-grid {
+    column-gap: 48px;
+}
+
+.unified-slots--expanded .unified-consumables-row,
+.unified-slots--expanded .unified-tech-row {
+    gap: 24px;
+}
+
+.unified-slots--expanded .unified-slot {
+    width: 120px;
+    height: 120px;
+}
+
+.unified-slots--expanded .unified-slot--armor {
+    width: 120px;
+    height: calc(120px * var(--slot-armor-multiplier));
+}
+
+.unified-slots--expanded .unified-slot__empty-icon {
+    font-size: 48px;
+}
+
+.unified-slots--expanded .unified-slot__label {
+    font-size: 11px;
+}
+
+/* ===================================================================== */
+/* ITEM NAME (shown in expanded mode)                                    */
+/* ===================================================================== */
+
+.unified-slot__name {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--rarity-color, rgba(255, 255, 255, 0.8));
+    text-align: center;
+    line-height: 1.2;
+    padding: 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Hide name in compact mode */
+.unified-slots--compact .unified-slot__name {
+    display: none;
+}
+
+/* ===================================================================== */
+/* MINI STATS (optional, shown in expanded mode)                         */
+/* ===================================================================== */
+
+.unified-slot__stats {
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Hide stats in compact mode */
+.unified-slots--compact .unified-slot__stats {
+    display: none;
+}
+
+/* ===================================================================== */
+/* ITEM NAME LABEL (below icon in slots)                                 */
+/* ===================================================================== */
+
+.slot-item-name {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-secondary, #8899aa);
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
+    padding: 0 2px;
+}
+
+/* Rarity-colored name when filled */
+.unified-slot--filled .slot-item-name {
+    color: var(--rarity-color, #8899aa);
+}
+
+/* Hide name on empty slots */
+.unified-slot--empty .slot-item-name {
+    display: none;
+}
+
+/* Smaller name in compact mode */
+.unified-slots--compact .slot-item-name {
+    font-size: 8px;
+}
+
+/* ===================================================================== */
+/* REDUCED SECTION PADDING (tighter layout)                              */
+/* ===================================================================== */
+
+/* Equipment section - reduced top padding */
+.loadout-equipment-section,
+.overview-loadout-equipment {
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+/* Consumables section - reduced spacing */
+.loadout-consumables-section,
+.overview-loadout-consumables,
+.unified-loadout-section.consumables {
+    padding-top: 8px;
+    margin-top: 12px;
+}
+
+/* Technology section - reduced spacing */
+.loadout-technology-section,
+.overview-loadout-technology,
+.unified-loadout-section.technology {
+    padding-top: 8px;
+    margin-top: 12px;
+}
+
+/* Override default section margins */
+.unified-loadout-section {
+    margin-top: 10px;
+    padding-top: 10px;
+}
