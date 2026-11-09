@@ -48,6 +48,9 @@ data/csv/
 # These are explicitly NOT ignored so they get committed:
 !data/json/*.json
 
+# Generated audit manifest
+scripts/asset-audit.json
+
 # Node modules
 node_modules/
 

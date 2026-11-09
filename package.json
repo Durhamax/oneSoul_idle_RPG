@@ -8,6 +8,7 @@
     "export-data": "node scripts/excel-to-json.js",
     "validate-data": "node scripts/validate-data.js",
     "validate-item-access": "node scripts/validate-item-access-pattern.js",
+    "audit-assets": "node scripts/audit-assets.js",
     "workflow": "npm run export-data && npm run validate-data",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

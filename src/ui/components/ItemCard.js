@@ -93,17 +93,31 @@ class ItemCard extends UIComponent {
      * @returns {string} Icon HTML
      */
     getIconHTML(item) {
-        if (item.iconPath) {
-            // PNG icon with emoji fallback
-            return `<img src="${item.iconPath}"
+        // Prefer the shared IconHelper so path-vs-emoji detection stays consistent
+        // with the rest of the UI (it treats `icon` as a PNG path when it looks like one).
+        if (typeof IconHelper !== 'undefined' && IconHelper.getItemIconHTML) {
+            return IconHelper.getItemIconHTML(item, { size: 48, className: 'item-icon-img' });
+        }
+
+        // Standalone fallback: `icon` may hold a PNG path OR an emoji.
+        const pngPath =
+            item.iconPath ||
+            (item.icon && (item.icon.startsWith('assets/') || item.icon.endsWith('.png'))
+                ? item.icon
+                : null);
+
+        if (pngPath) {
+            // PNG icon with emoji fallback (emoji only shown if the file fails to load)
+            const fallbackEmoji = pngPath === item.icon ? '📦' : item.icon;
+            return `<img src="${pngPath}"
                          alt="${item.name}"
                          class="item-icon-img"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                    <span class="item-icon-emoji" style="display:none;">${item.icon}</span>`;
-        } else {
-            // Emoji only
-            return `<span class="item-icon-emoji">${item.icon}</span>`;
+                    <span class="item-icon-emoji" style="display:none;">${fallbackEmoji}</span>`;
         }
+
+        // Emoji only
+        return `<span class="item-icon-emoji">${item.icon}</span>`;
     }
 
     /**
