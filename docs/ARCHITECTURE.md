@@ -148,13 +148,13 @@ Technology Row:  [Tech1] [Tech2] [Tech3] [Tech4]
 
 ### Crafting System (6+1 Skills)
 
-**Crafting Skills:**
-- Smithing - Weapons, armor, metal items
-- Mechanics - Firearms, mechanical devices
-- Electronics - Tech items, circuitry
-- Textiles - Cloth armor, fabric items
-- Chemistry - Potions, explosives
-- Cooking - Food, consumables
+**Crafting Skills** (canonical roles — see `ENGINEERING_DESIGN.md` §6):
+- Smithing - ore refinement; metal weapons, armor plating, jewelry
+- Mechanics - assembly: guns, tools, mechanical tech
+- Electronics - circuitry/computer tech: sensors, AR goggles, hacking, shields
+- Tailoring - clothing + modern armor assembly (plating + cloth)
+- Chemistry - serums & tinctures; ammo/explosive compounds
+- Cooking - food & buffs
 
 **Engineering (Special):**
 - Not a traditional crafting skill

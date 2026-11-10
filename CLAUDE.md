@@ -20,7 +20,7 @@ Topic → home: narrative/cosmology → `WORLD_BIBLE.md`; campaign structure/the
 - **Seeds:** **Site Alpha = Infernus** (first-located, corrupted, AV-S1). **Site Beta = the Cradle** (intact, Elaran-tracked, Unity blissfully ignorant). See `WORLD_BIBLE.md` §3.
 - **Resources:** inorganic = familiar (real metals, lightly renamed e.g. `copperite`), organic = alien. Grounded templates: pinewood, solfish, minnows, minty herb, small pelt, resin. `RESOURCE_DESIGN.md`.
 - **Rarity:** 9-tier uniform (common→creator). **Perk grid:** 7×7. **Medals:** combat war-trophy currency → perk rolls. **Tomes:** engineering/knowledge currency (the build-system research tree). `ENGINEERING_DESIGN.md`.
-- **Region builds** currently assume crafting model A (Tailoring = early armor, Smithing = metal armor later) — see the open crafting-roles decision in `ENGINEERING_DESIGN.md` §9.
+- **Crafting roles:** Smithing = metal weapons/plating/jewelry; Mechanics = guns/tools/mechanical tech; Electronics = circuitry/hacking/shields; Tailoring = clothing + **modern armor assembly (plating + cloth)**; Cooking = food; Chemistry = serums/tinctures. Engineering (tomes) is the research meta-layer; **tech slots are free-form**; tomes come from Thieving/combat data-cores/research sites. `ENGINEERING_DESIGN.md`.
 
 ## Conventions
 
