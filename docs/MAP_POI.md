@@ -47,14 +47,14 @@ Movements are narrative overlays, not hard tier walls.
 | 3 | Gulf Palisades | II | 16 South Point (Sea Light), 17 Palisade South, 18 Palisade North, 20 Varyx (Riveria Port City), 22 Riveria Headwaters |
 | 4 | Riverlands | II | 26 Ravenfjord |
 | 5 | Highlands *(shock)* | II | **31 Liora — Landing Site**, 32 Mag Rail Center, 33 Djuma (Anthracite Mine) |
-| 6 | Icelands | II | *(texture-heavy — the indifferent threshold before the east crossing)* |
+| 6 | Icelands | II | *(texture-heavy — the indifferent threshold before the overland push into Elaria)* |
 | 7 | **Elaran Urban Center — Lore Heavy** | **II climax** | 47 Hydro Facility, 48 Elaria Metropolis, 49 Elaria Suburbs, 50 Nova Liora (Naval Base), 51 Bay of Elaria, 52 Industrial District |
 | 8 | Desert Lands | II → III | *(the crossing into the fire hemisphere)* |
 | 9 | Badlands | III approach | *(ground corrupting toward Infernus)* |
 | 10 | **Infernus** | **III** | 76 Heart of Infernus, 80 Site Alpha → then the **return to the Cradle** |
 
 **Two structural hinges:**
-- **The west→east sea crossing into Tier 7 (Elaria)** is Movement II's point of no return — the player leaves Unity's known world entirely and walks into the enemy capital.
+- **The overland approach into Tier 7 (Elaria)** is Movement II's point of no return. There is **no sea crossing** — the player arrives by **land**, and the climax of the approach is **severely damaging Elaran infrastructure** (hydro, rail, industry) *en route*, crippling the enemy's expansion engine before ever reaching the capital proper. From there they walk into the enemy's world entire.
 - **Liora (31)** is the emotional hinge — the Ark landed in the Highlands *north* of where Unity was later pushed, so walking north is walking back to humanity's arrival. Homecoming and origin in one hex.
 
 ---
@@ -170,8 +170,8 @@ The Elaran war economy only makes sense because **the belief is real.** They sti
 **The misdirection this creates (`[FALSE]` surface):** a Unity player first sees the *mass* — shallow, consumerist — and reads the whole society as greedy idiocracy ripe for conquest. That reading is wrong; the real engine is the hidden believing elite. Seeing past the idiocracy-surface to the true motive is the player's work here — the theme (who looks past the surface) made into a level.
 
 ### Hex 51 — Bay of Elaria · `[MAIN]` · Installation *(the threshold)*
-- **Progression:** the sea crossing's end; a major combat gate (coastal defenses, patrol craft). Advanced Elaran weapon/material drops begin.
-- **Mood/Lore:** first full sight of the capital from the water — a skyline of industry and light, vast beyond anything Unity ever built. Awe and dread. Behind the player, the ocean; ahead, the enemy's world entire.
+- **Progression:** the overland approach's end at the capital's seaward edge; a major combat gate (shore defenses, patrol craft turned inward). Advanced Elaran weapon/material drops begin.
+- **Mood/Lore:** first full sight of the capital — a skyline of industry and light, vast beyond anything Unity ever built, fronting the bay. Awe and dread. Behind the player, the wrecked infrastructure they fought through to get here; ahead, the enemy's world entire.
 - **Clue:** harbor control logs — the scale of Elaran military traffic; everything oriented *outward,* as if expecting something.
 
 ### Hex 50 — Nova Liora, the Naval Base · `[MAIN]` · Installation

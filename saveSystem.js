@@ -50,7 +50,7 @@ const SaveSystem = {
             if (!GameEngine.state.perkGrid.unlockOrder) {
                 GameEngine.state.perkGrid.unlockOrder = [];
             }
-            console.log(`✅ Perk grid loaded (5x5 system)`);
+            console.log(`✅ Perk grid loaded (7x7 system)`);
 
             // Update equipment cells to reflect any equipped items
             if (GameEngine.updateEquipmentCells) {

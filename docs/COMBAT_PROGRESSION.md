@@ -90,6 +90,23 @@ All three must be **fully fleshed** — a complete pipeline of weapons, armor, c
 
 *(The combat engine already supports enemy abilities, enrage, and phase transitions — the knobs for capability scaling.)*
 
+### Damage-type rollout & integration *(where each type enters, how it's strengthened, why it isn't forced)*
+
+The five damage types are **not all available at the start.** Each is *discovered* at a deliberate tier — roughly when the armor type it counters becomes a staple enemy — then **strengthened** through Engineering, and the enemy armor it answers **keeps recurring in later tiers** so the type stays relevant instead of being a one-region gimmick.
+
+| Damage type | Discovered | Counters (armor) | Why there | Strengthened by (Engineering family) |
+|---|---|---|---|---|
+| **Pierce** | **T1** — starter (Greensman Training Bow, Mechanics) | Insulated (tech/EW) | the generalist opener you already hold | ballistics / precision |
+| **Incendiary** | **T2** (Chemistry) | Biological (infantry) | as organized Elaran infantry becomes the staple foe | organic chemistry / thermal |
+| **Shock** | **T5** (industrial Highlands, EM/Energy) | Droid (mechs) | as Droid/mech enemies populate the factory tiers | electronics / computation |
+| **Cryo** | **T6** (Icelands, Cryogenics) | Airborne (drones/aircraft) | anti-air discovered — pointedly — in the ice; answers the drones that have harassed since T1 | cryogenics / aerospace countermeasures |
+| **Explosive** | **T8** (Desert, Ordnance) | Plated (armor/vehicles) | brings **heavy builds** online as Plated heavies dominate the fire hemisphere (Plated is *teased* at T4, *answered* here) | ballistics / demolitions / ordnance |
+
+**Three rules this encodes:**
+1. **Discovery points are authored, not incidental.** A region that *introduces* a damage type is a deliberate beat (new recipe line, new enemy pressure that motivates it). Track each in `REGION_BUILDS.md` as the tier is built, and in the Anchor Map (`CAMPAIGN_ARC.md` §1a).
+2. **Armor types recur upward.** Once an armor type is introduced it is **never retired** — later tiers (esp. T7+ Elaria/Desert/Badlands/Infernus) mix all five in a single sequence (§3), so every discovered damage type keeps paying off and the counter map stays live end-game.
+3. **Discovery ≠ obligation.** Unlocking a type gives the player the *option*, not a mandate. A build that goes a different way — a different Engineering branch, an attribute-leaning path, or a Light/Medium/Heavy archetype — can still clear those enemies the hard way; the counter is the **efficient** answer, not the **only** one. Engineering strengthening is what turns a discovered type from "usable" into "a build you commit to" (ties to the fields→builds model in `ENGINEERING_DESIGN.md`).
+
 ---
 
 ## 4. Enemy capability progression (beyond level)

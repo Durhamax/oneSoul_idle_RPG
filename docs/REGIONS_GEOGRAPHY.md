@@ -115,7 +115,7 @@ For each region, define, in order:
 **Settlement & infrastructure (→ combat locations):** scattered, self-reliant Unity communities — **Kaluhea (11)**, an island refuge and hub (docks, drying racks, longhouses, relative safety); **Rava (12)**, a smaller community living net-to-hand off the sea. Boatyards, drydocks, fish-smoking houses, net-lofts, timber mills, signal towers. Mostly **Unity-held**, but pressed from the water by Elaran survey vessels and coastal raiders. **Kahelion Platform (13)** is the outlier — a large offshore structure in contested water.
 
 **Crafting outputs (→ recipes that belong here):**
-- **Mechanics — boats.** Where **watercraft come online**: hardwood + fittings → vessels that let the player range the archipelago (and, much later, cross the sea). The region's signature unlock. Also harpoons, fishing gear.
+- **Mechanics — maritime tooling & first salvage-tech.** Harpoons and reinforced fishing gear, plus the region's signature leap: **tech-salvage** from wrecks and the **Kahelion Platform** (circuits/parts) — the first step toward Electronics/Engineering. *(There is **no boat the player pilots** and no sea-traversal mechanic — ports, docks and boatyards are POIs/scenery; inter-island movement is the hex map's fast-travel. See `CAMPAIGN_ARC.md` §1a.)*
 - **Cooking — preserved seafood:** smoked/dried fish & shellfish → long-keeping **expedition rations** (sustained buffs for ranging far from home).
 - **Textiles:** sailcloth, nets, and seal/game **fur & leather** → cold-weather gear and light armor.
 - **Smithing:** coastal tin/bronze → tools, hooks, boat fittings, harpoon heads. · **T1–2 materials.**

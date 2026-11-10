@@ -40,16 +40,17 @@ Over-saturated gold-green; impossibly lush; sunbeams through dense canopy; the g
 ### 3. Combat — **none** (safe zone), but the war is teased
 No enemies spawn in the Cradle. The **first enemy (Elaran survey drone) appears at Hex 2, Scoutreach** — the player can *see* something crossing the far tree-line (a silhouette, a distant drone light) but cannot engage until they leave. This makes the first step out of the garden a deliberate, weighted choice. *(Combat-first method resumes at Region 2.)*
 
-### 4. Gathering — Register A, the green west *(grounded names)*
-The Cradle teaches the **four "green" gathering skills**; mining/thieving are intentionally absent (no stone country, no Elarans here) so later regions own that first-reveal.
-| Skill | Nodes (data: `discoverableNodes`) | Resources (Register A) | Feeds |
+### 4. Gathering — Register A, the green west *(wired content)*
+The Cradle teaches **five of the six gathering skills** across six nodes already in `materials.js`: Mining, Logging, Fishing, Hunting, Foraging. **Only Thieving is deferred** (it needs Elarans — it first appears at R2, Scoutreach). The T1 material set is clean and on-convention, so this region needs **no new items** — build it on what exists.
+| Skill | Node (wired) | Materials (real) | Feeds |
 |---|---|---|---|
-| **Logging** | pinewood stand, resin tap | `pinewood` ✓, `resin` ✓, `bark fiber` *(new)* | Smithing fuel, Textiles fiber, Mechanics lumber |
-| **Foraging** | berry thicket, herb patch, root bed | `minty herb` ✓, `berries` *(new)*, `roots` *(new)*, `plant fiber` *(new)* | Cooking, Chemistry, Textiles |
-| **Fishing** | lake shallows, lake deep | `solfish` ✓, `minnows` ✓ | Cooking |
-| **Hunting** | small-game snares | `small pelt` ✓, `bone` *(new)*, `small meat` *(new)* | Cooking, Textiles (leather), Smithing (bone) |
+| **Mining** | Riverbed | `clay`, `flint`, `copperiteOre`, `goldFlakes` | Smithing (ore), Mechanics, Chemistry |
+| **Logging** | Lakeside Forest | `pinewood`, `riverwillow`, `resin` | Mechanics (the bow), Smithing fuel, Tailoring fiber |
+| **Fishing** | Lake Shallows | `solfish`, `minnows`, `mossShrimp` | Cooking |
+| **Hunting** | Meadow Game Trail | `smallGameMeat`, `smallPelts`, `feathers` | Cooking, Tailoring (pelts), fletching (feathers → arrows) |
+| **Foraging** | Fallen Timber + Meadow Herb Patch | `mintyHerb`, `commonMushrooms`, `plantFibers`, `wildroot`, `meadowGreens`, `daypetalBloom` | Cooking, Chemistry, Tailoring |
 
-*(New items are the only gaps; everything else reuses the on-convention templates from `RESOURCE_DESIGN.md` §1. Fauna stays **small-game-first** per §4 — a world light on megafauna reads subtly alien.)*
+*(Note: `copperiteOre` is gatherable here, so Mining is live, but the **forge/Smithing is not taught in the Cradle tutorial** — the tutorial teaches **Cooking** (mission 104) and **Mechanics** (mission 106, the Greensman Training Bow). Fauna stays small-game-first per `RESOURCE_DESIGN.md` §4 — a world light on megafauna reads subtly alien.)*
 
 ### 5. Crafting — the starter stations
 `discoverableCraftingStations`: **campfire** (Cooking — cook solfish/small meat into first consumables), **tanning rack / sewing kit** (Textiles — small pelt → leather → basic apparel), **whittling bench** (basic tools from pinewood). **No forge, no electronics** — the player has no ore and no circuits yet; those unlock east, which is the whole point (`RESOURCE_DESIGN.md` §2 — the crafting tree forces the journey). First craftables: basic rations, a pinewood tool, a simple leather garment — enough to survive the first steps out.
@@ -71,8 +72,7 @@ The Cradle teaches the **four "green" gathering skills**; mining/thieving are in
 
 ### 9. Rewards — and the first seeded campaign item
 - **Discovery rewards:** lake landmark (navigation + fishing XP, starter rations); monument read (navigation XP + a lore unlock; **no stat reward** — this is the "asking why" path, rewarded in understanding, consistent with the campaign thesis).
-- **★ SEEDED CAMPAIGN REWARD — component #1 of the signature assembly item.**
-  From the Elara monument the player recovers an **empty, inert relic** — proposed working name **the "One Soul" locket** (ties to the game's title). It is the **chassis** of a campaign-long **assembled amulet**: it has sockets, and across the campaign the player gathers **components from signature encounters** (a different skill/enemy/site each), slotting them to grow the amulet's combat + skilling power. Each component also carries a **lore fragment** — so assembling the item literally reconstructs Elara's truth. Fully assembled = an endgame-grade, build-defining amulet **and** the complete picture (payoff on the return to the Cradle). See **Appendix A**. *(This is exactly the component-assembly mechanic the design calls for, made load-bearing for the narrative.)*
+- **Elara's monument — narrative only.** Reading the curated log is a **lore unlock** (the bookend plant, §8) — **no stat reward, no item.** The story payoff rides the missions and the later re-reads at Liora / the Cradle. *(The combat amulet is decoupled from this — see Appendix A; its first component drops at R2.)*
 
 ### 10. Content-coverage check *(the spread rule)*
 | System | Touched here? |
@@ -190,18 +190,27 @@ Still **no forge/electronics** (no ore, no workstation yet) — but Scoutreach t
 
 Reviewed at each 5-region checkpoint. Candidates for early-designed, campaign-long payoffs.
 
-### ★ The "One Soul" Amulet *(assembly item — proposed)*
-- **Chassis:** empty locket, **Region 1 (Cradle)** — from Elara's monument.
-- **Mechanic:** socket **components** found at signature encounters across the acts; each adds combat/skilling power **and** a lore fragment of Elara's truth.
-- **Payoff:** fully assembled late-game = a build-defining amulet + the complete narrative picture; thematically = "the one soul who kept asking why." Ties power progression to the questline without gating the campaign on it (consistent with the perk-grid philosophy: strong but not 100%-required).
-- **Components seeded so far:** #0 chassis (R1), #1 Drone Optic Lens (R2). *(Add one per signature encounter as regions are built.)*
+### The One Soul Amulet — *optional end-game combat collectible*
+Model: Melvor's **Fury of the Elemental Zodiac** — a strong combat neck item **assembled from components that drop off notable/elite fights across the tiers.** A power + completionist chase, **NOT** the story spine (the campaign rides the missions — `CAMPAIGN_ARC.md`). **Decoupled from Elara's monument** (that's a pure narrative beat now).
+- **Components:** ~one per tier, dropped by that tier's signature/elite enemy; each adds a **combat** stat (optionally a small skilling bonus). No lore load.
+- **Assembly:** collect the set → assemble the finished amulet (end-game combat neck slot). Partial sets may give scaling partial bonuses *(TBD)*.
+- **Not campaign-gated:** like the perk grid — strong but optional; the chase is its own long game.
+- **Status:** design-level; first component lands at **R2** (first combat). All below are proposals, detailed per tier as regions are built.
 
-### Component sources (fill in as we go)
-| # | Component | Region | Source (skill/enemy/site) | Grants | Lore fragment |
-|---|---|---|---|---|---|
-| 0 | "One Soul" locket (chassis) | R1 Cradle | Elara monument (narrative) | sockets unlocked | Elara's curated (false) myth |
-| 1 | Drone Optic Lens | R2 Scoutreach | Survey Drone (rare combat drop) | Perception / discovery + accuracy | #1 — decoded survey data: the hunt points home |
-| … | | | | | |
+| Tier | Component *(proposed)* | Source (signature/elite enemy) | Combat bonus |
+|---|---|---|---|
+| T1 | Drone Optic Lens | Survey Drone (Scoutreach) | Perception / accuracy |
+| T2 | — | *(small tier — may skip)* | — |
+| T3 | Dock Master's token | Varyx dungeon boss | offense |
+| T4 | Apex trophy | big-game hunt | defense / HP |
+| T5 | Mech core | Highlands Droid elite | shock affinity |
+| T6 | Cryo cell | Icelands recon elite | cryo affinity / anti-air |
+| T7 | Capital insignia | Elaria elite | mixed offense |
+| T8 | Heavy charge | Desert Plated elite | explosive affinity |
+| T9 | Corrupted shard | Badlands exotic elite | exotic affinity |
+| T10 | **Seed Fragment (keystone)** | Site Alpha | **completes the set** |
+
+*~8–9 components across the journey, assembled at the end. Combat-focused; no narrative weight.*
 
 ### Other assembled items *(region-level, not the amulet)*
 Teaching the assembly mechanic at mundane scale, so the amulet reads as the grand version.

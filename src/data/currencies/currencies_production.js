@@ -27,15 +27,15 @@ const currencies = {
         id: 'medals',
         name: 'Medals',
         icon: '🏅',
-        description: 'Prestige currency earned from achievements and milestones',
+        description: 'War-trophy currency stripped from defeated Elaran soldiers; spent to roll perks. Higher-rank enemies drop more.',
         abbreviation: 'med',
         maxStack: 999999,
         tradeable: false,
         category: 'earnable',
         color: '#C0C0C0',
-        sources: ['achievements', 'milestones', 'challenges'],
-        uses: ['prestige', 'special_items', 'perks'],
-        tags: ['currency', 'prestige']
+        sources: ['combat', 'elite_enemies'],
+        uses: ['perk_rolls', 'perks'],
+        tags: ['currency', 'combat', 'perks']
     },
 
     tomes: {

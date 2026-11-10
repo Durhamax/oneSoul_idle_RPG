@@ -226,8 +226,8 @@ const MedalCraftingUI = {
             return '<div style="color: #888; text-align: center; padding: 20px;">No medals crafted yet. Start crafting above!</div>';
         }
 
-        // Sort by rarity (legendary first)
-        const rarityOrder = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
+        // Sort by rarity (highest first)
+        const rarityOrder = { creator: 0, transcendent: 1, divine: 2, mythic: 3, legendary: 4, epic: 5, rare: 6, uncommon: 7, common: 8 };
         const sortedMedals = [...medals].sort((a, b) => rarityOrder[a.rarity] - rarityOrder[b.rarity]);
 
         let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto;">';

@@ -30,8 +30,12 @@ const ITEM_RARITIES = {
     RARE: 'rare',                  // Blue - Notable quality
     EPIC: 'epic',                  // Purple - High quality
     LEGENDARY: 'legendary',        // Orange - Exceptional items
-    MYTHIC: 'mythic',             // Red - Extremely rare
+    MYTHIC: 'mythic',              // Red - Extremely rare
+    DIVINE: 'divine',              // Gold - Near-impossible
+    TRANSCENDENT: 'transcendent',  // Cyan - Boss-only tier
+    CREATOR: 'creator',            // Magenta - Apex tier
 };
+// NOTE: 9-tier scale, uniform with definitions.js RARITY_TIERS, medals, and engineering perfection.
 
 /**
  * Equipment Slots
