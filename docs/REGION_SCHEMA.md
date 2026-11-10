@@ -1,5 +1,7 @@
 # Region Definition Schema
 
+> **Canonical copyable template:** [`REGION_TEMPLATE.js`](REGION_TEMPLATE.js) (fill-in-the-blanks). This file is its **prose companion** — what each field means and how the region system fits together. Per-hex design specs live in [`REGION_BUILDS.md`](REGION_BUILDS.md). Keep this and the template in step; edit here before adding fields.
+
 ## Overview
 
 This document defines the standardized format for region definitions in the game. Regions are hex tiles on the world map that players can explore through the Navigation system.
@@ -31,7 +33,7 @@ This document defines the standardized format for region definitions in the game
 ```javascript
 {
     // ========== BASIC INFORMATION ==========
-    name: "The Scar",                    // Display name
+    name: "The Cradle",                  // Display name ("The Scar" is a deprecated name)
     description: "A massive crater...",  // Lore description
     icon: "🌾",                          // Emoji icon (inherited from biome)
     biome: "plains",                     // Biome type (determines content pools)

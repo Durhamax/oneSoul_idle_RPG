@@ -19,7 +19,7 @@ const REGION_TEMPLATE = {
         r: 0   // Axial coordinate (diagonal)
     },
     navigationRequirement: 1,  // Minimum navigation skill level to unlock
-    complication: 1.0,         // Discovery difficulty (1.0 = normal, 2.0 = twice as hard)
+    complication: 1.0,         // Discovery difficulty (1.0 = baseline, 2.0 = twice as hard)
 
     // ========== ADJACENT REGIONS ========== [AUTO-GENERATED]
     // Automatically populated by generateWorldMap() based on hex neighbors
@@ -145,11 +145,11 @@ const REGION_TEMPLATE = {
     }
 };
 
-// ========== EXAMPLE: Starting Region (The Scar) ==========
+// ========== EXAMPLE: Starting Region (The Cradle) ==========
 
 const EXAMPLE_STARTING_REGION = {
     name: "The Scar",
-    description: "A massive crater, home to the Unity members long banished to this corner of the new planet. The Scar is heavily wooded and features a large lake of trapped freshwater. This is where your journey begins.",
+    description: "A massive fertile crater, home to the Unity members long banished to this corner of the new planet. The Cradle is heavily wooded and features a large lake of trapped freshwater. This is where your journey begins.",
     biome: "plains",
     backgroundImage: "assets/backgrounds/regions/region_the_scar_01.png",
 
@@ -171,7 +171,7 @@ const EXAMPLE_STARTING_REGION = {
     discoverableEnemies: ["scout"],
     discoverableLocations: [
         {
-            id: "the_scar_lake",
+            id: "the_cradle_lake",
             name: "The Freshwater Lake",
             type: "landmark",
             description: "A pristine lake formed in the crater. Its waters are clear and teeming with life.",

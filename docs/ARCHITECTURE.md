@@ -1,8 +1,8 @@
-# OneSoul Idle RPG - Game Context Document
+# One Soul — Architecture & Developer Reference
 
-**Last Updated:** 2025-12-02
-**Version:** 3.1
-**Purpose:** Single source of truth for development context and AI assistance
+**Status:** Living document — the **consolidated technical reference** (merged from the former `GAME_CONTEXT`, `PROJECT_ARCHITECTURE`, and `EQUIPMENT_SYSTEM_GUIDE`, now in `docs/archive/`).
+**Last updated:** 2026-11-10
+**Purpose:** Single source of truth for **how the game is built**. For the **design/vision**, see the companion docs in `docs/` (indexed in `docs/README.md`). Deep historical/process docs live in `docs/archive/`.
 
 ---
 
@@ -31,59 +31,6 @@ C:\Users\durha\oneSoul_idle_RPG\
 - No external frameworks (vanilla JS)
 - Modular architecture with registry pattern
 - LocalStorage for persistence
-
----
-
-## CURRENT STATUS (2025-12-01)
-
-### Recently Implemented
-
-**Overview UI Overhaul** (2025-12-02):
-- Removed character header (redundant with game header ribbon)
-- 3-column layout: Attributes+Combat Stats+Milestones | Skills | Loadout
-- Combat Power moved to Combat Stats panel as top stat with tier coloring
-- 3-1-3 equipment grid: Left (Weapon/Gloves/Boots) | Center (Armor Set) | Right (Back/Neck/Ring)
-- Unified 100px square tiles for all equipment, consumable, and tech slots
-- Armor Set slot dynamically fills center column height
-- Consumables row: Food, Potion, Ammo (3 slots)
-- Technology row: Tech1-4 (4 slots, locked by Intellect)
-- Attribute hover tooltips explaining Combat, Gathering, and Crafting impact
-- 40px top padding for clearance from game header ribbon
-- 3px vertical gap between attribute/skill rows
-- Skills tab deprecated (commented out in sidebar)
-- Dev stats panel deprecated (commented out at bottom)
-
-**Unified Crafting UI** (Phase 1-5 Complete):
-- Three-tab layout: Recipes, Workshop, Engineering
-- Skill pill filters for recipe browsing
-- Recipe cards with material indicators
-- Queue sidebar showing all active crafts
-- Workstation tier display with upgrade paths
-- Integration with existing crafting system
-
-**Combat UI Restyling**:
-- Matches new crafting UI patterns (tabs, pills, cards)
-- Enemy selection with difficulty filter pills
-- Combatant cards for active combat display
-- Loadout container with equipment cards and stats sidebar
-
-**Dual Bank System**:
-- Stackable items: `bank.items = { itemId: { quantity, tab } }`
-- Instanced items: `bank.equipmentInstances = { instanceId: {...} }`
-- Equipment has unique instances with stats, rarity, potential
-
-### What Works
-- Combat system with EventBus integration
-- Equipment system with instanced items
-- Unified Crafting UI with all 6 crafting skills
-- Save/Load system with migrations
-- Navigation UI with endurance system
-- Universal gathering system (all 6 skills)
-- Perk grid with medal crafting
-
-### Known Issues
-- Some recipes may reference materials not yet in registry
-- Combat auto-consumption needs base ID extraction fix
 
 ---
 
@@ -453,7 +400,7 @@ GameEngine.state = {
 oneSoul_idle_RPG/
 ├── index.html                  # Main entry point
 ├── saveSystem.js               # Save/load functionality
-├── GAME_CONTEXT.md             # This file
+│                                # (design + architecture docs live in docs/)
 │
 ├── src/
 │   ├── core/
@@ -503,7 +450,7 @@ oneSoul_idle_RPG/
 │   ├── game-ui.css
 │   └── ...
 │
-└── md_notes/                   # Extended documentation
+└── docs/                       # Design + architecture docs (+ docs/archive/ for history)
 ```
 
 ---
@@ -576,13 +523,15 @@ GameEngine.state.crafting.activeCrafts;
 
 ---
 
-## EXTENDED DOCUMENTATION
+## RELATED DOCUMENTATION
 
-For detailed guides, see `md_notes/`:
-- `EQUIPMENT_SYSTEM_GUIDE.md` - Equipment mechanics
-- `OneSoul_Crafting_System_Design.md` - Full crafting design
-- `PROJECT_ARCHITECTURE.md` - Complete architecture reference
+**Design / vision** (`docs/`, indexed in `docs/README.md`):
+- `WORLD_BIBLE.md`, `CAMPAIGN_ARC.md`, `MAP_POI.md`, `REGIONS_GEOGRAPHY.md` — narrative, campaign spine, map beats, geography/economy
+- `RESOURCE_DESIGN.md`, `COMBAT_PROGRESSION.md`, `SYSTEMS_OVERVIEW.md`, `ENGINEERING_DESIGN.md` — resources/naming, combat curve, systems web, the engineering/build system
+- `REGION_BUILDS.md` + `REGION_TEMPLATE.js` / `REGION_SCHEMA.md` — per-hex buildout and the region data schema
+
+**Archived** (`docs/archive/`): the superseded `GAME_CONTEXT`, `PROJECT_ARCHITECTURE`, `EQUIPMENT_SYSTEM_GUIDE`, `OneSoul_Crafting_System_Design`, plus historical migration/test/standard notes.
 
 ---
 
-**End of Context Document**
+**End of reference.**
