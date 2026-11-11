@@ -98,13 +98,37 @@ const AutoConsumption = {
 
     /**
      * Calculate auto-eat threshold (20% of max HP by default)
+     * An equipped salve (potion slot) with effect.autoEatThreshold adds a flat HP
+     * bonus to the trigger point while it has charges (e.g. Daypetal Salve: +1 HP).
      */
     calculateAutoEatThreshold(player) {
         const mult = player.perkMultipliers || {};
         const maxHP = this.calculateMaxHP(player);
 
         // Fixed 20% of max HP, modified by perk only
-        return Math.ceil(maxHP * 0.20 * (mult.autoEatThreshold || 1.0));
+        let threshold = Math.ceil(maxHP * 0.20 * (mult.autoEatThreshold || 1.0));
+
+        // Flat bonus from an equipped threshold-salve (only while it has charges).
+        const salve = this.getAutoEatThresholdSalve(player);
+        if (salve) threshold += salve.bonus;
+
+        return threshold;
+    },
+
+    /**
+     * If the equipped potion slot holds a salve that raises the auto-eat threshold
+     * and still has charges, return { itemId, bonus, slot }. Otherwise null.
+     */
+    getAutoEatThresholdSalve(player) {
+        const potionSlot = player?.equipment?.potion;
+        if (!potionSlot || typeof potionSlot !== 'object') return null;
+        if (!potionSlot.itemId || potionSlot.quantity <= 0) return null;
+
+        const def = this.getPotionDefinition(potionSlot);
+        const bonus = def?.effect?.autoEatThreshold;
+        if (!bonus) return null;
+
+        return { itemId: potionSlot.itemId, bonus: bonus, slot: potionSlot, name: def.name };
     },
 
     /**
@@ -238,6 +262,20 @@ const AutoConsumption = {
 
         combat.lastAutoEat = Date.now();
 
+        // A threshold-salve (e.g. Daypetal Salve) is spent one charge per auto-eat trigger.
+        let salveConsumed = null;
+        const salve = this.getAutoEatThresholdSalve(player);
+        if (salve) {
+            salve.slot.quantity -= 1;
+            salveConsumed = { itemId: salve.itemId, remaining: salve.slot.quantity };
+            if (combat.session) {
+                combat.session.salvesConsumed = (combat.session.salvesConsumed || 0) + 1;
+            }
+            if (typeof EventBus !== 'undefined') {
+                EventBus.emit('serum-dosed', { itemId: salve.itemId, remaining: salve.slot.quantity, healed: 0 });
+            }
+        }
+
         // Emit event for UI updates
         if (typeof EventBus !== 'undefined') {
             EventBus.emit('food-consumed', {
@@ -250,6 +288,7 @@ const AutoConsumption = {
         return {
             success: true,
             healed: totalHealed,
+            salveConsumed: salveConsumed,
             itemsConsumed: itemsActuallyConsumed,
             itemsUsed: itemsToConsume,
             foodId: itemId,
@@ -445,6 +484,17 @@ const AutoConsumption = {
             };
         }
 
+        // Bait (e.g. Minnows) can sit in the ammo slot for fishing, but a weapon cannot
+        // fire it — and it must only be spent on fishing intervals, never in combat.
+        const loadedDef = this.getAmmoDefinition(ammoSlot);
+        if (loadedDef?.ammoCategory === 'bait') {
+            return {
+                success: false,
+                reason: 'No ammo equipped',
+                weaponName: compiledWeapon?.name || 'weapon'
+            };
+        }
+
         // Check ammo conservation - only consume if roll fails
         const wasConsumed = this.shouldConsumeItem('ammo');
         if (wasConsumed) {
@@ -487,6 +537,46 @@ const AutoConsumption = {
         if (typeof ItemIdUtils !== 'undefined') return ItemIdUtils.getItemDefinition(itemId);
         if (typeof ItemRegistry !== 'undefined') return ItemRegistry.getItem(itemId);
         return null;
+    },
+
+    /**
+     * Which gathering/support skills roll on a given attribute in their mechanics.
+     * Perception today is read only by Navigation's discovery roll; the six gathering
+     * skills (mining/logging/fishing/hunting/foraging/thieving) do not use it, so a
+     * Perception serum is never spent by their intervals. Extend this as new mechanics
+     * start reading an attribute (e.g. if Thieving later rolls on Perception).
+     */
+    ATTRIBUTE_SKILLS: {
+        perception: ['navigation']
+    },
+
+    /**
+     * Does the given skill's mechanics roll on this attribute?
+     */
+    skillUsesAttribute(skillId, attribute) {
+        if (!skillId || !attribute) return false;
+        const skills = this.ATTRIBUTE_SKILLS[attribute];
+        return Array.isArray(skills) && skills.includes(skillId);
+    },
+
+    /**
+     * Combat rolls read all seven combat attributes, so any attribute-keyed serum is
+     * "in use" during combat.
+     */
+    attributeUsedInCombat(attribute) {
+        return ['health', 'strength', 'defense', 'stealth', 'perception', 'mobility', 'intellect']
+            .includes(attribute);
+    },
+
+    /**
+     * Sum active timed stat buffs for one attribute (e.g. Perception from a tincture).
+     * Used by combat rolls and navigation so an equipped serum's buff actually counts.
+     */
+    getActiveStatBonus(player, stat) {
+        if (!player || !player.activeEffects || !player.activeEffects.length) return 0;
+        const now = Date.now();
+        return player.activeEffects.reduce((sum, e) =>
+            (e.stat === stat && e.amount && (!e.expiresAt || e.expiresAt > now)) ? sum + e.amount : sum, 0);
     },
 
     /**
@@ -533,6 +623,18 @@ const AutoConsumption = {
         // Only timed-buff serums auto-dose (prevents one-shot items from spamming).
         const duration = (def.effect && def.effect.duration) || def.duration;
         if (!duration) return null;
+
+        // Context gate: a serum keyed to an attribute (drivenBy) is only dosed/consumed
+        // when that attribute is actually being used. In combat, attributes drive the
+        // rolls, so it always applies. While skilling, it applies only to skills whose
+        // mechanics roll on that attribute — a gathering interval that never touches
+        // Perception will not burn a Perception tincture.
+        if (def.drivenBy) {
+            const relevant = context.inCombat
+                ? this.attributeUsedInCombat(def.drivenBy)
+                : this.skillUsesAttribute(context.skillId, def.drivenBy);
+            if (!relevant) return null;
+        }
 
         this.pruneExpiredEffects(player);
         const now = Date.now();
@@ -649,9 +751,10 @@ const AutoConsumption = {
                 return { canAttack: true };
             }
 
-            // Check ammo
+            // Check ammo (bait in the ammo slot does not count as combat ammo)
             const ammoSlot = player.equipment?.ammo;
-            if (!ammoSlot || typeof ammoSlot !== 'object' || ammoSlot.quantity <= 0) {
+            if (!ammoSlot || typeof ammoSlot !== 'object' || ammoSlot.quantity <= 0
+                || this.getAmmoDefinition(ammoSlot)?.ammoCategory === 'bait') {
                 return {
                     canAttack: false,
                     reason: 'Out of ammo',
@@ -677,9 +780,10 @@ const AutoConsumption = {
             return { canAttack: true };
         }
 
-        // Check ammo
+        // Check ammo (bait in the ammo slot does not count as combat ammo)
         const ammoSlot = player.equipment?.ammo;
-        if (!ammoSlot || typeof ammoSlot !== 'object' || ammoSlot.quantity <= 0) {
+        if (!ammoSlot || typeof ammoSlot !== 'object' || ammoSlot.quantity <= 0
+            || this.getAmmoDefinition(ammoSlot)?.ammoCategory === 'bait') {
             return {
                 canAttack: false,
                 reason: 'Out of ammo',

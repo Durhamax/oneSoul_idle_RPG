@@ -81,7 +81,8 @@ const SkillSystem = {
         // equipped serum's buff and depletes it (consistent with food/ammo consumption).
         if (typeof AutoConsumption !== 'undefined') {
             AutoConsumption.pruneExpiredEffects(this.state);
-            AutoConsumption.processSerumDose(this.state, { inCombat: false });
+            // Pass the skill so a Perception serum only doses for Perception-using skills.
+            AutoConsumption.processSerumDose(this.state, { inCombat: false, skillId: skillId });
         }
 
         const skill = this.state.skills[skillId];

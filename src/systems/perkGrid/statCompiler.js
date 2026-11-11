@@ -69,6 +69,9 @@ const StatCompiler = {
             // ═══ LOOT ═══
             ...StatCompiler.compileLootStats(perks),
 
+            // ═══ CARRY WEIGHT ═══
+            weight: equipmentStats.weight,
+
             // ═══ META ═══
             lastCompiled: Date.now(),
             perkMultipliers: perks  // Store raw perks for reference
@@ -129,12 +132,18 @@ const StatCompiler = {
             damageReduction: 0,
             weaponDamage: 0,
             weaponAccuracyMod: 1.0,
-            critResistance: 0
+            critResistance: 0,
+            weight: 0
         };
 
         // Iterate through equipment slots and sum bonuses
-        for (const [slot, itemId] of Object.entries(equipment || {})) {
-            if (!itemId) continue;
+        for (const [slot, rawSlot] of Object.entries(equipment || {})) {
+            if (!rawSlot) continue;
+
+            // Slots hold either a string id (grid gear) or an object
+            // ({ itemId, quantity } for consumables, or an instance) — unwrap to the id.
+            const itemId = (typeof rawSlot === 'object') ? (rawSlot.itemId || rawSlot.id) : rawSlot;
+            if (!itemId || typeof itemId !== 'string') continue;
 
             // Get item definition (handle instance IDs)
             let itemDef;
@@ -146,6 +155,10 @@ const StatCompiler = {
             }
 
             if (!itemDef) continue;
+
+            // Carry weight — flat per equipped item/stack. Consumables count once
+            // regardless of stack size (e.g. 1 for arrows, 0.2 for minnows), never × quantity.
+            stats.weight += itemDef.weight || 0;
 
             // Weapon handling
             if (slot === 'weapon') {

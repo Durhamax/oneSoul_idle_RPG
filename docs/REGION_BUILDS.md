@@ -41,14 +41,16 @@ Over-saturated gold-green; impossibly lush; sunbeams through dense canopy; the g
 No enemies spawn in the Cradle. The **first enemy (Elaran survey drone) appears at Hex 2, Scoutreach** — the player can *see* something crossing the far tree-line (a silhouette, a distant drone light) but cannot engage until they leave. This makes the first step out of the garden a deliberate, weighted choice. *(Combat-first method resumes at Region 2.)*
 
 ### 4. Gathering — Register A, the green west *(wired content)*
-The Cradle teaches **five of the six gathering skills** across six nodes already in `materials.js`: Mining, Logging, Fishing, Hunting, Foraging. **Only Thieving is deferred** (it needs Elarans — it first appears at R2, Scoutreach). The T1 material set is clean and on-convention, so this region needs **no new items** — build it on what exists.
+The Cradle teaches **five of the six gathering skills** across six nodes already in `materials.js`: Mining, Logging, Fishing, Hunting, Foraging. **Only Thieving is deferred** (it needs Elarans — it first appears at R2, Scoutreach). The gathered material set is clean and on-convention and is unchanged; the crafting build-out adds only **crafted outputs** (food, serums, the Copper Wire intermediate, and the first technology) plus the drone-salvaged Sensor. Every gathered material below feeds at least one recipe (or is a flagged forward hook).
 | Skill | Node (wired) | Materials (real) | Feeds |
 |---|---|---|---|
-| **Mining** | Riverbed | `clay`, `flint`, `copperiteOre`, `goldFlakes` | Smithing (ore), Mechanics, Chemistry |
-| **Logging** | Lakeside Forest | `pinewood`, `riverwillow`, `resin` | Mechanics (the bow), Smithing fuel, Tailoring fiber |
-| **Fishing** | Lake Shallows | `solfish`, `minnows`, `mossShrimp` | Cooking |
-| **Hunting** | Meadow Game Trail | `smallGameMeat`, `smallPelts`, `feathers` | Cooking, Tailoring (pelts), fletching (feathers → arrows) |
-| **Foraging** | Fallen Timber + Meadow Herb Patch | `mintyHerb`, `commonMushrooms`, `plantFibers`, `wildroot`, `meadowGreens`, `daypetalBloom` | Cooking, Chemistry, Tailoring |
+| **Mining** | Riverbed | `clay`, `flint`, `copperiteOre`, `goldFlakes` | `clay` → container for stews + chemistry; `flint` → arrows/tools; `copperiteOre` → Copper Wire → Electronics/Technology; `goldFlakes` → *reserved* |
+| **Logging** | Lakeside Forest | `pinewood`, `riverwillow`, `resin` | Mechanics (the bow), Smithing fuel, Tailoring fiber, Chemistry binder (`resin`) |
+| **Fishing** | Lake Shallows | `solfish`, `minnows`, `mossShrimp` | `solfish` → Cooking; `minnows` → equippable fishing **bait** (ammo slot); `mossShrimp` → *reserved* |
+| **Hunting** | Meadow Game Trail | `smallGameMeat`, `smallPelts`, `feathers` | Cooking (stew), Tailoring (pelts), fletching (feathers → arrows) |
+| **Foraging** | Fallen Timber + Meadow Herb Patch | `mintyHerb`, `commonMushrooms`, `plantFibers`, `auroranTuber`, `meadowGreens`, `daypetalBloom` | Cooking, Chemistry (serums), Tailoring |
+
+**Reserved ingredients (deferred by design):** `mossShrimp` (Lake Shallows) and `auroranTuber` (Fallen Timber) are **held for a multi-region Boil recipe** that unlocks a few regions out, once shellfish (mussels/clams) are discoverable. `goldFlakes` (Riverbed, low drop weight) is a **rare reserved for a later-tier use**. These are intentionally *not* consumed by any R1 recipe — they are forward hooks, not dead ends.
 
 *(Note: `copperiteOre` is gatherable here, so Mining is live, but the **forge/Smithing is not taught in the Cradle tutorial** — the tutorial teaches **Cooking** (mission 104) and **Mechanics** (mission 106, the Greensman Training Bow). Fauna stays small-game-first per `RESOURCE_DESIGN.md` §4 — a world light on megafauna reads subtly alien.)*
 

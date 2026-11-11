@@ -1791,7 +1791,9 @@
 /* Main Content Area */
 .main-content {
     max-width: 1400px;
-    margin: 0 auto;
+    /* Clear the fixed 80px .sidebar-nav on the left so views don't bleed behind it.
+       (Was `margin: 0 auto`, which reset the left offset to 0 and caused the bleed.) */
+    margin: 0 auto 0 80px;
     padding: 20px;
 }
 

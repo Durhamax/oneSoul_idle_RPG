@@ -6,6 +6,17 @@
 
 const CombatRolls = {
     /**
+     * Sum active timed Perception buffs (e.g. Minty Tincture) on a combatant.
+     * Only the player carries activeEffects, so enemies read 0.
+     */
+    activePerceptionBonus(entity) {
+        if (!entity || !entity.activeEffects || !entity.activeEffects.length) return 0;
+        const now = Date.now();
+        return entity.activeEffects.reduce((sum, e) =>
+            (e.stat === 'perception' && e.amount && (!e.expiresAt || e.expiresAt > now)) ? sum + e.amount : sum, 0);
+    },
+
+    /**
      * Weighted roll: attackerStat vs defenderStat
      * Returns probability-based success
      */
@@ -39,7 +50,9 @@ const CombatRolls = {
      * Enemy Accuracy vs Player Defense Pool (Evasion + Armor Rating)
      */
     performHitRoll(attacker, defender) {
-        const attackerAccuracy = attacker.accuracy || 0;
+        // Compiled accuracy follows accuracy = 70 + Perception*2, so each +1 Perception
+        // from an active serum (Minty Tincture) is worth +2 accuracy toward hit chance.
+        const attackerAccuracy = (attacker.accuracy || 0) + this.activePerceptionBonus(attacker) * 2;
         const defensePool = this.calculateDefensePool(defender);
 
         // Debug: Log if accuracy is 0 (should not happen for valid combatants)
@@ -65,7 +78,8 @@ const CombatRolls = {
      * Attacker Stealth/CritRating vs Defender Crit Resistance
      */
     performCritRoll(attacker, defender) {
-        const attackerCritRating = attacker.critRating || 0;
+        // critRating = 5 + Perception*0.5, so +1 Perception from a serum = +0.5 crit rating.
+        const attackerCritRating = (attacker.critRating || 0) + this.activePerceptionBonus(attacker) * 0.5;
         const defenderCritResist = this.calculateCritResistance(defender);
 
         const result = this.weightedRoll(attackerCritRating, defenderCritResist);
@@ -135,7 +149,8 @@ const CombatRolls = {
         // Player uses combatAttributes, enemies use attributes
         const attributes = defender.attributes || defender.combatAttributes || {};
 
-        const critResistance = (attributes.perception || 0) * 10
+        const perception = (attributes.perception || 0) + this.activePerceptionBonus(defender);
+        const critResistance = perception * 10
             * (mult.perceptionScaling || 1.0)
             * (mult.critResistance || 1.0);
 
