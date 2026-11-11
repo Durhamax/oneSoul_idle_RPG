@@ -95,6 +95,30 @@ The four build **intents** the user named — **defense, healing, offense, conce
 
 And crucially — **the player picks a lane because they can't fund them all.** Scarcity of tomes/materials/time = meaningful build identity in an idle game.
 
+### 5a. Damage types are engineering disciplines *(not elements)*
+
+You don't wield "ice" or "lightning" — you engineer a **refrigeration cycle**, a **capacitor discharge**, an **oxidizer charge** into a weapon. Each of the five damage types is a **real field in the tree**, and its capability **deepens as you climb that field**: discovery gives a crude version, investment makes it a build.
+
+| Damage type | Field(s) (real, `engineeringFields`) | Capability ladder (field tiers) |
+|---|---|---|
+| **Pierce** | **Ballistics** | projectile motion → rifling → terminal ballistics → armored penetration |
+| **Incendiary** | **Chemistry** (compound) + Ordnance/Ballistics (delivery) | organic chem → compounds → incendiary munitions |
+| **Shock** | **Electromagnetics** + **Electronics** (Energy Systems for charge) | magnetism → induction → EM waves → particle beams; circuits → capacitors |
+| **Cryo** | **Cryogenics** (Thermodynamics supports) | basic cooling → refrigeration → deep freeze → **liquid gases ("Cryo weapons")** → near-absolute-zero |
+| **Explosive** | **Ordnance** | basic explosives → formulations (sulfur) → demolitions (nitrate) → advanced → smart munitions |
+| **Exotic/Seed** | **Materials** (exotic matter) + top tiers of several fields | composites → nanomaterials → exotic matter; antimatter, BEC, superconductors |
+
+**Two gates make discovery meaningful:**
+- **Geology + engineering.** A late region *introduces* a type because it physically contains the raw material (ice → cryo working-fluid; desert → oxidizer/niter; industrial highlands → conductors/magnets; Infernus → exotic) **and** the player has researched the field. That's the "why here" of the damage-type rollout (`COMBAT_PROGRESSION.md` §3).
+- **Gather-vs-use.** You can *harvest* the precursor once you have the protective gear, but it's **inert until the field unlocks processing** (a coolant precursor does nothing until Cryogenics → Liquid Gases). Finding the material and fielding the weapon are two separate milestones.
+
+**Worked example — Cryogenics (not ice weapons):**
+1. **Discover (T6, Icelands):** harvest a coolant precursor from a Gas-Hydrate Bed (needs thermal gear, `RESOURCE_DESIGN.md` §8) → crude **coolant charge** → weak chill/slow.
+2. **Cryogenics → Liquid Gases:** unlocks true **cryo weapons** → reliable freeze, strong vs Airborne (ices intakes/rotors).
+3. **Near-Absolute-Zero / superconducting:** area-denial frost, armor-brittling (freeze → shatter combo), and cryo-cooling that feeds *other* systems.
+
+Same treatment for every type: the player invests in the **discipline**, not the element.
+
 ---
 
 ## 6. How Engineering gates crafting (the recipe web)
@@ -149,6 +173,7 @@ All crafting consumes resources from **harvesting + thieving + combat loot + que
 2. ~~Tech slots~~ **RESOLVED** — **free-form** (§4).
 3. ~~Tome sources~~ **RESOLVED** — Thieving data caches + combat data-cores + research-site finds (§7).
 4. **Materials naming cleanup:** the tree's material costs use placeholders (`copperOre`, `ironOre`, `steelIngot`, `silicon`, `quantumSubstrate`, `voidEssence`…). Reconcile with `RESOURCE_DESIGN.md` (inorganic=familiar → `copperite` etc.; exotic tier-5 → Register C Seed-matter). Large pass; do alongside the item-data cleanup.
+   - **No-magic sub-rule (tier-5 field names):** keep the grounded exotic physics (`antimatter`, Bose-Einstein condensate, superconductors, exotic/strange matter as Register-C Seed science); **rename the fantasy-coded ones** — `voidEssence`, astro-ballistics' "gravity-manipulating projectiles", `consciousnessMatrix`. Keep the science, cut the sorcery.
 5. **Legacy `technologies` block** in `definitions.js` (basic_gears, crude_explosives…) overlaps the new `engineeringFields` — pick one as canon (recommend `engineeringFields`) and migrate/remove the other.
 6. **Field → build balance:** confirm each intent (offense/defense/heal/conceal/skill) has a viable, fun lane and that tech slots can express it.
 7. **Early pacing:** how much Engineering surfaces in the tutorial (see §10).

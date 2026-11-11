@@ -136,3 +136,124 @@ When authoring a region in `REGIONS_GEOGRAPHY.md`:
 3. Make sure, across the whole map, **every crafter's inputs are supplied** (§2) — advanced inputs come from Elaran loot/industry and force the eastern journey.
 4. **Name** with the register matching the region's gradient position (§3) — grounded in the green west, alien toward Infernus.
 5. Respect the **fauna rules** (§4) and the **damage-type/enemy pairing** (§6).
+
+---
+
+## 8. Nodes — the gathering model & archetype library
+
+### 8.1 The node model (as coded, `nodeSchema.js`)
+A node is **not a hex** — it's a reusable **archetype** with:
+- a **weighted `resourceTable`** (one roll per harvest, each entry min/max yield) + a separate **rare-drop table** — so every node yields a *cluster* of related resources, never a single drop (R1's Riverbed → clay · flint · copperiteOre · *goldFlakes*);
+- **`baseHealth` / `minHealth` / `maxHealth`** = harvests before it depletes and respawns;
+- **exploration raises a node's health** (`upgradeChance` / `upgradeAmount`): the more instances of an archetype you discover and explore, the higher that archetype's health climbs — **discovering more Riverbeds literally makes Riverbeds yield longer before respawn**, rewarding exploration;
+- **`category` + `biomes`** = where the archetype is allowed to appear;
+- **`progressionPath` / `nextTier`** = the same archetype scaling up a tier (copper vein → iron vein).
+
+### 8.2 Placement rules
+1. **Nodes attach to geographic features, not tiles.** A river that crosses 4 hexes is the **same fishing node in all 4**. A mountain range, a forest belt, a salt flat — one feature, one archetype, replicated across every tile it touches.
+2. **Resources bleed across borders.** A region **inherits its neighbors' resources** and **adds its own** — the gradient in §3 / `REGIONS_GEOGRAPHY.md`. R1's pinewood, copperiteOre, small game, etc. stay available in adjacent tiers; new regions layer new archetypes on top. Regions are **not** resource-siloed.
+3. **Unique nodes are the exception.** The Cradle is a crater, so **Lake Shallows is a closed-basin, endemic node** (solfish · minnows · mossShrimp) — it does **not** propagate outward, and neighboring river/coastal fish don't reach in. Flag unique nodes explicitly; everything else is a shared archetype.
+
+### 8.3 Generalized node-archetype library *(the shared vocabulary)*
+`[E]` = already wired in R1 (`nodes.js`). Order within a cluster shows the weighted spread (common → *rare*).
+
+**⛏️ Mining** — rock / soil / alluvial features
+| Archetype | Found along | Cluster |
+|---|---|---|
+| **Riverbed** `[E]` | any river/stream (shared across its tiles) | clay · flint · copperiteOre · *goldFlakes* |
+| **Stone Bluff** | hills, cliffs, outcrops | fieldstone · flint · slate · *limestone* |
+| **Ore Seam** | mountain exposures | copperiteOre · tinstone · ironstone · *coal* |
+| **Scree Slope** | mountain base / talus | gravel · quartz · rough garnet · *gem chips* |
+| **Clay Pit** | wetland / mudbank | clay · sand · peat · *ochre* |
+| **Salt Pan** *(arid, later)* | evaporite flats | rock salt · gypsum · soda ash · *borax* |
+| **Niter Caliche** *(desert — explosive supply)* | arid soil/caves | niter (saltpeter) · nitrate salts |
+
+**🪓 Logging** — forest belts
+| Archetype | Found along | Cluster |
+|---|---|---|
+| **Lakeside Forest** `[E]` | lake/river edge | pinewood · riverwillow · resin |
+| **Pinewood Stand** | upland conifer | pinewood · pine resin · pitch · *seed cones* |
+| **Hardwood Grove** | temperate broadleaf | hardwood · bark fiber · *hard sap* |
+| **Deadfall** | mature forest | deadwood · tinder · bracket fungus · bark fiber |
+| **Riverwillow Thicket** | riverbank | willow withes · reed · soft bast fiber |
+| **Frostpine Stand** *(icelands)* | cold conifer | frostpine · cold-sap · resin |
+
+**🎣 Fishing** — water features
+| Archetype | Found along | Cluster |
+|---|---|---|
+| **Lake Shallows** `[E]` **UNIQUE** | the Cradle crater only | solfish · minnows · mossShrimp *(endemic — does not spread)* |
+| **River Run** | any river (shared across its tiles) | silverdarter · river mussel · *freshwater eel* |
+| **Stagnant Pond** | lowland backwater | mudsucker · pond snail · algae mat · *leech (chem)* |
+| **Reed Shallows** | marsh edge | marsh fish · roe · crayfish · *reed (→forage)* |
+| **Tidal Flat** *(coast)* | shoreline | shellfish · shorecrab · kelp · *coastal roe* |
+| **Glacial Tarn** *(icelands)* | ice-melt pools | coldfish · ice shrimp |
+
+**🏹 Hunting** — land / brush features
+| Archetype | Found along | Cluster |
+|---|---|---|
+| **Meadow Game Trail** `[E]` | open grassland | smallGameMeat · smallPelts · feathers |
+| **Thorny Thicket** | scrub / brushland | bristlehare meat · small pelt · sinew · *thornberries (→forage)* |
+| **Burrow Warren** | den fields | burrower meat · pelt · bone · *fat* |
+| **Fowl Marsh** | wetland edge | fowl meat · feathers · down · *eggs* |
+| **Grazing Flat** *(big game, mid)* | herd plains | big-game meat · large hide · horn · *tallow* |
+| **Predator Range** *(later)* | upland / badlands | tough hide · fang · claw · *rare pelt* |
+
+**🌿 Foraging** — ground / plant features
+| Archetype | Found along | Cluster |
+|---|---|---|
+| **Fallen Timber** `[E]` | forest floor | mintyHerb · commonMushrooms · plantFibers · wildroot |
+| **Meadow Herb Patch** `[E]` | meadow | meadowGreens · daypetalBloom |
+| **Mushroom Hollow** | shaded rot | edible caps · toxic caps (chem) · spores · *loam* |
+| **Berry Bramble** | hedgerow / scrub | berries · thornberries · bramble fiber |
+| **Wetland Verge** | fen / bog | cattail root · bog myrtle · peat moss · *reed* |
+| **Tuber Bed** | rich soil | wildroot · tubers · *starchroot* |
+
+**🗝️ Thieving** — Elaran/urban (introduced R2; no nodes in the Cradle)
+| Archetype | Found along | Cluster |
+|---|---|---|
+| **Supply Cache** | depots, dead-drops | rations · scrap · credits · *data-chit (tome)* |
+| **Patrol Pocket** | guarded routes | credits · keycard · ammo · *intel* |
+| **Field Depot** | container yards | parts · circuits · fuel · *schematic frag* |
+| **Data Terminal** | comms nodes | **data-core (tomes)** · cipher · schematic |
+
+### 8.4 Refine → craft spine
+Every gathering output feeds **at least two** crafting skills (no dead-end nodes). Which skill owns each chain, with the **now** use and *later* hook:
+
+| Raw (from nodes) | Refine step (skill) | Items — **now** / *later* |
+|---|---|---|
+| **ore** (copperite, tin, iron) | smelt → ingots (**Smithing**); bronze = copper+tin | tools, arrowheads, **plating** / *steel weapons, jewelry* |
+| **clay / sand / salt** | fire → brick/crucible; sand+soda → glass (**Smithing/Chem**) | furnace & crucible infra, vials / *lenses (→Electronics), preservation* |
+| **flint** | knap (**Mechanics**) | arrowheads, strikers / *gun flints, tools* |
+| **wood** (pine/hard/willow) | saw → lumber/staves (**Mechanics**) | bow staves, hafts / *gun stocks* |
+| **resin / pitch / sap** | render (**Chemistry**) | waterproofing, torches / *sealants, construction/tech adhesive* |
+| **fiber / bast / sinew** | ret → cordage → cloth (**Tailoring**) | rope, bowstrings, garments / *armor cloth layer* |
+| **pelts / hide** + tannin bark | tan → leather (**Tailoring**) | straps, light armor / *leather + plating = modern armor* |
+| **fish / meat / greens / fat** | cook / preserve (**Cooking**) | rations, stews (buffs) / *expedition rations, tallow→lubricant* |
+| **herbs / mushrooms / roots / berries** | extract (**Chemistry**) | tinctures, antidotes, stimulants, dyes / *serums, poison coatings* |
+| **scrap / circuits / parts** (thieving/salvage) | assemble (**Electronics/Mechanics/Engineering**) | flashlights, sensors / ***tech-slot components*** |
+
+Two spines matter most: **ore → plating (Smithing) + fiber/leather → cloth (Tailoring) → Tailoring assembles modern armor** (the armor-crafting loop, canon), and **scrap/circuits → Engineering tech components** (into the build system, `ENGINEERING_DESIGN.md`).
+
+### 8.5 The lean-recipe rule
+**No filler reagents, no multiplicative material webs.** A recipe ingredient earns its slot only if **sourcing it is a real decision** (a supply line the player has to establish). We do **not** tax the player with glue/binding/thread-type micro-ingredients. *Arrows = shaft + head + fletching (feathers) — no adhesive.* Keep inputs few and meaningful; combinatorial ingredient trees are the complexity we're avoiding.
+
+### 8.6 Damage-type supply lines & collection hazards
+Each damage type has **one signature supply line** — a single signature material from a single node archetype — gated by **geology + engineering** (`ENGINEERING_DESIGN.md` §5a): the material exists only in the matching late region, and it stays inert until the Engineering field unlocks processing (gather-vs-use).
+
+| Damage type | Signature material | Node archetype | Harvest physics |
+|---|---|---|---|
+| **Incendiary** | flammable pitch/naphtha → sulfur | Tar/Oil Seep → Sulfur Fumarole | skim a petroleum seep; scrape vent-crust sulfur |
+| **Shock** | conductive / piezo core | Piezo Crystal Pocket / Graphite Seam | piezo crystals output voltage under stress; stored in capacitor banks → arc |
+| **Cryo** | cryo working-fluid | Gas-Hydrate Bed / Frost-Nitre Pan | clathrate ice releases pressurized gas; Joule–Thomson expansion cools; endothermic salts absorb heat |
+| **Explosive** | oxidizer (niter + sulfur) | Niter Caliche / Nitrate Flat | nitrates survive only in arid soil — scrape/leach the flats |
+| **Exotic/Seed** | Register-C exotic | Seed-Exotic Vein | requires late-tier Engineering containment |
+
+**Protective-gear gates** — the harvest permit for a hazardous node. Each set is **craftable from *earlier* harvests**, so the loop self-gates (harvest → craft the gear → reach the next hazard tier):
+
+| Hazard | Node examples | Gear | Made by |
+|---|---|---|---|
+| Extreme cold | Gas-Hydrate Bed, Glacial Tarn | thermal / insulated cold suit | Tailoring + Cryogenics |
+| Charge / high-voltage | Piezo Pocket, conductive seams | dielectric (insulated) gear | Tailoring + Electronics |
+| Toxins / spores | poisonous flora, Mushroom Hollow | respirator + sealed gloves / antitoxin | Tailoring + Chemistry |
+| Heat / fumes | Sulfur Fumarole, Tar Seep | heat-resistant gear + respirator | Tailoring + Chemistry |
+| Volatile oxidizer | Niter Caliche | blast-safe handling / containers | Mechanics / Engineering |

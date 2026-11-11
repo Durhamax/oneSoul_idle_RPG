@@ -92,20 +92,23 @@ All three must be **fully fleshed** — a complete pipeline of weapons, armor, c
 
 ### Damage-type rollout & integration *(where each type enters, how it's strengthened, why it isn't forced)*
 
-The five damage types are **not all available at the start.** Each is *discovered* at a deliberate tier — roughly when the armor type it counters becomes a staple enemy — then **strengthened** through Engineering, and the enemy armor it answers **keeps recurring in later tiers** so the type stays relevant instead of being a one-region gimmick.
+The five damage types are **not all available at the start.** Each is *discovered* at a deliberate tier — roughly when the armor type it counters becomes a staple enemy — then **deepened** through Engineering, and the enemy armor it answers **keeps recurring in later tiers** so the type stays relevant instead of being a one-region gimmick.
 
-| Damage type | Discovered | Counters (armor) | Why there | Strengthened by (Engineering family) |
+**Damage types are engineering disciplines, not elements.** You don't wield "ice" — you engineer a *refrigeration cycle* into a weapon. Each type maps to a real field in the Engineering tree (`definitions.js` `engineeringFields`), and **its capability deepens as you climb that field** (`ENGINEERING_DESIGN.md` §5a). Discovery hands you a crude version; investment in the field turns it into a build.
+
+| Damage type | Discovered | Counters (armor) | Why there | Engineering field (deepens it) |
 |---|---|---|---|---|
-| **Pierce** | **T1** — starter (Greensman Training Bow, Mechanics) | Insulated (tech/EW) | the generalist opener you already hold | ballistics / precision |
-| **Incendiary** | **T2** (Chemistry) | Biological (infantry) | as organized Elaran infantry becomes the staple foe | organic chemistry / thermal |
-| **Shock** | **T5** (industrial Highlands, EM/Energy) | Droid (mechs) | as Droid/mech enemies populate the factory tiers | electronics / computation |
-| **Cryo** | **T6** (Icelands, Cryogenics) | Airborne (drones/aircraft) | anti-air discovered — pointedly — in the ice; answers the drones that have harassed since T1 | cryogenics / aerospace countermeasures |
-| **Explosive** | **T8** (Desert, Ordnance) | Plated (armor/vehicles) | brings **heavy builds** online as Plated heavies dominate the fire hemisphere (Plated is *teased* at T4, *answered* here) | ballistics / demolitions / ordnance |
+| **Pierce** | **T1** — starter (Greensman Training Bow, Mechanics) | Insulated (tech/EW) | the generalist opener you already hold | **Ballistics** |
+| **Incendiary** | **T2** (Chemistry) | Biological (infantry) | as organized Elaran infantry becomes the staple foe | **Chemistry** (+ Ordnance/Ballistics to deliver) |
+| **Shock** | **T5** (industrial Highlands) | Droid (mechs) | as Droid/mech enemies populate the factory tiers | **Electromagnetics + Electronics** |
+| **Cryo** | **T6** (Icelands) | Airborne (drones/aircraft) | anti-air discovered — pointedly — in the ice; answers the drones that have harassed since T1 | **Cryogenics** |
+| **Explosive** | **T8** (Desert) | Plated (armor/vehicles) | brings **heavy builds** online as Plated heavies dominate the fire hemisphere (Plated is *teased* at T4, *answered* here) | **Ordnance** |
 
-**Three rules this encodes:**
+**Four rules this encodes:**
 1. **Discovery points are authored, not incidental.** A region that *introduces* a damage type is a deliberate beat (new recipe line, new enemy pressure that motivates it). Track each in `REGION_BUILDS.md` as the tier is built, and in the Anchor Map (`CAMPAIGN_ARC.md` §1a).
 2. **Armor types recur upward.** Once an armor type is introduced it is **never retired** — later tiers (esp. T7+ Elaria/Desert/Badlands/Infernus) mix all five in a single sequence (§3), so every discovered damage type keeps paying off and the counter map stays live end-game.
-3. **Discovery ≠ obligation.** Unlocking a type gives the player the *option*, not a mandate. A build that goes a different way — a different Engineering branch, an attribute-leaning path, or a Light/Medium/Heavy archetype — can still clear those enemies the hard way; the counter is the **efficient** answer, not the **only** one. Engineering strengthening is what turns a discovered type from "usable" into "a build you commit to" (ties to the fields→builds model in `ENGINEERING_DESIGN.md`).
+3. **Discovery ≠ obligation.** Unlocking a type gives the player the *option*, not a mandate. A build that goes a different way — a different Engineering branch, an attribute-leaning path, or a Light/Medium/Heavy archetype — can still clear those enemies the hard way; the counter is the **efficient** answer, not the **only** one. Engineering progression is what turns a discovered type from "usable" into "a build you commit to" (ties to the fields→builds model in `ENGINEERING_DESIGN.md` §5–5a).
+4. **Discovery is gated by geology + engineering.** A region can introduce a type only because it physically holds the raw material (ice → cryo working-fluids, desert → oxidizers, industrial highlands → conductors/magnets) *and* the player has researched the field to process it. Finding the material and fielding the weapon are two separate milestones — the **gather-vs-use gate** (`RESOURCE_DESIGN.md` §8). Capability then scales with **field progression, not character level.**
 
 ---
 
