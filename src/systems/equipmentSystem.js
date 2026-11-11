@@ -218,42 +218,42 @@ const EquipmentSystem = {
         // Quantity is TRANSFERRED from bank to equipment (not a pointer)
         const isConsumableSlot = ['food', 'potion', 'ammo'].includes(slot);
 
-        if (isConsumableSlot && stackableItem) {
-            // Get quantity from bank (handle both number and object formats)
+        if (isConsumableSlot && (stackableItem || legacyItem)) {
+            // Re-read the bank AFTER any unequip above so equipping the SAME ammo/food
+            // type is ADDITIVE: the unequip at the top returned the old stack to the bank,
+            // so the fresh bank total = old equipped + newly-added. (Reading the stale
+            // pre-unequip snapshot here previously kept only the new amount AND deleted
+            // the returned stack — losing ammo.) For a DIFFERENT type, the unequip put the
+            // old type back under its own id, so this fresh read sees only the new type.
             let bankQuantity = 0;
-            if (typeof stackableItem === 'number') {
-                bankQuantity = stackableItem;
-            } else if (typeof stackableItem === 'object') {
-                bankQuantity = stackableItem.quantity || 0;
+            const freshStackable = this.state.bank.stackable?.[itemId];
+            const freshLegacy = this.state.bank.items?.[itemId];
+
+            if (typeof freshStackable === 'number') {
+                bankQuantity = freshStackable;
+            } else if (freshStackable && typeof freshStackable === 'object') {
+                bankQuantity = freshStackable.quantity || 0;
+            } else if (typeof freshLegacy === 'number') {
+                bankQuantity = freshLegacy;
+            } else if (freshLegacy && typeof freshLegacy === 'object') {
+                bankQuantity = freshLegacy.quantity || 0;
             }
 
             if (bankQuantity <= 0) {
                 return { success: false, reason: "No items to equip" };
             }
 
-            // Transfer ALL quantity from bank to equipment
+            // Transfer the ENTIRE combined bank stack into the slot
             this.state.equipment[slot] = {
                 itemId: itemId,
                 quantity: bankQuantity
             };
 
-            // Remove from bank completely
-            delete this.state.bank.stackable[itemId];
+            // Remove from the bank completely (both formats, to be safe)
+            if (this.state.bank.stackable) delete this.state.bank.stackable[itemId];
+            if (this.state.bank.items) delete this.state.bank.items[itemId];
 
-            console.log(`🍖 Equipped ${bankQuantity}x ${itemDef.name} to ${slot} (transferred from bank)`);
-        } else if (isConsumableSlot && legacyItem) {
-            // Legacy bank format support
-            let bankQuantity = typeof legacyItem === 'number' ? legacyItem : (legacyItem.quantity || 1);
-
-            this.state.equipment[slot] = {
-                itemId: itemId,
-                quantity: bankQuantity
-            };
-
-            // Remove from legacy bank
-            delete this.state.bank.items[itemId];
-
-            console.log(`🍖 Equipped ${bankQuantity}x ${itemDef.name} to ${slot} (transferred from legacy bank)`);
+            console.log(`🍖 Equipped ${bankQuantity}x ${itemDef.name} to ${slot} (combined stack transferred from bank)`);
         } else {
             // Non-consumable slots: store item ID directly
             console.log(`✅ Setting equipment[${slot}] = ${itemId}`);

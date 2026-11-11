@@ -210,11 +210,12 @@ const StatCompiler = {
             * (perks.meleeDamage || 1.0)
         );
 
-        // Base ranged damage: perception contributes
-        const baseRangedDamage = 5 + (perception * 1.5);
+        // Ranged damage comes purely from the weapon's base damage — NO attribute scaling.
+        // All ranged weapons (bows, guns, etc.) deal their weapon base (plus any flat
+        // weapon-damage bonuses from gear/perks). Perception governs HIT CHANCE (accuracy
+        // below), not ranged damage output.
         const rangedDamage = Math.floor(
-            (baseRangedDamage + equipmentStats.attackDamage)
-            * (perks.perceptionScaling || 1.0)
+            equipmentStats.attackDamage
             * (perks.rangedDamage || 1.0)
         );
 
@@ -266,7 +267,7 @@ const StatCompiler = {
     compileDefenseStats(attributes, equipmentStats, perks) {
         const health = attributes.health || 1;
         const defense = attributes.defense || 1;
-        const mobility = attributes.mobility || 1;
+        const stealth = attributes.stealth || 1;
 
         // Max health: base 100 + health attribute * 10
         const baseHealth = 100;
@@ -276,11 +277,12 @@ const StatCompiler = {
             * (perks.maxHealth || 1.0)
         );
 
-        // Evasion: mobility-based
-        const baseEvasion = mobility * 1.5;
+        // Evasion: Stealth-based — Stealth lowers an attacker's chance to hit the player.
+        // (Mobility governs attack speed, not dodge.)
+        const baseEvasion = stealth * 1.5;
         const evasion = Math.min(50, Math.floor(
             (baseEvasion + equipmentStats.evasion)
-            * (perks.mobilityScaling || 1.0)
+            * (perks.stealthScaling || 1.0)
             * (perks.evasion || 1.0)
         ));
 

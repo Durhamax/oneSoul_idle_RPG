@@ -451,6 +451,12 @@ const AutoConsumption = {
             ammoSlot.quantity--;
         }
 
+        // Keep the compiled combat snapshot (what the combat UI reads) in sync with the
+        // live equipped slot, so the on-screen ammo count drops by 1 as rounds are spent.
+        if (combat?.playerAmmo) {
+            combat.playerAmmo.currentAmmo = ammoSlot.quantity;
+        }
+
         // Track in session stats
         if (combat?.session) {
             if (wasConsumed) {
@@ -467,6 +473,134 @@ const AutoConsumption = {
             ammoName: ammoDef?.name || 'ammo',
             remaining: ammoSlot.quantity,
             wasConsumed: wasConsumed
+        };
+    },
+
+    /**
+     * Get potion/serum definition from the equipped potion slot
+     * (mirrors getFoodDefinition)
+     */
+    getPotionDefinition(potionSlot) {
+        if (!potionSlot) return null;
+        const itemId = typeof potionSlot === 'object' ? potionSlot.itemId : potionSlot;
+        if (!itemId) return null;
+        if (typeof ItemIdUtils !== 'undefined') return ItemIdUtils.getItemDefinition(itemId);
+        if (typeof ItemRegistry !== 'undefined') return ItemRegistry.getItem(itemId);
+        return null;
+    },
+
+    /**
+     * Drop any expired timed effects from player.activeEffects.
+     * Safe to call every tick.
+     */
+    pruneExpiredEffects(player) {
+        if (!player || !player.activeEffects || !player.activeEffects.length) return;
+        const now = Date.now();
+        player.activeEffects = player.activeEffects.filter(e => !e.expiresAt || e.expiresAt > now);
+    },
+
+    /**
+     * Process a serum/potion DOSE.
+     *
+     * Like food and ammo, the equipped `potion` slot is a consumable that depletes
+     * through use — but a serum is DOSED to keep a timed buff up: when the serum's
+     * buff lapses it is re-dosed, consuming 1 from the slot. Runs during combat
+     * (pass the combat object as context) and during skilling (pass {}). When the
+     * slot is empty the buff simply ends — craft/loot and equip more.
+     *
+     * Effect channels supported now (no stat-pipeline surgery, so they're reliable):
+     *   - def.effect.damageReduction  -> timed %DR, read directly by DamageCalculator
+     *   - def.effectType === 'heal'   -> heal-on-dose (combat only), uses effectValue
+     * Only serums that define a timed buff (effect.duration or def.duration) auto-dose,
+     * so a one-shot heal item won't spam. Generic { stat, amount } buffs are recorded on
+     * activeEffects for future readers (broader stat application is a follow-up — it needs
+     * the attributes/combatAttributes pipeline reconciled, same work that gates food buffs).
+     *
+     * @param {Object} player - player state (GameEngine.state)
+     * @param {Object} [context] - { inCombat?, session? }
+     * @returns {Object|null} dose info, or null if nothing was dosed
+     */
+    processSerumDose(player, context = {}) {
+        const potionSlot = player?.equipment?.potion;
+        if (!potionSlot || typeof potionSlot !== 'object') return null;
+
+        const { itemId, quantity } = potionSlot;
+        if (!itemId || quantity <= 0) return null;
+
+        const def = this.getPotionDefinition(potionSlot);
+        if (!def) return null;
+
+        // Only timed-buff serums auto-dose (prevents one-shot items from spamming).
+        const duration = (def.effect && def.effect.duration) || def.duration;
+        if (!duration) return null;
+
+        this.pruneExpiredEffects(player);
+        const now = Date.now();
+
+        // If this serum's buff is still active, don't re-dose yet.
+        const alreadyActive = (player.activeEffects || []).some(
+            e => e.source === 'serum' && e.serumId === itemId && e.expiresAt > now
+        );
+        if (alreadyActive) return null;
+
+        // Throttle so a burst of attacks/harvests can't dump the whole stack at once.
+        if (player._lastSerumDose && (now - player._lastSerumDose) < 1000) return null;
+        player._lastSerumDose = now;
+
+        // Conservation (base 1.0 = always consume).
+        const wasConsumed = this.shouldConsumeItem('potion');
+        if (wasConsumed) {
+            potionSlot.quantity--;
+        }
+
+        const perks = this.getConsumablePerkMultipliers();
+
+        // Apply the timed effect.
+        if (!player.activeEffects) player.activeEffects = [];
+        const effect = {
+            source: 'serum',
+            serumId: itemId,
+            name: def.name,
+            appliedAt: now,
+            expiresAt: now + duration
+        };
+        if (def.effect && def.effect.damageReduction) {
+            effect.damageReduction = def.effect.damageReduction;
+        }
+        if (def.effect && def.effect.stat && def.effect.amount) {
+            effect.stat = def.effect.stat;
+            effect.amount = def.effect.amount;
+        }
+        player.activeEffects.push(effect);
+
+        // Heal-on-dose (combat only — avoids surprise healing while skilling).
+        let healed = 0;
+        if (context.inCombat && def.effectType === 'heal' && def.effectValue) {
+            const maxHP = this.calculateMaxHP(player);
+            const healAmt = Math.floor(def.effectValue * (perks.potionPotency || 1.0));
+            const oldHP = player.currentHP || 0;
+            player.currentHP = Math.min(maxHP, oldHP + healAmt);
+            healed = player.currentHP - oldHP;
+        }
+
+        // Session stats
+        if (context.session) {
+            if (wasConsumed) context.session.serumsConsumed = (context.session.serumsConsumed || 0) + 1;
+            else context.session.serumsConserved = (context.session.serumsConserved || 0) + 1;
+        }
+
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('serum-dosed', { itemId, remaining: potionSlot.quantity, healed });
+        }
+
+        return {
+            success: true,
+            serumId: itemId,
+            serumName: def.name,
+            healed,
+            remaining: potionSlot.quantity,
+            wasConsumed,
+            expiresAt: effect.expiresAt
         };
     },
 

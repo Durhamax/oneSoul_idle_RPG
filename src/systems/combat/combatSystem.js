@@ -375,6 +375,15 @@ const CombatSystem = {
             }
         }
 
+        // Process serum/potion dosing — maintains the equipped serum's timed buff and
+        // depletes it; expired buffs are pruned. (DR buffs flow through DamageCalculator.)
+        AutoConsumption.pruneExpiredEffects(player);
+        const serumResult = AutoConsumption.processSerumDose(player, { inCombat: true, session: combat.session });
+        if (serumResult && serumResult.success && serumResult.wasConsumed) {
+            const healText = serumResult.healed ? ` (+${serumResult.healed} HP)` : '';
+            this.addLog(combat, `Dosed ${serumResult.serumName}${healText} | Remaining: ${serumResult.remaining}`);
+        }
+
         // Update player attack timer
         const playerInterval = this.getPlayerAttackInterval(player);
         const playerReady = CombatTimers.updateTimer(combat.playerTimer, deltaTime, playerInterval.interval);

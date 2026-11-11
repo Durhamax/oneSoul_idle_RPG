@@ -50,6 +50,31 @@ const CONSUMABLE_ITEMS = {
         enduranceRecovery: 18,
         tags: ['consumable', 'food', 'healing', 'buff', 'meat'],
     },
+
+    // =================================================================
+    // TIER 1 SERUMS / TINCTURES (potion slot — dosed, not eaten)
+    // =================================================================
+    mintyTincture: {
+        id: 'mintyTincture',
+        name: 'Minty Tincture',
+        description: 'A soothing tincture pressed from minty herb. Dosed to steady you — grants brief damage resistance and a touch of healing. Depletes as it is dosed in combat or while skilling.',
+        icon: '🧪',
+        category: 'consumable',
+        slot: 'consumable',      // Bank tab
+        equipSlot: 'potion',     // Equipment slot (serum/tincture)
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 40,
+        value: 14,
+        // Dose heals a little (combat only) and applies a timed buff.
+        effectType: 'heal',
+        effectValue: 20,
+        effect: {
+            damageReduction: 0.08,   // +8% damage resistance...
+            duration: 60000,         // ...for 60s; re-dosed (−1) when it lapses
+        },
+        tags: ['consumable', 'serum', 'tincture', 'buff', 'herb'],
+    },
 };
 
 // Export for use in other modules

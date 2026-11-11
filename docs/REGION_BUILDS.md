@@ -119,10 +119,10 @@ Two enemies, chosen to **teach the damage-type ↔ armor-type system** (`COMBAT_
 
 | Enemy | Armor type | Combat lvl | Role |
 |---|---|---|---|
-| **Elaran Recon Trooper** | **Biological** | 1 | The clean first kill. Countered by the player's starting **Incendiary/Pierce** — teaches *"the right type melts them."* The drones' human handlers; also seeds infantry for Verduun (Hex 5–7). |
+| **Elaran Recon Trooper** | **Biological** | 1 | The clean first kill — low HP, so your starting **Pierce** bow drops it even though Pierce isn't its counter. Its *true* counter (**Incendiary**) is discovered at **Tier 2** — so returning later, infantry *melt*: the first real payoff of the type system. The drones' human handlers; seeds infantry for Verduun (Hex 5–7). |
 | **Survey Drone** | **Airborne** | 2–3 | The signature enemy. **Off-counter on purpose:** starting Pierce only *chips* it — teaches *"these I can't cleanly answer yet."* The satisfying counter (**Cryo**) is an aspirational unlock far east (Icelands, T6). Low HP so it's winnable, but it makes the type system **felt**, not just stated. |
 
-> **Design intent:** one enemy your starting weapon *counters* (reward) and one it *doesn't* (aspiration) = the type system taught in a single region, at trivial stakes. The drone is the hook that makes the eventual Cryo unlock pay off emotionally.
+> **Design intent:** at the breach you own **only Pierce** — so one enemy is **winnable now** (the low-HP trooper) and one is **resistant** (the drone). The type system is *felt before you own a single counter*; both proper counters are aspirational unlocks east — **Incendiary** for the trooper (Tier 2), **Cryo** for the drone (Icelands, T6). The drone is the hook that makes those unlocks pay off.
 
 **Weapon & armor premise (theme → mechanic).** Unity refused to arm *against people* — but they still **hunt small game**, so the player already owns a **basic Unity hunting weapon** (Pierce — bow/sling/spear, from R1 Hunting). The divergence isn't *getting* a weapon; it's **turning a hunting weapon on a person for the first time.** That's the real line crossed at Scoutreach. From there, upgrades come two ways: **craft** (the Makeshift Carbine, §6) or **plunder** a basic Elaran sidearm.
 
@@ -137,7 +137,9 @@ Scaled to combat lvl 1–3. **This is the tech-input bridge** — the green-west
 - **Rare/elite** — **drone survey-data core** (the clue, see §8) + first **elite token**; rare **drone optic lens** (amulet component — §9).
 - **Medals** — **first medals drop here** (`currencies_production.js`): war-trophies off defeated Elarans → the **perk-roll currency.** Higher-tier kills (the drone > the trooper) yield more per unit time.
 
-### 5. Skills unlocked here
+### 5. Gathering & skills unlocked here
+**Gathering — the node model in action (resource bleed).** Scoutreach shares the Cradle's tree-line, so R1's green archetypes **continue here unchanged** (`RESOURCE_DESIGN.md` §8.2 — resources bleed across borders; **no new items**): **Lakeside Forest** (logging), **Meadow Game Trail** (hunting), **Fallen Timber + Meadow Herb Patch** (foraging), and **Riverbed** (mining — Mining was introduced in R1 and simply carries over). The crater's **Lake Shallows does *not* bleed** (unique closed-basin node, §8.2) — open-water fishing proper waits for the Gulf/archipelago. Scoutreach adds **no new natural archetype**; its gathering identity is **Thieving** (below). New natural archetypes (River Run, Stone Bluff, Thorny Thicket…) enter later regions with the matching geography.
+
 - **★ Thieving — introduced.** Pilfer a **forward supply cache** and strip **disabled drones** for `scrap/wire/parts/circuitry` without a stand-up fight. The **plunder path's** first appearance and the early bridge to tech (`RESOURCE_DESIGN.md` §6). Rewards Stealth/Perception attributes.
 - **Combat — introduced.** First combat levels; auto-battle loop taught; **auto-consumption** of looted med-stims/rations demonstrated.
 - **★ Perks — tutorial.** First **medals** → roll the first tile on the **7×7 grid** (`saveSystem.js`). Teach: more medals rolled at once = higher quality potential; tougher enemies = more medals/time. First small combat perk slotted.
@@ -163,7 +165,7 @@ Still **no forge/electronics** (no ore, no workstation yet) — but Scoutreach t
 ### 9. Rewards — second seeded assembly component
 - **Discovery/mission rewards:** first medals + gold; `tutorial_combat` and `tutorial_thieving` completions.
 - **First tomes (non-quest):** pilfered from the Elaran **data cache** and the **drone core** via Thieving — establishing tomes-as-stolen-knowledge as a *standing* source, not a quest reward (`ENGINEERING_DESIGN.md` §7). This is the template every Elaran-held region reuses.
-- **★ SEEDED — "One Soul" amulet component #1: the Drone Optic Lens.** A rare drop from the Survey Drone (fittingly — the thing that *sees*). Slotted into the R1 locket chassis, it grants a **Perception / discovery-and-accuracy** bonus and carries **lore fragment #1** (a decoded sliver of the survey data — the first true hint that the hunt points *home*). First real payoff of the assembly mechanic; ties a combat drop → a skilling+combat bonus → the narrative. See **Appendix A**.
+- **One Soul Amulet — first component (the Drone Optic Lens).** A rare drop from the Survey Drone (fittingly — the thing that *sees*): a **Perception / accuracy** combat bonus and the first piece of the **optional end-game combat amulet** (Melvor *Fury of the Elemental Zodiac* style, **Appendix A**). **No story load** — a power/completionist chase, not the campaign spine (the campaign rides the missions). First taste of the component-assembly mechanic on a purely combat item.
 
 ### 10. Content-coverage check *(the spread rule)*
 | System | Touched here? |
@@ -177,7 +179,7 @@ Still **no forge/electronics** (no ore, no workstation yet) — but Scoutreach t
 | Items/loadout/rarity | ✅ starting Unity hunting weapon → first upgrade (plunder / Makeshift Carbine); **first crafted armor** (Tailoring); first tech item |
 | Crafting | ✅ **armor (Tailoring)** + **component-assembly** (Makeshift Carbine) + **tech assembly**; Cooking continues |
 | Navigation | ✅ continues (reach the Riveria/Verduun exits) |
-| Gathering | ◑ continues from R1 (no new skill; Mining still deferred) |
+| Gathering | ◑ **resource bleed** — R1 green archetypes continue (incl. **Mining/Riverbed**, introduced in R1); no new natural node. Gathering identity here = **Thieving** (§8.2) |
 | Missions | ✅ `tutorial_combat`, `tutorial_thieving` (+ `tutorial_engineering`) |
 | Narrative/themes | ✅ guide dynamic, AV-S1 breadcrumb, Unity-divergence, invasion-driver, tomes=stolen-knowledge |
 | Assembly/campaign reward | ✅ amulet component #1 (Drone Optic Lens) + first assembled weapon |

@@ -77,6 +77,13 @@ const SkillSystem = {
     gainSkillExp(skillId, amount) {
         if (!skillId || !this.state.skills[skillId]) return;
 
+        // Serum/potion dosing during skilling — a completed skilling action maintains the
+        // equipped serum's buff and depletes it (consistent with food/ammo consumption).
+        if (typeof AutoConsumption !== 'undefined') {
+            AutoConsumption.pruneExpiredEffects(this.state);
+            AutoConsumption.processSerumDose(this.state, { inCombat: false });
+        }
+
         const skill = this.state.skills[skillId];
         skill.exp += amount;
 

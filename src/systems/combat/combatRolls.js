@@ -108,9 +108,10 @@ const CombatRolls = {
         // Player uses combatAttributes, enemies use attributes
         const attributes = defender.attributes || defender.combatAttributes || {};
 
-        // Evasion from Mobility
-        let evasion = (attributes.mobility || 0) * 10
-            * (mult.mobilityScaling || 1.0)
+        // Evasion from Stealth — Stealth lowers an attacker's chance to hit this defender.
+        // (Mobility governs attack speed, not dodge.)
+        let evasion = (attributes.stealth || 0) * 10
+            * (mult.stealthScaling || 1.0)
             * (mult.evasion || 1.0);
 
         // Flat evasion from equipment
