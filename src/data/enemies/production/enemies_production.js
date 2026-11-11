@@ -45,10 +45,9 @@ const ProductionEnemies = {
         goldDrop: { min: 3, max: 8 },
         fragmentDrop: { min: 0, max: 2 },  // Low chance of 1-2 fragments, often 0
         loot: [
-            { itemId: 'circuit_scrap', chance: 0.45, quantity: { min: 1, max: 2 } },
-            { itemId: 'copper_wire', chance: 0.35, quantity: { min: 1, max: 3 } },
-            { itemId: 'lens_fragment', chance: 0.15, quantity: 1 },
-            { itemId: 'survey_data_chip', chance: 0.08, quantity: 1 }
+            // Salvaged sensor is the component that pairs with refined copper wire to
+            // assemble the first technology (Scrap Field Scanner).
+            { itemId: 'salvagedSensor', chance: 0.30, quantity: 1 }
         ],
         respawnTime: 500,           // 500ms for testing
 

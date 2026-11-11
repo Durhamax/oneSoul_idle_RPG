@@ -219,7 +219,12 @@ const NavigationSystem = {
 
         // Safety checks for attributes (default to 1 if undefined)
         const health = attributes.health || 1;
-        const perception = attributes.perception || 1;
+        // Active Perception serums (e.g. Minty Tincture) count toward discovery — this is
+        // the one gathering-side activity that rolls on Perception, so the tincture is
+        // "in use" here and depletes via the skilling dose hook.
+        const perceptionSerum = (typeof AutoConsumption !== 'undefined')
+            ? AutoConsumption.getActiveStatBonus(this.state, 'perception') : 0;
+        const perception = (attributes.perception || 1) + perceptionSerum;
         const mobility = attributes.mobility || 1;
 
         // Get navigation perk multipliers
@@ -247,6 +252,10 @@ const NavigationSystem = {
         let discoveryInterval = baseInterval - mobilityReduction;
         // Apply perk multiplier (higher = faster, so divide)
         discoveryInterval = discoveryInterval / navPerks.explorationSpeed;
+        // Overweight penalty — an overburdened explorer covers ground slower.
+        if (typeof CombatTimers !== 'undefined') {
+            discoveryInterval *= CombatTimers.getStateOverweightPenalty(this.state);
+        }
         discoveryInterval = Math.max(balance.minDiscoveryInterval || 1000, discoveryInterval);
 
         // ===== ENDURANCE DRAIN (Base rate, refined by health in processNavigation) =====

@@ -442,8 +442,14 @@ const CraftingSystem = {
         // Attribute bonus (simplified)
         const attributeBonus = this.getAttributeSpeedBonus ? this.getAttributeSpeedBonus(skill) : 1;
 
+        // Overweight penalty — carrying over the threshold slows crafting too.
+        let overweight = 1.0;
+        if (typeof CombatTimers !== 'undefined' && typeof GameEngine !== 'undefined') {
+            overweight = CombatTimers.getStateOverweightPenalty(GameEngine.state);
+        }
+
         // Calculate final time (minimum 1 second)
-        return Math.max(1000, Math.floor(baseTime * skillBonus / speedMultiplier / attributeBonus));
+        return Math.max(1000, Math.floor(baseTime * skillBonus * overweight / speedMultiplier / attributeBonus));
     },
 
     /**

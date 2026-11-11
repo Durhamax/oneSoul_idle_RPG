@@ -39,7 +39,7 @@ const MATERIAL_ITEMS = {
     minnows: {
         id: 'minnows',
         name: 'Minnows',
-        description: 'Tiny silver fish often used as bait or ground into fish meal.',
+        description: 'Tiny silver fish prized as live bait. Equip them to the ammo slot while fishing to improve your catch rate — one is spent each fishing attempt. They are bait, not ammunition: a ranged weapon cannot fire them.',
         type: 'material',
         category: 'material',
         subcategory: 'fish',
@@ -50,6 +50,12 @@ const MATERIAL_ITEMS = {
         stackLimit: 999,
         value: 3,
         icon: 'assets/icons/materials/minnows.png',
+        // Equippable bait: lives in the ammo slot, but is a bait-class consumable so
+        // combat never spends it (see consumeAmmo/canAttack). Consumed per fishing interval.
+        equipSlot: 'ammo',
+        ammoCategory: 'bait',
+        weight: 0.2,                 // flat per stack (live bait), never × quantity
+        fishingSuccessBonus: 0.15,   // +15% fishing success while equipped (with charges)
         tags: ['fish', 'bait']
     },
 
@@ -178,10 +184,10 @@ const MATERIAL_ITEMS = {
         tags: ['fiber', 'crafting', 'mechanics', 'tailoring']
     },
 
-    wildroot: {
-        id: 'wildroot',
-        name: 'Wildroot',
-        description: 'A tough, gnarled root with potent alchemical properties. Difficult to find.',
+    auroranTuber: {
+        id: 'auroranTuber',
+        name: 'Auroran Tuber',
+        description: 'A tough, gnarled tuber that glows faintly at the roots. Prized by cooks and alchemists — a key ingredient once paired with shellfish in a hearty boil.',
         type: 'material',
         category: 'material',
         subcategory: 'herb',
@@ -192,7 +198,7 @@ const MATERIAL_ITEMS = {
         stackLimit: 999,
         value: 25,
         icon: '🫚',
-        tags: ['herb', 'alchemy', 'chemistry', 'rare']
+        tags: ['herb', 'alchemy', 'chemistry', 'cooking', 'rare']
     },
 
     // ==========================================
@@ -367,6 +373,43 @@ const MATERIAL_ITEMS = {
         value: 20,
         icon: '🌸',
         tags: ['flower', 'alchemy', 'chemistry', 'medicine']
+    },
+
+    // ==========================================
+    // REFINED / COMPONENTS (crafted + salvaged intermediates)
+    // ==========================================
+    copperWire: {
+        id: 'copperWire',
+        name: 'Copper Wire',
+        description: 'Copperite ore smelted down and drawn into fine conductive wire. The backbone of early circuitry and electronics.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'smithing',
+        tier: 1,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 14,
+        icon: '🔌',
+        tags: ['metal', 'wire', 'component', 'electronics', 'refined']
+    },
+
+    salvagedSensor: {
+        id: 'salvagedSensor',
+        name: 'Salvaged Sensor',
+        description: 'An intact optical sensor pried from a downed Elaran survey drone. Pair it with copper wiring to assemble your first working technology.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'electronics',
+        tier: 1,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 22,
+        icon: '📟',
+        tags: ['salvage', 'sensor', 'component', 'electronics']
     }
 };
 

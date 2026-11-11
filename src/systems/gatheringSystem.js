@@ -283,6 +283,11 @@ const GatheringSystem = {
     const successChance = this.calculateSuccessChance(nodeDef, toolDef, playerSkill);
     const didSucceed = Math.random() < successChance;
 
+    // Fishing bait is spent once per fishing interval (whether or not the cast succeeds).
+    if (playerSkill.id === 'fishing') {
+      this.consumeFishingBait();
+    }
+
     if (didSucceed) {
       // SUCCESS - Award resources ONLY if node has health
       const resources = this.rollResources(nodeDef, toolDef, playerSkill);
@@ -459,8 +464,46 @@ const GatheringSystem = {
       baseInterval = baseInterval / perkMultipliers[speedPerk];
     }
 
+    // Overweight penalty — being over the carry threshold slows gathering the same
+    // graduated way it slows attacks.
+    if (typeof CombatTimers !== 'undefined' && typeof GameEngine !== 'undefined') {
+      baseInterval *= CombatTimers.getStateOverweightPenalty(GameEngine.state);
+    }
+
     // Minimum 500ms
     return Math.max(500, Math.floor(baseInterval));
+  },
+
+  /**
+   * Return the equipped fishing bait (bait-class item in the ammo slot with charges),
+   * as { slot, def }, or null. Bait improves fishing success and is spent per interval.
+   */
+  getEquippedFishingBait() {
+    const ammoSlot = this.state.equipment?.ammo;
+    if (!ammoSlot || typeof ammoSlot !== 'object') return null;
+    if (!ammoSlot.itemId || ammoSlot.quantity <= 0) return null;
+    const def = (typeof ItemRegistry !== 'undefined') ? ItemRegistry.getItem(ammoSlot.itemId) : null;
+    if (!def || def.ammoCategory !== 'bait') return null;
+    return { slot: ammoSlot, def };
+  },
+
+  /**
+   * Spend one bait for a fishing interval (honoring ammo conservation when available).
+   * Called once per fishing action only — never by other gathering skills or combat.
+   */
+  consumeFishingBait() {
+    const bait = this.getEquippedFishingBait();
+    if (!bait) return;
+    let consume = true;
+    if (typeof AutoConsumption !== 'undefined' && AutoConsumption.shouldConsumeItem) {
+      consume = AutoConsumption.shouldConsumeItem('ammo');
+    }
+    if (consume) {
+      bait.slot.quantity -= 1;
+      if (typeof EventBus !== 'undefined') {
+        EventBus.emit('bait-consumed', { itemId: bait.def.id, remaining: bait.slot.quantity });
+      }
+    }
   },
 
   calculateSuccessChance(nodeDef, toolDef, playerSkill) {
@@ -472,6 +515,12 @@ const GatheringSystem = {
 
     // Skill level bonus (+1% per level)
     baseChance += playerSkill.level * 0.01;
+
+    // Fishing bait bonus — equipped bait (ammo slot) improves catch rate while it has charges.
+    if (playerSkill.id === 'fishing') {
+      const bait = this.getEquippedFishingBait();
+      if (bait) baseChance += bait.def.fishingSuccessBonus || 0;
+    }
 
     // Level requirement penalty (if under-leveled)
     const levelDiff = nodeDef.requiredSkillLevel - playerSkill.level;

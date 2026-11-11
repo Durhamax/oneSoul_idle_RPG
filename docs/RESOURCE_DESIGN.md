@@ -201,12 +201,12 @@ A node is **not a hex** — it's a reusable **archetype** with:
 **🌿 Foraging** — ground / plant features
 | Archetype | Found along | Cluster |
 |---|---|---|
-| **Fallen Timber** `[E]` | forest floor | mintyHerb · commonMushrooms · plantFibers · wildroot |
+| **Fallen Timber** `[E]` | forest floor | mintyHerb · commonMushrooms · plantFibers · auroranTuber |
 | **Meadow Herb Patch** `[E]` | meadow | meadowGreens · daypetalBloom |
 | **Mushroom Hollow** | shaded rot | edible caps · toxic caps (chem) · spores · *loam* |
 | **Berry Bramble** | hedgerow / scrub | berries · thornberries · bramble fiber |
 | **Wetland Verge** | fen / bog | cattail root · bog myrtle · peat moss · *reed* |
-| **Tuber Bed** | rich soil | wildroot · tubers · *starchroot* |
+| **Tuber Bed** | rich soil | tubers · *starchroot* · *groundnut* |
 
 **🗝️ Thieving** — Elaran/urban (introduced R2; no nodes in the Cradle)
 | Archetype | Found along | Cluster |

@@ -6,14 +6,16 @@
 
 const CombatTimers = {
     /**
-     * Calculate weight limit
+     * Calculate weight limit (carry threshold).
+     * Threshold = 10 + Strength/2, scaled by any weightCapacity perk.
      */
     calculateWeightLimit(player) {
-        const mult = player.perkMultipliers || {};
-        const strength = player.attributes?.strength || 0;
+        const mult = player.perkMultipliers || player.compiledStats?.perkMultipliers || {};
+        // Combat snapshots expose `attributes`; GameEngine.state exposes `combatAttributes`.
+        const strength = player.attributes?.strength ?? player.combatAttributes?.strength ?? 0;
 
-        const baseLimit = 9 + strength;
-        return Math.floor(baseLimit * (mult.weightCapacity || 1.0));
+        const baseLimit = 10 + (strength / 2);
+        return baseLimit * (mult.weightCapacity || 1.0);
     },
 
     /**
@@ -22,6 +24,28 @@ const CombatTimers = {
     calculateCurrentWeight(player) {
         const compiled = player.compiledStats || { weight: 0 };
         return compiled.weight || 0;
+    },
+
+    /**
+     * Weight limit from GameEngine.state (non-combat systems read combatAttributes).
+     */
+    getStateWeightLimit(state) {
+        const mult = state?.compiledStats?.perkMultipliers || {};
+        const strength = state?.combatAttributes?.strength || 0;
+        const baseLimit = 10 + (strength / 2);
+        return baseLimit * (mult.weightCapacity || 1.0);
+    },
+
+    /**
+     * Graduated overweight interval multiplier (>= 1.0) from GameEngine.state.
+     * Shared by gathering, crafting and navigation so every activity slows the same
+     * way the attack interval does. Returns 1.0 when within the carry threshold.
+     */
+    getStateOverweightPenalty(state) {
+        if (!state) return 1.0;
+        const weight = state.compiledStats?.weight || 0;
+        const limit = this.getStateWeightLimit(state);
+        return this.calculateOverweightPenalty(weight, limit).penalty;
     },
 
     /**

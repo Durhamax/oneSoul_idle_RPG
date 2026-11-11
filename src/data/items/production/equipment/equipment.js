@@ -13,6 +13,7 @@ const EQUIPMENT_ITEMS = {
     // Tier 1 Weapons
     greensmanTrainingBow: {
         id: 'greensmanTrainingBow',
+        weight: 2,          // light wooden bow
         name: 'Greensman Training Bow',
         description: 'A basic bow crafted from riverwillow and plant fibers. Perfect for beginners learning archery.',
         icon: 'assets/icons/weapons/greensman_training_bow.png',
@@ -40,6 +41,7 @@ const EQUIPMENT_ITEMS = {
 
     sidekick22: {
         id: 'sidekick22',
+        weight: 2.5,        // compact metal pistol
         name: 'Sidekick 22',
         description: 'A small caliber pistol with a copper frame. Reliable sidearm for close encounters.',
         icon: '🔫',
@@ -72,6 +74,7 @@ const EQUIPMENT_ITEMS = {
 
     frontierMarksmanRifle: {
         id: 'frontierMarksmanRifle',
+        weight: 4.5,        // heavy two-handed rifle
         name: 'Frontier Marksman Rifle',
         description: 'A pinewood-stocked rifle with copper frame. Standard issue for frontier scouts.',
         icon: '🔫',
@@ -99,6 +102,7 @@ const EQUIPMENT_ITEMS = {
 
     unityBlade: {
         id: 'unityBlade',
+        weight: 3,          // metal melee blade
         name: 'Unity Blade',
         description: 'A simple copper blade with pinewood handle. Standard melee weapon for Unity recruits.',
         icon: '🗡️',
@@ -130,6 +134,7 @@ const EQUIPMENT_ITEMS = {
 
     flintheadArrows: {
         id: 'flintheadArrows',
+        weight: 1,          // flat per stack (ammo)
         name: 'Flinthead Arrows',
         description: 'Basic arrows with flint tips. Essential ammunition for bows.',
         icon: 'assets/icons/ammo/flinthead_arrows.png',
@@ -147,6 +152,7 @@ const EQUIPMENT_ITEMS = {
 
     copperiteRounds: {
         id: 'copperiteRounds',
+        weight: 1.5,        // flat per stack (metal rounds)
         name: 'Copperite Rounds',
         description: 'Simple ammunition made from copperite. Compatible with pistols and rifles.',
         icon: '🔘',
@@ -169,12 +175,41 @@ const EQUIPMENT_ITEMS = {
     },
 
     // =================================================================
+    // TECHNOLOGY (tech-slot gear — slots gated by Intellect: 0/3/6/9)
+    // =================================================================
+    fieldScanner: {
+        id: 'fieldScanner',
+        weight: 1,          // compact salvaged tech
+        name: 'Scrap Field Scanner',
+        description: 'Your first working technology: a salvaged survey-drone sensor wired to a copper harness. It reads incoming threats and shaves a little off every hit.',
+        icon: '📡',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'uncommon',
+        stackLimit: 1,
+        value: 60,
+        level: 1,
+        slot: 'technology',
+        equipSlot: 'technology',
+        tier: 'starter',
+        flatDamageReduction: 2,       // read by DamageCalculator when slotted into tech1–tech4
+        combatStats: {
+            flatDamageReduction: 2,
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['technology', 'tech', 'scanner', 'salvage'],
+    },
+
+    // =================================================================
     // ARMOR SETS (Full body armor: head + chest + legs combined)
     // =================================================================
 
     // Tier 1 Armor Sets
     unityScoutSet: {
         id: 'unityScoutSet',
+        weight: 4,          // linen armor set
         name: 'Unity Scout Set',
         description: 'Standard issue armor for Unity scouts. Lightweight linen construction offers basic protection for field reconnaissance.',
         icon: 'assets/icons/armor/Unity_scout_set.png',
@@ -203,6 +238,7 @@ const EQUIPMENT_ITEMS = {
 
     waxedWaderSet: {
         id: 'waxedWaderSet',
+        weight: 3.5,        // waxed-fabric set
         name: 'Waxed Wader Set',
         description: 'Waterproof gear designed for fishermen and foragers. Waxed fabric keeps you dry in wet conditions.',
         icon: '🧥',
@@ -230,6 +266,7 @@ const EQUIPMENT_ITEMS = {
 
     harvestersGarb: {
         id: 'harvestersGarb',
+        weight: 3,          // cloth work garb
         name: "Harvester's Garb",
         description: 'Practical wool and leather outfit for gatherers. Durable construction withstands brush and thorns.',
         icon: '👔',
@@ -264,6 +301,7 @@ const EQUIPMENT_ITEMS = {
     // Starter Tools
     caneRod: {
         id: 'caneRod',
+        weight: 1.5,        // light wooden rod
         name: 'Cane Rod',
         description: 'A simple fishing rod made from river cane. Perfect for catching small fish.',
         icon: 'assets/icons/tools/cane-rod.png',
@@ -287,6 +325,7 @@ const EQUIPMENT_ITEMS = {
 
     huntingBlade: {
         id: 'huntingBlade',
+        weight: 2,          // metal blade tool
         name: 'Hunting Blade',
         description: 'A sharp blade designed for hunting and field dressing game.',
         icon: 'assets/icons/tools/hunting blade.png',
@@ -310,6 +349,7 @@ const EQUIPMENT_ITEMS = {
 
     lightPickaxe: {
         id: 'lightPickaxe',
+        weight: 2,          // light metal-headed pick
         name: 'Light Pickaxe',
         description: 'A lightweight pickaxe ideal for beginners. Can mine basic ores.',
         icon: 'assets/icons/tools/light-pickaxe.png',
@@ -333,6 +373,7 @@ const EQUIPMENT_ITEMS = {
 
     lockpick: {
         id: 'lockpick',
+        weight: 0.5,        // tiny tool
         name: 'Lockpick',
         description: 'A set of basic lockpicking tools. Essential for opening locked containers.',
         icon: 'assets/icons/tools/lockpick.png',
@@ -356,6 +397,7 @@ const EQUIPMENT_ITEMS = {
 
     utilityHatchet: {
         id: 'utilityHatchet',
+        weight: 2,          // metal hatchet
         name: 'Utility Hatchet',
         description: 'A versatile hatchet for chopping wood and basic tasks.',
         icon: 'assets/icons/tools/utility-hatchet.png',
@@ -379,6 +421,7 @@ const EQUIPMENT_ITEMS = {
 
     wovenBasket: {
         id: 'wovenBasket',
+        weight: 1.5,        // light woven carry-basket
         name: 'Woven Basket',
         description: 'A sturdy basket woven from natural fibers. Useful for gathering plants.',
         icon: 'assets/icons/tools/woven-basket.png',

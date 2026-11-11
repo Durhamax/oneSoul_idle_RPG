@@ -110,7 +110,7 @@ NodeRegistry.production.node_1_3 = {
         { itemId: 'mintyHerb', weight: 45, minYield: 1, maxYield: 3 },
         { itemId: 'commonMushrooms', weight: 30, minYield: 1, maxYield: 2 },
         { itemId: 'plantFibers', weight: 18, minYield: 1, maxYield: 2 },
-        { itemId: 'wildroot', weight: 7, minYield: 1, maxYield: 1 }
+        { itemId: 'auroranTuber', weight: 7, minYield: 1, maxYield: 1 }
     ],
 
     baseXP: 12,
@@ -178,10 +178,10 @@ NodeRegistry.production.node_1_5 = {
     harvestsPerCapacity: 3,
 
     resourceTable: [
-        { itemId: 'clay', weight: 50, minYield: 2, maxYield: 5 },
-        { itemId: 'flint', weight: 28, minYield: 1, maxYield: 2 },
+        { itemId: 'clay', weight: 53, minYield: 2, maxYield: 5 },
+        { itemId: 'flint', weight: 30, minYield: 1, maxYield: 2 },
         { itemId: 'copperiteOre', weight: 15, minYield: 1, maxYield: 1 },
-        { itemId: 'goldFlakes', weight: 7, minYield: 1, maxYield: 1 }
+        { itemId: 'goldFlakes', weight: 2, minYield: 1, maxYield: 1 }
     ],
 
     baseXP: 20,

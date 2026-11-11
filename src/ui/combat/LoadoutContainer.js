@@ -20,9 +20,39 @@ const LoadoutContainer = {
                 <div class="loadout-main">
                     ${this.renderEquipmentGrid(player)}
                 </div>
+                ${this.renderWeightBar(player)}
                 <div class="loadout-sidebar">
                     ${this.renderStatsPanel(player, compiledStats)}
                 </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Vertical carry-weight bar shown to the right of the loadout: fill = current
+     * equipped weight, full track = the Strength-driven threshold (10 + Str/2).
+     * Turns red and shows the graduated slow-down when over the threshold.
+     */
+    renderWeightBar(player) {
+        const weight = this.calculateWeight(player).total;
+        const limit = (typeof CombatTimers !== 'undefined')
+            ? CombatTimers.getStateWeightLimit(player)
+            : (10 + ((player.combatAttributes?.strength || 0) / 2));
+        const ow = (typeof CombatTimers !== 'undefined')
+            ? CombatTimers.calculateOverweightPenalty(weight, limit)
+            : { overweight: false, penalty: 1 };
+
+        const pct = limit > 0 ? Math.max(0, Math.min(100, (weight / limit) * 100)) : 0;
+        const slowPct = Math.round((ow.penalty - 1) * 100);
+
+        return `
+            <div class="loadout-weight ${ow.overweight ? 'is-over' : ''}" title="Carry weight ${weight.toFixed(1)} / threshold ${limit.toFixed(1)}">
+                <div class="loadout-weight-cap">⚖️</div>
+                <div class="loadout-weight-track">
+                    <div class="loadout-weight-fill" style="height:${pct}%"></div>
+                </div>
+                <div class="loadout-weight-readout">${weight.toFixed(1)}<span class="loadout-weight-sep">/</span>${limit.toFixed(1)}</div>
+                ${ow.overweight ? `<div class="loadout-weight-warn">−${slowPct}%<br>speed</div>` : ''}
             </div>
         `;
     },
@@ -647,8 +677,9 @@ const LoadoutContainer = {
             if (equipment[slot]) {
                 const itemDef = getItemDefFromSlot(equipment[slot]);
                 if (itemDef && itemDef.weight) {
-                    const quantity = typeof equipment[slot] === 'object' ? (equipment[slot].quantity || 1) : 1;
-                    consumablesWeight += itemDef.weight * quantity;
+                    // Flat weight per equipped stack, never × quantity (a 70-arrow stack
+                    // weighs the same 1 as a single arrow).
+                    consumablesWeight += itemDef.weight;
                 }
             }
         }
