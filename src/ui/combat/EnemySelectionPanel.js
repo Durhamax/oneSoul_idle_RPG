@@ -17,11 +17,65 @@ const EnemySelectionPanel = {
 
         return `
             <div class="enemy-selection-panel">
-                ${this.renderFilterPills(enemies)}
-                ${this.renderEnemySection(enemies)}
+                ${this.renderRegionSections(enemies)}
                 ${this.renderIncursionSection(incursions)}
             </div>
         `;
+    },
+
+    /**
+     * Render enemies grouped by region (regional navigation — replaces the old
+     * difficulty filter). Each region the player can reach gets its own section.
+     */
+    renderRegionSections(enemies) {
+        const groups = {};
+        for (const enemy of enemies) {
+            const region = enemy.region || 'unknown';
+            (groups[region] = groups[region] || []).push(enemy);
+        }
+
+        const regionIds = Object.keys(groups);
+        if (regionIds.length === 0) {
+            return `
+                <div class="combat-section-card">
+                    <div class="enemy-grid">
+                        <div class="no-enemies">No enemies available</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        return regionIds.map(regionId => {
+            const list = groups[regionId];
+            const name = this.getRegionName(regionId);
+            return `
+                <div class="combat-section-card">
+                    <div class="combat-section-header">
+                        <div class="combat-section-title">
+                            <span class="section-icon">🗺️</span>
+                            <span>${name}</span>
+                        </div>
+                        <span class="combat-section-count">${list.length} ${list.length === 1 ? 'enemy' : 'enemies'}</span>
+                    </div>
+                    <div class="combat-section-content">
+                        <div class="enemy-grid">
+                            ${list.map(enemy => this.renderEnemyTile(enemy)).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    /**
+     * Resolve a region's display name from region definitions, falling back to a
+     * title-cased version of the region id.
+     */
+    getRegionName(regionId) {
+        const fromDef = (typeof GameEngine !== 'undefined' && GameEngine.definitions?.regions?.[regionId]?.name)
+            || (typeof RegionRegistry !== 'undefined' && RegionRegistry.getRegion && RegionRegistry.getRegion(regionId)?.name);
+        if (fromDef) return fromDef;
+        return regionId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     },
 
     /**

@@ -20,7 +20,6 @@ const LoadoutContainer = {
                 <div class="loadout-main">
                     ${this.renderEquipmentGrid(player)}
                 </div>
-                ${this.renderWeightBar(player)}
                 <div class="loadout-sidebar">
                     ${this.renderStatsPanel(player, compiledStats)}
                 </div>

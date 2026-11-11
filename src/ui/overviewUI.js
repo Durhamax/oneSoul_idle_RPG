@@ -671,6 +671,28 @@ const OverviewUI = {
     },
 
     /**
+     * Render the carry-weight bar for the loadout panel.
+     * Uses the equipment-weight system (equipped item weights vs 50 + strength*10),
+     * matching the panel's header badge. Styled in the Overview flat idiom.
+     */
+    renderLoadoutWeightBar(currentWeight, maxWeight) {
+        const max = maxWeight > 0 ? maxWeight : 1;
+        const pct = Math.max(0, Math.min(100, (currentWeight / max) * 100));
+        const isOver = currentWeight >= maxWeight;
+        const isNear = !isOver && pct >= 85;
+        const stateClass = isOver ? 'is-over' : (isNear ? 'is-near' : '');
+        return `
+            <div class="loadout-weight-row ${stateClass}" title="Carry weight ${currentWeight} / ${maxWeight}">
+                <span class="loadout-weight-label">⚖️ WEIGHT</span>
+                <div class="loadout-weight-track">
+                    <div class="loadout-weight-fill" style="width:${pct}%"></div>
+                </div>
+                <span class="loadout-weight-value">${currentWeight}<span class="loadout-weight-sep">/</span>${maxWeight}</span>
+            </div>
+        `;
+    },
+
+    /**
      * Legacy loadout panel rendering (fallback if LoadoutSlotRenderer not available)
      * @private
      */

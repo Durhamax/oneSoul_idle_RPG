@@ -10,8 +10,12 @@
  */
 
 const UnifiedCraftingUI = {
-    currentTab: 'recipes', // 'recipes' | 'workshop' | 'engineering'
-    selectedSkill: 'smithing', // Currently selected crafting skill
+    // Crafting skills that live directly in the top tab bar
+    CRAFT_SKILLS: ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking'],
+
+    // currentTab is one of CRAFT_SKILLS, or 'workshop' | 'engineering'
+    currentTab: 'smithing',
+    selectedSkill: 'smithing', // Mirror of currentTab while a skill tab is active
     lastState: null,
 
     /**
@@ -64,22 +68,36 @@ const UnifiedCraftingUI = {
     renderTabs() {
         const engineeringLevel = GameEngine.state.skills?.engineering?.level || 1;
 
+        // One top tab per crafting skill (replaces the old Recipes sub-nav pills)
+        const skillTabs = this.CRAFT_SKILLS.map(skill => {
+            const level = GameEngine.state.skills?.[skill]?.level || 1;
+            const queueCount = (typeof RecipesTab !== 'undefined' && RecipesTab.getQueueCount)
+                ? RecipesTab.getQueueCount(skill) : 0;
+            const isActive = this.currentTab === skill;
+            return `
+                <button class="crafting-tab ${isActive ? 'active' : ''}" data-tab="${skill}"
+                        onclick="UnifiedCraftingUI.switchTab('${skill}')">
+                    <span class="tab-icon">${this.getSkillIcon(skill)}</span>
+                    <span class="tab-label">${this.capitalizeFirst(skill)}</span>
+                    <span class="tab-level">Lv.${level}</span>
+                    ${queueCount > 0 ? `<span class="tab-badge">${queueCount}</span>` : ''}
+                </button>
+            `;
+        }).join('');
+
         return `
             <div class="crafting-tabs">
-                <button class="crafting-tab ${this.currentTab === 'recipes' ? 'active' : ''}"
-                        onclick="UnifiedCraftingUI.switchTab('recipes')">
-                    <span class="tab-icon">📜</span>
-                    <span class="tab-label">RECIPES</span>
-                </button>
-                <button class="crafting-tab ${this.currentTab === 'workshop' ? 'active' : ''}"
+                ${skillTabs}
+                <span class="crafting-tabs-divider"></span>
+                <button class="crafting-tab ${this.currentTab === 'workshop' ? 'active' : ''}" data-tab="workshop"
                         onclick="UnifiedCraftingUI.switchTab('workshop')">
                     <span class="tab-icon">🏭</span>
-                    <span class="tab-label">WORKSHOP</span>
+                    <span class="tab-label">Workshop</span>
                 </button>
-                <button class="crafting-tab ${this.currentTab === 'engineering' ? 'active' : ''}"
+                <button class="crafting-tab ${this.currentTab === 'engineering' ? 'active' : ''}" data-tab="engineering"
                         onclick="UnifiedCraftingUI.switchTab('engineering')">
-                    <span class="tab-icon">⚙️</span>
-                    <span class="tab-label">ENGINEERING</span>
+                    <span class="tab-icon">🔬</span>
+                    <span class="tab-label">Engineering</span>
                     <span class="tab-level">Lv.${engineeringLevel}</span>
                 </button>
             </div>
@@ -92,13 +110,16 @@ const UnifiedCraftingUI = {
     switchTab(tab) {
         console.log(`[UnifiedCraftingUI] Switching to tab: ${tab}`);
         this.currentTab = tab;
+        if (this.CRAFT_SKILLS.includes(tab)) {
+            this.selectedSkill = tab;
+        }
         this.renderCurrentTab();
 
         // Update tab highlighting
         document.querySelectorAll('.crafting-tab').forEach(tabEl => {
             tabEl.classList.remove('active');
         });
-        const activeTab = document.querySelector(`.crafting-tab[onclick*="${tab}"]`);
+        const activeTab = document.querySelector(`.crafting-tab[data-tab="${tab}"]`);
         if (activeTab) {
             activeTab.classList.add('active');
         }
@@ -111,10 +132,12 @@ const UnifiedCraftingUI = {
         const content = document.getElementById('crafting-content');
         if (!content) return;
 
+        if (this.CRAFT_SKILLS.includes(this.currentTab)) {
+            content.innerHTML = RecipesTab.render(this.currentTab);
+            return;
+        }
+
         switch (this.currentTab) {
-            case 'recipes':
-                content.innerHTML = RecipesTab.render(this.selectedSkill);
-                break;
             case 'workshop':
                 content.innerHTML = WorkshopTab.render();
                 break;
@@ -122,7 +145,7 @@ const UnifiedCraftingUI = {
                 content.innerHTML = EngineeringTab.render();
                 break;
             default:
-                content.innerHTML = '<div class="error-message">Unknown tab</div>';
+                content.innerHTML = RecipesTab.render(this.selectedSkill);
         }
     },
 
@@ -130,21 +153,8 @@ const UnifiedCraftingUI = {
      * Select a crafting skill (for Recipes tab)
      */
     selectSkill(skillId) {
-        console.log(`[UnifiedCraftingUI] Selecting skill: ${skillId}`);
-        this.selectedSkill = skillId;
-
-        if (this.currentTab === 'recipes') {
-            this.renderCurrentTab();
-        }
-
-        // Update skill pills
-        document.querySelectorAll('.skill-pill').forEach(pill => {
-            pill.classList.remove('active');
-        });
-        const activePill = document.querySelector(`.skill-pill[data-skill="${skillId}"]`);
-        if (activePill) {
-            activePill.classList.add('active');
-        }
+        // Skills are now top-level tabs; selecting one is just switching to its tab.
+        this.switchTab(skillId);
     },
 
     /**
@@ -154,7 +164,7 @@ const UnifiedCraftingUI = {
     openToSkill(skillId) {
         console.log(`[UnifiedCraftingUI] Opening to skill: ${skillId}`);
         this.selectedSkill = skillId;
-        this.currentTab = 'recipes';
+        this.currentTab = this.CRAFT_SKILLS.includes(skillId) ? skillId : 'smithing';
 
         // Switch view to crafting
         if (typeof switchView === 'function') {

@@ -133,7 +133,78 @@
     transform: translateY(-1px);
 }
 
-/* Session Stats */
+/* ===========================
+   SKILL TABS (Craft top-tab style)
+   =========================== */
+
+/* Reuses .crafting-tabs / .crafting-tab; these add the node-count badge and
+   keep the bar flush with the top of the view. */
+.gather-skill-tabs {
+    flex-wrap: wrap;
+    margin-bottom: 0.25rem;
+}
+
+.gather-skill-tab .tab-badge {
+    margin-left: 0.4rem;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: var(--font-weight-bold);
+    color: #fff;
+    background: var(--color-primary);
+    border-radius: 9px;
+    line-height: 1;
+}
+
+/* ===========================
+   NODE HEALTH DEPLETING BAR (active panel)
+   =========================== */
+
+.gather-nodehealth {
+    margin-top: 1rem;
+}
+
+.gather-nodehealth-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.gather-nodehealth-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+}
+
+.gather-nodehealth-track {
+    height: 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.gather-nodehealth-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--color-success), #8bc34a);
+    transition: width 0.3s ease-out, background 0.3s ease;
+}
+
+.gather-nodehealth-fill.is-low {
+    background: linear-gradient(90deg, var(--color-danger), #e57373);
+}
+
+.gather-nodehealth-fill.is-recovering {
+    background: linear-gradient(90deg, #FFC107, #FF9800);
+}
+
+/* Session Stats (legacy — panel now uses the node-health bar above) */
 .gather-session-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);

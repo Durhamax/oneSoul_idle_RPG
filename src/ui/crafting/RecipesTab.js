@@ -44,11 +44,10 @@ const RecipesTab = {
      * Render the recipes tab content
      */
     render(selectedSkill) {
-        const skills = ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking'];
-
+        // Skill selection now lives in the top tab bar (UnifiedCraftingUI.renderTabs),
+        // so the sub-nav skill pills are intentionally omitted here.
         return `
             <div class="recipes-tab">
-                ${this.renderSkillSelector(skills, selectedSkill)}
                 ${this.renderActiveCrafting()}
                 ${this.renderSkillHeader(selectedSkill)}
                 ${this.renderRecipeGrid(selectedSkill)}

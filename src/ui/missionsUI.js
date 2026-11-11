@@ -80,19 +80,149 @@ const MissionsUI = {
         this.markMissionsAsSeen(state);
 
         this.container.innerHTML = `
-            <div class="quest-journey">
-                <header class="journey-header">
-                    <h1>Journey Through Aurora Vitae</h1>
-                    <p>Follow the path of a Unity ranger</p>
-                </header>
+            <div class="missions-layout">
+                <!-- Left 2/3: missions flowchart -->
+                <div class="missions-flow">
+                    <div class="quest-journey">
+                        <header class="journey-header">
+                            <h1>Journey Through Aurora Vitae</h1>
+                            <p>Follow the path of a Unity ranger</p>
+                        </header>
 
-                <div class="journey-regions">
-                    ${this.renderAllRegions(missionsByRegion, state)}
+                        <div class="journey-regions">
+                            ${this.renderAllRegions(missionsByRegion, state)}
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Right 1/3: linked region flowchart -->
+                <aside class="regions-rail">
+                    <div class="regions-rail-title">Regions</div>
+                    <div class="regions-rail-track">
+                        ${this.renderRegionsRail(missionsByRegion, state)}
+                    </div>
+                </aside>
             </div>
         `;
 
+        this.setupScrollSync();
         this.scrollToActive(state);
+    },
+
+    /**
+     * Region order used by both the flow (left) and the rail (right)
+     */
+    REGION_ORDER: ['region_-3_-4', 'region_-2_-4', 'region_-1_-4'],
+
+    /**
+     * Compute main-story mission progress for a region
+     */
+    getRegionProgress(regionData, state) {
+        const main = regionData?.main || [];
+        const total = main.length;
+        const completed = main.filter(m => state.completed?.includes(m.id)).length;
+        const active = main.filter(m => state.active?.includes(m.id)).length;
+        const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+        return { completed, total, active, percent };
+    },
+
+    /**
+     * Right-side linked flowchart of regions. Each node shows a mission-progress
+     * indicator and jumps the left flow to that region when clicked.
+     */
+    renderRegionsRail(missionsByRegion, state) {
+        return this.REGION_ORDER.map((regionId, idx) => {
+            const info = this.getRegionInfo(regionId);
+            const isUnlocked = this.isRegionUnlocked(regionId, state);
+            const regionData = missionsByRegion[regionId];
+            const prog = this.getRegionProgress(regionData, state);
+            const isComplete = prog.total > 0 && prog.completed === prog.total;
+            const hasActive = prog.active > 0;
+
+            const statusClass = !isUnlocked ? 'locked' : isComplete ? 'complete' : hasActive ? 'active-region' : '';
+
+            return `
+                <div class="region-node ${statusClass}" data-region-target="${regionId}" role="button" tabindex="0">
+                    <div class="region-node-top">
+                        <span class="region-node-icon">${info.icon}</span>
+                        <span class="region-node-name">${info.name}</span>
+                        ${!isUnlocked ? '<span class="region-node-lock">🔒</span>' : ''}
+                    </div>
+                    ${isUnlocked ? `
+                        <div class="region-node-progress">
+                            <div class="region-node-bar">
+                                <div class="region-node-fill" style="width:${prog.percent}%"></div>
+                            </div>
+                            <span class="region-node-count">${prog.completed}/${prog.total || 0}</span>
+                        </div>
+                    ` : `
+                        <div class="region-node-progress muted">Locked</div>
+                    `}
+                </div>
+                ${idx < this.REGION_ORDER.length - 1 ? '<div class="region-node-connector"></div>' : ''}
+            `;
+        }).join('');
+    },
+
+    /**
+     * Wire two-way linked scrolling between the missions flow and the region rail.
+     * - missions -> regions: proportional (slow) rail scroll + active highlight
+     * - regions -> missions: click jumps (fast) the flow to that region
+     */
+    setupScrollSync() {
+        const flow = this.container?.querySelector('.missions-flow');
+        const rail = this.container?.querySelector('.regions-rail-track');
+        if (!flow || !rail) return;
+
+        const regions = [...flow.querySelectorAll('.quest-region')];
+        const nodes = [...rail.querySelectorAll('.region-node')];
+
+        const setActive = (regionId) => {
+            nodes.forEach(n => n.classList.toggle('is-current', n.dataset.regionTarget === regionId));
+        };
+
+        // missions -> regions
+        let ticking = false;
+        flow.addEventListener('scroll', () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(() => {
+                const flowRect = flow.getBoundingClientRect();
+                const probe = flowRect.top + flowRect.height * 0.4;
+                let current = regions[0];
+                for (const r of regions) {
+                    const rect = r.getBoundingClientRect();
+                    if (rect.top <= probe && rect.bottom >= probe) { current = r; break; }
+                    if (rect.top <= probe) current = r; // fallback: last region above the probe
+                }
+                if (current) setActive(current.dataset.region);
+
+                // Proportional (slow) linked scroll of the rail
+                const maxFlow = flow.scrollHeight - flow.clientHeight;
+                const frac = maxFlow > 0 ? flow.scrollTop / maxFlow : 0;
+                const maxRail = rail.scrollHeight - rail.clientHeight;
+                if (maxRail > 0) rail.scrollTop = frac * maxRail;
+
+                ticking = false;
+            });
+        });
+
+        // regions -> missions (fast jump)
+        const jumpTo = (node) => {
+            const rid = node.dataset.regionTarget;
+            const target = regions.find(r => r.dataset.region === rid);
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setActive(rid);
+        };
+        nodes.forEach(node => {
+            node.addEventListener('click', () => jumpTo(node));
+            node.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jumpTo(node); }
+            });
+        });
+
+        // Initialize highlight on the first region
+        if (regions[0]) setActive(regions[0].dataset.region);
     },
 
     organizeMissionsByRegion() {
