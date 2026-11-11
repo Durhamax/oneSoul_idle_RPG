@@ -83,6 +83,34 @@ const STATUS_EFFECTS = {
 
 const CombatSystem = {
     /**
+     * Helper: Get enemy definition from EnemyRegistry first, fallback to definitions
+     */
+    _getEnemyDef(enemyId, engine) {
+        let enemyDef = null;
+        if (typeof EnemyRegistry !== 'undefined') {
+            enemyDef = EnemyRegistry.getAllActive()[enemyId];
+        }
+        if (!enemyDef && engine.definitions) {
+            enemyDef = engine.definitions.enemies?.[enemyId];
+        }
+        return enemyDef;
+    },
+
+    /**
+     * Helper: Get item definition from ItemRegistry first, fallback to definitions
+     */
+    _getItemDef(itemId, engine) {
+        let itemDef = null;
+        if (typeof ItemRegistry !== 'undefined') {
+            itemDef = ItemRegistry.getItem(itemId);
+        }
+        if (!itemDef && engine.definitions) {
+            itemDef = engine.definitions.items?.[itemId];
+        }
+        return itemDef;
+    },
+
+    /**
      * Initialize the combat system and bind methods to the game engine
      * @param {Object} engine - The game engine instance
      */
@@ -119,7 +147,7 @@ const CombatSystem = {
      * Start combat with an enemy
      */
     startCombat(enemyId) {
-        const enemyDef = this.definitions.enemies[enemyId];
+        const enemyDef = CombatSystem._getEnemyDef(enemyId, this);
 
         if (!enemyDef) {
             return { success: false, reason: "Enemy not found" };
@@ -166,7 +194,7 @@ const CombatSystem = {
         const equippedWeapon = this.state.equipment.weapon;
         const playerStats = this.getPlayerCombatStats();
         if (equippedWeapon) {
-            const weaponDef = this.definitions.items[equippedWeapon];
+            const weaponDef = CombatSystem._getItemDef(equippedWeapon, this);
             if (weaponDef?.magazineSize) {
                 // Player has a gun, initialize magazine to full
                 this.state.combat.playerAmmo.magazineSize = weaponDef.magazineSize;
@@ -191,10 +219,12 @@ const CombatSystem = {
             this.state.combat.currentEnemy.reloadStartTime = 0;
         }
 
-        // Initialize food quantity for auto-eat system
+        // Initialize food quantity for auto-eat system (use base ID for bank lookup)
         const equippedFood = this.state.equipment.food;
-        if (equippedFood && this.state.bank.items[equippedFood]) {
-            this.state.combat.equippedFoodQuantity = this.state.bank.items[equippedFood].quantity;
+        if (equippedFood) {
+            const foodBaseId = ItemIdUtils.getBaseItemId(equippedFood);
+            const bankItem = foodBaseId ? this.state.bank.items[foodBaseId] : null;
+            this.state.combat.equippedFoodQuantity = bankItem?.quantity || 0;
         } else {
             this.state.combat.equippedFoodQuantity = 0;
         }
@@ -291,7 +321,7 @@ const CombatSystem = {
 
         // Apply type effectiveness (weapon damage type vs enemy armor type)
         const weaponDamageType = this.getWeaponDamageType();
-        const enemyDef = this.definitions.enemies[enemy.id];
+        const enemyDef = CombatSystem._getEnemyDef(enemy.id, this);
         const enemyArmorType = enemyDef?.stats?.armorType || 'biological';
         const typeMultiplier = this.calculateDamageMultiplier(weaponDamageType, enemyArmorType);
         damage = Math.floor(damage * typeMultiplier);
@@ -308,7 +338,7 @@ const CombatSystem = {
         let specialAttackData = null;
         const equippedWeapon = this.state.equipment.weapon;
         if (equippedWeapon) {
-            const weaponDef = this.definitions.items[equippedWeapon];
+            const weaponDef = CombatSystem._getItemDef(equippedWeapon, this);
             if (weaponDef?.specialAttack) {
                 const specialRoll = Math.random();
                 // Apply INTELLECT special attack chance bonus
@@ -449,7 +479,7 @@ const CombatSystem = {
         if (evasionRoll < playerStats.evasionRating) {
             this.addCombatLog(`🌪️ You evaded ${enemy.name}'s attack!`);
             // Show evade hit splat
-            const enemyDef = this.definitions.enemies[enemy.id];
+            const enemyDef = CombatSystem._getEnemyDef(enemy.id, this);
             const enemyDamageType = enemyDef?.stats?.damageType || 'pierce';
             if (CombatUI && CombatUI.createHitSplat) {
                 CombatUI.createHitSplat(0, enemyDamageType, false, 'player', true);
@@ -464,7 +494,7 @@ const CombatSystem = {
         if (hitRoll > effectiveEnemyAccuracy) {
             this.addCombatLog(`💨 ${enemy.name} missed!`);
             // Show miss hit splat
-            const enemyDef = this.definitions.enemies[enemy.id];
+            const enemyDef = CombatSystem._getEnemyDef(enemy.id, this);
             const enemyDamageType = enemyDef?.stats?.damageType || 'pierce';
             if (CombatUI && CombatUI.createHitSplat) {
                 CombatUI.createHitSplat(0, enemyDamageType, false, 'player', true);
@@ -477,7 +507,7 @@ const CombatSystem = {
         let damage = Math.floor(enemy.attackDamage * variance);
 
         // Apply type effectiveness (enemy damage type vs player armor type)
-        const enemyDef = this.definitions.enemies[enemy.id];
+        const enemyDef = CombatSystem._getEnemyDef(enemy.id, this);
         const enemyDamageType = enemyDef?.stats?.damageType || 'pierce';
         const playerArmorType = this.getPlayerDominantArmorType();
         const typeMultiplier = this.calculateDamageMultiplier(enemyDamageType, playerArmorType);
@@ -550,7 +580,7 @@ const CombatSystem = {
      */
     defeatEnemy() {
         const enemy = this.state.combat.currentEnemy;
-        const enemyDef = this.definitions.enemies[enemy.id];
+        const enemyDef = CombatSystem._getEnemyDef(enemy.id, this);
 
         this.addCombatLog(`🎉 You defeated ${enemy.name}!`);
 
@@ -707,7 +737,7 @@ const CombatSystem = {
         }
 
         const enemyId = this.state.combat.selectedEnemyId;
-        const enemyDef = this.definitions.enemies[enemyId];
+        const enemyDef = CombatSystem._getEnemyDef(enemyId, this);
         const now = Date.now();
         const timeSinceDefeat = now - this.state.combat.enemyDefeatedAt;
 
@@ -927,6 +957,46 @@ const CombatSystem = {
             return;
         }
 
+        // Check for dev infinite food mode (skip all consumption logic)
+        if (typeof DevFoodTools !== 'undefined' && DevFoodTools.infiniteFoodEnabled) {
+            // In infinite mode, just heal without consuming
+            const equippedFood = this.state.equipment.food;
+            if (!equippedFood) return;
+
+            const baseId = ItemIdUtils.getBaseItemId(equippedFood);
+            const foodDef = ItemIdUtils.getItemDefinition(baseId);
+            if (!foodDef) return;
+
+            const playerStats = this.getPlayerCombatStats();
+            const combat = this.state.combat;
+            const healthPercent = combat.player.currentHealth / playerStats.maxHealth;
+            const effectiveThreshold = Math.min(0.95, combat.autoEatThreshold + playerStats.autoEatThresholdBonus);
+
+            if (healthPercent >= effectiveThreshold) return;
+
+            const now = Date.now();
+            if (now - combat.lastAutoEatTime < combat.autoEatCooldown) return;
+
+            // Get heal amount (supports both healAmount and effectValue)
+            const baseHealAmount = foodDef.healAmount || foodDef.effectValue || 20;
+            const healAmount = Math.floor(baseHealAmount * (1 + playerStats.consumableEfficiency));
+
+            const oldHealth = combat.player.currentHealth;
+            combat.player.currentHealth = Math.min(combat.player.currentHealth + healAmount, playerStats.maxHealth);
+            const actualHeal = combat.player.currentHealth - oldHealth;
+
+            combat.lastAutoEatTime = now;
+
+            const foodName = foodDef.name || baseId;
+            this.addCombatLog(`🍎 <span style="color: #4caf50;">[AUTO] Consumed ${foodName} (+${Math.floor(actualHeal)} HP) [DEV: Infinite]</span>`);
+
+            // Emit event for UI
+            if (typeof EventBus !== 'undefined') {
+                EventBus.emit('player-healed', { amount: actualHeal, source: 'food', item: foodName });
+            }
+            return;
+        }
+
         const now = Date.now();
         const playerStats = this.getPlayerCombatStats();
         const combat = this.state.combat;
@@ -949,19 +1019,36 @@ const CombatSystem = {
             return; // No food equipped
         }
 
-        // Check if we have food quantity remaining
-        if (combat.equippedFoodQuantity <= 0) {
+        // Extract base item ID from instance ID (handles both formats)
+        const baseId = ItemIdUtils.getBaseItemId(equippedFood);
+        if (!baseId) {
+            console.warn(`[CombatSystem] Could not parse food ID: ${equippedFood}`);
+            return;
+        }
+
+        // Check if we have food quantity remaining in bank (by BASE ID)
+        const bankItem = this.state.bank.items[baseId];
+        if (!bankItem || bankItem.quantity <= 0) {
+            // Also update combat state
+            combat.equippedFoodQuantity = 0;
             return; // Out of food
         }
 
-        // Get food definition
-        const foodDef = this.definitions.items[equippedFood];
-        if (!foodDef || !foodDef.healAmount) {
-            return; // Invalid food item
+        // Get food definition using base ID
+        const foodDef = ItemIdUtils.getItemDefinition(baseId);
+        if (!foodDef) {
+            console.warn(`[CombatSystem] Food item not found in registry: ${baseId}`);
+            return;
+        }
+
+        // Get heal amount - supports both healAmount and effectValue (consumables use effectValue)
+        const baseHealAmount = foodDef.healAmount || foodDef.effectValue || 20;
+        if (!baseHealAmount) {
+            console.warn(`[CombatSystem] Food has no heal value: ${baseId}`);
+            return;
         }
 
         // Consume the food (with INTELLECT consumable efficiency bonus)
-        const baseHealAmount = foodDef.healAmount;
         const healAmount = Math.floor(baseHealAmount * (1 + playerStats.consumableEfficiency));
 
         // Heal the player
@@ -972,28 +1059,33 @@ const CombatSystem = {
         );
         const actualHeal = combat.player.currentHealth - oldHealth;
 
-        // Decrement food quantity in bank
-        if (this.state.bank.items[equippedFood]) {
-            this.state.bank.items[equippedFood].quantity--;
+        // Decrement food quantity in bank (by BASE ID)
+        bankItem.quantity--;
 
-            // Remove from bank if depleted
-            if (this.state.bank.items[equippedFood].quantity <= 0) {
-                delete this.state.bank.items[equippedFood];
-                this.state.equipment.food = null; // Unequip depleted food
-            }
+        // Remove from bank if depleted
+        if (bankItem.quantity <= 0) {
+            delete this.state.bank.items[baseId];
+            this.state.equipment.food = null; // Unequip depleted food
+            combat.equippedFoodQuantity = 0;
+        } else {
+            // Update combat state quantity
+            combat.equippedFoodQuantity = bankItem.quantity;
         }
-
-        // Decrement food quantity in combat state
-        combat.equippedFoodQuantity--;
 
         // Update last auto-eat time
         combat.lastAutoEatTime = now;
 
         // Log the auto-consume
-        const foodName = foodDef.name || equippedFood;
+        const foodName = foodDef.name || baseId;
         this.addCombatLog(`🍎 <span style="color: #4caf50;">[AUTO] Consumed ${foodName} (+${Math.floor(actualHeal)} HP)</span>`);
 
         console.log(`🍎 Auto-consumed ${foodName} for ${actualHeal} HP (${combat.equippedFoodQuantity} remaining)`);
+
+        // Emit event for UI updates
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('player-healed', { amount: actualHeal, source: 'food', item: foodName });
+            EventBus.emit('food-consumed', { itemId: baseId, remaining: combat.equippedFoodQuantity });
+        }
     },
 
     /**

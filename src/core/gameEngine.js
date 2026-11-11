@@ -15,6 +15,7 @@ const GameEngine = {
         currencies: {
             gold: 0,
             medals: 0,
+            medalFragments: 0,  // Dropped from combat, used for perk grid
             tomes: 0,
             gems: 0
         },
@@ -53,7 +54,6 @@ const GameEngine = {
             hunting: { level: 1, exp: 0, unlocked: true },
             foraging: { level: 1, exp: 0, unlocked: true },
             thieving: { level: 1, exp: 0, unlocked: true },
-            combat: { level: 1, exp: 0, unlocked: true },
 
             // Crafting Skills (6 core + 1 vertical)
             cooking: { level: 1, exp: 0, unlocked: true },
@@ -61,7 +61,7 @@ const GameEngine = {
             smithing: { level: 1, exp: 0, unlocked: true },
             mechanics: { level: 1, exp: 0, unlocked: true },
             electronics: { level: 1, exp: 0, unlocked: true },
-            textiles: { level: 1, exp: 0, unlocked: true },
+            tailoring: { level: 1, exp: 0, unlocked: true },  // Renamed from textiles
             engineering: { level: 1, exp: 0, unlocked: true }
         },
 
@@ -87,7 +87,7 @@ const GameEngine = {
         // Regions & Exploration
         currentRegion: "region_-3_-4",  // Active region ID (starting position)
         regions: {
-            "region_-3_-4": {  // Starting region (The Scar)
+            "region_-3_-4": {  // Starting region (The Cradle)
                 discovered: true,
                 discoveryProgress: 0,  // 0-100%, increases through navigation
                 discoveredLocations: [],
@@ -106,28 +106,34 @@ const GameEngine = {
         // Active Navigation (discovery system)
         activeNavigation: {
             isNavigating: false,       // Currently exploring/discovering
+            isRecovering: false,       // Currently recovering endurance
             lastNavigationTick: 0,     // Last time progress was made
+            lastRecoveryTick: 0,       // Last time endurance was recovered
             endurance: 100,            // Current endurance for exploration
-            maxEndurance: 100          // Max endurance (based on strength + mobility)
+            maxEndurance: 100,         // Max endurance (based on strength + mobility)
+            restEquipment: {           // Equipment for camping/recovery
+                food: null,            // Food item with healing value
+                wood: null             // Wood item (log type)
+            }
         },
 
         // Bank/Inventory System
         bank: {
-            activeTab: "resource",  // Currently selected tab
+            activeTab: "material",  // Currently selected tab
             tabs: {
-                resource: {
-                    name: "Resources",
+                material: {
+                    name: "Materials",
                     icon: "📦",
                     order: 0
-                },
-                tool: {
-                    name: "Tools",
-                    icon: "⛏️",
-                    order: 1
                 },
                 weapon: {
                     name: "Weapons",
                     icon: "⚔️",
+                    order: 1
+                },
+                ammo: {
+                    name: "Ammo",
+                    icon: "🎯",
                     order: 2
                 },
                 armor: {
@@ -135,24 +141,24 @@ const GameEngine = {
                     icon: "🛡️",
                     order: 3
                 },
-                technology: {
-                    name: "Technology",
-                    icon: "⚡",
+                tool: {
+                    name: "Tools",
+                    icon: "⛏️",
                     order: 4
                 },
-                mod: {
-                    name: "Mods",
-                    icon: "💎",
+                food: {
+                    name: "Food",
+                    icon: "🍖",
                     order: 5
                 },
-                healing: {
-                    name: "Healing",
+                potion: {
+                    name: "Potions",
                     icon: "🧪",
                     order: 6
                 },
-                consumable: {
-                    name: "Consumables",
-                    icon: "⚗️",
+                technology: {
+                    name: "Technology",
+                    icon: "⚡",
                     order: 7
                 },
                 perk: {
@@ -160,15 +166,10 @@ const GameEngine = {
                     icon: "⭐",
                     order: 8
                 },
-                medal: {
-                    name: "Medals",
-                    icon: "🏅",
-                    order: 9
-                },
                 quest: {
                     name: "Quest Items",
                     icon: "📜",
-                    order: 10
+                    order: 9
                 }
             },
             items: {
@@ -182,18 +183,17 @@ const GameEngine = {
             }
         },
 
-        // Equipment System - 3x3 Grid + Consumables + Technology
+        // Equipment System - 3-1-3 Grid + Consumables + Technology
         equipment: {
-            // === 3x3 EQUIPMENT GRID (Provides perks) ===
+            // === 3-1-3 EQUIPMENT GRID (Provides perks) ===
             weapon: null,      // Main weapon
-            helmet: null,      // Head armor
+            armor: null,       // Full armor set (head/chest/legs combined)
             back: null,        // Cape/Cloak
             gloves: null,      // Gloves
-            chest: null,       // Body armor
             neck: null,        // Necklace/Amulet
             boots: null,       // Boots
-            legs: null,        // Leg armor
             ring: null,        // Ring
+            // Note: helmet, chest, legs removed - replaced by unified armor slot
 
             // === CONSUMABLE SLOTS (No perks, show quantity) ===
             ammo: null,        // Ammunition for ranged weapons
@@ -205,6 +205,15 @@ const GameEngine = {
             tech2: null,       // Unlocked at 25 intellect
             tech3: null,       // Unlocked at 50 intellect
             tech4: null        // Unlocked at 100 intellect
+        },
+
+        // Equipment Presets - Save and quickly switch between builds
+        equipmentPresets: {
+            presets: [
+                null, null, null, null, null,  // Presets 1-5
+                null, null, null, null, null   // Presets 6-10
+            ],
+            activePreset: null  // Index of currently active preset (0-9), or null if custom
         },
 
         // Combat System
@@ -275,10 +284,37 @@ const GameEngine = {
 
         // Crafting System
         crafting: {
-            discoveredStations: [],  // Array of discovered crafting station IDs
-            activeCrafts: [],        // Array of active crafts {recipeId, startTime, completionTime, stationId}
+            discoveredStations: [],  // Array of discovered crafting station IDs (legacy)
+            activeCrafts: [],        // Legacy: Array of active crafts {recipeId, startTime, completionTime}
             selectedSkill: null,     // Currently selected crafting skill filter
-            autoRecipe: null         // Recipe to auto-repeat until stopped or out of materials
+            autoRecipe: null,        // Recipe to auto-repeat until stopped or out of materials
+
+            // NEW: Skill-based craft queues
+            activeQueues: {
+                smithing: [],        // Material processing
+                mechanics: [],       // Weapons
+                electronics: [],     // Components
+                tailoring: [],       // Armor
+                chemistry: [],       // Consumables
+                cooking: []          // Food
+            }
+        },
+
+        // Workstations (NEW: Tier-based system, engineering-gated)
+        workstations: {
+            smithing: { tier: 1 },
+            mechanics: { tier: 1 },
+            electronics: { tier: 1 },
+            tailoring: { tier: 1 },
+            chemistry: { tier: 1 },
+            cooking: { tier: 1 }
+        },
+
+        // Blueprints (NEW: Currency for workstation upgrades)
+        blueprints: {
+            common: 0,
+            advanced: 0,
+            masterwork: 0
         },
 
         // Mission System
@@ -286,6 +322,7 @@ const GameEngine = {
             available: [],           // Mission IDs available to start in current region
             active: [],              // Mission IDs currently active
             completed: [],           // Mission IDs that have been completed (forever)
+            seenMissions: [],        // Mission IDs user has viewed in Missions UI (for notification badge)
 
             // Active mission progress tracking
             activeProgress: {},      // { missionId: { objectives: {objId: {current, required}}, startTime, completionTimes: [] } }
@@ -308,13 +345,14 @@ const GameEngine = {
             tokens: 0,
 
             // Workshop tiers for each crafting skill (0 = no workshop, 1-4 = tiers)
+            // LEGACY - Use workstations state instead
             workshops: {
                 cooking: 0,
                 chemistry: 0,
                 smithing: 0,
                 mechanics: 0,
                 electronics: 0,
-                textiles: 0
+                tailoring: 0
             },
 
             // Specialization paths (one per skill, mutually exclusive)
@@ -323,7 +361,13 @@ const GameEngine = {
             },
 
             // Unlocked recipes from reverse engineering
-            reversedRecipes: []
+            reversedRecipes: [],
+
+            // NEW: Perfection system tracking
+            perfectionAttempts: 0,
+            perfectionSuccesses: 0,
+            technologiesAssembled: 0,
+            itemsSalvaged: 0
         },
 
         // Perk Grid System
@@ -376,16 +420,26 @@ const GameEngine = {
         nodeBaseHealth: 50,           // Base health for resource nodes
         gatherToolDamageMultiplier: 1.0, // Multiplier for tool damage
 
-        // Navigation/Exploration - Endurance System
-        navigationInterval: 3000,     // Time between discovery attempts (ms)
-        baseEndurance: 100,           // Base endurance pool
-        enduranceStrengthMult: 5,     // Endurance gained per strength point
-        enduranceMobilityMult: 3,     // Endurance gained per mobility point
-        enduranceDrainPerAttempt: 5,  // Endurance cost per discovery attempt
-        baseDiscoveryChance: 30,      // Base % chance to make discovery per attempt
-        intellectDiscoveryBonus: 2,   // % discovery chance gained per intellect point
-        baseComplicationFactor: 1.0,  // Base complication for all regions
-        complicationScaling: 0.1,     // Complication increase per distance from start
+        // Navigation/Exploration - Attribute-Based System
+        // Discovery Interval (Mobility)
+        navigationInterval: 3000,           // Base time between discovery attempts (ms)
+        mobilityIntervalReduction: 50,      // Interval reduction per mobility point (ms)
+        minDiscoveryInterval: 1000,         // Minimum interval cap (ms)
+
+        // Endurance System (Health)
+        baseEndurance: 50,                  // Base endurance pool
+        enduranceHealthMult: 10,            // Endurance gained per health point
+        enduranceDrainPerAttempt: 5,        // Base endurance cost per discovery attempt
+        healthDepletionReduction: 0.3,      // Depletion reduction per health point
+        minDepletionRate: 1.5,              // Minimum depletion rate
+        baseEnduranceRecovery: 2,           // Base recovery per second
+        healthRecoveryBonus: 1.0,           // Recovery bonus per health point
+
+        // Discovery Chance (Perception)
+        baseDiscoveryChance: 30,            // Base % chance to make discovery per attempt
+        perceptionDiscoveryBonus: 2.5,      // % discovery chance per perception point
+        baseComplicationFactor: 1.0,        // Base complication for all regions
+        complicationScaling: 0.1,           // Complication increase per distance from start
 
         // Crafting
         craftingTimeMultiplier: 1.0,  // Multiplier for all crafting times
@@ -457,12 +511,28 @@ const GameEngine = {
     },
 
     /**
+     * Get item definition (STANDARDIZED ACCESS PATTERN)
+     * This is the single source of truth for item access across all systems.
+     * @param {string} itemId - Item ID
+     * @returns {object|null} Item definition or null if not found
+     */
+    getItem(itemId) {
+        // Primary: Use ItemRegistry if available
+        if (typeof ItemRegistry !== 'undefined' && ItemRegistry.getItem) {
+            return ItemRegistry.getItem(itemId);
+        }
+
+        // Fallback: Use definitions.items (legacy support)
+        return this.definitions?.items?.[itemId] || null;
+    },
+
+    /**
      * Get rarity data for an item
      * @param {string} itemId - Item ID
      * @returns {object|null} Rarity definition or null if not found
      */
     getItemRarity(itemId) {
-        const item = this.definitions.items[itemId];
+        const item = this.getItem(itemId);
         if (!item) return null;
 
         const rarity = item.rarity || 'common';
@@ -470,68 +540,209 @@ const GameEngine = {
     },
 
     /**
-     * Initialize the game engine
+     * Load game data from JSON files (async)
+     * Falls back to GameDefinitions if JSON files not available
      */
-    init() {
+    async loadGameData() {
+        console.log("📦 Loading game data...");
+
+        try {
+            // Try to load JSON data
+            const jsonPath = 'data/json/';
+            const response = await fetch(jsonPath + 'definitions.json');
+
+            if (response.ok) {
+                const jsonData = await response.json();
+                console.log("✅ Loaded data from JSON files");
+
+                // Merge JSON data with GameDefinitions (keep RARITY_TIERS, ITEM_CATEGORIES, etc. from code)
+                this.definitions = {
+                    ...GameDefinitions,  // Keep system definitions
+                    ...jsonData          // Override with JSON data
+                };
+
+                // IMPORTANT: Re-apply dynamic getters to preserve Registry integrations
+                Object.defineProperty(this.definitions, 'items', {
+                    get() {
+                        // Delegate to GameDefinitions.items getter (which uses ItemRegistry)
+                        return GameDefinitions.items;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+
+                Object.defineProperty(this.definitions, 'enemies', {
+                    get() {
+                        return GameDefinitions.enemies;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+
+                Object.defineProperty(this.definitions, 'missions', {
+                    get() {
+                        return GameDefinitions.missions;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+
+                Object.defineProperty(this.definitions, 'recipes', {
+                    get() {
+                        return GameDefinitions.recipes;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+
+                Object.defineProperty(this.definitions, 'skills', {
+                    get() {
+                        return GameDefinitions.skills;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+
+                return true;
+            } else {
+                throw new Error('JSON files not found');
+            }
+        } catch (error) {
+            console.log("⚠️  JSON data not available, using GameDefinitions fallback");
+            this.definitions = GameDefinitions;
+            return false;
+        }
+    },
+
+    /**
+     * Initialize the game engine (now async to support JSON loading)
+     */
+    async init() {
         console.log("🎮 Game Engine Initializing...");
 
-        // Load definitions
-        this.definitions = GameDefinitions;
+        // Load definitions (try JSON first, fallback to code)
+        await this.loadGameData();
 
         // Apply default rarities to all items that don't have one
         this.applyDefaultRarities();
 
         // Initialize all systems
         InventorySystem.init(this);
+        DualBankSystem.initialize();  // Initialize dual-bank storage structure
         SkillSystem.init(this);
         EquipmentSystem.init(this);
+        EquipmentPresetSystem.init(this);
+        // AttachmentSystem.init(this);  // DEPRECATED - Removed in Rev1 Combat
+        CombatSystem.init(this);  // Rev1 Combat System
         TypeEffectivenessSystem.init(this);
         ResourceSystem.init(this);
+        GatheringSystem.init(this);  // New universal gathering system
+        MiningSystem.init(this);  // Initialize mining system before GlobalDiscoverySystem
         GlobalDiscoverySystem.init(this);
-        RestRecoverySystem.init(this);
+        // RestRecoverySystem.init(this);  // DEPRECATED - System removed
+        WorldMapSystem.init(this);  // Initialize world map system
         NavigationSystem.init(this);
+        CampfireSystem.init(this);  // Initialize campfire fuel system for navigation recovery
         NodeCollectionSystem.init(this);
-        HarvestSystem.init(this);
-        CombatSystem.init(this);
+        // HarvestSystem.init(this);  // DEPRECATED - Replaced by gatheringSystem.js
+        // CombatSystem.init(this);  // MOVED - Now initialized earlier with other core systems
         OfflineCombatSystem.init(this);
         CraftingSystem.init(this);
         MissionSystem.init(this);
         EngineeringSystem.init(this);
         EnhancementSystem.init(this);
-        PerkGridSystem.init(this);
-        MedalCraftingSystem.init(this);
+        // NEW Perk Grid System (7x7)
+        if (typeof PerkGridSystemNew !== 'undefined') {
+            PerkGridSystemNew.init(this);
+            MedalCraftingSystemNew.init(this);
+            console.log('[GameEngine] New 7x7 Perk Grid System initialized');
+        } else if (typeof PerkGridSystem !== 'undefined') {
+            // Fallback to old system if new not loaded
+            PerkGridSystem.init(this);
+            MedalCraftingSystem.init(this);
+        }
+
+        // Initialize StatCompiler (centralized stat compilation)
+        if (typeof StatCompiler !== 'undefined') {
+            StatCompiler.init(this);
+        }
 
         // Initialize unified item database integration
         if (typeof ItemIntegration !== 'undefined') {
             ItemIntegration.init(this);
         }
 
-        // Initialize procedural map generation (keeps region data for navigation)
-        if (typeof MapGenerationSystem !== 'undefined') {
-            MapGenerationSystem.init();
+        // Initialize WorldMapSystem
+        if (typeof WorldMapSystem !== 'undefined') {
+            WorldMapSystem.init(this);
         }
-
-        // Map renderer disabled - using static world map image instead
-        // if (typeof MapRenderer !== 'undefined') {
-        //     MapRenderer.init('worldMapCanvas');
-        // }
 
         // Generate the world map if not already generated
         if (!this.definitions.worldMap) {
             console.log("🗺️ Generating hexagonal world map (radius 7)...");
-            this.definitions.worldMap = this.generateWorldMap(7);
+            this.definitions.worldMap = WorldMapSystem.generateWorldMap(7);
             console.log(`✅ Generated ${Object.keys(this.definitions.worldMap).length} regions`);
 
-            // Verify starting region exists (new coordinate system: region_-3_-4)
+            // Verify starting region exists (region_-3_-4)
             if (this.definitions.worldMap["region_-3_-4"]) {
                 console.log("✅ Starting region (region_-3_-4) exists in world map");
 
-                // Set tutorial mission requirement for starting region
-                this.definitions.worldMap["region_-3_-4"].requiredMissionToLeave = "tutorial_elder";
-                console.log("🗺️ Starting region requires 'tutorial_elder' mission to leave");
+                // TEMPORARILY DISABLED: Mission requirements for testing
+                // TODO: Re-enable after mission system refactor
+                // WorldMapSystem.setRegionMissionRequirement(this.definitions.worldMap, "region_-3_-4", "tutorial_elder");
+                // console.log("🗺️ Starting region requires 'tutorial_elder' mission to leave");
             } else {
                 console.error("❌ Starting region (region_-3_-4) NOT found in world map!");
                 console.log("Available regions (first 10):", Object.keys(this.definitions.worldMap).slice(0, 10));
+            }
+        }
+
+        // ALWAYS ensure starting region is unlocked and set as current region
+        // Coordinates now match display: (-3, -4)
+        const STARTING_REGION = "region_-3_-4";
+
+        // Ensure current region is set to starting region if not set
+        if (!this.state.currentRegion) {
+            this.state.currentRegion = STARTING_REGION;
+            console.log("✅ Set current region to starting region");
+        }
+
+        // ALWAYS ensure starting region exists in state and is discovered
+        if (!this.state.regions[STARTING_REGION]) {
+            this.state.regions[STARTING_REGION] = {
+                discovered: true,
+                discoveryProgress: 0,
+                discoveredLocations: [],
+                discoveredNodeTypes: [],
+                nodeHealthBonuses: {},
+                discoveredExitPaths: [],
+                discoveredCraftingStations: []
+            };
+            console.log("✅ Created starting region state (region_-3_-4)");
+        } else if (!this.state.regions[STARTING_REGION].discovered) {
+            // If starting region exists but isn't discovered, unlock it
+            this.state.regions[STARTING_REGION].discovered = true;
+            console.log("✅ Unlocked starting region (region_-3_-4)");
+        }
+
+        // Ensure starting region has all required arrays
+        const startRegion = this.state.regions[STARTING_REGION];
+        if (!startRegion.discoveredNodeTypes) startRegion.discoveredNodeTypes = [];
+        if (!startRegion.discoveredCraftingStations) startRegion.discoveredCraftingStations = [];
+        if (!startRegion.discoveredExitPaths) startRegion.discoveredExitPaths = [];
+        if (!startRegion.nodeHealthBonuses) startRegion.nodeHealthBonuses = {};
+
+        // Auto-discover nodes in starting region on new game
+        if (typeof WorldRegions !== 'undefined' && WorldRegions[STARTING_REGION]) {
+            const startRegionDef = WorldRegions[STARTING_REGION];
+            if (startRegionDef.discoverableNodes && startRegionDef.discoverableNodes.length > 0) {
+                for (const nodeId of startRegionDef.discoverableNodes) {
+                    // Only auto-discover if not already discovered
+                    if (!this.state.globalNodes[nodeId] || !this.state.globalNodes[nodeId].discovered) {
+                        this.discoverNodeGlobally(nodeId, STARTING_REGION);
+                        console.log(`✅ Auto-discovered starting node: ${nodeId}`);
+                    }
+                }
             }
         }
 
@@ -675,7 +886,7 @@ const GameEngine = {
         }
 
         // Add new crafting skills if missing (backward compatibility)
-        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'textiles', 'engineering'];
+        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'tailoring', 'engineering'];
         for (let skill of craftingSkills) {
             if (!this.state.skills[skill]) {
                 this.state.skills[skill] = { level: 1, exp: 0, unlocked: true };
@@ -693,7 +904,7 @@ const GameEngine = {
                     smithing: 0,
                     mechanics: 0,
                     electronics: 0,
-                    textiles: 0
+                    tailoring: 0
                 },
                 paths: {},
                 reversedRecipes: []
@@ -712,7 +923,7 @@ const GameEngine = {
                     smithing: 0,
                     mechanics: 0,
                     electronics: 0,
-                    textiles: 0
+                    tailoring: 0
                 },
                 paths: {},
                 reversedRecipes: []
@@ -818,25 +1029,29 @@ const GameEngine = {
 
         // Add all missing bank tabs (backward compatibility)
         const requiredTabs = {
-            resource: { name: "Resources", icon: "📦", order: 0 },
-            tool: { name: "Tools", icon: "⛏️", order: 1 },
-            weapon: { name: "Weapons", icon: "⚔️", order: 2 },
+            material: { name: "Materials", icon: "📦", order: 0 },
+            weapon: { name: "Weapons", icon: "⚔️", order: 1 },
+            ammo: { name: "Ammo", icon: "🎯", order: 2 },
             armor: { name: "Armor", icon: "🛡️", order: 3 },
-            technology: { name: "Technology", icon: "⚡", order: 4 },
-            mod: { name: "Mods", icon: "💎", order: 5 },
-            healing: { name: "Healing", icon: "🧪", order: 6 },
-            consumable: { name: "Consumables", icon: "⚗️", order: 7 },
+            tool: { name: "Tools", icon: "⛏️", order: 4 },
+            food: { name: "Food", icon: "🍖", order: 5 },
+            potion: { name: "Potions", icon: "🧪", order: 6 },
+            technology: { name: "Technology", icon: "⚡", order: 7 },
             perk: { name: "Perks", icon: "⭐", order: 8 },
-            medal: { name: "Medals", icon: "🏅", order: 9 },
-            quest: { name: "Quest Items", icon: "📜", order: 10 },
-            legacy: { name: "Legacy Items", icon: "🎒", order: 11 }
+            quest: { name: "Quest Items", icon: "📜", order: 9 }
         };
 
         // Migrate old tab names to new structure
         const tabMigrations = {
-            'resources': 'resource',
-            'equipment': 'legacy',  // Old equipment tab becomes legacy
-            'consumables': 'consumable'
+            'resources': 'material',      // Old "resources" → "material"
+            'resource': 'material',       // Old "resource" → "material"
+            'consumables': 'food',        // Old general consumables → food tab
+            'consumable': 'food',         // Old general consumables → food tab
+            'healing': 'potion',          // Old "healing" → "potion"
+            'mod': 'material',            // Old mods → materials (deprecated)
+            'medal': 'perk',              // Old medal tab → perks
+            'legacy': 'material',         // Old legacy items → materials
+            'equipment': 'material'       // Old equipment tab → materials
         };
 
         // Apply migrations
@@ -901,6 +1116,12 @@ const GameEngine = {
             }
         }
 
+        // Initial stat compilation after all systems are initialized
+        if (typeof this.compilePlayerStats === 'function') {
+            this.compilePlayerStats();
+            console.log('✅ Initial player stats compiled');
+        }
+
         this.startGameLoop();
         console.log("✅ Game Engine Initialized");
         return this.state;
@@ -938,12 +1159,14 @@ const GameEngine = {
 
     /**
      * Get node defensive stats (explicit or calculated from tier)
+     * Delegates to StatCalculator for actual values (follows foundation spec)
      */
     getNodeDefensiveStats(nodeId) {
-        const nodeDef = this.definitions.resourceNodes?.[nodeId];
+        // REGISTRY ONLY - No legacy fallbacks
+        const nodeDef = NodeRegistry.getAllActive()[nodeId];
         if (!nodeDef) {
-            console.warn(`[NodeStats] Unknown node: ${nodeId}`);
-            return this.getDefaultNodeStats(1); // Return tier 1 defaults
+            console.error(`❌ Node '${nodeId}' not found in NodeRegistry`);
+            return StatCalculator.getNodeDefensiveStatsByTier(1); // Return tier 1 defaults
         }
 
         // If node has explicit defensive stats, use them
@@ -958,35 +1181,8 @@ const GameEngine = {
             };
         }
 
-        // Otherwise, calculate from tier
-        return this.getDefaultNodeStats(nodeDef.tier || 1);
-    },
-
-    /**
-     * Get default node stats based on tier
-     */
-    getDefaultNodeStats(tier) {
-        // Base stats for tier 1
-        const baseStats = {
-            resistance: 3000,      // 3 seconds
-            evasion: 30,           // 30%
-            critEvasion: 5,        // 5%
-            critResistance: 0.5,   // 0.5x
-            rareEvasion: 0.5,      // 0.5%
-            rareResistance: 0.5    // 0.5x
-        };
-
-        // Scale by tier (each tier adds 20% more difficulty)
-        const tierMultiplier = Math.pow(1.2, tier - 1);
-
-        return {
-            resistance: Math.floor(baseStats.resistance * tierMultiplier),
-            evasion: Math.min(70, baseStats.evasion * tierMultiplier), // Cap at 70%
-            critEvasion: Math.min(25, baseStats.critEvasion * tierMultiplier), // Cap at 25%
-            critResistance: baseStats.critResistance * tierMultiplier,
-            rareEvasion: Math.min(5, baseStats.rareEvasion * tierMultiplier), // Cap at 5%
-            rareResistance: baseStats.rareResistance * tierMultiplier
-        };
+        // Otherwise, get default stats from StatCalculator based on tier
+        return StatCalculator.getNodeDefensiveStatsByTier(nodeDef.tier || 1);
     },
 
     /**
@@ -1030,11 +1226,16 @@ const GameEngine = {
 
         // Process combat (delegated to CombatSystem)
         if (this.state.combat.inCombat) {
-            if (this.playerAttack) {
-                this.playerAttack();
-            }
-            if (this.enemyAttack) {
-                this.enemyAttack();
+            if (typeof CombatSystem !== 'undefined' && CombatSystem.update) {
+                CombatSystem.update(deltaTime * 1000, this.state); // Convert deltaTime to ms
+            } else {
+                // Fallback to legacy methods if new CombatSystem not available
+                if (this.playerAttack) {
+                    this.playerAttack();
+                }
+                if (this.enemyAttack) {
+                    this.enemyAttack();
+                }
             }
 
             // Apply HP regeneration
@@ -1050,10 +1251,43 @@ const GameEngine = {
             }
         }
 
-        // Process node harvesting if active (delegated to NodeCollectionSystem)
-        if (this.state.nodeCollection && this.state.nodeCollection.activeNode) {
+        // GATHERING SYSTEM (Universal for all gathering skills: mining, logging, fishing, etc.)
+        // GatheringSystem handles all gathering logic - no other systems should process gathering
+        if (this.state.currentActivity === 'gathering') {
+            if (this.processGatheringTick) {
+                this.processGatheringTick();
+            }
+        }
+
+        // DEPRECATED SYSTEMS BELOW - Kept for backward compatibility with old save files only
+        // These should NOT run if GatheringSystem is active (prevents double-processing)
+
+        // OLD: NodeCollectionSystem (DEPRECATED - replaced by GatheringSystem)
+        // Only runs if NOT using new gathering system
+        if (!this.state.gatheringSession && this.state.nodeCollection && this.state.nodeCollection.activeNode) {
             if (this.processNodeHarvesting) {
                 this.processNodeHarvesting(deltaTime);
+            }
+        }
+
+        // OLD: MiningSystem (DEPRECATED - replaced by GatheringSystem)
+        // Only runs if NOT using new gathering system
+        if (!this.state.gatheringSession && this.state.currentActivity === 'mining') {
+            if (this.state.miningState && this.state.miningState.isResting) {
+                // Process rest state
+                if (this.processMiningRestTick) {
+                    this.processMiningRestTick();
+                }
+            } else {
+                // Process mining action
+                if (this.processMiningTick) {
+                    this.processMiningTick();
+                }
+            }
+
+            // Update mining UI every tick
+            if (typeof renderMiningUI === 'function') {
+                renderMiningUI();
             }
         }
 
@@ -1063,11 +1297,11 @@ const GameEngine = {
         }
 
         // Process navigation/discovery (delegated to NavigationSystem)
-        if (this.state.activeNavigation) {
-            // Process rest resource consumption (food + logs every 6s)
-            if (this.processRestConsumption) {
-                this.processRestConsumption(deltaTime);
-            }
+        if (this.state.activeNavigation && this.state.activeNavigation.isNavigating) {
+            // Process rest resource consumption (food + logs every 6s) - DEPRECATED
+            // if (this.processRestConsumption) {
+            //     this.processRestConsumption(deltaTime);
+            // }
 
             if (this.processNavigation) {
                 this.processNavigation(deltaTime);
@@ -1082,254 +1316,6 @@ const GameEngine = {
         }
     },
 
-    /**
-     * Generate a hex grid world map
-     * Creates a hexagonal-shaped map using axial coordinates (more square-like than rectangle)
-     */
-    generateWorldMap(mapRadius = 10) {
-        const worldMap = {};
-        const biomeTypes = ['plains', 'forest', 'mountains', 'tundra', 'desert', 'swamp', 'coast'];
-
-        // Helper: Get hex neighbors in axial coordinates
-        const getNeighbors = (q, r) => {
-            return [
-                { q: q + 1, r: r, dir: "E" },      // East
-                { q: q + 1, r: r - 1, dir: "NE" }, // Northeast
-                { q: q, r: r - 1, dir: "NW" },     // Northwest
-                { q: q - 1, r: r, dir: "W" },      // West
-                { q: q - 1, r: r + 1, dir: "SW" }, // Southwest
-                { q: q, r: r + 1, dir: "SE" }      // Southeast
-            ];
-        };
-
-        // Helper: Get biome based on position (simple pattern)
-        // Starting position is at (-3, -4)
-        const getBiome = (q, r) => {
-            const startQ = -3;
-            const startR = -4;
-
-            // Starting region is plains
-            if (q === startQ && r === startR) return 'plains';
-
-            // Simple procedural biome assignment based on position
-            const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
-
-            // Close to start: plains
-            if (distanceFromStart < 2) return 'plains';
-
-            // Biome zones based on position
-            // Left side (near start): plains and forest
-            if (q < -mapRadius * 0.4) {
-                return r < 0 ? 'forest' : 'plains';
-            }
-
-            // Upper regions: mountains and tundra
-            if (r < -mapRadius * 0.4) {
-                return q > 0 ? 'tundra' : 'mountains';
-            }
-
-            // Lower regions: swamp and coast
-            if (r > mapRadius * 0.4) {
-                return q > 0 ? 'coast' : 'swamp';
-            }
-
-            // Middle-right: desert and forest
-            if (q > mapRadius * 0.4) {
-                return r > 0 ? 'desert' : 'forest';
-            }
-
-            // Default: varied biomes
-            const hash = Math.abs(q * 73 + r * 37) % biomeTypes.length;
-            return biomeTypes[hash];
-        };
-
-        // Helper: Calculate region complication factor
-        // Higher complication = harder to discover things (requires more intellect)
-        const getComplicationFactor = (q, r, biome) => {
-            const startQ = -3;
-            const startR = -4;
-            const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
-
-            // Biome difficulty modifiers
-            const biomeDifficulty = {
-                'plains': 1.0,    // Easy (starting biome)
-                'forest': 1.2,    // Slightly harder (dense vegetation)
-                'coast': 1.1,     // Slightly harder (water navigation)
-                'desert': 1.3,    // Moderate (harsh conditions)
-                'swamp': 1.4,     // Hard (confusing terrain)
-                'mountains': 1.5, // Very hard (complex terrain)
-                'tundra': 1.6     // Hardest (extreme conditions)
-            };
-
-            // Base complication from biome
-            const baseComplication = biomeDifficulty[biome] || 1.0;
-
-            // Add distance-based complication
-            // Each unit of distance adds complicationScaling to difficulty
-            const distanceComplication = distanceFromStart * this.gameBalance.complicationScaling;
-
-            return parseFloat((baseComplication + distanceComplication).toFixed(2));
-        };
-
-        // Helper: Generate region name
-        const getRegionName = (q, r, biome) => {
-            const startQ = -3;
-            const startR = -4;
-
-            // The Scar - Starting region (home of Unity members)
-            if (q === startQ && r === startR) return "The Scar";
-
-            const prefixes = {
-                plains: ["Green", "Sunny", "Peaceful", "Rolling", "Golden"],
-                forest: ["Dark", "Deep", "Ancient", "Verdant", "Misty"],
-                mountains: ["Highland", "Snowy", "Rocky", "Towering", "Peak"],
-                tundra: ["Frozen", "Icy", "Bitter", "Arctic", "Frost"],
-                desert: ["Arid", "Burning", "Dry", "Sandy", "Scorched"],
-                swamp: ["Murky", "Foggy", "Dank", "Mossy", "Fetid"],
-                coast: ["Coastal", "Sandy", "Windy", "Harbor", "Tidal"]
-            };
-
-            const suffixes = {
-                plains: ["Plains", "Meadows", "Fields", "Grassland", "Valley"],
-                forest: ["Woods", "Forest", "Grove", "Thicket", "Woodland"],
-                mountains: ["Ridge", "Peak", "Mountains", "Summit", "Heights"],
-                tundra: ["Tundra", "Wastes", "Expanse", "Barrens", "Flats"],
-                desert: ["Desert", "Wastes", "Dunes", "Sands", "Expanse"],
-                swamp: ["Swamp", "Marsh", "Bog", "Fen", "Mire"],
-                coast: ["Shores", "Coast", "Beach", "Bay", "Cove"]
-            };
-
-            const prefix = prefixes[biome][Math.abs(q + r * 3) % prefixes[biome].length];
-            const suffix = suffixes[biome][Math.abs(q * 2 + r) % suffixes[biome].length];
-
-            return `${prefix} ${suffix}`;
-        };
-
-        // Helper: Get background image for region
-        // Returns region-specific image path or null to use biome default
-        const getBackgroundImage = (q, r, regionName) => {
-            const startQ = -3;
-            const startR = -4;
-
-            // The Scar - Starting region has a specific background
-            if (q === startQ && r === startR) {
-                return 'assets/backgrounds/regions/region_the_scar_01.png';
-            }
-
-            // Future regions can have their own backgrounds added here
-            // Return null to use the biome's default background
-            return null;
-        };
-
-        // Generate hexagonal grid with rectangular boundaries (wider than tall)
-        // This creates a more square-like shape while maintaining hex adjacency
-        const startQ = -3;
-        const startR = -4;
-
-        // Generate hexes in a rectangular boundary (2:1 width to height ratio for square-ish appearance)
-        for (let q = -mapRadius; q <= mapRadius; q++) {
-            const r1 = Math.max(-mapRadius, -q - mapRadius);
-            const r2 = Math.min(mapRadius, -q + mapRadius);
-
-            for (let r = r1; r <= r2; r++) {
-                const regionId = `region_${q}_${r}`;
-                const biome = getBiome(q, r);
-                const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
-                // Starting region has nav requirement of 1, others scale based on distance
-                const navRequirement = (q === startQ && r === startR) ? 1 : Math.max(1, Math.floor(distanceFromStart / 2) + 1);
-
-                // Get valid neighbors
-                const neighbors = getNeighbors(q, r);
-                const validNeighbors = neighbors.filter(n => {
-                    // Check if neighbor is within map bounds
-                    const nR1 = Math.max(-mapRadius, -n.q - mapRadius);
-                    const nR2 = Math.min(mapRadius, -n.q + mapRadius);
-                    return n.q >= -mapRadius && n.q <= mapRadius &&
-                           n.r >= nR1 && n.r <= nR2;
-                });
-
-                // Special description for The Scar (starting region)
-                const isStartingRegion = (q === startQ && r === startR);
-                const description = isStartingRegion
-                    ? "A massive crater, home to the Unity members long banished to this corner of the new planet. The Scar is heavily wooded and features a large lake of trapped freshwater. This is where your journey begins."
-                    : `A ${biome} region in the ${q > 0 ? 'eastern' : q < 0 ? 'western' : 'central'} ${r > 0 ? 'south' : r < 0 ? 'north' : 'lands'}`;
-
-                const regionName = getRegionName(q, r, biome);
-
-                // Get biome definition for nodes and enemies
-                const biomeDef = this.definitions.biomes[biome];
-
-                // Get discoverable nodes from biome
-                const discoverableNodes = [];
-                if (biomeDef && biomeDef.gatheringNodes) {
-                    for (let skill in biomeDef.gatheringNodes) {
-                        discoverableNodes.push(...biomeDef.gatheringNodes[skill]);
-                    }
-                }
-
-                // Get discoverable enemies based on region difficulty
-                const discoverableEnemies = [];
-                if (this.definitions.enemies) {
-                    // Filter enemies appropriate for this region's distance from start
-                    const maxEnemyLevel = Math.max(1, Math.floor(distanceFromStart * 1.5));
-                    for (let enemyId in this.definitions.enemies) {
-                        const enemy = this.definitions.enemies[enemyId];
-                        const enemyLevel = enemy.level || 1;
-                        // Include enemies at or below the region's max level
-                        if (enemyLevel <= maxEnemyLevel) {
-                            discoverableEnemies.push(enemyId);
-                        }
-                    }
-                }
-
-                // Get missions available in this region
-                const availableMissions = [];
-                if (this.definitions.missions) {
-                    for (let missionId in this.definitions.missions) {
-                        const mission = this.definitions.missions[missionId];
-                        // Include missions that are in this region
-                        if (mission.region === regionId || (isStartingRegion && mission.region === "region_0_0")) {
-                            availableMissions.push(missionId);
-                        }
-                    }
-                }
-
-                worldMap[regionId] = {
-                    name: regionName,
-                    description: description,
-                    biome: biome,
-                    backgroundImage: getBackgroundImage(q, r, regionName), // Region-specific background (null = use biome default)
-                    hexCoords: { q, r }, // Using axial coordinates
-                    navigationRequirement: navRequirement,
-                    complication: getComplicationFactor(q, r, biome), // Navigation complexity
-                    requiredMissionToLeave: null, // Mission ID that must be completed before leaving this region
-                    discoverableNodes: discoverableNodes,    // Array of node IDs that can be discovered here
-                    discoverableEnemies: discoverableEnemies, // Array of enemy IDs that can be discovered here
-                    availableMissions: availableMissions,     // Array of mission IDs available in this region
-                    adjacent: validNeighbors.reduce((obj, n) => {
-                        obj[n.dir] = `region_${n.q}_${n.r}`;
-                        return obj;
-                    }, {})
-                };
-            }
-        }
-
-        return worldMap;
-    },
-
-    /**
-     * Set mission requirement for leaving a region
-     * @param {string} regionId - The region ID
-     * @param {string} missionId - The mission ID that must be completed
-     */
-    setRegionMissionRequirement(regionId, missionId) {
-        if (this.definitions.worldMap && this.definitions.worldMap[regionId]) {
-            this.definitions.worldMap[regionId].requiredMissionToLeave = missionId;
-            console.log(`🗺️ Region ${regionId} now requires mission '${missionId}' to leave`);
-        } else {
-            console.error(`❌ Cannot set mission requirement: Region ${regionId} not found`);
-        }
-    },
 
     /**
      * Check and unlock content based on requirements
@@ -1455,7 +1441,142 @@ const GameEngine = {
     },
 
     /**
+     * Check if this is a new player (no prior save data)
+     * @returns {boolean} True if new player, false if returning player
+     */
+    isNewPlayer() {
+        // Check for existence of save data in localStorage
+        const saveData = localStorage.getItem('oneSoulSaveData');
+        if (!saveData) return true;
+
+        // Additional check: if save exists but missions.completed is empty, treat as new
+        try {
+            const parsed = JSON.parse(saveData);
+            if (!parsed.missions || !parsed.missions.completed || parsed.missions.completed.length === 0) {
+                return true;
+            }
+        } catch (e) {
+            return true;
+        }
+
+        return false;
+    },
+
+    /**
+     * Initialize a new player with tutorial mission available
+     * Called when isNewPlayer() returns true
+     */
+    initializeNewPlayer() {
+        console.log('🆕 New player detected, initializing first-time experience...');
+
+        // Ensure mission_101 is in available missions
+        if (!this.state.missions.available.includes('mission_101')) {
+            this.state.missions.available.push('mission_101');
+            console.log('📋 Added mission_101 to available missions');
+        }
+
+        // Pre-discover Tier 1 nodes in Region 1 (The Cradle)
+        this.initializeTier1Nodes();
+
+        // Emit event for WelcomeModal to show
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('new-player-initialized');
+            console.log('📤 Emitted new-player-initialized event');
+        }
+    },
+
+    /**
+     * Initialize Tier 1 nodes with pre-discovered state
+     * All 6 starting nodes are available from the beginning with capacity 3
+     */
+    initializeTier1Nodes() {
+        const STARTING_REGION = 'region_-3_-4';  // The Cradle
+        const TIER1_NODES = ['node_1_1', 'node_1_2', 'node_1_3', 'node_1_4', 'node_1_5', 'node_1_6'];
+        const INITIAL_HEALTH_BONUS = 10;  // Same as discovering in one region
+
+        // Initialize globalNodes if needed
+        if (!this.state.globalNodes) {
+            this.state.globalNodes = {};
+        }
+
+        // Pre-discover each Tier 1 node
+        TIER1_NODES.forEach(nodeId => {
+            // Only initialize if not already discovered
+            if (!this.state.globalNodes[nodeId]) {
+                this.state.globalNodes[nodeId] = {
+                    discovered: true,
+                    regionContributions: {
+                        [STARTING_REGION]: INITIAL_HEALTH_BONUS
+                    },
+                    totalHealthBonus: INITIAL_HEALTH_BONUS,
+                    firstDiscoveredAt: Date.now(),
+                    firstDiscoveredIn: STARTING_REGION
+                };
+
+                const nodeDef = typeof NodeRegistry !== 'undefined' ? NodeRegistry.get(nodeId) : null;
+                const nodeName = nodeDef ? nodeDef.name : nodeId;
+                console.log(`🌲 Pre-discovered ${nodeName} in The Cradle`);
+            }
+        });
+
+        console.log(`✅ Initialized ${TIER1_NODES.length} Tier 1 nodes for new player`);
+    },
+
+    /**
+     * Check for new player and initialize if needed
+     * Should be called after game loads
+     */
+    checkNewPlayer() {
+        if (this.isNewPlayer()) {
+            this.initializeNewPlayer();
+        } else {
+            console.log('👋 Returning player detected');
+        }
+    },
+
+    /**
+     * Grant starter kit to player
+     * Called when player skips tutorial or as part of tutorial rewards
+     */
+    grantStarterKit() {
+        console.log('📦 Granting starter kit...');
+
+        // Unity Scout Set (armor)
+        if (typeof InventorySystem !== 'undefined' && InventorySystem.addItem) {
+            InventorySystem.addItem.call(this, 'unityScoutSet', 1);
+        }
+
+        // 6 Gathering Tools
+        const tools = ['lightPickaxe', 'utilityHatchet', 'caneRod', 'huntingBlade', 'wovenBasket', 'lockpick'];
+        tools.forEach(toolId => {
+            if (typeof InventorySystem !== 'undefined' && InventorySystem.addItem) {
+                InventorySystem.addItem.call(this, toolId, 1);
+            }
+        });
+
+        // Some starter resources
+        const resources = [
+            { id: 'solfish', qty: 10 },
+            { id: 'mintyHerb', qty: 10 },
+            { id: 'pinewood', qty: 10 }
+        ];
+        resources.forEach(({ id, qty }) => {
+            if (typeof InventorySystem !== 'undefined' && InventorySystem.addItem) {
+                InventorySystem.addItem.call(this, id, qty);
+            }
+        });
+
+        // Update UI
+        if (typeof UICore !== 'undefined' && UICore.update) {
+            UICore.update();
+        }
+
+        console.log('📦 Starter kit granted');
+    },
+
+    /**
      * Reset the game to initial state
+     * Provides a complete fresh start for playtesting early game experience
      */
     reset() {
         // Stop the game loop
@@ -1463,23 +1584,32 @@ const GameEngine = {
             clearInterval(this.gameLoop);
         }
 
-        // Reset state to initial values
+        // Reset state to initial values - matching the full initial state structure
         this.state = {
+            // Currencies
             currencies: {
                 gold: 0,
-                medals: 0
+                medals: 0,
+                tomes: 0,
+                gems: 0
             },
+
+            // Legacy resources (kept for backwards compatibility)
             resources: {
                 ore: 0,
                 wood: 0,
                 health: 100,
                 maxHealth: 100
             },
+
+            // Legacy generators
             generators: {
                 miner: { level: 0, unlocked: true },
                 lumberjack: { level: 0, unlocked: true },
                 merchant: { level: 0, unlocked: true }
             },
+
+            // Legacy upgrades
             upgrades: {
                 goldBoost1: { level: 0, unlocked: true },
                 goldBoost2: { level: 0, unlocked: false },
@@ -1487,7 +1617,10 @@ const GameEngine = {
                 loggingEfficiency: { level: 0, unlocked: true },
                 merchantSkill: { level: 0, unlocked: false }
             },
+
+            // Skills - All reset to level 1
             skills: {
+                // Gathering Skills
                 navigation: { level: 1, exp: 0, unlocked: true },
                 mining: { level: 1, exp: 0, unlocked: true },
                 logging: { level: 1, exp: 0, unlocked: true },
@@ -1495,19 +1628,25 @@ const GameEngine = {
                 hunting: { level: 1, exp: 0, unlocked: true },
                 foraging: { level: 1, exp: 0, unlocked: true },
                 thieving: { level: 1, exp: 0, unlocked: true },
-                combat: { level: 1, exp: 0, unlocked: true },
-                forging: { level: 1, exp: 0, unlocked: true },
-                machining: { level: 1, exp: 0, unlocked: true },
+                // Crafting Skills
                 cooking: { level: 1, exp: 0, unlocked: true },
                 chemistry: { level: 1, exp: 0, unlocked: true },
-                textiles: { level: 1, exp: 0, unlocked: true },
+                smithing: { level: 1, exp: 0, unlocked: true },
+                mechanics: { level: 1, exp: 0, unlocked: true },
+                electronics: { level: 1, exp: 0, unlocked: true },
+                tailoring: { level: 1, exp: 0, unlocked: true },
                 engineering: { level: 1, exp: 0, unlocked: true }
             },
+
+            // Character Level - Reset to level 1
             characterLevel: {
+                name: "Adventurer",
                 level: 1,
                 exp: 0,
                 unassignedAttributePoints: 0
             },
+
+            // Combat Attributes - All reset to 1
             combatAttributes: {
                 health: 1,
                 defense: 1,
@@ -1517,99 +1656,238 @@ const GameEngine = {
                 mobility: 1,
                 intellect: 1
             },
-            currentRegion: "region_0_0",
+
+            // Regions - Reset to starting region only
+            currentRegion: "region_-3_-4",
             regions: {
-                "region_0_0": {
+                "region_-3_-4": {
                     discovered: true,
                     discoveryProgress: 0,
                     discoveredLocations: [],
-                    discoveredNodeTypes: [],
-                    nodeHealthBonuses: {},
                     discoveredExitPaths: [],
-                    discoveredCraftingStations: []
+                    availableNodes: {}
                 }
             },
+
+            // Global discovery state - Clear all discoveries
+            globalNodes: {},
+            globalEnemies: {},
+
+            // Current Activity
             currentActivity: null,
+
+            // Active Navigation
             activeNavigation: {
                 isNavigating: false,
+                isRecovering: false,
                 lastNavigationTick: 0,
+                lastRecoveryTick: 0,
                 endurance: 100,
-                maxEndurance: 100
+                maxEndurance: 100,
+                restEquipment: {
+                    food: null,
+                    wood: null
+                }
             },
+
+            // Bank - Empty inventory
             bank: {
-                activeTab: "resources",
+                activeTab: "material",
                 tabs: {
-                    resources: {
-                        name: "Resources",
-                        icon: "📦",
-                        order: 0
-                    },
-                    equipment: {
-                        name: "Equipment",
-                        icon: "⚔️",
-                        order: 1
-                    },
-                    consumables: {
-                        name: "Consumables",
-                        icon: "🧪",
-                        order: 2
-                    }
+                    material: { name: "Materials", icon: "📦", order: 0 },
+                    weapon: { name: "Weapons", icon: "⚔️", order: 1 },
+                    ammo: { name: "Ammo", icon: "🎯", order: 2 },
+                    armor: { name: "Armor", icon: "🛡️", order: 3 },
+                    tool: { name: "Tools", icon: "⛏️", order: 4 },
+                    food: { name: "Food", icon: "🍖", order: 5 },
+                    potion: { name: "Potions", icon: "🧪", order: 6 },
+                    technology: { name: "Technology", icon: "⚡", order: 7 },
+                    perk: { name: "Perks", icon: "⭐", order: 8 },
+                    quest: { name: "Quest Items", icon: "📜", order: 9 }
                 },
                 items: {},
-                newItems: []
+                newItems: [],
+                equipmentInstances: {}
             },
+
+            // Equipment - All slots empty
             equipment: {
                 weapon: null,
-                shield: null,
-                helmet: null,
-                chest: null,
-                legs: null,
+                armor: null,
+                back: null,
+                gloves: null,
                 neck: null,
+                boots: null,
                 ring: null,
-                back: null
+                ammo: null,
+                food: null,
+                potion: null,
+                tech1: null,
+                tech2: null,
+                tech3: null,
+                tech4: null
             },
+
+            // Equipment Presets
+            equipmentPresets: {
+                presets: [null, null, null, null, null, null, null, null, null, null],
+                activePreset: null
+            },
+
+            // Combat System
             combat: {
                 player: {
                     baseAttackDamage: 5,
                     baseAttackSpeed: 1.0,
                     baseAccuracy: 75,
-                    currentHealth: 100,
-                    maxHealth: 100
+                    currentHealth: 500,
+                    maxHealth: 500
                 },
                 currentEnemy: null,
                 inCombat: false,
                 combatLog: [],
                 lastAttackTime: 0,
+                isAttacking: false,
+                playerAmmo: {
+                    currentAmmo: 0,
+                    magazineSize: 0,
+                    isReloading: false,
+                    reloadStartTime: 0,
+                    reloadDuration: 0
+                },
+                activeEffects: [],
+                autoEatThreshold: 0.5,
+                lastAutoEatTime: 0,
+                autoEatCooldown: 3000,
+                equippedFoodQuantity: 0,
+                currentStance: "offensive",
+                lastStanceChange: 0,
+                stanceChangeCooldown: 2000,
                 selectedEnemyId: null,
                 enemyDefeatedAt: null,
                 waitingForRespawn: false,
                 pendingLoot: []
             },
+
+            // Perks
             perks: {
                 damageBonus: 0,
                 speedBonus: 0,
                 accuracyBonus: 0,
                 healthBonus: 0
             },
+
+            // Node Collection System
             nodeCollection: {
                 activeNode: null,
                 selectedSkill: null
             },
+
+            // Crafting System
             crafting: {
                 discoveredStations: [],
                 activeCrafts: [],
                 selectedSkill: null,
-                autoRecipe: null
+                autoRecipe: null,
+                activeQueues: {
+                    smithing: [],
+                    mechanics: [],
+                    electronics: [],
+                    tailoring: [],
+                    chemistry: [],
+                    cooking: []
+                }
             },
+
+            // Workstations
+            workstations: {
+                smithing: { tier: 1 },
+                mechanics: { tier: 1 },
+                electronics: { tier: 1 },
+                tailoring: { tier: 1 },
+                chemistry: { tier: 1 },
+                cooking: { tier: 1 }
+            },
+
+            // Blueprints
+            blueprints: {
+                common: 0,
+                advanced: 0,
+                masterwork: 0
+            },
+
+            // Missions - All reset to initial state
+            missions: {
+                available: [],
+                active: [],
+                completed: [],
+                seenMissions: [],
+                activeProgress: {},
+                cooldowns: {},
+                analytics: {
+                    totalStarted: 0,
+                    totalCompleted: 0,
+                    totalAbandoned: 0,
+                    byMission: {}
+                }
+            },
+
+            // Engineering System
+            engineering: {
+                tokens: 0,
+                workshops: {
+                    cooking: 0,
+                    chemistry: 0,
+                    smithing: 0,
+                    mechanics: 0,
+                    electronics: 0,
+                    tailoring: 0
+                },
+                paths: {},
+                reversedRecipes: [],
+                perfectionAttempts: 0,
+                perfectionSuccesses: 0,
+                technologiesAssembled: 0,
+                itemsSalvaged: 0
+            },
+
+            // Perk Grid System
+            perkGrid: {
+                unlockedNodes: [],
+                equippedMedals: {},
+                availableSlots: 1
+            },
+
+            // Timing
             gameTime: 0,
             lastTick: Date.now(),
             lastSave: null,
             tickRate: 100
         };
 
+        // Re-initialize mission availability for starting region
+        if (typeof MissionSystem !== 'undefined' && MissionSystem.updateAvailableMissions) {
+            // Delay slightly to ensure state is set
+            setTimeout(() => {
+                MissionSystem.updateAvailableMissions.call(this);
+                console.log("📋 Missions refreshed for new game");
+            }, 100);
+        }
+
         // Restart the game loop
         this.startGameLoop();
-        console.log("🔄 Game reset complete");
+
+        // Emit reset event for UI components
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('game:reset', {});
+
+            // Show welcome modal for new player experience (after a brief delay for UI to settle)
+            setTimeout(() => {
+                EventBus.emit('new-player-initialized', {});
+            }, 200);
+        }
+
+        console.log("🔄 Game reset complete - Fresh start from The Cradle (region_-3_-4)");
     }
 };
 

@@ -17,9 +17,18 @@ const ItemModal = {
      * @param {string} itemId - The item ID to display
      */
     open(itemId) {
-        const itemDef = GameEngine.definitions.items[itemId];
+        // DUAL-BANK: Check all storage locations (instanced, stackable, legacy)
+        const instancedItem = GameEngine.state.bank.instanced?.[itemId];
+        const stackableItem = GameEngine.state.bank.stackable?.[itemId];
+        const legacyItem = GameEngine.state.bank.items?.[itemId];
+        const bankItem = instancedItem || stackableItem || legacyItem;
+
+        // For instanced items, use baseItemId to get definition
+        const lookupId = bankItem?.baseItemId || itemId;
+        const itemDef = ItemAccessHelper.getItem(lookupId);
+
         if (!itemDef) {
-            console.error(`Item ${itemId} not found`);
+            console.error(`Item ${itemId} not found (lookup: ${lookupId})`);
             return;
         }
 
@@ -62,18 +71,35 @@ const ItemModal = {
      * @param {object} itemDef - Item definition
      */
     populateModal(itemId, itemDef) {
+        // DUAL-BANK: Check all storage locations (instanced, stackable, legacy)
+        const instancedItem = GameEngine.state.bank.instanced?.[itemId];
+        const stackableItem = GameEngine.state.bank.stackable?.[itemId];
+        const legacyItem = GameEngine.state.bank.items?.[itemId];
+        const bankItem = instancedItem || stackableItem || legacyItem;
+
         // Get rarity information
-        const rarity = GameEngine.getItemRarity(itemId);
+        // For instanced items, use the instance's rarity (rolled at craft time)
+        // For non-instanced items, use the base item definition's rarity
+        const lookupId = bankItem?.baseItemId || itemId;
+        const itemDefForRarity = ItemAccessHelper.getItem(lookupId);
+        let rarityTier = 'common';
+        if (instancedItem && instancedItem.rarity) {
+            // Instanced item: use the rarity stored on the instance
+            rarityTier = instancedItem.rarity;
+        } else {
+            // Non-instanced item: get rarity from item definition
+            rarityTier = itemDefForRarity?.rarity || 'common';
+        }
+        const rarity = GameEngine.definitions.RARITY_TIERS[rarityTier] || GameEngine.definitions.RARITY_TIERS.common;
         const rarityColor = rarity ? rarity.color : '#9e9e9e';
         const rarityName = rarity ? rarity.name : 'Common';
         const rarityIcon = rarity ? rarity.icon : '⚪';
 
         // Get player's quantity
-        const bankItem = GameEngine.state.bank.items[itemId];
         const quantity = bankItem ? bankItem.quantity : 0;
 
         // Header section
-        document.getElementById('itemModalIcon').textContent = itemDef.image;
+        document.getElementById('itemModalIcon').innerHTML = IconHelper.getItemIconHTML(itemDef, {size: 64, className: 'modal-icon'});
         document.getElementById('itemModalName').textContent = itemDef.name;
         document.getElementById('itemModalName').style.color = rarityColor;
         document.getElementById('itemModalRarity').textContent = `${rarityIcon} ${rarityName}`;
@@ -179,7 +205,11 @@ const ItemModal = {
         for (let recipeId in recipes) {
             const recipe = recipes[recipeId];
             if (recipe.inputs && recipe.inputs[itemId]) {
-                usedInRecipes.push({ id: recipeId, ...recipe });
+                usedInRecipes.push({
+                    id: recipeId,
+                    ...recipe,
+                    requiredQuantity: recipe.inputs[itemId]
+                });
             }
         }
 
@@ -188,19 +218,25 @@ const ItemModal = {
             return;
         }
 
-        let html = '<div class="recipe-list">';
-        for (let recipe of usedInRecipes.slice(0, 5)) {  // Limit to 5 recipes
-            const outputItem = GameEngine.definitions.items[recipe.output];
+        let html = '<div class="recipe-uses-list">';
+        for (let recipe of usedInRecipes) {
+            const outputItem = ItemAccessHelper.getItem(recipe.output);
+            const icon = IconHelper.getItemIconHTML(outputItem, {size: 32, className: 'recipe-icon'});
+
             html += `
-                <div class="recipe-card" onclick="ItemModal.viewRecipe('${recipe.id}')">
-                    <div style="font-size: 1.5em;">${outputItem?.image || '📦'}</div>
-                    <div style="font-size: 0.85em;">${outputItem?.name || recipe.id}</div>
+                <div class="recipe-use-row">
+                    <div class="recipe-use-info">
+                        ${icon}
+                        <div class="recipe-use-details">
+                            <div class="recipe-use-name">${outputItem?.name || recipe.id}</div>
+                            <div class="recipe-use-amount">Uses ${recipe.requiredQuantity}x per craft</div>
+                        </div>
+                    </div>
+                    <button class="recipe-craft-btn" onclick="ItemModal.openRecipeCrafting('${recipe.id}')">
+                        🔨 Craft
+                    </button>
                 </div>
             `;
-        }
-
-        if (usedInRecipes.length > 5) {
-            html += `<div style="text-align: center; color: #888; font-size: 0.85em; padding: 10px;">+${usedInRecipes.length - 5} more recipes</div>`;
         }
 
         html += '</div>';
@@ -219,7 +255,7 @@ const ItemModal = {
         if (enemies) {
             for (let enemyId in enemies) {
                 const enemy = enemies[enemyId];
-                if (enemy.lootTable) {
+                if (enemy.lootTable && Array.isArray(enemy.lootTable)) {
                     for (let loot of enemy.lootTable) {
                         if (loot.itemId === itemId) {
                             sources.push(`🗡️ Drop from ${enemy.name} (${(loot.chance * 100).toFixed(1)}%)`);
@@ -277,8 +313,14 @@ const ItemModal = {
      */
     renderActions(itemId, itemDef) {
         const container = document.getElementById('itemModalActions');
-        const bankItem = GameEngine.state.bank.items[itemId];
-        const quantity = bankItem ? bankItem.quantity : 0;
+
+        // DUAL-BANK: Check all storage locations
+        const instancedItem = GameEngine.state.bank.instanced?.[itemId];
+        const stackableItem = GameEngine.state.bank.stackable?.[itemId];
+        const legacyItem = GameEngine.state.bank.items?.[itemId];
+        const bankItem = instancedItem || stackableItem || legacyItem;
+
+        const quantity = bankItem ? (bankItem.quantity || 1) : 0;
 
         if (quantity === 0) {
             container.innerHTML = '<p style="color: #888; text-align: center;">You don\'t own this item</p>';
@@ -287,33 +329,42 @@ const ItemModal = {
 
         let html = '<div class="action-buttons">';
 
-        // Equip/Unequip button
-        if (itemDef.equipSlot) {
-            const isEquipped = GameEngine.state.equipment[itemDef.equipSlot] === itemId;
+        // === PRIMARY ACTIONS (Equipment/Consumable) ===
+
+        // Equip/Unequip button (for equipment, but NOT attachments)
+        if ((itemDef.slot || itemDef.equipSlot) && itemDef.itemType !== 'attachment' && itemDef.slot !== 'attachment') {
+            const slot = itemDef.equipSlot || itemDef.slot;
+            const isEquipped = GameEngine.state.equipment[slot] === itemId;
             if (isEquipped) {
-                html += `<button class="action-btn unequip-btn" onclick="ItemModal.unequipItem('${itemId}', '${itemDef.equipSlot}')">
+                html += `<button class="action-btn unequip-btn" onclick="ItemModal.unequipItem('${itemId}', '${slot}')">
                     🛡️ Unequip
                 </button>`;
             } else {
-                html += `<button class="action-btn equip-btn" onclick="ItemModal.equipItem('${itemId}', '${itemDef.equipSlot}')">
+                html += `<button class="action-btn equip-btn" onclick="ItemModal.equipItem('${itemId}', '${slot}')">
                     ⚔️ Equip
                 </button>`;
             }
         }
 
-        // Use in Craft button
-        html += `<button class="action-btn craft-btn" onclick="ItemModal.showCraftingOptions('${itemId}')">
-            🔨 Use in Craft
-        </button>`;
+
+        // Use/Consume button (for consumables)
+        if (itemDef.category === 'consumable' && itemDef.effect) {
+            html += `<button class="action-btn use-btn" onclick="ItemModal.useItem('${itemId}')">
+                🧪 Use
+            </button>`;
+        }
+
+        // === SECONDARY ACTIONS ===
 
         // Sell button
+        const sellValue = itemDef.value || 10;
         html += `<button class="action-btn sell-btn" onclick="ItemModal.sellItem('${itemId}')">
-            💰 Sell
+            💰 Sell (${sellValue}g)
         </button>`;
 
-        // Drop/Destroy button
-        html += `<button class="action-btn destroy-btn" onclick="ItemModal.destroyItem('${itemId}')">
-            🗑️ Destroy
+        // Drop button (red warning style)
+        html += `<button class="action-btn drop-btn" onclick="ItemModal.dropItem('${itemId}')">
+            📤 Drop
         </button>`;
 
         html += '</div>';
@@ -324,7 +375,41 @@ const ItemModal = {
      * Equip an item
      */
     equipItem(itemId, slot) {
-        GameEngine.equipItem(itemId, slot);
+        const result = GameEngine.equipItem(itemId, slot);
+
+        // Use ItemIdUtils to extract base ID for item name lookup
+        const baseId = typeof ItemIdUtils !== 'undefined'
+            ? ItemIdUtils.getBaseItemId(itemId)
+            : itemId;
+
+        // Show notification feedback
+        if (result.success) {
+            const itemDef = ItemAccessHelper.getItem(baseId);
+            const itemName = itemDef ? itemDef.name : itemId;
+            if (typeof Animations !== 'undefined' && Animations.showNotification) {
+                Animations.showNotification(`⚔️ Equipped ${itemName}`, 'success', 2000);
+            }
+        } else {
+            // Always show error feedback, even if no specific reason
+            const reason = result.reason || 'Failed to equip item';
+            console.warn(`❌ Equip failed for ${itemId}: ${reason}`);
+            if (typeof Animations !== 'undefined' && Animations.showNotification) {
+                Animations.showNotification(`❌ ${reason}`, 'error', 3000);
+            }
+        }
+
+        // Force equipment and bank UI update BEFORE closing modal
+        if (typeof EquipmentUI !== 'undefined') {
+            if (EquipmentUI.updateEquipment) {
+                EquipmentUI.lastEquipmentState = null;
+                EquipmentUI.updateEquipment();
+            }
+            if (EquipmentUI.updateBank) {
+                EquipmentUI.lastBankState = null;
+                EquipmentUI.updateBank();
+            }
+        }
+
         this.close();
         UICore.update();
     },
@@ -333,7 +418,41 @@ const ItemModal = {
      * Unequip an item
      */
     unequipItem(itemId, slot) {
-        GameEngine.unequipItem(slot);
+        const result = GameEngine.unequipItem(slot);
+
+        // Use ItemIdUtils to extract base ID for item name lookup
+        const baseId = typeof ItemIdUtils !== 'undefined'
+            ? ItemIdUtils.getBaseItemId(itemId)
+            : itemId;
+
+        // Show notification feedback
+        if (result.success) {
+            const itemDef = ItemAccessHelper.getItem(baseId);
+            const itemName = itemDef ? itemDef.name : itemId;
+            if (typeof Animations !== 'undefined' && Animations.showNotification) {
+                Animations.showNotification(`🛡️ Unequipped ${itemName}`, 'success', 2000);
+            }
+        } else {
+            // Always show error feedback
+            const reason = result.reason || 'Failed to unequip item';
+            console.warn(`❌ Unequip failed for ${itemId}: ${reason}`);
+            if (typeof Animations !== 'undefined' && Animations.showNotification) {
+                Animations.showNotification(`❌ ${reason}`, 'error', 3000);
+            }
+        }
+
+        // Force equipment and bank UI update BEFORE closing modal
+        if (typeof EquipmentUI !== 'undefined') {
+            if (EquipmentUI.updateEquipment) {
+                EquipmentUI.lastEquipmentState = null;
+                EquipmentUI.updateEquipment();
+            }
+            if (EquipmentUI.updateBank) {
+                EquipmentUI.lastBankState = null;
+                EquipmentUI.updateBank();
+            }
+        }
+
         this.close();
         UICore.update();
     },
@@ -348,47 +467,141 @@ const ItemModal = {
     },
 
     /**
+     * Drop an item (with confirmation)
+     */
+    dropItem(itemId) {
+        // DUAL-BANK: Check all storage locations
+        const instancedItem = GameEngine.state.bank.instanced?.[itemId];
+        const stackableItem = GameEngine.state.bank.stackable?.[itemId];
+        const legacyItem = GameEngine.state.bank.items?.[itemId];
+        const bankItem = instancedItem || stackableItem || legacyItem;
+
+        if (!bankItem) return;
+
+        const itemDef = ItemAccessHelper.getItem(bankItem.baseItemId || itemId);
+        const quantity = bankItem.quantity || 1;
+
+        // Confirmation prompt
+        const confirmMsg = quantity > 1
+            ? `Drop ${quantity}x ${itemDef.name}?`
+            : `Drop ${itemDef.name}?`;
+
+        if (confirm(confirmMsg)) {
+            // Remove item from bank
+            if (instancedItem) {
+                GameEngine.removeEquipmentInstance(itemId);
+            } else if (stackableItem) {
+                GameEngine.removeStackableItem(itemId, quantity);
+            } else {
+                GameEngine.removeItemFromBank(itemId, quantity);
+            }
+
+            console.log(`📤 Dropped ${quantity}x ${itemDef.name}`);
+
+            // Close modal and force full UI update
+            this.close();
+
+            // Force refresh of the equipment UI to remove the dropped item card
+            if (typeof EquipmentUI !== 'undefined' && EquipmentUI.updateBank) {
+                EquipmentUI.updateBank();
+            }
+
+            // Update rest of UI
+            UICore.update();
+        }
+    },
+
+    /**
      * Sell an item
      */
     sellItem(itemId) {
-        const bankItem = GameEngine.state.bank.items[itemId];
+        // DUAL-BANK: Check all storage locations
+        const instancedItem = GameEngine.state.bank.instanced?.[itemId];
+        const stackableItem = GameEngine.state.bank.stackable?.[itemId];
+        const legacyItem = GameEngine.state.bank.items?.[itemId];
+        const bankItem = instancedItem || stackableItem || legacyItem;
+
         if (!bankItem) return;
 
-        const sellValue = 10; // Base sell value per item
-        const totalValue = sellValue * bankItem.quantity;
+        const itemDef = ItemAccessHelper.getItem(bankItem.baseItemId || itemId);
+        const quantity = bankItem.quantity || 1;
+        const sellValue = itemDef.value || 10;
+        const totalValue = sellValue * quantity;
 
-        if (confirm(`Sell all ${bankItem.quantity}x ${GameEngine.definitions.items[itemId].name} for ${totalValue} gold?`)) {
-            GameEngine.removeItemFromBank(itemId, bankItem.quantity);
-            GameEngine.state.currencies.gold += totalValue;
+        if (confirm(`Sell ${quantity}x ${itemDef.name} for ${totalValue} gold?`)) {
+            // Remove item from bank
+            if (instancedItem) {
+                GameEngine.removeEquipmentInstance(itemId);
+            } else if (stackableItem) {
+                GameEngine.removeStackableItem(itemId, quantity);
+            } else {
+                GameEngine.removeItemFromBank(itemId, quantity);
+            }
+
+            // Add gold
+            if (!GameEngine.state.currencies) GameEngine.state.currencies = {};
+            GameEngine.state.currencies.gold = (GameEngine.state.currencies.gold || 0) + totalValue;
+
+            console.log(`💰 Sold ${quantity}x ${itemDef.name} for ${totalValue} gold`);
+
+            // Close modal and force full UI update
             this.close();
+
+            // Force refresh of the equipment UI to remove the sold item card
+            if (typeof EquipmentUI !== 'undefined' && EquipmentUI.updateBank) {
+                EquipmentUI.updateBank();
+            }
+
+            // Update rest of UI
             UICore.update();
-            console.log(`💰 Sold ${bankItem.quantity}x ${itemId} for ${totalValue} gold`);
         }
     },
 
     /**
-     * Destroy an item
+     * Use/consume an item
      */
-    destroyItem(itemId) {
-        const bankItem = GameEngine.state.bank.items[itemId];
+    useItem(itemId) {
+        // DUAL-BANK: Check all storage locations
+        const stackableItem = GameEngine.state.bank.stackable?.[itemId];
+        const legacyItem = GameEngine.state.bank.items?.[itemId];
+        const bankItem = stackableItem || legacyItem;
+
         if (!bankItem) return;
 
-        if (confirm(`⚠️ Permanently destroy all ${bankItem.quantity}x ${GameEngine.definitions.items[itemId].name}? This cannot be undone!`)) {
-            GameEngine.removeItemFromBank(itemId, bankItem.quantity);
+        const itemDef = ItemAccessHelper.getItem(itemId);
+
+        // Apply consumable effect
+        if (itemDef.effect) {
+            // TODO: Implement consumable effect system
+            console.log(`🧪 Used ${itemDef.name}`);
+
+            // Remove one from stack
+            if (stackableItem) {
+                GameEngine.removeStackableItem(itemId, 1);
+            } else {
+                GameEngine.removeItemFromBank(itemId, 1);
+            }
+
             this.close();
             UICore.update();
-            console.log(`🗑️ Destroyed ${bankItem.quantity}x ${itemId}`);
         }
     },
 
     /**
-     * View a recipe
+     * Open crafting UI with specific recipe highlighted
+     * Called from the "Used in Crafting" section
      */
-    viewRecipe(recipeId) {
+    openRecipeCrafting(recipeId) {
         this.close();
-        switchView('crafting');
-        // TODO: Open crafting view and highlight this recipe
+        // Switch to crafting view
+        if (typeof switchView === 'function') {
+            switchView('crafting');
+        }
+        // TODO: Highlight/scroll to specific recipe when crafting UI is complete
+        // This will set the selected recipe in the crafting UI
+        console.log(`🔨 Opening crafting UI for recipe: ${recipeId}`);
     },
+
 
     /**
      * Add keyboard listeners

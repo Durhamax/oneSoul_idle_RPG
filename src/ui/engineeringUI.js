@@ -60,14 +60,14 @@ const EngineeringUI = {
         `;
 
         // Workshop Upgrades Panel
-        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'textiles'];
+        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'tailoring'];
         const skillIcons = {
             cooking: '🍳',
             chemistry: '⚗️',
             smithing: '🔨',
             mechanics: '⚙️',
             electronics: '⚡',
-            textiles: '🧵'
+            tailoring: '🧵'
         };
 
         html += `

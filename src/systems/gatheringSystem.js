@@ -1,0 +1,794 @@
+/**
+ * GATHERING SYSTEM
+ *
+ * Universal gathering loop for all gathering skills:
+ * - Mining (pickaxe → ore)
+ * - Logging (axe → wood)
+ * - Fishing (rod → fish)
+ * - Hunting (bow → meat/hide)
+ * - Foraging (basket → herbs)
+ * - Thieving (lockpick → loot)
+ *
+ * Core loop: Start → Action Tick → Award Resources → Repeat → Stop
+ */
+
+const GatheringSystem = {
+
+  // ========================================
+  // INITIALIZATION
+  // ========================================
+
+  init(engine) {
+    this.engine = engine;
+    this.state = engine.state;
+
+    // Bind methods
+    engine.startGathering = this.startGathering.bind(this);
+    engine.stopGathering = this.stopGathering.bind(this);
+    engine.processGatheringTick = this.processGatheringTick.bind(this);
+    engine.canStartGathering = this.canStartGathering.bind(this);
+
+    console.log('✅ GatheringSystem initialized');
+  },
+
+  // ========================================
+  // START GATHERING
+  // ========================================
+
+  canStartGathering(skill, nodeId) {
+    // Get node definition
+    const nodeDef = NodeRegistry.getAllActive()[nodeId];
+    if (!nodeDef) {
+      return { canStart: false, reason: `Node '${nodeId}' not found` };
+    }
+
+    // Check skill matches node
+    if (nodeDef.nodeType !== skill) {
+      return { canStart: false, reason: `This node requires ${nodeDef.nodeType} skill` };
+    }
+
+    // Check skill level requirement
+    const playerSkill = this.state.skills[skill];
+    if (playerSkill.level < nodeDef.requiredSkillLevel) {
+      return {
+        canStart: false,
+        reason: `Requires ${skill} level ${nodeDef.requiredSkillLevel} (you have ${playerSkill.level})`
+      };
+    }
+
+    // Check has correct tool equipped (tool with matching skill property)
+    const equippedTool = this.getEquippedToolForSkill(skill);
+
+    if (!equippedTool) {
+      // Search inventory for alternative tools
+      const alternativeTools = this.findToolsInInventory(skill);
+
+      return {
+        canStart: false,
+        reason: `You need a ${skill} tool equipped (check weapon slot)`,
+        missingTool: true,
+        requiredSkill: skill,
+        alternativeTools: alternativeTools
+      };
+    }
+
+    // All checks passed
+    return {
+      canStart: true,
+      tool: equippedTool
+    };
+  },
+
+  startGathering(skill, nodeId) {
+    // Validate
+    const validation = this.canStartGathering(skill, nodeId);
+    if (!validation.canStart) {
+      console.warn(`⚠️ Cannot start gathering: ${validation.reason}`);
+
+      // Check if the issue is missing tool - offer quick equip
+      if (validation.missingTool && validation.alternativeTools && validation.alternativeTools.length > 0) {
+        this.showQuickEquipModal(skill, nodeId, validation);
+        return false;
+      }
+
+      // Otherwise show generic requirement modal
+      if (typeof showRequirementModal === 'function') {
+        showRequirementModal({
+          title: "Cannot Start Gathering",
+          message: validation.reason,
+          icon: "⚠️"
+        });
+      }
+      return false;
+    }
+
+    // Stop any other active activities before starting gathering
+    this._stopOtherActivities();
+
+    // Get node definition
+    const nodeDef = NodeRegistry.getAllActive()[nodeId];
+
+    // Get node health
+    const nodeHealth = nodeDef.baseHealth || nodeDef.harvestsPerDepletion || 10;
+    const respawnTime = 20000; // 20 seconds fixed recovery time
+
+    // Create gathering session with node capacity system
+    this.state.gatheringSession = {
+      skill: skill,
+      nodeId: nodeId,
+      toolId: validation.tool.id,
+      startTime: Date.now(),
+      lastActionTime: Date.now(),
+      totalActions: 0,
+      totalResources: {},
+      totalXP: 0,
+
+      // Node capacity system
+      nodeHealth: nodeHealth,
+      maxNodeHealth: nodeHealth,
+      isNodeDepleted: false,
+      nodeRespawnTime: respawnTime,
+      nodeDepletedAt: null,
+      lastRecoveryTime: 0
+    };
+
+    this.state.currentActivity = 'gathering';
+
+    console.log(`⛏️ Started ${skill} at ${nodeDef.name} with ${validation.tool.name} (Capacity: ${nodeHealth})`);
+
+    // Emit gathering started event
+    EventBus.emit('gathering-started', {
+      skill: skill,
+      nodeId: nodeId,
+      nodeName: nodeDef.name,
+      nodeHealth: nodeHealth,
+      maxHealth: nodeHealth,
+      toolName: validation.tool.name
+    });
+
+    return true;
+  },
+
+  // ========================================
+  // STOP GATHERING
+  // ========================================
+
+  stopGathering(reason = 'Player stopped') {
+    if (!this.state.gatheringSession) return;
+
+    const session = this.state.gatheringSession;
+
+    // Show summary
+    console.log(`🛑 Gathering session ended: ${session.totalActions} actions, ${session.totalXP} XP`);
+    console.log('📦 Resources gained:', session.totalResources);
+
+    // Clear session
+    this.state.gatheringSession = null;
+    this.state.currentActivity = null;
+
+    // Emit gathering stopped event
+    EventBus.emit('gathering-stopped', { reason });
+
+    console.log(`Stopped gathering: ${reason}`);
+  },
+
+  /**
+   * Stop any other active activities (crafting, combat) before starting gathering
+   */
+  _stopOtherActivities() {
+    // Stop crafting - clear all skill queues
+    if (this.state.crafting) {
+      const skills = ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking'];
+      for (const skill of skills) {
+        if (this.state.crafting.activeQueues?.[skill]?.length > 0) {
+          console.log(`⏹️ Stopping ${skill} crafting to start gathering`);
+          this.state.crafting.activeQueues[skill] = [];
+        }
+      }
+      // Clear legacy crafts
+      if (this.state.crafting.activeCrafts?.length > 0) {
+        this.state.crafting.activeCrafts = [];
+      }
+      // Clear auto-repeat
+      this.state.crafting.autoRecipe = null;
+    }
+
+    // Stop combat
+    if (this.state.currentActivity === 'combat' || this.state.combat?.inCombat) {
+      console.log('⏹️ Stopping combat to start gathering');
+      if (typeof this.endCombat === 'function') {
+        this.endCombat();
+      } else if (this.state.combat) {
+        this.state.combat.inCombat = false;
+        this.state.combat.currentEnemy = null;
+      }
+    }
+
+    // Clear navigation if active
+    if (this.state.currentActivity === 'navigation' || this.state.activeNavigation?.isNavigating) {
+      console.log('⏹️ Stopping navigation to start gathering');
+      if (typeof this.stopNavigation === 'function') {
+        this.stopNavigation();
+      } else {
+        // Direct state manipulation if function not available
+        if (this.state.activeNavigation) {
+          this.state.activeNavigation.isNavigating = false;
+        }
+        this.state.currentActivity = null;
+      }
+    }
+
+    // Clear current activity
+    if (this.state.currentActivity && this.state.currentActivity !== 'gathering') {
+      this.state.currentActivity = null;
+    }
+  },
+
+  // ========================================
+  // GATHERING TICK (Main Loop)
+  // ========================================
+
+  processGatheringTick() {
+    // Only process if actively gathering
+    if (this.state.currentActivity !== 'gathering') return;
+    if (!this.state.gatheringSession) return;
+
+    const session = this.state.gatheringSession;
+    const now = Date.now();
+
+    // ===== NODE RECOVERY MODE (Node depleted) =====
+    if (session.isNodeDepleted) {
+      this.processNodeRecovery();
+      return; // Don't harvest while node is recovering
+    }
+
+    // ===== ACTION MODE =====
+    // Calculate action interval
+    const nodeDef = NodeRegistry.getAllActive()[session.nodeId];
+    const toolDef = ItemRegistry.getItem(session.toolId);
+    const playerSkill = this.state.skills[session.skill];
+
+    if (!nodeDef || !toolDef) {
+      this.stopGathering('Invalid node or tool');
+      return;
+    }
+
+    const actionInterval = this.calculateActionInterval(nodeDef, toolDef, playerSkill);
+
+    // Check if enough time passed
+    const timeSinceLastAction = now - session.lastActionTime;
+    if (timeSinceLastAction < actionInterval) {
+      return;
+    }
+
+    // Check tool still equipped (using new skill-based system)
+    const equippedTool = this.getEquippedToolForSkill(session.skill);
+    if (!equippedTool || equippedTool.id !== session.toolId) {
+      this.stopGathering('Tool unequipped');
+      return;
+    }
+
+    // PERFORM GATHERING ACTION
+    this.performGatheringAction(nodeDef, toolDef, playerSkill);
+
+    // Update session
+    session.lastActionTime = now;
+    session.totalActions++;
+  },
+
+  performGatheringAction(nodeDef, toolDef, playerSkill) {
+    const session = this.state.gatheringSession;
+
+    // Roll success chance
+    const successChance = this.calculateSuccessChance(nodeDef, toolDef, playerSkill);
+    const didSucceed = Math.random() < successChance;
+
+    if (didSucceed) {
+      // SUCCESS - Award resources ONLY if node has health
+      const resources = this.rollResources(nodeDef, toolDef, playerSkill);
+
+      // Add to bank and show notifications
+      for (const [itemId, amount] of Object.entries(resources)) {
+        this.engine.addItemToBank(itemId, amount);
+
+        // Track in session
+        session.totalResources[itemId] = (session.totalResources[itemId] || 0) + amount;
+
+        // Show green notification toast for each item gained
+        const itemDef = ItemRegistry.getItem(itemId);
+        const itemName = itemDef?.name || itemId;
+        if (typeof AnimationSystem !== 'undefined' && AnimationSystem.showNotification) {
+          AnimationSystem.showNotification(`+${amount} ${itemName}`, 'success', 2000);
+        }
+      }
+
+      // Award XP (with perk multiplier)
+      let xpGained = nodeDef.baseXP || 10;
+
+      // Apply skill XP perk multiplier (use compiled stats when available)
+      const compiledStats = typeof GameEngine !== 'undefined' && GameEngine.state?.compiledStats;
+      const perkMultipliers = compiledStats?.perkMultipliers
+        || (typeof GameEngine !== 'undefined' && GameEngine.getPerkMultipliers ? GameEngine.getPerkMultipliers() : {});
+      if (perkMultipliers.skillXP) {
+        xpGained = Math.floor(xpGained * perkMultipliers.skillXP);
+      }
+
+      this.engine.gainSkillExp(session.skill, xpGained);
+      session.totalXP += xpGained;
+
+      // Decrement node health
+      session.nodeHealth--;
+
+      // Visual feedback
+      this.showSuccessFeedback(resources, xpGained);
+
+      // Emit success event for UI
+      const rewardsArray = Object.entries(resources).map(([itemId, quantity]) => ({
+        itemId,
+        quantity
+      }));
+
+      EventBus.emit('gathering-success', {
+        damage: 1,
+        xpGained,
+        rewards: rewardsArray,
+        nodeHealth: session.nodeHealth,
+        maxHealth: session.maxNodeHealth
+      });
+
+      // Check if node is depleted
+      if (session.nodeHealth <= 0) {
+        this.handleNodeDepletion();
+      }
+
+    } else {
+      // MISS
+      this.showMissFeedback();
+
+      // Emit miss event for UI
+      EventBus.emit('gathering-miss');
+    }
+  },
+
+  // ========================================
+  // NODE CAPACITY & RECOVERY
+  // ========================================
+
+  handleNodeDepletion() {
+    const session = this.state.gatheringSession;
+    const now = Date.now();
+
+    session.isNodeDepleted = true;
+    session.nodeDepletedAt = now;
+    session.nodeHealth = 0;
+
+    const respawnSeconds = Math.ceil(session.nodeRespawnTime / 1000);
+    console.log(`⏳ Node depleted! Waiting ${respawnSeconds}s for respawn...`);
+
+    // Emit node-depleted event
+    const nodeDef = NodeRegistry.getAllActive()[session.nodeId];
+    EventBus.emit('node-depleted', {
+      nodeId: session.nodeId,
+      nodeName: nodeDef?.name || session.nodeId,
+      respawnTime: session.nodeRespawnTime,
+      respawnSeconds: respawnSeconds
+    });
+  },
+
+  processNodeRecovery() {
+    const session = this.state.gatheringSession;
+    const now = Date.now();
+
+    // Calculate recovery progress (0% → 100%)
+    const timeElapsed = now - session.nodeDepletedAt;
+    const recoveryPercent = Math.min(100, (timeElapsed / session.nodeRespawnTime) * 100);
+
+    // Update node health based on recovery percentage
+    const recoveredHealth = Math.floor((recoveryPercent / 100) * session.maxNodeHealth);
+    session.nodeHealth = recoveredHealth;
+
+    // Log recovery progress every second
+    const timeSinceLastLog = now - (session.lastRecoveryTime || 0);
+    if (timeSinceLastLog >= 1000) {
+      session.lastRecoveryTime = now;
+      console.log(`⏳ Node recovering... (${recoveredHealth}/${session.maxNodeHealth}) ${recoveryPercent.toFixed(0)}%`);
+    }
+
+    // Check if fully recovered
+    if (timeElapsed >= session.nodeRespawnTime) {
+      // Node fully respawned!
+      session.isNodeDepleted = false;
+      session.nodeHealth = session.maxNodeHealth;
+      session.nodeDepletedAt = null;
+      session.lastRecoveryTime = 0;
+
+      // CRITICAL: Reset lastActionTime to prevent rapid-fire actions
+      session.lastActionTime = now;
+
+      const nodeDef = NodeRegistry.getAllActive()[session.nodeId];
+      console.log(`✅ ${nodeDef?.name || 'Node'} fully recovered! Resuming gathering...`);
+
+      // Emit gathering-started to restart UI animations
+      EventBus.emit('gathering-started', {
+        skill: session.skill,
+        nodeId: session.nodeId,
+        nodeName: nodeDef?.name || session.nodeId,
+        nodeHealth: session.nodeHealth,
+        maxHealth: session.maxNodeHealth
+      });
+    }
+  },
+
+  // ========================================
+  // CALCULATIONS
+  // ========================================
+
+  calculateActionInterval(nodeDef, toolDef, playerSkill) {
+    let baseInterval = 3000; // 3 seconds base
+
+    // Tool speed bonus (e.g., gatheringBonus.mining.speed: 1.2 = 20% faster)
+    const toolBonus = toolDef.gatheringBonus?.[playerSkill.id]?.speed || 1.0;
+    baseInterval = baseInterval / toolBonus;
+
+    // Skill speed bonus (-2% per level, max -50%)
+    const skillSpeedBonus = Math.min(playerSkill.level * 0.02, 0.5);
+    baseInterval = baseInterval * (1 - skillSpeedBonus);
+
+    // Node resistance (e.g., harvestSpeed: 1.2 = 20% slower)
+    const nodeResistance = nodeDef.harvestSpeed || 1.0;
+    baseInterval = baseInterval * nodeResistance;
+
+    // Apply perk grid speed multiplier (use compiled stats when available)
+    const compiledStats = typeof GameEngine !== 'undefined' && GameEngine.state?.compiledStats;
+    const perkMultipliers = compiledStats?.perkMultipliers
+      || (typeof GameEngine !== 'undefined' && GameEngine.getPerkMultipliers ? GameEngine.getPerkMultipliers() : {});
+
+    // Map skill to perk stat name
+    const speedPerkMap = {
+      mining: 'miningSpeed',
+      logging: 'loggingSpeed',
+      fishing: 'fishingSpeed',
+      hunting: 'huntingSpeed',
+      foraging: 'foragingSpeed',
+      thieving: 'thievingSpeed'
+    };
+
+    const speedPerk = speedPerkMap[playerSkill.id] || speedPerkMap[nodeDef.nodeType];
+    if (speedPerk && perkMultipliers[speedPerk]) {
+      // Speed multiplier > 1 means faster, so divide interval
+      baseInterval = baseInterval / perkMultipliers[speedPerk];
+    }
+
+    // Minimum 500ms
+    return Math.max(500, Math.floor(baseInterval));
+  },
+
+  calculateSuccessChance(nodeDef, toolDef, playerSkill) {
+    let baseChance = 0.7; // 70% base success rate
+
+    // Tool accuracy bonus
+    const toolBonus = toolDef.gatheringBonus?.[playerSkill.id]?.accuracy || 0;
+    baseChance += toolBonus;
+
+    // Skill level bonus (+1% per level)
+    baseChance += playerSkill.level * 0.01;
+
+    // Level requirement penalty (if under-leveled)
+    const levelDiff = nodeDef.requiredSkillLevel - playerSkill.level;
+    if (levelDiff > 0) {
+      baseChance -= levelDiff * 0.05; // -5% per level under
+    }
+
+    // Clamp between 10% and 95%
+    return Math.max(0.1, Math.min(0.95, baseChance));
+  },
+
+  rollResources(nodeDef, toolDef, playerSkill) {
+    const resources = {};
+
+    // Use resourceTable from node definition
+    if (!nodeDef.resourceTable || nodeDef.resourceTable.length === 0) {
+      console.warn(`Node ${nodeDef.id} has no resourceTable`);
+      return resources;
+    }
+
+    // Get perk multipliers for yield bonuses (use compiled stats when available)
+    const compiledStats = typeof GameEngine !== 'undefined' && GameEngine.state?.compiledStats;
+    const perkMultipliers = compiledStats?.perkMultipliers
+      || (typeof GameEngine !== 'undefined' && GameEngine.getPerkMultipliers ? GameEngine.getPerkMultipliers() : {});
+
+    // Map skill to yield perk stat name
+    const yieldPerkMap = {
+      mining: 'miningYield',
+      logging: 'loggingYield',
+      fishing: 'fishingYield',
+      hunting: 'huntingYield',
+      foraging: 'foragingYield',
+      thieving: 'thievingYield'
+    };
+
+    const yieldPerk = yieldPerkMap[playerSkill.id] || yieldPerkMap[nodeDef.nodeType];
+    const perkYieldMultiplier = (yieldPerk && perkMultipliers[yieldPerk]) ? perkMultipliers[yieldPerk] : 1.0;
+
+    // Roll each resource in the table
+    for (const resource of nodeDef.resourceTable) {
+      // Check weight/chance
+      const roll = Math.random() * 100;
+      if (roll > resource.weight) continue; // Didn't roll high enough
+
+      // Calculate yield
+      const minYield = resource.minYield || 1;
+      const maxYield = resource.maxYield || 1;
+      let amount = Math.floor(Math.random() * (maxYield - minYield + 1)) + minYield;
+
+      // Yield bonus from tool
+      const yieldBonus = toolDef.gatheringBonus?.[playerSkill.id]?.yield || 0;
+      if (yieldBonus > 0) {
+        amount = Math.floor(amount * (1 + yieldBonus));
+      }
+
+      // Yield bonus from skill (+5% per 10 levels)
+      const skillYieldBonus = 1 + (Math.floor(playerSkill.level / 10) * 0.05);
+      amount = Math.floor(amount * skillYieldBonus);
+
+      // Apply perk yield multiplier (rounds at 0.50 threshold)
+      if (perkYieldMultiplier > 1.0) {
+        const rawYield = amount * perkYieldMultiplier;
+        amount = Math.round(rawYield);  // 1.49 → 1, 1.50 → 2
+      }
+
+      resources[resource.itemId] = Math.max(1, amount);
+    }
+
+    return resources;
+  },
+
+  // ========================================
+  // HELPERS
+  // ========================================
+
+  getEquippedToolForSkill(skill) {
+    // Map skill names to toolType values (handles naming mismatches)
+    const skillToToolType = {
+      mining: 'mining',
+      logging: 'woodcutting',    // logging skill uses woodcutting tools
+      fishing: 'fishing',
+      hunting: 'hunting',
+      foraging: 'foraging',
+      thieving: 'lockpicking'    // thieving skill uses lockpicking tools
+    };
+
+    const targetToolType = skillToToolType[skill] || skill;
+
+    // Check weapon slot first (most gathering tools are weapons)
+    const weaponId = this.state.equipment.weapon;
+
+    if (weaponId) {
+      // Parse instance ID to get base item ID
+      let lookupId = weaponId;
+      if (weaponId.includes('_instance_')) {
+        lookupId = weaponId.split('_instance_')[0];
+      } else if (weaponId.includes('_')) {
+        const parts = weaponId.split('_');
+        if (parts.length >= 3 && /^\d{13}$/.test(parts[parts.length - 2])) {
+          lookupId = parts.slice(0, -2).join('_');
+        }
+      }
+
+      const weapon = ItemRegistry.getItem(lookupId);
+
+      // Check both 'skill' and 'toolType' properties for compatibility
+      if (weapon && (weapon.skill === skill || weapon.toolType === targetToolType)) {
+        return weapon;
+      }
+    }
+
+    // Check tool slot if you have one
+    const toolId = this.state.equipment.tool;
+    if (toolId) {
+      // Parse instance ID to get base item ID
+      let lookupId = toolId;
+      if (toolId.includes('_instance_')) {
+        lookupId = toolId.split('_instance_')[0];
+      } else if (toolId.includes('_')) {
+        const parts = toolId.split('_');
+        if (parts.length >= 3 && /^\d{13}$/.test(parts[parts.length - 2])) {
+          lookupId = parts.slice(0, -2).join('_');
+        }
+      }
+
+      const tool = ItemRegistry.getItem(lookupId);
+      // Check both 'skill' and 'toolType' properties for compatibility
+      if (tool && (tool.skill === skill || tool.toolType === targetToolType)) {
+        return tool;
+      }
+    }
+
+    return null;
+  },
+
+  findToolsInInventory(skill) {
+    const tools = [];
+    const bank = this.state.bank || {};
+
+    // Map skill names to toolType values (handles naming mismatches)
+    const skillToToolType = {
+      mining: 'mining',
+      logging: 'woodcutting',    // logging skill uses woodcutting tools
+      fishing: 'fishing',
+      hunting: 'hunting',
+      foraging: 'foraging',
+      thieving: 'lockpicking'    // thieving skill uses lockpicking tools
+    };
+
+    const targetToolType = skillToToolType[skill] || skill;
+
+    // Search through instanced items (tools are instanced)
+    const instanced = bank.instanced || {};
+    for (const [instanceId, instance] of Object.entries(instanced)) {
+      const baseItemId = instance.baseItemId || instanceId;
+      const item = ItemRegistry.getItem(baseItemId);
+
+      // Check if item has matching toolType property for the skill
+      if (item && item.toolType === targetToolType) {
+        tools.push({
+          id: instanceId,
+          baseItemId: baseItemId,
+          name: item.name,
+          icon: item.icon || '🔧',
+          tier: item.tier || 1,
+          rarity: instance.rarity || item.rarity || 'common',
+          // Include relevant stats for display
+          gatheringBonus: item.gatheringBonus || {}
+        });
+      }
+    }
+
+    return tools;
+  },
+
+  showQuickEquipModal(skill, nodeId, validation) {
+    const { requiredSkill, alternativeTools } = validation;
+
+    // Skill display names and icons
+    const skillNames = {
+      mining: 'Mining', logging: 'Logging', fishing: 'Fishing',
+      hunting: 'Hunting', foraging: 'Foraging', thieving: 'Thieving'
+    };
+    const skillIcons = {
+      mining: '⛏️', logging: '🪓', fishing: '🎣',
+      hunting: '🗡️', foraging: '🧺', thieving: '🔓'
+    };
+
+    const skillName = skillNames[skill] || skill;
+    const skillIcon = skillIcons[skill] || '🔧';
+
+    // Build modal HTML
+    let toolsHTML = '';
+    if (alternativeTools.length === 0) {
+      toolsHTML = `
+        <div class="quick-equip-no-tools">
+          <p>No ${skillName.toLowerCase()} tools found in your bank.</p>
+          <p>Craft or acquire a tool first!</p>
+        </div>
+      `;
+    } else {
+      for (const tool of alternativeTools) {
+        const rarityClass = tool.rarity || 'common';
+        // Use IconHelper for proper PNG/emoji icon rendering
+        const iconHtml = (typeof IconHelper !== 'undefined')
+          ? IconHelper.getItemIconHTML({ icon: tool.icon, name: tool.name }, { size: 36 })
+          : `<span class="tool-icon-emoji">${tool.icon || '🔧'}</span>`;
+
+        toolsHTML += `
+          <div class="quick-equip-tool-option rarity-${rarityClass}" data-tool-id="${tool.id}">
+            <div class="tool-icon">${iconHtml}</div>
+            <div class="tool-info">
+              <div class="tool-name">${tool.name}</div>
+              <div class="tool-tier">Tier ${tool.tier}</div>
+            </div>
+            <button class="btn-equip-start" onclick="GameEngine.equipAndStartGathering('${skill}', '${nodeId}', '${tool.id}')">
+              Equip & Start
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    const modalHTML = `
+      <div class="modal-overlay" id="quickEquipModal" style="display: flex;">
+        <div class="modal-content quick-equip-modal">
+          <div class="modal-header">
+            <h3>${skillIcon} Tool Required</h3>
+            <button class="modal-close" onclick="closeQuickEquipModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p>You need a <strong>${skillName} tool</strong> equipped to gather from this node.</p>
+            ${alternativeTools.length > 0 ? '<p>Select a tool from your bank:</p>' : ''}
+            <div class="quick-equip-tools-list">
+              ${toolsHTML}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Inject modal into DOM
+    const existingModal = document.getElementById('quickEquipModal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Close on overlay click
+    document.getElementById('quickEquipModal').addEventListener('click', (e) => {
+      if (e.target.id === 'quickEquipModal') {
+        window.closeQuickEquipModal();
+      }
+    });
+
+    // Add global close function
+    window.closeQuickEquipModal = () => {
+      const modal = document.getElementById('quickEquipModal');
+      if (modal) modal.remove();
+    };
+
+    // Add equip & start function to game engine (global for onclick)
+    window.GameEngine = window.GameEngine || this.engine;
+    this.engine.equipAndStartGathering = (skill, nodeId, toolInstanceId) => {
+      // Use GameEngine.equipItem which is properly bound to GameEngine context
+      if (this.engine.equipItem) {
+        const result = this.engine.equipItem(toolInstanceId);
+        if (result.success) {
+          console.log(`✅ Equipped tool: ${toolInstanceId}`);
+        } else {
+          console.warn(`⚠️ Failed to equip tool: ${result.reason}`);
+          return;
+        }
+      } else {
+        // Fallback: direct assignment and remove from bank
+        this.state.equipment.weapon = toolInstanceId;
+        if (typeof DualBankSystem !== 'undefined') {
+          DualBankSystem.removeInstance(toolInstanceId);
+        }
+        console.log(`✅ Equipped ${toolInstanceId} (fallback)`);
+      }
+
+      // Close modal
+      window.closeQuickEquipModal();
+
+      // Recompile stats after equipping
+      if (typeof StatCompiler !== 'undefined' && StatCompiler.compile) {
+        StatCompiler.compile();
+      }
+
+      // Start gathering
+      this.startGathering(skill, nodeId);
+
+      // Refresh UI if available
+      if (typeof GatherUI !== 'undefined' && GatherUI.render) {
+        GatherUI.render();
+      }
+      if (typeof UICore !== 'undefined' && UICore.update) {
+        UICore.update();
+      }
+    };
+  },
+
+  showSuccessFeedback(resources, xp) {
+    // Console output for now
+    const resourceText = Object.entries(resources)
+      .map(([id, amt]) => {
+        const item = ItemRegistry.getItem(id);
+        return `+${amt} ${item?.name || id}`;
+      })
+      .join(', ');
+
+    console.log(`✅ SUCCESS: ${resourceText} | +${xp} XP`);
+  },
+
+  showMissFeedback() {
+    console.log('❌ MISS');
+  }
+};

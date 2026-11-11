@@ -1,425 +1,373 @@
 /**
- * MATERIAL & RESOURCE ITEMS
+ * Tier 1 Materials - Region 1 (The Cradle)
  *
- * Crafting materials, gathered resources, and raw materials
+ * These materials are gathered from the 6 starting nodes.
+ * Each material has a skill association for inventory sorting.
+ *
+ * Node Mapping:
+ * - Fishing: Lake Shallows (node 1_1) - 3 materials
+ * - Hunting: Meadow Game Trail (node 1_2) - 3 materials
+ * - Foraging: Fallen Timber (node 1_3) - 4 materials
+ * - Logging: Lakeside Forest (node 1_4) - 3 materials
+ * - Mining: Riverbed (node 1_5) - 4 materials
+ * - Foraging: Meadow Herb Patch (node 1_6) - 2 materials
+ *
+ * Total: 19 Tier 1 Materials
  */
 
 const MATERIAL_ITEMS = {
-    // =================================================================
-    // ORES & METALS
-    // =================================================================
-
-    copperOre: {
-        id: 'copperOre',
-        name: 'Copper Ore',
-        description: 'Raw copper ore mined from copper deposits. Used in basic smithing.',
-        icon: '🪨',
+    // ==========================================
+    // FISHING - Lake Shallows (node 1_1)
+    // ==========================================
+    solfish: {
+        id: 'solfish',
+        name: 'Solfish',
+        description: 'A common freshwater fish found in shallow lakes. Its mild flavor makes it ideal for cooking.',
+        type: 'material',
         category: 'material',
+        subcategory: 'fish',
+        skill: 'fishing',
+        tier: 1,
         rarity: 'common',
-        stackLimit: 100,
-        value: 5,
-        resourceType: 'ore',
-        gatherSkill: 'mining',
-        gatherLevel: 1,
-        tags: ['material', 'ore', 'metal', 'copper', 'mining'],
-    },
-
-    tinOre: {
-        id: 'tinOre',
-        name: 'Tin Ore',
-        description: 'Raw tin ore from tin deposits. Combines with copper to make bronze.',
-        icon: '🪨',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 100,
-        value: 5,
-        resourceType: 'ore',
-        gatherSkill: 'mining',
-        gatherLevel: 1,
-        tags: ['material', 'ore', 'metal', 'tin', 'mining'],
-    },
-
-    ironOre: {
-        id: 'ironOre',
-        name: 'Iron Ore',
-        description: 'Raw iron ore extracted from iron deposits. Essential for smithing.',
-        icon: '🪨',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 100,
-        value: 15,
-        resourceType: 'ore',
-        gatherSkill: 'mining',
-        gatherLevel: 10,
-        tags: ['material', 'ore', 'metal', 'iron', 'mining'],
-    },
-
-    coal: {
-        id: 'coal',
-        name: 'Coal',
-        description: 'Black coal used as fuel for smelting. Burns hot and long.',
-        icon: '⚫',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 100,
-        value: 8,
-        resourceType: 'ore',
-        gatherSkill: 'mining',
-        gatherLevel: 5,
-        tags: ['material', 'ore', 'fuel', 'coal', 'mining'],
-    },
-
-    goldOre: {
-        id: 'goldOre',
-        name: 'Gold Ore',
-        description: 'Precious gold ore. Can be smelted into gold bars.',
-        icon: '🪨',
-        category: 'material',
-        rarity: 'uncommon',
-        stackLimit: 50,
-        value: 50,
-        resourceType: 'ore',
-        gatherSkill: 'mining',
-        gatherLevel: 20,
-        tags: ['material', 'ore', 'metal', 'gold', 'mining'],
-    },
-
-    // =================================================================
-    // BARS & INGOTS
-    // =================================================================
-
-    copperBar: {
-        id: 'copperBar',
-        name: 'Copper Bar',
-        description: 'Refined copper bar. Ready for crafting.',
-        icon: '🟫',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 100,
-        value: 12,
-        resourceType: 'bar',
-        tags: ['material', 'bar', 'metal', 'copper', 'smithing'],
-    },
-
-    bronzeBar: {
-        id: 'bronzeBar',
-        name: 'Bronze Bar',
-        description: 'Bronze alloy bar made from copper and tin. Durable and versatile.',
-        icon: '🟫',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 100,
-        value: 25,
-        resourceType: 'bar',
-        tags: ['material', 'bar', 'metal', 'bronze', 'smithing'],
-    },
-
-    ironBar: {
-        id: 'ironBar',
-        name: 'Iron Bar',
-        description: 'Refined iron bar. Strong and reliable crafting material.',
-        icon: '⬛',
-        category: 'material',
-        rarity: 'uncommon',
-        stackLimit: 100,
-        value: 40,
-        resourceType: 'bar',
-        tags: ['material', 'bar', 'metal', 'iron', 'smithing'],
-    },
-
-    steelBar: {
-        id: 'steelBar',
-        name: 'Steel Bar',
-        description: 'Tempered steel bar. Superior strength and quality.',
-        icon: '⬛',
-        category: 'material',
-        rarity: 'rare',
-        stackLimit: 75,
-        value: 100,
-        resourceType: 'bar',
-        tags: ['material', 'bar', 'metal', 'steel', 'smithing'],
-    },
-
-    goldBar: {
-        id: 'goldBar',
-        name: 'Gold Bar',
-        description: 'Pure gold bar. Valuable and malleable.',
-        icon: '🟨',
-        category: 'material',
-        rarity: 'rare',
-        stackLimit: 50,
-        value: 150,
-        resourceType: 'bar',
-        tags: ['material', 'bar', 'metal', 'gold', 'smithing'],
-    },
-
-    // =================================================================
-    // WOOD & LOGS
-    // =================================================================
-
-    normalLogs: {
-        id: 'normalLogs',
-        name: 'Normal Logs',
-        description: 'Basic logs from common trees. Used in crafting and construction.',
-        icon: '🪵',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 100,
-        value: 3,
-        resourceType: 'wood',
-        gatherSkill: 'woodcutting',
-        gatherLevel: 1,
-        tags: ['material', 'wood', 'logs', 'woodcutting'],
-    },
-
-    oakLogs: {
-        id: 'oakLogs',
-        name: 'Oak Logs',
-        description: 'Sturdy oak logs. Better quality than normal wood.',
-        icon: '🪵',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 100,
-        value: 10,
-        resourceType: 'wood',
-        gatherSkill: 'woodcutting',
-        gatherLevel: 10,
-        tags: ['material', 'wood', 'logs', 'oak', 'woodcutting'],
-    },
-
-    willowLogs: {
-        id: 'willowLogs',
-        name: 'Willow Logs',
-        description: 'Flexible willow logs. Excellent for crafting bows and tools.',
-        icon: '🪵',
-        category: 'material',
-        rarity: 'uncommon',
-        stackLimit: 100,
-        value: 18,
-        resourceType: 'wood',
-        gatherSkill: 'woodcutting',
-        gatherLevel: 15,
-        tags: ['material', 'wood', 'logs', 'willow', 'woodcutting'],
-    },
-
-    mapleLogs: {
-        id: 'mapleLogs',
-        name: 'Maple Logs',
-        description: 'Hard maple logs. Dense and durable.',
-        icon: '🪵',
-        category: 'material',
-        rarity: 'uncommon',
-        stackLimit: 100,
-        value: 30,
-        resourceType: 'wood',
-        gatherSkill: 'woodcutting',
-        gatherLevel: 25,
-        tags: ['material', 'wood', 'logs', 'maple', 'woodcutting'],
-    },
-
-    // =================================================================
-    // TEXTILES & LEATHER
-    // =================================================================
-
-    wool: {
-        id: 'wool',
-        name: 'Wool',
-        description: 'Soft wool fiber. Can be spun into thread.',
-        icon: '🧶',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 100,
-        value: 4,
-        resourceType: 'textile',
-        tags: ['material', 'textile', 'wool', 'crafting'],
-    },
-
-    thread: {
-        id: 'thread',
-        name: 'Thread',
-        description: 'Spun thread for sewing and crafting cloth items.',
-        icon: '🧵',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 100,
-        value: 8,
-        resourceType: 'textile',
-        tags: ['material', 'textile', 'thread', 'crafting'],
-    },
-
-    leather: {
-        id: 'leather',
-        name: 'Leather',
-        description: 'Tanned leather hide. Essential for leatherworking.',
-        icon: '🦴',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 50,
-        value: 15,
-        resourceType: 'leather',
-        tags: ['material', 'leather', 'hide', 'crafting'],
-    },
-
-    hardLeather: {
-        id: 'hardLeather',
-        name: 'Hard Leather',
-        description: 'Hardened leather. More durable than regular leather.',
-        icon: '🦴',
-        category: 'material',
-        rarity: 'uncommon',
-        stackLimit: 50,
-        value: 35,
-        resourceType: 'leather',
-        tags: ['material', 'leather', 'hide', 'crafting'],
-    },
-
-    // =================================================================
-    // HERBS & PLANTS
-    // =================================================================
-
-    healingHerb: {
-        id: 'healingHerb',
-        name: 'Healing Herb',
-        description: 'Medicinal herb with healing properties. Used in potion making.',
-        icon: '🌿',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 100,
-        value: 6,
-        resourceType: 'herb',
-        gatherSkill: 'herbalism',
-        gatherLevel: 1,
-        tags: ['material', 'herb', 'plant', 'alchemy', 'healing'],
-    },
-
-    strengthHerb: {
-        id: 'strengthHerb',
-        name: 'Strength Herb',
-        description: 'Potent herb that enhances physical power. Used in strength potions.',
-        icon: '🌿',
-        category: 'material',
-        rarity: 'uncommon',
-        stackLimit: 50,
-        value: 20,
-        resourceType: 'herb',
-        gatherSkill: 'herbalism',
-        gatherLevel: 10,
-        tags: ['material', 'herb', 'plant', 'alchemy', 'strength'],
-    },
-
-    magicHerb: {
-        id: 'magicHerb',
-        name: 'Magic Herb',
-        description: 'Mystical herb infused with arcane energy. Used in magic potions.',
-        icon: '🌿',
-        category: 'material',
-        rarity: 'uncommon',
-        stackLimit: 50,
-        value: 25,
-        resourceType: 'herb',
-        gatherSkill: 'herbalism',
-        gatherLevel: 15,
-        tags: ['material', 'herb', 'plant', 'alchemy', 'magic'],
-    },
-
-    // =================================================================
-    // GEMS & CRYSTALS
-    // =================================================================
-
-    rubyGem: {
-        id: 'rubyGem',
-        name: 'Ruby',
-        description: 'Precious ruby gemstone. Radiates with inner fire.',
-        icon: '🔴',
-        category: 'material',
-        rarity: 'rare',
-        stackLimit: 25,
-        value: 200,
-        resourceType: 'gem',
-        tags: ['material', 'gem', 'ruby', 'precious'],
-    },
-
-    sapphireGem: {
-        id: 'sapphireGem',
-        name: 'Sapphire',
-        description: 'Beautiful sapphire gemstone. Deep blue color.',
-        icon: '🔵',
-        category: 'material',
-        rarity: 'rare',
-        stackLimit: 25,
-        value: 200,
-        resourceType: 'gem',
-        tags: ['material', 'gem', 'sapphire', 'precious'],
-    },
-
-    emeraldGem: {
-        id: 'emeraldGem',
-        name: 'Emerald',
-        description: 'Stunning emerald gemstone. Vibrant green hue.',
-        icon: '🟢',
-        category: 'material',
-        rarity: 'rare',
-        stackLimit: 25,
-        value: 200,
-        resourceType: 'gem',
-        tags: ['material', 'gem', 'emerald', 'precious'],
-    },
-
-    diamondGem: {
-        id: 'diamondGem',
-        name: 'Diamond',
-        description: 'Flawless diamond. The hardest known material.',
-        icon: '💎',
-        category: 'material',
-        rarity: 'epic',
-        stackLimit: 10,
-        value: 500,
-        resourceType: 'gem',
-        tags: ['material', 'gem', 'diamond', 'precious'],
-    },
-
-    // =================================================================
-    // MISC MATERIALS
-    // =================================================================
-
-    glass: {
-        id: 'glass',
-        name: 'Glass',
-        description: 'Clear glass made from sand. Used in various crafts.',
-        icon: '🔳',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 100,
-        value: 10,
-        resourceType: 'misc',
-        tags: ['material', 'glass', 'crafting'],
-    },
-
-    rope: {
-        id: 'rope',
-        name: 'Rope',
-        description: 'Sturdy rope. Useful for many purposes.',
-        icon: '🪢',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 50,
-        value: 8,
-        resourceType: 'misc',
-        tags: ['material', 'rope', 'crafting'],
-    },
-
-    nails: {
-        id: 'nails',
-        name: 'Iron Nails',
-        description: 'Small iron nails for construction and repairs.',
-        icon: '📌',
-        category: 'material',
-        rarity: 'common',
-        stackLimit: 200,
+        stackable: true,
+        stackLimit: 999,
         value: 2,
-        resourceType: 'misc',
-        tags: ['material', 'iron', 'nails', 'crafting'],
+        icon: 'assets/icons/materials/solfish.png',
+        tags: ['fish', 'food-ingredient', 'cooking']
     },
+
+    minnows: {
+        id: 'minnows',
+        name: 'Minnows',
+        description: 'Tiny silver fish often used as bait or ground into fish meal.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'fish',
+        skill: 'fishing',
+        tier: 1,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 3,
+        icon: 'assets/icons/materials/minnows.png',
+        tags: ['fish', 'bait']
+    },
+
+    mossShrimp: {
+        id: 'mossShrimp',
+        name: 'Moss Shrimp',
+        description: 'A rare delicacy that hides among lake vegetation. Prized by chefs.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'fish',
+        skill: 'fishing',
+        tier: 1,
+        rarity: 'rare',
+        stackable: true,
+        stackLimit: 999,
+        value: 15,
+        icon: '🦐',
+        tags: ['fish', 'food-ingredient', 'cooking', 'rare']
+    },
+
+    // ==========================================
+    // HUNTING - Meadow Game Trail (node 1_2)
+    // ==========================================
+    smallGameMeat: {
+        id: 'smallGameMeat',
+        name: 'Small Game Meat',
+        description: 'Fresh meat from small meadow creatures. Best cooked soon after harvest.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'meat',
+        skill: 'hunting',
+        tier: 1,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 3,
+        icon: '🍖',
+        tags: ['meat', 'food-ingredient', 'cooking']
+    },
+
+    smallPelts: {
+        id: 'smallPelts',
+        name: 'Small Pelts',
+        description: 'Soft fur pelts from small game. Used in crafting light armor and accessories.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'hide',
+        skill: 'hunting',
+        tier: 1,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 5,
+        icon: 'assets/icons/materials/small_pelt.png',
+        tags: ['hide', 'leather', 'tailoring', 'crafting']
+    },
+
+    feathers: {
+        id: 'feathers',
+        name: 'Feathers',
+        description: 'Light, flexible feathers used for fletching arrows and decorative crafts.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'hunting',
+        tier: 1,
+        rarity: 'rare',
+        stackable: true,
+        stackLimit: 999,
+        value: 8,
+        icon: 'assets/icons/materials/feathers.png',
+        tags: ['fletching', 'crafting', 'mechanics']
+    },
+
+    // ==========================================
+    // FORAGING - Fallen Timber (node 1_3)
+    // ==========================================
+    mintyHerb: {
+        id: 'mintyHerb',
+        name: 'Minty Herb',
+        description: 'A fragrant herb with cooling properties. Essential for many recipes and remedies.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'herb',
+        skill: 'foraging',
+        tier: 1,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 2,
+        icon: 'assets/icons/materials/minty_herb.png',
+        tags: ['herb', 'food-ingredient', 'cooking', 'chemistry']
+    },
+
+    commonMushrooms: {
+        id: 'commonMushrooms',
+        name: 'Common Mushrooms',
+        description: 'Edible fungi found growing on fallen logs. Nutritious but bland alone.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'fungus',
+        skill: 'foraging',
+        tier: 1,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 3,
+        icon: 'assets/icons/materials/common mushroom.png',
+        tags: ['fungus', 'food-ingredient', 'cooking']
+    },
+
+    plantFibers: {
+        id: 'plantFibers',
+        name: 'Plant Fibers',
+        description: 'Strong natural fibers stripped from forest plants. Used in rope and bowstrings.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'fiber',
+        skill: 'foraging',
+        tier: 1,
+        rarity: 'rare',
+        stackable: true,
+        stackLimit: 999,
+        value: 6,
+        icon: '🧵',
+        tags: ['fiber', 'crafting', 'mechanics', 'tailoring']
+    },
+
+    wildroot: {
+        id: 'wildroot',
+        name: 'Wildroot',
+        description: 'A tough, gnarled root with potent alchemical properties. Difficult to find.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'herb',
+        skill: 'foraging',
+        tier: 1,
+        rarity: 'epic',
+        stackable: true,
+        stackLimit: 999,
+        value: 25,
+        icon: '🫚',
+        tags: ['herb', 'alchemy', 'chemistry', 'rare']
+    },
+
+    // ==========================================
+    // LOGGING - Lakeside Forest (node 1_4)
+    // ==========================================
+    pinewood: {
+        id: 'pinewood',
+        name: 'Pinewood',
+        description: 'Common softwood from lakeside pines. Easy to work with for basic construction.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'wood',
+        skill: 'logging',
+        tier: 1,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 2,
+        icon: 'assets/icons/materials/pinewood.png',
+        tags: ['wood', 'crafting', 'construction'],
+        fuel: true,
+        fuelStats: {
+            burnTime: 30,
+            warmth: 5,
+            efficiency: 1.0
+        }
+    },
+
+    riverwillow: {
+        id: 'riverwillow',
+        name: 'Riverwillow',
+        description: 'Flexible willow wood that grows near water. Prized for bows and woven crafts.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'wood',
+        skill: 'logging',
+        tier: 1,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 5,
+        icon: 'assets/icons/materials/riverwillow.png',
+        tags: ['wood', 'crafting', 'mechanics', 'flexible'],
+        fuel: true,
+        fuelStats: {
+            burnTime: 35,
+            warmth: 6,
+            efficiency: 1.1
+        }
+    },
+
+    resin: {
+        id: 'resin',
+        name: 'Resin',
+        description: 'Sticky tree sap that hardens over time. Used as adhesive and waterproofing.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'extract',
+        skill: 'logging',
+        tier: 1,
+        rarity: 'rare',
+        stackable: true,
+        stackLimit: 999,
+        value: 8,
+        icon: 'assets/icons/materials/resin.png',
+        tags: ['extract', 'adhesive', 'crafting', 'chemistry']
+    },
+
+    // ==========================================
+    // MINING - Riverbed (node 1_5)
+    // ==========================================
+    clay: {
+        id: 'clay',
+        name: 'Clay',
+        description: 'Malleable river clay used for pottery, bricks, and basic construction.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'mineral',
+        skill: 'mining',
+        tier: 1,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 1,
+        icon: 'assets/icons/materials/clay.png',
+        tags: ['mineral', 'construction', 'crafting']
+    },
+
+    flint: {
+        id: 'flint',
+        name: 'Flint',
+        description: 'Sharp-edged stone that sparks when struck. Essential for primitive tools and fire.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'stone',
+        skill: 'mining',
+        tier: 1,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 4,
+        icon: 'assets/icons/materials/flint.png',
+        tags: ['stone', 'crafting', 'tools', 'mechanics']
+    },
+
+    copperiteOre: {
+        id: 'copperiteOre',
+        name: 'Copperite Ore',
+        description: 'Raw copper-bearing ore with a distinctive green tint. Smelts into usable metal.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'ore',
+        skill: 'mining',
+        tier: 1,
+        rarity: 'rare',
+        stackable: true,
+        stackLimit: 999,
+        value: 10,
+        icon: 'assets/icons/materials/copperite_ore.png',
+        tags: ['ore', 'metal', 'smithing', 'smelting']
+    },
+
+    goldFlakes: {
+        id: 'goldFlakes',
+        name: 'Gold Flakes',
+        description: 'Tiny flecks of gold found in riverbeds. Valuable but require refining.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'precious',
+        skill: 'mining',
+        tier: 1,
+        rarity: 'epic',
+        stackable: true,
+        stackLimit: 999,
+        value: 50,
+        icon: 'assets/icons/materials/gold-flakes.png',
+        tags: ['precious', 'currency', 'rare', 'smithing']
+    },
+
+    // ==========================================
+    // FORAGING - Meadow Herb Patch (node 1_6)
+    // ==========================================
+    meadowGreens: {
+        id: 'meadowGreens',
+        name: 'Meadow Greens',
+        description: 'Fresh leafy greens from open meadows. A staple ingredient in Unity cooking.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'vegetable',
+        skill: 'foraging',
+        tier: 1,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 1,
+        icon: '🥬',
+        tags: ['vegetable', 'food-ingredient', 'cooking']
+    },
+
+    daypetalBloom: {
+        id: 'daypetalBloom',
+        name: 'Daypetal Bloom',
+        description: 'A rare flower that only blooms during the day. Its petals have medicinal properties.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'flower',
+        skill: 'foraging',
+        tier: 1,
+        rarity: 'rare',
+        stackable: true,
+        stackLimit: 999,
+        value: 20,
+        icon: '🌸',
+        tags: ['flower', 'alchemy', 'chemistry', 'medicine']
+    }
 };
 
 // Export for use in other modules

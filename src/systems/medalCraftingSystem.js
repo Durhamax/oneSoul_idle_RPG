@@ -552,30 +552,30 @@ const MedalCraftingSystem = {
             description: "Reduces reagent requirements",
             isMultiplier: true
         },
-        textilesSpeed: {
-            name: "Textiles SPD.",
+        tailoringSpeed: {
+            name: "Tailoring SPD.",
             icon: "🧵",
-            stat: "textilesSpeed",
+            stat: "tailoringSpeed",
             category: "crafting",
-            skill: "textiles",
+            skill: "tailoring",
             description: "Reduces weaving time",
             isMultiplier: true
         },
-        textilesQuality: {
-            name: "Textiles Quality",
+        tailoringQuality: {
+            name: "Tailoring Quality",
             icon: "✨",
-            stat: "textilesQuality",
+            stat: "tailoringQuality",
             category: "crafting",
-            skill: "textiles",
+            skill: "tailoring",
             description: "Improves fabric quality",
             isMultiplier: true
         },
-        textilesIngredients: {
-            name: "Textiles EFF.",
+        tailoringIngredients: {
+            name: "Tailoring EFF.",
             icon: "📦",
-            stat: "textilesIngredients",
+            stat: "tailoringIngredients",
             category: "crafting",
-            skill: "textiles",
+            skill: "tailoring",
             description: "Reduces fiber requirements",
             isMultiplier: true
         },

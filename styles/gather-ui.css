@@ -1,0 +1,652 @@
+/**
+ * GATHER UI STYLES
+ *
+ * Follows Crafting UI patterns for consistency.
+ * Skill-specific colors and modern dark theme.
+ */
+
+/* ===========================
+   MAIN CONTAINER
+   =========================== */
+
+.gather-ui-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.gather-main-layout {
+    display: flex;
+    gap: 1rem;
+    flex: 1;
+    min-height: 0;
+}
+
+.gather-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* ===========================
+   ACTIVE GATHERING PANEL
+   =========================== */
+
+.gather-active-empty {
+    text-align: center;
+    padding: 2rem;
+    background: var(--color-bg-secondary);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.gather-active-empty .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+.gather-active-empty .empty-text {
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.gather-active-empty .empty-hint {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.gather-active-error {
+    padding: 1rem;
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius-md);
+    color: var(--color-danger);
+    text-align: center;
+}
+
+.gather-active-panel {
+    background: var(--color-bg-secondary);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    border-left: 4px solid var(--skill-color, var(--color-success));
+}
+
+.gather-active-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.gather-active-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.gather-node-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.gather-active-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.gather-node-name {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+.gather-node-meta {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+}
+
+.btn-stop-gather {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: var(--color-danger);
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-stop-gather:hover {
+    background: #d32f2f;
+    transform: translateY(-1px);
+}
+
+/* Session Stats */
+.gather-session-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.stat-box {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.stat-box-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    margin-bottom: 0.25rem;
+}
+
+.stat-box-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    font-family: var(--font-mono);
+}
+
+.stat-box-value.stat-success {
+    color: var(--color-success);
+}
+
+.stat-box-value.stat-warning {
+    color: var(--color-warning);
+}
+
+/* ===========================
+   SKILL HEADER
+   =========================== */
+
+.skill-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--skill-color, var(--color-primary));
+    border-radius: var(--radius-md);
+}
+
+.skill-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+.skill-header-level {
+    color: var(--skill-color, var(--color-primary));
+    font-size: var(--font-size-base);
+}
+
+.skill-header-xp {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    max-width: 300px;
+    margin-left: 1.5rem;
+}
+
+.skill-xp-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.skill-xp-fill {
+    height: 100%;
+    transition: width var(--transition-base);
+}
+
+.skill-xp-text {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+}
+
+.skill-header-bonuses {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.bonus-tag {
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+}
+
+.bonus-tag.speed {
+    background: rgba(255, 152, 0, 0.2);
+    color: #ffb74d;
+}
+
+.bonus-tag.yield {
+    background: rgba(76, 175, 80, 0.2);
+    color: #81c784;
+}
+
+.bonus-tag.rare {
+    background: rgba(156, 39, 176, 0.2);
+    color: #ce93d8;
+}
+
+/* ===========================
+   NODE CARDS GRID
+   =========================== */
+
+.gather-nodes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.no-nodes {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: var(--color-text-muted);
+}
+
+.no-nodes-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.no-nodes-text {
+    font-size: var(--font-size-base);
+    margin-bottom: 0.5rem;
+}
+
+.no-nodes-hint {
+    font-size: var(--font-size-sm);
+    opacity: 0.7;
+}
+
+/* ===========================
+   NODE CARD
+   =========================== */
+
+.node-card {
+    background: var(--color-bg-secondary);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    position: relative;
+    transition: all var(--transition-fast);
+}
+
+.node-card:hover {
+    border-color: var(--node-color, var(--color-border-bright));
+}
+
+.node-card.locked {
+    opacity: 0.6;
+}
+
+.node-card.active {
+    border-color: var(--color-success);
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+}
+
+.node-card.depleted {
+    opacity: 0.5;
+}
+
+.node-tier {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 0.7rem;
+    color: var(--color-warning);
+}
+
+.node-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.node-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.node-info {
+    flex: 1;
+}
+
+.node-name {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.node-desc {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+/* Node Health */
+.node-health {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.node-health-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.node-health-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-success), #8bc34a);
+    transition: width var(--transition-base);
+}
+
+.node-health-text {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    min-width: 60px;
+    text-align: right;
+}
+
+/* Node Resources */
+.node-resources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-sm);
+    min-height: 36px;
+}
+
+.resource-tag {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+}
+
+.no-resources {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+/* Node Stats */
+.node-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.node-stat {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+.node-stat .stat-label {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin-bottom: 0.15rem;
+}
+
+.node-stat .stat-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+.node-stat .stat-value.met {
+    color: var(--color-success);
+}
+
+.node-stat .stat-value.unmet {
+    color: var(--color-danger);
+}
+
+/* Node Action */
+.node-action-btn {
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background: var(--color-success);
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.node-action-btn:hover:not(:disabled) {
+    background: #43a047;
+    transform: translateY(-1px);
+}
+
+.node-action-btn.active {
+    background: var(--color-danger);
+}
+
+.node-action-btn.active:hover {
+    background: #d32f2f;
+}
+
+.node-action-btn.depleted,
+.node-action-btn.locked {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+}
+
+/* ===========================
+   SESSION SIDEBAR
+   =========================== */
+
+.gather-sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.sidebar-header h3 {
+    margin: 0 0 1rem 0;
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.5rem;
+}
+
+.sidebar-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--color-text-muted);
+}
+
+.sidebar-empty .empty-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+.sidebar-empty .empty-text {
+    font-size: var(--font-size-sm);
+    margin-bottom: 0.25rem;
+}
+
+.sidebar-empty .empty-hint {
+    font-size: var(--font-size-xs);
+    opacity: 0.7;
+}
+
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Loot Items */
+.loot-empty {
+    text-align: center;
+    padding: 1rem;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.loot-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-sm);
+}
+
+.loot-icon {
+    font-size: 1.25rem;
+}
+
+.loot-name {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+}
+
+.loot-qty {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-success);
+}
+
+/* ===========================
+   SKILL-SPECIFIC COLORS
+   =========================== */
+
+.gather-active-panel[data-skill="mining"],
+.node-card[data-skill="mining"] {
+    --skill-color: #8B4513;
+}
+
+.gather-active-panel[data-skill="logging"],
+.node-card[data-skill="logging"] {
+    --skill-color: #228B22;
+}
+
+.gather-active-panel[data-skill="fishing"],
+.node-card[data-skill="fishing"] {
+    --skill-color: #4682B4;
+}
+
+.gather-active-panel[data-skill="hunting"],
+.node-card[data-skill="hunting"] {
+    --skill-color: #8B0000;
+}
+
+.gather-active-panel[data-skill="foraging"],
+.node-card[data-skill="foraging"] {
+    --skill-color: #9ACD32;
+}
+
+.gather-active-panel[data-skill="thieving"],
+.node-card[data-skill="thieving"] {
+    --skill-color: #4B0082;
+}
+
+/* ===========================
+   RESPONSIVE
+   =========================== */
+
+@media (max-width: 1200px) {
+    .gather-session-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .gather-main-layout {
+        flex-direction: column;
+    }
+
+    .gather-sidebar {
+        width: 100%;
+        min-width: 100%;
+        max-height: 200px;
+    }
+
+    .gather-nodes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .skill-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .skill-header-xp {
+        margin-left: 0;
+        max-width: 100%;
+    }
+
+    .skill-header-bonuses {
+        flex-wrap: wrap;
+    }
+
+    .node-stats {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

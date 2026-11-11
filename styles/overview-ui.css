@@ -1,0 +1,1132 @@
+/* ===================================
+   OVERVIEW UI - 3-Column Dashboard
+   Equal columns, balanced heights
+   =================================== */
+
+.overview-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    max-width: 1600px;
+    margin: 0 auto;
+    height: calc(100vh - 49px - 60px); /* Full height minus header minus view padding minus dashboard padding */
+    overflow: hidden;
+}
+
+/* === CHARACTER HEADER === */
+.overview-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.98));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 8px 14px;
+    flex-shrink: 0;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.level-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    border-radius: 8px;
+    padding: 6px 12px;
+    min-width: 50px;
+}
+
+.level-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+
+.level-label {
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+}
+
+.character-info {
+    min-width: 0;
+}
+
+.character-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 3px;
+}
+
+.xp-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.xp-bar {
+    width: 120px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f1c40f, #f39c12);
+    border-radius: 3px;
+}
+
+.xp-text {
+    font-size: 10px;
+    color: #888;
+    min-width: 70px;
+    white-space: nowrap;
+}
+
+.header-center {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    justify-content: center;
+}
+
+.location-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+}
+
+.location-icon {
+    font-size: 11px;
+}
+
+.location-name {
+    font-size: 11px;
+    color: #ccc;
+    white-space: nowrap;
+}
+
+.activity-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+}
+
+.activity-icon {
+    font-size: 11px;
+}
+
+.activity-text {
+    font-size: 11px;
+    color: #aaa;
+}
+
+.points-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.2), rgba(243, 156, 18, 0.3));
+    border: 1px solid rgba(241, 196, 15, 0.4);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.points-badge:hover {
+    background: rgba(241, 196, 15, 0.3);
+    transform: scale(1.05);
+}
+
+.points-glow {
+    font-size: 12px;
+}
+
+.points-count {
+    font-size: 14px;
+    font-weight: 700;
+    color: #f1c40f;
+}
+
+.points-text {
+    font-size: 10px;
+    color: #f1c40f;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.power-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.2), rgba(192, 57, 43, 0.3));
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    border-radius: 8px;
+    padding: 6px 14px;
+    min-width: 65px;
+}
+
+.power-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--power-color, #fff);
+    line-height: 1;
+}
+
+.power-tier {
+    font-size: 8px;
+    color: var(--power-color, #e74c3c);
+    text-transform: uppercase;
+}
+
+/* === 3-COLUMN LAYOUT - EQUAL WIDTH === */
+.overview-three-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.overview-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.overview-column--left,
+.overview-column--center,
+.overview-column--right {
+    /* Equal width via 1fr 1fr 1fr */
+}
+
+/* === PANEL (shared) === */
+.overview-panel {
+    background: linear-gradient(135deg, rgba(30, 30, 50, 0.9), rgba(20, 20, 40, 0.95));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.panel-skills {
+    flex: 1;
+}
+
+.panel-attributes,
+.panel-combat-stats {
+    flex-shrink: 0;
+}
+
+.panel-loadout {
+    flex: 1;
+    min-height: 0;
+}
+
+.panel-activity {
+    flex-shrink: 0;
+}
+
+.panel-milestones {
+    flex: 1;
+    min-height: 0;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
+}
+
+.panel-icon {
+    font-size: 16px;
+}
+
+.panel-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    flex: 1;
+}
+
+.panel-badge {
+    font-size: 9px;
+    color: #888;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 8px;
+}
+
+.panel-badge.badge-warning {
+    background: rgba(241, 196, 15, 0.2);
+    color: #f1c40f;
+}
+
+.panel-content {
+    padding: 10px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+/* ============================================
+   ATTRIBUTES - Unified row styling with skills
+   ============================================ */
+.panel-attributes .panel-content {
+    padding: 8px;
+}
+
+.attributes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.attribute-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.attribute-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.attribute-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.attr-icon {
+    font-size: 14px;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.attr-name {
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    color: #ccc;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.attribute-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.attr-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #3498db;
+    min-width: 20px;
+    text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* Placeholder for + button alignment when no points available */
+.attr-btn-placeholder {
+    width: 18px;
+    height: 18px;
+}
+
+.attr-add-btn {
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 3px;
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.attr-add-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 6px rgba(46, 204, 113, 0.5);
+}
+
+.attr-add-btn:disabled {
+    background: #444;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.attr-add-btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* ============================================
+   ATTRIBUTE TOOLTIP - Subtle hover tooltip
+   ============================================ */
+.attribute-tooltip {
+    position: fixed;
+    z-index: 10000;
+    background: rgba(20, 20, 35, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 10px 12px;
+    max-width: 260px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    animation: tooltipFadeIn 0.15s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+    from { opacity: 0; transform: translateX(-5px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.attr-tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.attr-tooltip-icon {
+    font-size: 14px;
+}
+
+.attr-tooltip-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.attr-tooltip-desc {
+    font-size: 11px;
+    color: #3498db;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.attr-tooltip-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 6px;
+}
+
+.attr-tooltip-section:last-child {
+    margin-bottom: 0;
+}
+
+.attr-tooltip-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.attr-tooltip-text {
+    font-size: 11px;
+    color: #ccc;
+    line-height: 1.3;
+}
+
+/* ============================================
+   COMBAT STATS - LARGER TEXT, 2x3 GRID
+   ============================================ */
+.panel-combat-stats .panel-content {
+    padding: 8px;
+}
+
+/* Combat Power Display - Top of combat stats */
+.combat-power-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(var(--power-color), 0.1));
+    border: 1px solid var(--power-color, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+}
+
+.combat-power-display .power-icon {
+    font-size: 16px;
+}
+
+.combat-power-display .power-label {
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.combat-power-display .power-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--power-color, #fff);
+    margin-left: auto;
+}
+
+.combat-power-display .power-tier {
+    font-size: 10px;
+    color: var(--power-color, #888);
+    text-transform: uppercase;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+}
+
+.stat-item .stat-icon {
+    font-size: 12px;
+    width: 16px;
+    text-align: center;
+}
+
+.stat-item .stat-label {
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    flex: 1;
+}
+
+.stat-item .stat-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* ============================================
+   SKILLS - SMALLER/COMPACT
+   ============================================ */
+.panel-skills {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.panel-skills .panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.skills-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.skill-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.skill-section-header {
+    font-size: 8px;
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+    padding-left: 2px;
+}
+
+.skill-section:nth-child(1) .skill-section-header {
+    color: #f1c40f;
+}
+
+.skill-section:nth-child(2) .skill-section-header {
+    color: #2ecc71;
+}
+
+.skill-section:nth-child(3) .skill-section-header {
+    color: #e67e22;
+}
+
+.skill-section-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+/* Skill Row - Identical styling to attributes (high specificity to override developer.css) */
+.panel-skills .skill-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+}
+
+.panel-skills .skill-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(2px);
+    border-color: rgba(52, 152, 219, 0.3);
+}
+
+.panel-skills .skill-row:hover .skill-arrow {
+    opacity: 1;
+}
+
+.panel-skills .skill-row:hover .skill-name {
+    color: #fff;
+}
+
+.panel-skills .skill-icon {
+    font-size: 14px !important;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+    filter: none !important;
+}
+
+.panel-skills .skill-name {
+    font-size: 13px !important;
+    font-family: inherit !important;
+    font-weight: 500;
+    color: #ccc;
+    transition: color 0.15s;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    flex: 1;
+}
+
+.panel-skills .skill-xp-container {
+    width: 180px !important;
+    flex-shrink: 0 !important;
+    margin: 0 8px 0 0 !important; /* Reset margin-bottom from developer.css, keep right margin */
+    align-self: center !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.panel-skills .skill-xp-bar {
+    width: 100% !important;
+    height: 4px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    margin: 0 !important; /* Reset margins from developer.css */
+    border-radius: 2px !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+}
+
+.panel-skills .skill-xp-fill {
+    height: 100% !important;
+    background: linear-gradient(90deg, #9b59b6, #8e44ad) !important;
+    border-radius: 2px;
+}
+
+.panel-skills .skill-level {
+    font-size: 13px !important;
+    font-weight: 600;
+    color: #3498db;
+    min-width: 42px; /* Accommodates 3-digit levels (LV.100) */
+    text-align: right;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.panel-skills .skill-arrow {
+    font-size: 10px;
+    color: #3498db;
+    opacity: 0;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+
+/* ============================================
+   LOADOUT - 3-1-3 LAYOUT (Left 3, Middle 1 tall, Right 3)
+   Full height panel with larger tiles
+   ============================================ */
+.panel-loadout {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-loadout .panel-content {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* 3-Column Equipment Grid: Left (3 slots) | Middle (1 tall armor) | Right (3 slots) */
+.loadout-equipment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    flex: 3; /* Takes 3x the space of each section (equipment is 6 slots tall vs 1 row each for consumables/tech) */
+    min-height: 0;
+}
+
+.loadout-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Middle column is a single tall armor slot */
+.loadout-column--armor {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+}
+
+/* =========================================================================
+ * LEGACY LOADOUT SLOT STYLES (DEPRECATED)
+ *
+ * These styles are deprecated and will be removed in a future update.
+ * Use styles/loadout-slots.css and the .unified-slot classes instead.
+ * Kept for backwards compatibility with legacy rendering paths.
+ *
+ * Updated: 2025-12-06 - See LoadoutSlotRenderer.js for unified rendering
+ * ========================================================================= */
+
+/* All slots (equipment, consumables, tech) - uniform 100px square */
+.loadout-slot {
+    width: 100px;
+    height: 100px;
+    flex: 0 0 100px;
+    aspect-ratio: 1 / 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+/* Armor slot - fills entire middle column height */
+.loadout-slot--armor {
+    width: 100%;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+}
+
+.loadout-slot--armor .slot-icon {
+    font-size: 48px;
+}
+
+.loadout-slot--armor .slot-label {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.loadout-slot:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.loadout-slot--empty {
+    opacity: 0.4;
+}
+
+.loadout-slot--filled {
+    border-color: var(--rarity-color, rgba(255, 255, 255, 0.2));
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), var(--rarity-color, transparent) 60%);
+}
+
+.loadout-slot--filled:hover {
+    box-shadow: 0 0 8px var(--rarity-color, transparent);
+}
+
+/* Glow effect for higher rarity items */
+.loadout-slot--glow {
+    box-shadow: 0 0 12px var(--rarity-color, transparent);
+    animation: slot-glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes slot-glow-pulse {
+    0%, 100% { box-shadow: 0 0 8px var(--rarity-color, transparent); }
+    50% { box-shadow: 0 0 16px var(--rarity-color, transparent); }
+}
+
+/* Rarity-specific border colors for loadout slots */
+.loadout-slot.rarity-common { border-color: #9e9e9e; }
+.loadout-slot.rarity-uncommon { border-color: #4caf50; }
+.loadout-slot.rarity-rare { border-color: #2196F3; }
+.loadout-slot.rarity-epic { border-color: #9c27b0; }
+.loadout-slot.rarity-legendary { border-color: #ff9800; }
+.loadout-slot.rarity-mythic { border-color: #f44336; }
+
+/* Equipment slot rarity styling */
+.equip-slot--glow {
+    box-shadow: 0 0 12px var(--rarity-color, transparent);
+}
+
+.equip-slot.rarity-uncommon { border-color: #4caf50; }
+.equip-slot.rarity-rare { border-color: #2196F3; }
+.equip-slot.rarity-epic { border-color: #9c27b0; }
+.equip-slot.rarity-legendary { border-color: #ff9800; }
+.equip-slot.rarity-mythic { border-color: #f44336; }
+
+.loadout-slot--locked {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.05);
+    cursor: not-allowed;
+}
+
+.slot-icon {
+    font-size: 40px; /* Unified icon size for all 100px slots */
+}
+
+.slot-lock {
+    font-size: 18px;
+    opacity: 0.5;
+}
+
+.slot-qty {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+/* Consumables & Tech Sections - fixed height with square tiles */
+.loadout-section {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
+}
+
+.loadout-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+.loadout-consumables-row,
+.loadout-tech-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Tech slots - same 100px square as other slots */
+.tech-slot {
+    width: 100px;
+    height: 100px;
+    flex: 0 0 100px;
+    aspect-ratio: 1 / 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tech-slot:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tech-slot--empty {
+    opacity: 0.4;
+}
+
+.tech-slot--locked {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.05);
+    cursor: not-allowed;
+}
+
+/* View Button */
+.loadout-view-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px;
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.2), rgba(41, 128, 185, 0.3));
+    border: 1px solid rgba(52, 152, 219, 0.3);
+    border-radius: 6px;
+    color: #3498db;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.loadout-view-btn:hover {
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.3), rgba(41, 128, 185, 0.4));
+}
+
+/* ============================================
+   ACTIVITY PANEL - COMPACT
+   ============================================ */
+.panel-activity .panel-content {
+    padding: 8px;
+}
+
+.activity-current {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+}
+
+.activity-current .activity-icon {
+    font-size: 16px;
+}
+
+.activity-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.activity-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.activity-detail {
+    font-size: 9px;
+    color: #888;
+}
+
+/* ============================================
+   MILESTONES PANEL - FILLS REMAINING LEFT COLUMN SPACE
+   ============================================ */
+.panel-milestones {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.panel-milestones .panel-content {
+    padding: 8px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.milestones-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.milestone-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+    font-size: 10px;
+    opacity: 0.5;
+}
+
+.milestone-item.achieved {
+    opacity: 1;
+    background: rgba(46, 204, 113, 0.1);
+    border-left: 2px solid #2ecc71;
+}
+
+.milestone-icon {
+    font-size: 10px;
+    width: 14px;
+    text-align: center;
+}
+
+.milestone-text {
+    flex: 1;
+    color: #aaa;
+}
+
+.milestone-item.achieved .milestone-text {
+    color: #2ecc71;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 1100px) {
+    .overview-three-columns {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .overview-column--right {
+        grid-column: span 2;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+    }
+
+    .overview-column--right .overview-panel {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .overview-dashboard {
+        height: auto;
+        overflow: visible;
+    }
+
+    .overview-three-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .overview-column--right {
+        grid-column: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .overview-header {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .header-left {
+        flex-basis: 100%;
+        justify-content: center;
+    }
+
+    .header-center {
+        flex-basis: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
+
+/* === LEGACY SUPPORT === */
+.overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1rem;
+    flex: 1;
+    min-height: 0;
+}
+
+.overview-column-main,
+.overview-column-side {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+}
+
+.overview-widget {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.widget-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.widget-content {
+    padding: 1rem;
+}

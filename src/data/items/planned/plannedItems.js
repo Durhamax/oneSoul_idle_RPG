@@ -17,6 +17,7 @@ const PLANNED_ITEMS = {
         description: 'Legendary sword forged from mythril. Coming in v2.0.',
         icon: '⚔️',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'legendary',
         stackLimit: 1,
         value: 5000,
@@ -39,6 +40,7 @@ const PLANNED_ITEMS = {
         description: 'Bow crafted from dragon bones. Coming soon.',
         icon: '🏹',
         category: 'equipment',
+        instanced: true,  // Unique instance
         rarity: 'epic',
         stackLimit: 1,
         value: 3000,
@@ -65,6 +67,7 @@ const PLANNED_ITEMS = {
         description: 'Grants immortality for 1 minute. Planned for endgame.',
         icon: '⚗️',
         category: 'consumable',
+        instanced: true,  // Unique instance
         rarity: 'mythic',
         stackLimit: 1,
         value: 100000,
@@ -88,6 +91,7 @@ const PLANNED_ITEMS = {
         description: 'Mount that allows flying between regions. Planned feature.',
         icon: '🦅',
         category: 'special',
+        instanced: true,  // Unique instance
         rarity: 'legendary',
         stackLimit: 1,
         value: 50000,
@@ -107,6 +111,7 @@ const PLANNED_ITEMS = {
         description: 'Banner for guild system. Multiplayer feature planned.',
         icon: '🚩',
         category: 'special',
+        instanced: true,  // Unique instance
         rarity: 'epic',
         stackLimit: 1,
         value: 10000,

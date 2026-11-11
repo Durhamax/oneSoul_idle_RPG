@@ -16,16 +16,19 @@ const NavigationSystem = {
         engine.stopNavigation = this.stopNavigation.bind(engine);
         engine.processNavigation = this.processNavigation.bind(engine);
         engine.getNavigationStats = this.getNavigationStats.bind(engine);
+        engine.getNavigationPerkMultipliers = this.getNavigationPerkMultipliers.bind(engine);
         engine.makeDiscovery = this.makeDiscovery.bind(engine);
         engine.discoverResourceNode = this.discoverResourceNode.bind(engine);
         engine.discoverEnemyInRegion = this.discoverEnemyInRegion.bind(engine);
         engine.tryDiscoverExitPath = this.tryDiscoverExitPath.bind(engine);
+        engine.discoverBidirectionalPath = this.discoverBidirectionalPath.bind(engine);
         engine.canTravelToRegion = this.canTravelToRegion.bind(engine);
         engine.travelToRegion = this.travelToRegion.bind(engine);
         engine.changeRegion = this.changeRegion.bind(engine);
         engine.exploreRegion = this.exploreRegion.bind(engine);
         engine.checkForDiscoveries = this.checkForDiscoveries.bind(engine);
         engine.checkRegionUnlocks = this.checkRegionUnlocks.bind(engine);
+        engine.processLegacyRecovery = this.processLegacyRecovery.bind(engine);
     },
 
     /**
@@ -181,8 +184,31 @@ const NavigationSystem = {
     },
 
     /**
+     * Get navigation perk multipliers
+     * Uses centralized compiled stats when available for consistency
+     * @returns {Object} Navigation-related perk multipliers
+     */
+    getNavigationPerkMultipliers() {
+        // Use centralized compiled stats when available (from StatCompiler)
+        const compiledStats = typeof GameEngine !== 'undefined' && GameEngine.state?.compiledStats;
+        const multipliers = compiledStats?.perkMultipliers
+            || (typeof GameEngine !== 'undefined' && GameEngine.getPerkMultipliers ? GameEngine.getPerkMultipliers() : {});
+        return {
+            explorationSpeed: multipliers.explorationSpeed || 1.0,
+            discoveryChance: multipliers.discoveryChance || 1.0,
+            enduranceCapacity: multipliers.enduranceCapacity || 1.0,
+            enduranceRecovery: multipliers.enduranceRecovery || 1.0,
+            pathDiscovery: multipliers.pathDiscovery || 1.0
+        };
+    },
+
+    /**
      * Get player's navigation stats for discovery
-     * Uses new endurance-based system
+     * Uses attribute-based system:
+     * - Health: Max endurance, depletion/recovery rates
+     * - Perception: Discovery success chance vs region complication
+     * - Mobility: Discovery interval speed
+     * Plus perk bonuses from the perk grid
      */
     getNavigationStats() {
         const navSkill = this.state.skills.navigation;
@@ -192,38 +218,62 @@ const NavigationSystem = {
         const balance = this.gameBalance;
 
         // Safety checks for attributes (default to 1 if undefined)
-        const strength = attributes.strength || 1;
+        const health = attributes.health || 1;
+        const perception = attributes.perception || 1;
         const mobility = attributes.mobility || 1;
-        const intellect = attributes.intellect || 1;
 
-        // Calculate max endurance from strength and mobility
-        // Formula: baseEndurance + (strength * strengthMult) + (mobility * mobilityMult)
-        const maxEndurance = (balance.baseEndurance || 100) +
-                            (strength * (balance.enduranceStrengthMult || 5)) +
-                            (mobility * (balance.enduranceMobilityMult || 3));
+        // Get navigation perk multipliers
+        const navPerks = this.getNavigationPerkMultipliers();
 
-        // Calculate discovery chance from intellect vs region complication
-        // Formula: baseChance + (intellect * bonus) - (complication * penalty)
+        // ===== MAX ENDURANCE (Health + Perk) =====
+        // Formula: (baseEndurance + (health * healthMult)) * enduranceCapacity perk
+        let maxEndurance = (balance.baseEndurance || 50) + (health * (balance.enduranceHealthMult || 10));
+        maxEndurance = Math.floor(maxEndurance * navPerks.enduranceCapacity);
+
+        // ===== DISCOVERY CHANCE (Perception vs Region Complication + Perk) =====
+        // Formula: (baseChance + (perception * bonus) - (complication * penalty)) * discoveryChance perk
         const regionComplication = regionDef?.complication || 1.0;
-        const intellectBonus = intellect * (balance.intellectDiscoveryBonus || 2);
-        const complicationPenalty = (regionComplication - 1.0) * 10; // Each point of complication reduces chance by 10%
-        const discoveryChance = Math.max(5, Math.min(95,
-            (balance.baseDiscoveryChance || 30) + intellectBonus - complicationPenalty
-        ));
+        const perceptionBonus = perception * (balance.perceptionDiscoveryBonus || 2.5);
+        const complicationPenalty = (regionComplication - 1.0) * 10; // 10% per complexity point
+        let discoveryChance = (balance.baseDiscoveryChance || 30) + perceptionBonus - complicationPenalty;
+        // Apply perk multiplier before clamping
+        discoveryChance = discoveryChance * navPerks.discoveryChance;
+        discoveryChance = Math.max(5, Math.min(95, discoveryChance));
 
-        // Discovery interval from game balance
-        const discoveryInterval = balance.navigationInterval || 3000;
+        // ===== DISCOVERY INTERVAL (Mobility + Perk) =====
+        // Formula: (baseInterval - (mobility * reduction)) / explorationSpeed perk
+        const baseInterval = balance.navigationInterval || 3000;
+        const mobilityReduction = mobility * (balance.mobilityIntervalReduction || 50);
+        let discoveryInterval = baseInterval - mobilityReduction;
+        // Apply perk multiplier (higher = faster, so divide)
+        discoveryInterval = discoveryInterval / navPerks.explorationSpeed;
+        discoveryInterval = Math.max(balance.minDiscoveryInterval || 1000, discoveryInterval);
 
-        // Endurance drain per attempt
+        // ===== ENDURANCE DRAIN (Base rate, refined by health in processNavigation) =====
         const enduranceDrain = balance.enduranceDrainPerAttempt || 5;
+
+        // ===== ENDURANCE RECOVERY (affected by perk) =====
+        const baseRecoveryRate = (balance.baseRecoveryRate || 3) + (health * (balance.healthRecoveryMult || 0.5));
+        const recoveryRate = baseRecoveryRate * navPerks.enduranceRecovery;
+
+        // ===== PATH DISCOVERY BONUS =====
+        const pathDiscoveryBonus = navPerks.pathDiscovery;
 
         return {
             maxEndurance: Math.floor(maxEndurance),
             discoveryChance: discoveryChance,
-            discoveryInterval: discoveryInterval,
+            discoveryInterval: Math.floor(discoveryInterval),
             enduranceDrain: enduranceDrain,
+            recoveryRate: recoveryRate,
+            pathDiscoveryBonus: pathDiscoveryBonus,
             navLevel: navSkill.level,
-            regionComplication: regionComplication
+            regionComplication: regionComplication,
+            // Include raw attributes for reference
+            health: health,
+            perception: perception,
+            mobility: mobility,
+            // Include perk multipliers for reference
+            navPerks: navPerks
         };
     },
 
@@ -235,14 +285,36 @@ const NavigationSystem = {
             return { success: false, reason: "Already navigating" };
         }
 
-        // Stop other activities
+        // Stop ALL other activities including crafting
         if (this.state.currentActivity === 'combat') {
             this.endCombat();
         }
         if (this.state.currentActivity === 'nodeCollection') {
             this.stopNodeHarvesting();
         }
-        // Crafting continues in background, doesn't block navigation
+        if (this.state.currentActivity === 'gathering') {
+            if (typeof this.stopGathering === 'function') {
+                this.stopGathering();
+            }
+        }
+
+        // Stop crafting - navigation takes priority
+        if (this.state.crafting?.activeQueues) {
+            const skills = ['cooking', 'smithing', 'mechanics', 'tailoring', 'chemistry', 'electronics'];
+            for (const skill of skills) {
+                const queue = this.state.crafting.activeQueues[skill];
+                if (queue && queue.length > 0) {
+                    // Clear the queue for this skill
+                    this.state.crafting.activeQueues[skill] = [];
+                    console.log(`🗺️ Stopped ${skill} crafting to start navigation`);
+                }
+            }
+            // Clear auto-repeat
+            this.state.crafting.autoRecipe = null;
+        }
+        if (this.state.currentActivity === 'crafting') {
+            this.state.currentActivity = null;
+        }
 
         // Calculate and set endurance based on character attributes
         const stats = this.getNavigationStats();
@@ -273,6 +345,7 @@ const NavigationSystem = {
     /**
      * Process navigation tick (called automatically when navigation is active)
      * Uses endurance-based system with intellect-based discovery chance
+     * When endurance depletes, enters recovery mode instead of stopping
      */
     processNavigation(deltaTime) {
         if (!this.state.activeNavigation.isNavigating) {
@@ -281,44 +354,139 @@ const NavigationSystem = {
 
         const now = Date.now();
         const stats = this.getNavigationStats();
+        const activeNav = this.state.activeNavigation;
 
         // Migration: Initialize endurance if it's undefined or NaN (old save data)
-        if (typeof this.state.activeNavigation.endurance !== 'number' || isNaN(this.state.activeNavigation.endurance)) {
-            this.state.activeNavigation.maxEndurance = stats.maxEndurance;
-            this.state.activeNavigation.endurance = stats.maxEndurance;
+        if (typeof activeNav.endurance !== 'number' || isNaN(activeNav.endurance)) {
+            activeNav.maxEndurance = stats.maxEndurance;
+            activeNav.endurance = stats.maxEndurance;
             console.log(`🔄 Migrated to endurance system: ${stats.maxEndurance} endurance`);
         }
 
+        // Migration: Initialize recovery state if undefined
+        if (typeof activeNav.isRecovering !== 'boolean') {
+            activeNav.isRecovering = false;
+            activeNav.lastRecoveryTick = 0;
+        }
+
+        // RECOVERY MODE: Campfire system with fuel consumption
+        if (activeNav.isRecovering) {
+            // Use CampfireSystem for fuel-based recovery
+            if (typeof CampfireSystem !== 'undefined' && this.processCampfireTick) {
+                const campfireResult = this.processCampfireTick(now - (activeNav.lastRecoveryTick || now));
+
+                if (campfireResult.processed) {
+                    activeNav.lastRecoveryTick = now;
+
+                    // Food consumption (separate from fuel)
+                    if (!activeNav.lastFoodConsumptionTime) {
+                        activeNav.lastFoodConsumptionTime = now;
+                    }
+                    const timeSinceFoodConsumption = now - activeNav.lastFoodConsumptionTime;
+                    const foodConsumptionInterval = 6000; // Consume food every 6 seconds
+
+                    if (timeSinceFoodConsumption >= foodConsumptionInterval) {
+                        activeNav.lastFoodConsumptionTime = now;
+
+                        // Try to consume equipped food from equipment.food slot (shared with combat)
+                        // equipment.food format: { itemId: string, quantity: number }
+                        const foodSlot = this.state.equipment?.food;
+                        if (foodSlot && foodSlot.itemId && foodSlot.quantity > 0) {
+                            // Consume from equipped food quantity
+                            foodSlot.quantity -= 1;
+                            const foodDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(foodSlot.itemId) : null;
+                            console.log(`🍖 Camping: Consumed 1 ${foodDef?.name || foodSlot.itemId} (${foodSlot.quantity} remaining)`);
+
+                            // Unequip if depleted
+                            if (foodSlot.quantity <= 0) {
+                                this.state.equipment.food = null;
+                                console.warn('⚠️ Food depleted! Equip more food for recovery bonus.');
+                            }
+                        } else {
+                            console.warn('⚠️ No food equipped! Recovery continues but slower.');
+                        }
+                    }
+
+                    // Check if campfire is providing recovery
+                    if (!campfireResult.active || campfireResult.recoveryAmount <= 0) {
+                        // Only warn once every 5 seconds to avoid console spam
+                        if (!activeNav.lastCampfireWarning || now - activeNav.lastCampfireWarning >= 5000) {
+                            activeNav.lastCampfireWarning = now;
+                            console.warn('⚠️ Campfire not active! Select fuel to continue recovery.');
+                        }
+                        return;
+                    }
+
+                    // Apply campfire recovery with base stats
+                    const baseRecovery = stats.recoveryRate || 3;
+                    const campfireBonus = campfireResult.efficiency || 1.0;
+                    const totalRecovery = baseRecovery * campfireBonus;
+
+                    activeNav.endurance += totalRecovery;
+
+                    // Check if fully recovered
+                    if (activeNav.endurance >= activeNav.maxEndurance) {
+                        activeNav.endurance = activeNav.maxEndurance;
+                        activeNav.isRecovering = false;
+                        activeNav.lastFoodConsumptionTime = null;
+
+                        // Extinguish campfire when done
+                        if (this.extinguishCampfire) {
+                            this.extinguishCampfire();
+                        }
+
+                        console.log(`✅ Endurance restored! Resuming exploration... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance})`);
+                    } else {
+                        console.log(`⏳ Recovering endurance... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}) [Campfire: ${campfireResult.warmth} warmth, ${campfireResult.efficiency}x efficiency]`);
+                    }
+                }
+            } else {
+                // Fallback: Legacy recovery (without CampfireSystem)
+                this.processLegacyRecovery(now, activeNav, stats);
+            }
+            return;
+        }
+
+        // EXPLORATION MODE: Make discovery attempts
         // Check if enough time has passed for next discovery attempt
-        const timeSinceLastAttempt = now - this.state.activeNavigation.lastNavigationTick;
+        const timeSinceLastAttempt = now - activeNav.lastNavigationTick;
         if (timeSinceLastAttempt < stats.discoveryInterval) {
             return;
         }
 
-        this.state.activeNavigation.lastNavigationTick = now;
+        activeNav.lastNavigationTick = now;
 
         // Check if player has endurance remaining
-        if (this.state.activeNavigation.endurance <= 0) {
-            console.log("🗺️ Out of endurance! Exploration stopped.");
-            this.stopNavigation();
+        if (activeNav.endurance <= 0) {
+            console.log("💤 Out of endurance! Entering recovery mode...");
+            activeNav.isRecovering = true;
+            activeNav.lastRecoveryTick = now;
             return;
         }
 
         // Drain endurance for the attempt (happens whether successful or not)
-        this.state.activeNavigation.endurance -= stats.enduranceDrain;
-        if (this.state.activeNavigation.endurance < 0) {
-            this.state.activeNavigation.endurance = 0;
+        // Depletion rate based on health
+        // Formula: base 5 - (health * 0.3) = slower depletion with higher health, min 1.5
+        const health = this.state.combatAttributes?.health || 1;
+        const balance = this.gameBalance;
+        const healthDepletionReduction = balance.healthDepletionReduction || 0.3;
+        const minDepletionRate = balance.minDepletionRate || 1.5;
+        const depletionRate = Math.max(minDepletionRate, stats.enduranceDrain - (health * healthDepletionReduction));
+
+        activeNav.endurance -= depletionRate;
+        if (activeNav.endurance < 0) {
+            activeNav.endurance = 0;
         }
 
         // Roll for discovery success (based on intellect vs region complication)
         const discoveryRoll = Math.random() * 100;
         if (discoveryRoll > stats.discoveryChance) {
-            console.log(`🔍 Exploring... (No discovery, ${this.state.activeNavigation.endurance}/${stats.maxEndurance} endurance remaining)`);
+            console.log(`🔍 Exploring... (No discovery, ${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance} endurance remaining)`);
             return;
         }
 
         // Success! Make a discovery
-        console.log(`✨ Discovery made! (${this.state.activeNavigation.endurance}/${stats.maxEndurance} endurance remaining)`);
+        console.log(`✨ Discovery made! (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance} endurance remaining)`);
         this.makeDiscovery();
     },
 
@@ -348,6 +516,15 @@ const NavigationSystem = {
         regionState.discoveryProgress = Math.min(100, regionState.discoveryProgress + discoveryIncrease);
 
         console.log(`✨ Discovery made! Region now ${regionState.discoveryProgress.toFixed(1)}% explored`);
+
+        // Emit discovery progress event for mission tracking
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('discovery-progress', {
+                regionId: currentRegionId,
+                progress: regionState.discoveryProgress,
+                increase: discoveryIncrease
+            });
+        }
 
         // Gain navigation exp
         this.gainSkillExp('navigation', 5);
@@ -383,13 +560,27 @@ const NavigationSystem = {
 
         // Filter to nodes the player can access (skill level requirement)
         const accessibleNodes = [];
+
+        if (typeof NodeRegistry === 'undefined') {
+            console.error('❌ NodeRegistry not available');
+            return;
+        }
+
         for (let nodeId of discoverableNodes) {
-            const nodeDef = this.definitions.resourceNodes[nodeId];
+            // Get node from NodeRegistry only
+            const nodeDef = NodeRegistry.getAllActive()[nodeId];
+
             if (nodeDef) {
-                const playerSkillLevel = this.state.skills[nodeDef.skill]?.level || 0;
-                if (playerSkillLevel >= nodeDef.skillLevel) {
+                // Use nodeType as skill and requiredSkillLevel for level requirement
+                const nodeSkill = nodeDef.nodeType;
+                const nodeSkillLevel = nodeDef.requiredSkillLevel || 1;
+                const playerSkillLevel = this.state.skills[nodeSkill]?.level || 0;
+
+                if (playerSkillLevel >= nodeSkillLevel) {
                     accessibleNodes.push(nodeId);
                 }
+            } else {
+                console.warn(`⚠️ Node ${nodeId} not found in NodeRegistry`);
             }
         }
 
@@ -462,11 +653,17 @@ const NavigationSystem = {
             return;
         }
 
+        // Get path discovery perk bonus
+        const navPerks = this.getNavigationPerkMultipliers();
+        const pathDiscoveryBonus = navPerks.pathDiscovery || 1.0;
+
         // Safety check for biomeDef
         if (!biomeDef || typeof biomeDef.exitPathChance !== 'number') {
-            // Default chance if not defined
+            // Default chance if not defined (30% base, modified by perk)
+            const baseChance = 0.3;
+            const modifiedChance = Math.min(0.5, baseChance * pathDiscoveryBonus); // Cap at 50%
             const exitRoll = Math.random();
-            if (exitRoll < 0.3) { // 30% default chance
+            if (exitRoll < modifiedChance) {
                 const randomExit = undiscoveredExits[Math.floor(Math.random() * undiscoveredExits.length)];
 
                 // Discover path bidirectionally
@@ -480,9 +677,10 @@ const NavigationSystem = {
             return;
         }
 
-        // Roll for exit path discovery
+        // Roll for exit path discovery (modified by perk)
+        const modifiedChance = Math.min(0.5, biomeDef.exitPathChance * pathDiscoveryBonus); // Cap at 50%
         const exitRoll = Math.random();
-        if (exitRoll < biomeDef.exitPathChance) {
+        if (exitRoll < modifiedChance) {
             // Pick a random undiscovered exit
             const randomExit = undiscoveredExits[Math.floor(Math.random() * undiscoveredExits.length)];
 
@@ -602,23 +800,24 @@ const NavigationSystem = {
             return { success: false, reason: "Exit path not discovered" };
         }
 
-        // Check if current region has a mission requirement to leave
-        if (currentRegionDef && currentRegionDef.requiredMissionToLeave) {
-            const missionId = currentRegionDef.requiredMissionToLeave;
-            const missionDef = this.definitions.missions[missionId];
-
-            // Check if mission is completed (missions are stored in completed array)
-            const isCompleted = this.state.missions.completed && this.state.missions.completed.includes(missionId);
-
-            if (!isCompleted) {
-                const missionName = missionDef ? missionDef.name : missionId;
-                return {
-                    success: false,
-                    reason: `Must complete mission "${missionName}" before leaving this region`,
-                    blockedByMission: missionId
-                };
-            }
-        }
+        // TEMPORARILY DISABLED: Mission requirements for region travel
+        // TODO: Refactor mission system to align with FOUNDATION_SPECIFICATION.md
+        // if (currentRegionDef && currentRegionDef.requiredMissionToLeave) {
+        //     const missionId = currentRegionDef.requiredMissionToLeave;
+        //     const missionDef = this.definitions.missions[missionId];
+        //
+        //     // Check if mission is completed (missions are stored in completed array)
+        //     const isCompleted = this.state.missions.completed && this.state.missions.completed.includes(missionId);
+        //
+        //     if (!isCompleted) {
+        //         const missionName = missionDef ? missionDef.name : missionId;
+        //         return {
+        //             success: false,
+        //             reason: `Must complete mission "${missionName}" before leaving this region`,
+        //             blockedByMission: missionId
+        //         };
+        //     }
+        // }
 
         const targetHexDef = this.definitions.worldMap[targetRegionId];
 
@@ -651,5 +850,76 @@ const NavigationSystem = {
 
         console.log(`🗺️ Traveled to ${targetHexDef.name}`);
         return { success: true, region: targetHexDef };
+    },
+
+    /**
+     * Legacy recovery mode (fallback when CampfireSystem is not available)
+     * Uses the old wood + food consumption system
+     */
+    processLegacyRecovery(now, activeNav, stats) {
+        const timeSinceRecovery = now - (activeNav.lastRecoveryTick || now);
+        const recoveryInterval = 1000; // Recover every 1 second
+        const consumptionInterval = 6000; // Consume resources every 6 seconds
+
+        if (timeSinceRecovery >= recoveryInterval) {
+            activeNav.lastRecoveryTick = now;
+
+            // Check if it's time to consume resources (every 6 seconds)
+            if (!activeNav.lastConsumptionTime) {
+                activeNav.lastConsumptionTime = now;
+            }
+            const timeSinceConsumption = now - activeNav.lastConsumptionTime;
+
+            if (timeSinceConsumption >= consumptionInterval) {
+                activeNav.lastConsumptionTime = now;
+
+                // Try to consume equipped food and wood
+                const foodId = activeNav.restEquipment?.food;
+                const woodId = activeNav.restEquipment?.wood;
+
+                let canConsume = true;
+
+                // Check if we have the resources
+                if (!foodId || !woodId) {
+                    console.warn('⚠️ Missing camping resources! Recovery paused.');
+                    canConsume = false;
+                } else {
+                    const foodQty = this.state.bank.items[foodId]?.quantity || 0;
+                    const woodQty = this.state.bank.items[woodId]?.quantity || 0;
+
+                    if (foodQty < 1 || woodQty < 1) {
+                        console.warn('⚠️ Out of camping resources! Recovery paused.');
+                        canConsume = false;
+                    }
+                }
+
+                if (canConsume) {
+                    // Consume 1 food and 1 wood
+                    this.removeItem(foodId, 1);
+                    this.removeItem(woodId, 1);
+
+                    const foodDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(foodId) : null;
+                    const woodDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(woodId) : null;
+                    console.log(`🔥 Camping: Consumed 1 ${foodDef?.name} + 1 ${woodDef?.name}`);
+                } else {
+                    // No resources = no recovery
+                    return;
+                }
+            }
+
+            // Recover endurance over time
+            const recoveryRate = stats.recoveryRate || 3;
+            activeNav.endurance += recoveryRate;
+
+            // Check if fully recovered
+            if (activeNav.endurance >= activeNav.maxEndurance) {
+                activeNav.endurance = activeNav.maxEndurance;
+                activeNav.isRecovering = false;
+                activeNav.lastConsumptionTime = null;
+                console.log(`✅ Endurance restored! Resuming exploration... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance})`);
+            } else {
+                console.log(`⏳ Recovering endurance... (${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance})`);
+            }
+        }
     }
 };

@@ -32,6 +32,9 @@ const MapRenderer = {
     showPlayerPosition: true,
     showLabels: false, // Toggle for region labels
 
+    // State cache to prevent unnecessary re-renders
+    lastRenderedState: null
+
     /**
      * Initialize the renderer
      */
@@ -124,6 +127,29 @@ const MapRenderer = {
             console.warn("⚠️ World map not loaded yet");
             return;
         }
+
+        // Create state snapshot to check if re-render is needed
+        const currentState = {
+            currentRegion: GameEngine.state.currentRegion,
+            discoveredRegions: Object.keys(GameEngine.state.regions).filter(id =>
+                GameEngine.state.regions[id].discovered
+            ).sort().join(','),
+            discoveryProgress: Object.keys(GameEngine.state.regions)
+                .map(id => `${id}:${Math.floor(GameEngine.state.regions[id].discoveryProgress || 0)}`)
+                .join(',')
+        };
+
+        // Check if state has changed since last render
+        if (this.lastRenderedState &&
+            this.lastRenderedState.currentRegion === currentState.currentRegion &&
+            this.lastRenderedState.discoveredRegions === currentState.discoveredRegions &&
+            this.lastRenderedState.discoveryProgress === currentState.discoveryProgress) {
+            // No change, skip re-render
+            return;
+        }
+
+        // Save current state for next comparison
+        this.lastRenderedState = currentState;
 
         // Clear canvas
         this.ctx.clearRect(0, 0, this.width, this.height);

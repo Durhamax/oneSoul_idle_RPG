@@ -1,0 +1,35 @@
+// After rollback, run this to export your actual save data
+// so we can fix the migration logic
+
+console.group('📦 EXPORT SAVE DATA FOR ANALYSIS');
+
+const bankItems = GameEngine.state.bank.items;
+
+console.log('Total items in bank:', Object.keys(bankItems).length);
+
+// Export structure for analysis
+const itemAnalysis = {};
+for (let [itemId, itemData] of Object.entries(bankItems)) {
+    // Check if item exists in registry
+    const def = ItemRegistry.getItem(itemId);
+    const baseId = itemId.replace(/_instance_.*$/, '').replace(/_common|_uncommon|_rare|_epic|_legendary$/, '');
+    const baseDef = ItemRegistry.getItem(baseId);
+
+    itemAnalysis[itemId] = {
+        structure: itemData,
+        inRegistry: !!def,
+        baseIdInRegistry: !!baseDef,
+        baseId: baseId,
+        hasInstanceId: !!itemData.instanceId,
+        hasBaseItemId: !!itemData.baseItemId,
+        tab: itemData.tab
+    };
+}
+
+console.table(itemAnalysis);
+
+// Save to JSON
+console.log('JSON export:');
+console.log(JSON.stringify(itemAnalysis, null, 2));
+
+console.groupEnd();

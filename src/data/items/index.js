@@ -29,22 +29,22 @@ const _MATERIAL = (typeof MATERIAL_ITEMS !== 'undefined' ? MATERIAL_ITEMS : {});
 const _CURRENCY = (typeof CURRENCY_AND_SPECIAL_ITEMS !== 'undefined' ? CURRENCY_AND_SPECIAL_ITEMS : {});
 const _DEV = (typeof DEV_ITEMS !== 'undefined' ? DEV_ITEMS : {});
 const _TEST = (typeof TEST_ITEMS !== 'undefined' ? TEST_ITEMS : {});
-const _LEGACY = (typeof LEGACY_ITEMS !== 'undefined' ? LEGACY_ITEMS : {});
 const _PLANNED = (typeof PLANNED_ITEMS !== 'undefined' ? PLANNED_ITEMS : {});
 
 // Register items to their respective registries
 if (ItemRegistry) {
-    ItemRegistry.register('production', {
+    // Use registerBatch with new signature (items, environment)
+    ItemRegistry.registerBatch({
         ..._EQUIPMENT,
         ..._CONSUMABLE,
         ..._MATERIAL,
         ..._CURRENCY,
-    });
+    }, 'production');
 
-    ItemRegistry.register('dev', _DEV);
-    ItemRegistry.register('test', _TEST);
-    ItemRegistry.register('legacy', _LEGACY);
-    ItemRegistry.register('planned', _PLANNED);
+    ItemRegistry.registerBatch(_DEV, 'dev');
+    ItemRegistry.registerBatch(_TEST, 'test');
+    // LEGACY ITEMS REMOVED - using production only
+    ItemRegistry.registerBatch(_PLANNED, 'planned');
 }
 
 /**

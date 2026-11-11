@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mining UI Test</title>
+</head>
+<body style="background: #1a1a1a; color: #fff; padding: 20px;">
+    <h1>Mining UI Test</h1>
+
+    <div id="miningContainer" style="display: none;">
+        <!-- Mining UI will render here -->
+    </div>
+
+    <button onclick="testMiningUI()" style="padding: 10px 20px; font-size: 16px;">
+        Test Render Mining UI
+    </button>
+
+    <div id="status" style="margin-top: 20px; padding: 10px; background: #2a2a2a; border-radius: 4px;">
+        Click the button to test renderMiningUI()
+    </div>
+
+    <script>
+        // Mock GameEngine state
+        const GameEngine = {
+            state: {
+                currentActivity: 'mining',
+                miningState: {
+                    activeNode: 'riverbed',
+                    lastActionTime: Date.now(),
+                    isResting: false
+                },
+                nodeHealth: {
+                    riverbed: {
+                        currentHP: 8,
+                        maxHP: 10
+                    }
+                },
+                skills: {
+                    mining: {
+                        level: 1,
+                        exp: 0
+                    }
+                },
+                equipment: {
+                    weapon: 'lightPickaxe'
+                }
+            },
+            getEquippedMiningTool() {
+                return {
+                    id: 'lightPickaxe',
+                    name: 'Light Pickaxe',
+                    icon: '⛏️',
+                    toolTier: 1
+                };
+            },
+            calculateMiningInterval() {
+                return 3000; // 3 seconds
+            },
+            stopMining() {
+                document.getElementById('status').innerHTML = '🛑 Stop Mining clicked';
+            }
+        };
+
+        // Mock NodeRegistry
+        const NodeRegistry = {
+            getAllActive() {
+                return {
+                    riverbed: {
+                        id: 'riverbed',
+                        name: 'Riverbed',
+                        icon: '🏞️',
+                        tier: 1
+                    }
+                };
+            }
+        };
+
+        function testMiningUI() {
+            const status = document.getElementById('status');
+
+            status.innerHTML = 'Testing renderMiningUI()...<br>';
+
+            // Check if function exists
+            if (typeof renderMiningUI !== 'function') {
+                status.innerHTML += '❌ ERROR: renderMiningUI is not defined<br>';
+                return;
+            }
+
+            status.innerHTML += '✅ renderMiningUI function exists<br>';
+
+            // Call the function
+            try {
+                renderMiningUI();
+                status.innerHTML += '✅ renderMiningUI() called successfully<br>';
+
+                const container = document.getElementById('miningContainer');
+                if (container.style.display === 'block') {
+                    status.innerHTML += '✅ Container is visible<br>';
+                } else {
+                    status.innerHTML += '❌ Container is still hidden<br>';
+                }
+
+                if (container.innerHTML.trim() !== '') {
+                    status.innerHTML += '✅ Container has content<br>';
+                } else {
+                    status.innerHTML += '❌ Container is empty<br>';
+                }
+            } catch (error) {
+                status.innerHTML += '❌ ERROR: ' + error.message + '<br>';
+            }
+        }
+    </script>
+
+    <script src="src/ui/miningUI.js"></script>
+</body>
+</html>

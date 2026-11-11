@@ -1,951 +1,671 @@
 /**
- * MISSIONS UI - Enhanced with Chain Visualization
+ * MissionsUI - Vertical Quest Path View
  *
- * Shows missions organized by:
- * - Main narrative missions (sequential chains)
- * - Side missions (branching content)
- * - Quest categories and types
+ * Displays missions as a vertical journey with inline details.
  */
-
 const MissionsUI = {
-    // Cache last rendered state
-    lastMissionsState: null,
-    currentDialog: null,  // Currently displayed dialog mission
+    container: null,
+    expandedMission: null,
+    _eventSubscriptions: [],
+    _lastStateHash: null,
+
+    init() {
+        this.container = document.getElementById('missionsView');
+        this._subscribeToEvents();
+        console.log('✅ MissionsUI (Vertical Quest Path) initialized');
+    },
+
+    _subscribeToEvents() {
+        if (typeof EventBus === 'undefined') return;
+
+        // Clear existing subscriptions
+        this._eventSubscriptions.forEach(unsub => unsub());
+        this._eventSubscriptions = [];
+
+        this._eventSubscriptions.push(
+            EventBus.on('mission:started', () => this.render()),
+            EventBus.on('mission:completed', () => this.render()),
+            EventBus.on('mission:abandoned', () => this.render()),
+            EventBus.on('missions:availableUpdated', () => this.render()),
+            EventBus.on('mission:objectiveProgress', () => this.updateProgress()),
+            EventBus.on('mission:objectiveCompleted', () => this.updateProgress())
+        );
+    },
 
     /**
-     * Update missions display
+     * Force refresh
+     */
+    refresh() {
+        this.render();
+    },
+
+    /**
+     * Main render function - called by uiCore when missions view is active
      */
     updateMissions() {
-        const container = document.getElementById("missionsView");
-        if (!container) return;
+        const state = GameEngine.state.missions || {};
 
-        const missionsState = GameEngine.state.missions;
-        const currentRegion = GameEngine.state.currentRegion;
-
-        // Safety check for missions state
-        if (!missionsState) {
-            container.innerHTML = '<p style="color: #888; padding: 20px;">Missions system not initialized.</p>';
-            return;
+        // Get mission count to detect if missions have been registered since last render
+        let missionCount = 0;
+        if (typeof MissionRegistry !== 'undefined' && MissionRegistry.getAllActive) {
+            missionCount = Object.keys(MissionRegistry.getAllActive()).length;
         }
 
-        // Create state snapshot
-        const currentState = {
-            available: JSON.stringify(missionsState.available || []),
-            active: JSON.stringify(missionsState.active || []),
-            completed: JSON.stringify(missionsState.completed || []),
-            region: currentRegion,
-            dialogOpen: this.currentDialog !== null
-        };
-
-        // Only re-render if state changed
-        if (this.lastMissionsState &&
-            this.lastMissionsState.available === currentState.available &&
-            this.lastMissionsState.active === currentState.active &&
-            this.lastMissionsState.completed === currentState.completed &&
-            this.lastMissionsState.region === currentState.region &&
-            this.lastMissionsState.dialogOpen === currentState.dialogOpen) {
-            return;
-        }
-
-        // If dialog is open, show it
-        if (this.currentDialog) {
-            container.innerHTML = this.renderDialog(this.currentDialog);
-            this.lastMissionsState = currentState;
-            return;
-        }
-
-        // Otherwise show mission board
-        container.innerHTML = this.renderMissionBoard();
-        this.lastMissionsState = currentState;
-    },
-
-    /**
-     * Render the full mission board with chains and categories
-     */
-    renderMissionBoard() {
-        const missionsState = GameEngine.state.missions;
-        const missionDefs = GameEngine.definitions.missions;
-
-        // Safety check
-        if (!missionsState || !missionDefs) {
-            return '<p style="color: #888; padding: 20px;">No missions available.</p>';
-        }
-
-        // Organize missions
-        const organized = this.organizeMissions();
-
-        let html = `<div style="padding: 20px;">`;
-
-        // Dev tools removed - access via Dev modal in top header
-
-        html += `
-                <h2 style="margin-top: 0;">📋 Mission Board</h2>
-                <div style="color: #aaa; font-size: 0.9em; margin-bottom: 20px;">
-                    ${this.renderMissionStats()}
-                </div>
-        `;
-
-        // Active Missions Section
-        if (missionsState.active && missionsState.active.length > 0) {
-            html += this.renderActiveSection(missionsState.active);
-        }
-
-        // Main Story Chains
-        if (organized.mainStory.length > 0) {
-            html += this.renderStoryChainSection(organized.mainStory);
-        }
-
-        // Side Quests
-        if (organized.sideQuests.length > 0) {
-            html += this.renderSideQuestsSection(organized.sideQuests);
-        }
-
-        // Daily/Repeatable Quests
-        if (organized.dailies.length > 0) {
-            html += this.renderDailiesSection(organized.dailies);
-        }
-
-        // Completed Missions (collapsed by default)
-        if (missionsState.completed.length > 0) {
-            html += this.renderCompletedSection(missionsState.completed);
-        }
-
-        // No missions message (only if there are literally no missions defined)
-        if (Object.keys(missionDefs).length === 0) {
-            html += `
-                <div style="text-align: center; padding: 60px 20px; color: #888;">
-                    <div style="font-size: 4em; margin-bottom: 15px;">🗺️</div>
-                    <h3 style="color: #aaa;">No Missions Defined</h3>
-                    <p style="font-size: 0.9em; margin-top: 10px;">No missions have been created yet.</p>
-                </div>
-            `;
-        }
-
-        html += `</div>`; // Close padding div
-
-        return html;
-    },
-
-    /**
-     * Organize missions into categories
-     * Shows ALL missions from definitions, not just available/active
-     */
-    organizeMissions() {
-        const missionsState = GameEngine.state.missions;
-        const missionDefs = GameEngine.definitions.missions;
-
-        // Safety check
-        if (!missionsState || !missionDefs) {
-            return {
-                mainStory: [],
-                sideQuests: [],
-                dailies: [],
-                combat: [],
-                skills: []
-            };
-        }
-
-        // Include ALL mission IDs from definitions (not just available/active)
-        const allMissionIds = Object.keys(missionDefs);
-
-        const organized = {
-            mainStory: [],      // Tutorial and main narrative chains
-            sideQuests: [],     // Side content
-            dailies: [],        // Repeatable content
-            combat: [],         // Combat-focused
-            skills: []          // Skill-focused
-        };
-
-        for (let missionId of allMissionIds) {
-            const mission = missionDefs[missionId];
-            if (!mission) continue;
-
-            const category = mission.metadata.category;
-
-            if (category === 'tutorial' || category === 'main_story') {
-                organized.mainStory.push(missionId);
-            } else if (category === 'daily' || category === 'weekly') {
-                organized.dailies.push(missionId);
-            } else if (category === 'combat') {
-                organized.combat.push(missionId);
-            } else {
-                organized.sideQuests.push(missionId);
-            }
-        }
-
-        // Sort main story by chain order
-        organized.mainStory.sort((a, b) => {
-            const missionA = missionDefs[a];
-            const missionB = missionDefs[b];
-            return (missionA.metadata.chainOrder || 0) - (missionB.metadata.chainOrder || 0);
+        // Only hash the arrays that affect which missions show
+        const stateHash = JSON.stringify({
+            active: state.active,
+            available: state.available,
+            completed: state.completed,
+            missionCount: missionCount // Include mission count to detect registration
         });
 
-        return organized;
-    },
-
-    /**
-     * Render mission statistics
-     */
-    renderMissionStats() {
-        const analytics = GameEngine.state.missions.analytics;
-        return `
-            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                <span>✅ Completed: ${analytics.totalCompleted}</span>
-                <span>🎯 Active: ${GameEngine.state.missions.active.length}</span>
-                <span>📖 Available: ${GameEngine.state.missions.available.length}</span>
-            </div>
-        `;
-    },
-
-    /**
-     * Render active missions section
-     */
-    renderActiveSection(activeMissions) {
-        let html = `
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #4a9eff; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.5em;">🎯</span>
-                    Active Missions
-                </h3>
-                <div style="display: grid; gap: 15px;">
-        `;
-
-        for (let missionId of activeMissions) {
-            html += this.renderMissionCard(missionId, 'active');
+        if (stateHash === this._lastStateHash && this.container?.innerHTML) {
+            return;
         }
 
-        html += `
+        this._lastStateHash = stateHash;
+        this.render();
+    },
+
+    render() {
+        if (!this.container) {
+            this.container = document.getElementById('missionsView');
+        }
+        if (!this.container) return;
+
+        const state = GameEngine.state.missions || {};
+        const missionsByRegion = this.organizeMissionsByRegion();
+
+        // Mark all available missions as seen (for notification badge)
+        this.markMissionsAsSeen(state);
+
+        this.container.innerHTML = `
+            <div class="quest-journey">
+                <header class="journey-header">
+                    <h1>Journey Through Aurora Vitae</h1>
+                    <p>Follow the path of a Unity ranger</p>
+                </header>
+
+                <div class="journey-regions">
+                    ${this.renderAllRegions(missionsByRegion, state)}
                 </div>
             </div>
         `;
 
-        return html;
+        this.scrollToActive(state);
     },
 
-    /**
-     * Render story chain section with visual progression
-     */
-    renderStoryChainSection(mainStoryMissions) {
-        const missionDefs = GameEngine.definitions.missions;
-        const completedMissions = GameEngine.state.missions.completed;
+    organizeMissionsByRegion() {
+        let allMissions = {};
 
-        // Group by chain
-        const chains = {};
-        for (let missionId of mainStoryMissions) {
-            const mission = missionDefs[missionId];
-            const chainId = mission.metadata.chain || 'default';
-
-            if (!chains[chainId]) {
-                chains[chainId] = [];
-            }
-            chains[chainId].push(missionId);
+        // Get from MissionRegistry
+        if (typeof MissionRegistry !== 'undefined') {
+            allMissions = MissionRegistry.getAllActive ?
+                MissionRegistry.getAllActive() :
+                MissionRegistry.getAll?.() || {};
         }
 
-        let html = `
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #ffd700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.5em;">📜</span>
-                    Main Story
-                </h3>
-        `;
+        const byRegion = {};
 
-        // Render each chain
-        for (let chainId in chains) {
-            const chainMissions = chains[chainId];
+        Object.values(allMissions).forEach(mission => {
+            const region = mission.regionRequired || 'region_-3_-4';
+            if (!byRegion[region]) {
+                byRegion[region] = { main: [], side: [], daily: [] };
+            }
 
-            html += `
-                <div style="background: #2a2a3a; border: 2px solid #ffd700; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-                    <div style="font-weight: bold; margin-bottom: 15px; color: #ffd700; font-size: 1.1em;">
-                        ${this.getChainName(chainId)}
+            const parsed = this.parseMissionId(mission.id);
+            if (parsed.isMainStory) {
+                byRegion[region].main.push(mission);
+            } else if (parsed.typeCode === 3) {
+                byRegion[region].daily.push(mission);
+            } else {
+                byRegion[region].side.push(mission);
+            }
+        });
+
+        // Sort main story by order
+        Object.values(byRegion).forEach(group => {
+            group.main.sort((a, b) => {
+                const orderA = this.parseMissionId(a.id).order;
+                const orderB = this.parseMissionId(b.id).order;
+                return orderA - orderB;
+            });
+        });
+
+        return byRegion;
+    },
+
+    parseMissionId(missionId) {
+        const match = missionId.match(/mission_(\d)(\d{2})/);
+        if (!match) return { typeCode: 0, order: 0, isMainStory: false };
+
+        return {
+            typeCode: parseInt(match[1]),
+            order: parseInt(match[2]),
+            isMainStory: parseInt(match[1]) === 1
+        };
+    },
+
+    getStatus(missionId, state) {
+        if (state.completed?.includes(missionId)) return 'completed';
+        if (state.active?.includes(missionId)) return 'active';
+        if (state.available?.includes(missionId)) return 'available';
+        return 'locked';
+    },
+
+    getStatusIcon(status) {
+        return { completed: '✅', active: '⚡', available: '📜', locked: '🔒' }[status] || '❓';
+    },
+
+    renderAllRegions(missionsByRegion, state) {
+        // Use the actual region IDs from the mission data
+        const regionOrder = ['region_-3_-4', 'region_-2_-4', 'region_-1_-4'];
+
+        return regionOrder.map((regionId, idx) => {
+            const regionData = missionsByRegion[regionId];
+            const info = this.getRegionInfo(regionId);
+            const isUnlocked = this.isRegionUnlocked(regionId, state);
+
+            return `
+                <section class="quest-region ${isUnlocked ? '' : 'locked'}" data-region="${regionId}">
+                    <div class="region-header">
+                        <span class="region-icon">${info.icon}</span>
+                        <h2 class="region-name">${info.name}</h2>
+                        ${!isUnlocked ? '<span class="lock-badge">🔒 Locked</span>' : ''}
                     </div>
-                    <div style="position: relative;">
+
+                    <div class="region-content">
+                        ${isUnlocked ? this.renderRegionMissions(regionData, state) : this.renderLockedMessage(regionId)}
+                    </div>
+                </section>
+
+                ${idx < regionOrder.length - 1 ? '<div class="region-divider"></div>' : ''}
             `;
+        }).join('');
+    },
 
-            // Render chain progression line
-            chainMissions.forEach((missionId, index) => {
-                const mission = missionDefs[missionId];
-                const isCompleted = completedMissions.includes(missionId);
-                const isActive = GameEngine.state.missions.active && GameEngine.state.missions.active.includes(missionId);
-                const isAvailable = GameEngine.state.missions.available && GameEngine.state.missions.available.includes(missionId);
-                const isLocked = !isCompleted && !isActive && !isAvailable;
+    renderRegionMissions(regionData, state) {
+        if (!regionData || regionData.main.length === 0) {
+            return '<p class="no-missions">No missions in this region yet</p>';
+        }
 
-                // Connection line to next mission
-                if (index < chainMissions.length - 1) {
-                    html += `
-                        <div style="display: flex; align-items: center; margin-bottom: 10px; pointer-events: none;">
-                            <div style="flex: 1; pointer-events: auto;">
-                                ${this.renderChainMissionNode(missionId, isCompleted, isActive, isAvailable, isLocked)}
-                            </div>
-                        </div>
-                        <div style="display: flex; justify-content: center; margin: 5px 0;">
-                            <div style="width: 3px; height: 20px; background: ${isCompleted ? '#4caf50' : '#555'};"></div>
-                        </div>
-                    `;
-                } else {
-                    html += `
-                        <div style="display: flex; align-items: center; pointer-events: none;">
-                            <div style="flex: 1; pointer-events: auto;">
-                                ${this.renderChainMissionNode(missionId, isCompleted, isActive, isAvailable, isLocked)}
-                            </div>
-                        </div>
-                    `;
-                }
+        let html = '';
+
+        // Main story missions
+        if (regionData.main.length > 0) {
+            html += '<div class="mission-track">';
+            html += '<div class="track-label">MAIN STORY</div>';
+            html += '<div class="mission-list">';
+
+            regionData.main.forEach((mission, index) => {
+                const status = this.getStatus(mission.id, state);
+                const isLast = index === regionData.main.length - 1;
+                const progress = this.getProgress(mission.id, state);
+
+                html += this.renderMissionRow(mission, status, isLast, progress);
             });
 
-            html += `
-                    </div>
-                </div>
-            `;
+            html += '</div></div>';
         }
 
-        html += `</div>`;
-        return html;
-    },
+        // Side quests
+        if (regionData.side?.length > 0) {
+            html += '<div class="mission-track side-track">';
+            html += '<div class="track-label">SIDE QUESTS</div>';
+            html += '<div class="mission-list">';
 
-    /**
-     * Render a mission node in a chain
-     */
-    renderChainMissionNode(missionId, isCompleted, isActive, isAvailable, isLocked) {
-        const mission = GameEngine.definitions.missions[missionId];
-        const progress = GameEngine.getMissionProgress(missionId);
+            regionData.side.forEach((mission, index) => {
+                const status = this.getStatus(mission.id, state);
+                const isLast = index === regionData.side.length - 1;
+                html += this.renderMissionRow(mission, status, isLast, null, true);
+            });
 
-        let icon = '🔒';
-        let borderColor = '#555';
-        let opacity = '0.6';
-        let bgColor = '#1a1a2a';
-
-        if (isCompleted) {
-            icon = '✅';
-            borderColor = '#4caf50';
-            opacity = '0.8';
-            bgColor = '#1a2a1a';
-        } else if (isActive) {
-            icon = '🎯';
-            borderColor = '#4a9eff';
-            opacity = '1';
-            bgColor = '#1a2a3a';
-        } else if (isAvailable) {
-            icon = '📋';
-            borderColor = '#ffd700';
-            opacity = '1';
-            bgColor = '#2a2a1a';
+            html += '</div></div>';
         }
-
-        let html = `
-            <div style="background: ${bgColor}; border: 2px solid ${borderColor}; border-radius: 6px; padding: 12px; opacity: ${opacity}; cursor: pointer; pointer-events: auto;"
-                 onclick="openMissionDialog('${missionId}')">
-                <div style="display: flex; align-items: center; gap: 10px; pointer-events: none;">
-                    <div style="font-size: 1.5em;">${icon}</div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold; margin-bottom: 3px;">${mission.name}</div>
-                        <div style="font-size: 0.85em; color: #aaa;">${mission.description}</div>
-                        ${this.renderMissionTags(mission)}
-                    </div>
-                </div>
-        `;
-
-        // Show progress if active
-        if (isActive && progress) {
-            const totalObjectives = Object.keys(progress.objectives).length;
-            const completedObjectives = Object.values(progress.objectives).filter(obj => obj.completed).length;
-
-            html += `
-                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; pointer-events: none;">
-                    <div style="font-size: 0.85em; color: #4a9eff; margin-bottom: 5px;">
-                        Progress: ${completedObjectives}/${totalObjectives} objectives
-                    </div>
-                    <div style="background: rgba(0,0,0,0.3); border-radius: 4px; height: 6px; overflow: hidden;">
-                        <div style="width: ${(completedObjectives / totalObjectives) * 100}%; height: 100%; background: linear-gradient(90deg, #4a9eff, #2196F3);"></div>
-                    </div>
-                </div>
-            `;
-        }
-
-        html += `</div>`;
-        return html;
-    },
-
-    /**
-     * Render side quests section
-     */
-    renderSideQuestsSection(sideQuests) {
-        let html = `
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #9c27b0; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.5em;">🌟</span>
-                    Side Quests
-                </h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px;">
-        `;
-
-        for (let missionId of sideQuests) {
-            html += this.renderMissionCard(missionId, 'side');
-        }
-
-        html += `
-                </div>
-            </div>
-        `;
 
         return html;
     },
 
-    /**
-     * Render dailies/repeatable section
-     */
-    renderDailiesSection(dailies) {
-        let html = `
-            <div style="margin-bottom: 30px;">
-                <h3 style="color: #ff9800; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.5em;">🔄</span>
-                    Daily & Repeatable
-                </h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 15px;">
-        `;
+    renderMissionRow(mission, status, isLast, progress, isSide = false) {
+        const icon = this.getStatusIcon(status);
+        const rewards = this.formatRewardsPreview(mission.rewards);
+        const isExpanded = this.expandedMission === mission.id;
 
-        for (let missionId of dailies) {
-            html += this.renderMissionCard(missionId, 'daily');
-        }
+        // Check if mission is ready to complete (all objectives done)
+        const isReadyToComplete = status === 'active' && this.canComplete(mission.id);
+        const readyClass = isReadyToComplete ? 'ready-to-complete' : '';
 
-        html += `
-                </div>
-            </div>
-        `;
-
-        return html;
-    },
-
-    /**
-     * Render completed section (collapsed)
-     */
-    renderCompletedSection(completedMissions) {
         return `
-            <details style="margin-top: 30px;">
-                <summary style="cursor: pointer; padding: 10px; background: #2a2a3a; border-radius: 6px; color: #888; font-weight: bold;">
-                    ✅ Completed Missions (${completedMissions.length})
-                </summary>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; margin-top: 10px; padding: 10px;">
-                    ${completedMissions.map(id => {
-                        const mission = GameEngine.definitions.missions[id];
-                        return mission ? `
-                            <div style="background: #1a1a2a; border: 1px solid #555; border-radius: 4px; padding: 8px; opacity: 0.7;">
-                                <div style="font-size: 0.9em; font-weight: bold;">${mission.name}</div>
-                                <div style="font-size: 0.75em; color: #888;">${mission.metadata.category}</div>
-                            </div>
-                        ` : '';
-                    }).join('')}
-                </div>
-            </details>
-        `;
-    },
+            <div class="mission-row status-${status} ${isExpanded ? 'expanded' : ''} ${readyClass}"
+                 data-mission="${mission.id}"
+                 data-action="toggle-mission">
 
-    /**
-     * Render mission tags (difficulty, type, etc.)
-     */
-    renderMissionTags(mission) {
-        const tags = [];
-
-        // Difficulty
-        const difficulty = mission.metadata.difficulty || GameEngine.calculateMissionDifficulty(mission.id);
-        const difficultyColor = difficulty <= 3 ? '#4caf50' : difficulty <= 6 ? '#ff9800' : '#f44336';
-        tags.push(`<span style="background: ${difficultyColor}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.75em;">Lv${difficulty}</span>`);
-
-        // Quest type icons based on objectives
-        const objectiveTypes = new Set(mission.objectives.map(obj => obj.type));
-        if (objectiveTypes.has('kill')) tags.push(`<span title="Combat">⚔️</span>`);
-        if (objectiveTypes.has('collect')) tags.push(`<span title="Gathering">📦</span>`);
-        if (objectiveTypes.has('craft')) tags.push(`<span title="Crafting">🔨</span>`);
-        if (objectiveTypes.has('skill')) tags.push(`<span title="Skilling">📚</span>`);
-        if (objectiveTypes.has('explore')) tags.push(`<span title="Exploration">🗺️</span>`);
-
-        // Estimated time
-        if (mission.metadata.estimatedTime) {
-            const minutes = Math.ceil(mission.metadata.estimatedTime / 60);
-            tags.push(`<span style="color: #aaa; font-size: 0.75em;">~${minutes}m</span>`);
-        }
-
-        return `<div style="display: flex; gap: 5px; margin-top: 5px; align-items: center;">${tags.join('')}</div>`;
-    },
-
-    /**
-     * Render a mission card
-     */
-    renderMissionCard(missionId, status) {
-        const mission = GameEngine.definitions.missions[missionId];
-        if (!mission) return '';
-
-        const isCompleted = GameEngine.state.missions.completed && GameEngine.state.missions.completed.includes(missionId);
-        const isActive = GameEngine.state.missions.active && GameEngine.state.missions.active.includes(missionId);
-        const isAvailable = GameEngine.state.missions.available && GameEngine.state.missions.available.includes(missionId);
-        const isLocked = !isCompleted && !isActive && !isAvailable;
-        const progress = GameEngine.getMissionProgress(missionId);
-
-        let borderColor = '#555';
-        let opacity = '1';
-
-        if (isLocked) {
-            opacity = '0.6';
-            borderColor = '#444';
-        } else if (status === 'active') {
-            borderColor = '#4a9eff';
-        } else if (status === 'side') {
-            borderColor = '#9c27b0';
-        } else if (status === 'daily') {
-            borderColor = '#ff9800';
-        }
-
-        let html = `
-            <div style="background: #2a2a3a; border: 2px solid ${borderColor}; border-radius: 8px; padding: 15px; opacity: ${opacity}; cursor: pointer;" onclick="openMissionDialog('${missionId}')">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; pointer-events: none;">
-                    <div style="flex: 1;">
-                        <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 5px;">${mission.name}</div>
-                        <div style="font-size: 0.85em; color: #aaa; margin-bottom: 8px;">${mission.description}</div>
-                        ${this.renderMissionTags(mission)}
+                <!-- Left: Status & Connector -->
+                <div class="mission-status">
+                    <div class="status-node ${status} ${readyClass}">
+                        <span class="status-icon">${isReadyToComplete ? '✨' : icon}</span>
                     </div>
+                    ${!isLast ? '<div class="status-line"></div>' : ''}
                 </div>
+
+                <!-- Center: Mission Info -->
+                <div class="mission-info">
+                    <div class="mission-header">
+                        <span class="mission-number">${this.parseMissionId(mission.id).order}</span>
+                        <h3 class="mission-name">${mission.name}</h3>
+                        ${status === 'active' && progress !== null && !isReadyToComplete ?
+                            `<div class="mission-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${progress}%"></div>
+                                </div>
+                                <span class="progress-text">${progress}%</span>
+                            </div>` : ''
+                        }
+                        ${isReadyToComplete ?
+                            `<button class="mission-complete-inline" data-action="complete-mission" data-mission="${mission.id}">Complete</button>` : ''
+                        }
+                    </div>
+                    <p class="mission-description">${mission.description || ''}</p>
+
+                    <!-- Expanded Details -->
+                    ${isExpanded ? this.renderExpandedDetails(mission, status) : ''}
+                </div>
+
+                <!-- Right: Rewards Preview -->
+                <div class="mission-rewards">
+                    ${rewards}
+                </div>
+
+                <!-- Expand Indicator -->
+                <div class="expand-indicator">
+                    <span class="expand-icon">${isExpanded ? '▼' : '▶'}</span>
+                </div>
+            </div>
         `;
+    },
 
-        // Show objectives if active
-        if (isActive && progress) {
-            html += `
-                <div style="margin: 12px 0; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 4px; pointer-events: none;">
-                    <strong style="font-size: 0.9em;">Objectives:</strong>
-                    <div style="margin-top: 6px;">
-            `;
+    renderExpandedDetails(mission, status) {
+        const state = GameEngine.state.missions || {};
+        const progress = state.activeProgress?.[mission.id];
 
-            for (let objId in progress.objectives) {
-                const objective = progress.objectives[objId];
-                const objDef = mission.objectives.find(o => o.id === objId);
-                const complete = objective.completed;
-                const icon = complete ? '✅' : '⬜';
-                const percent = (objective.current / objective.required) * 100;
+        let objectivesHtml = '';
+        if (mission.objectives?.length > 0) {
+            objectivesHtml = '<div class="expanded-objectives"><h4>Objectives</h4><ul>';
+            mission.objectives.forEach(obj => {
+                const objId = obj.id || `obj_${mission.objectives.indexOf(obj) + 1}`;
+                const objProg = progress?.objectives?.[objId];
+                const current = objProg?.current || 0;
+                const required = objProg?.required || obj.count || 1;
+                const done = current >= required;
 
-                html += `
-                    <div style="margin: 6px 0;">
-                        <div style="font-size: 0.85em; margin-bottom: 3px; color: ${complete ? '#4caf50' : '#ddd'};">
-                            ${icon} ${objDef.description}
+                objectivesHtml += `
+                    <li class="${done ? 'complete' : ''}">
+                        <span class="obj-check">${done ? '✅' : '⬜'}</span>
+                        <span class="obj-text">${obj.description}</span>
+                        ${obj.count ? `<span class="obj-progress">${current}/${required}</span>` : ''}
+                    </li>
+                `;
+            });
+            objectivesHtml += '</ul></div>';
+        }
+
+        // NPC Dialog
+        let dialogHtml = '';
+        if (mission.dialog?.npc) {
+            const text = status === 'completed' ? mission.dialog.completion :
+                        status === 'active' ? mission.dialog.body :
+                        mission.dialog.intro;
+            if (text) {
+                dialogHtml = `
+                    <div class="expanded-dialog">
+                        <div class="npc-badge">
+                            <span class="npc-icon">${mission.dialog.npcIcon || '👤'}</span>
+                            <span class="npc-name">${mission.dialog.npc}</span>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="flex: 1; background: rgba(0,0,0,0.4); border-radius: 3px; height: 6px; overflow: hidden;">
-                                <div style="width: ${percent}%; height: 100%; background: ${complete ? '#4caf50' : '#4a9eff'}; transition: width 0.3s;"></div>
-                            </div>
-                            <span style="font-size: 0.75em; color: #888; min-width: 50px; text-align: right;">${objective.current}/${objective.required}</span>
-                        </div>
+                        <p class="npc-text">"${text}"</p>
                     </div>
                 `;
             }
-
-            html += `
-                    </div>
-                </div>
-            `;
         }
 
-        // Show rewards preview
-        html += `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #444; pointer-events: none;">`;
-        html += this.renderRewardsPreview(mission.rewards);
-        html += `</div>`;
-
-        // Button
-        html += `<div style="margin-top: 12px;">`;
-        if (isCompleted) {
-            html += `
-                <button onclick="event.stopPropagation(); openMissionDialog('${missionId}')" style="width: 100%; padding: 8px; background: #4caf50; border: 1px solid #45a049; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; opacity: 0.7; pointer-events: auto;">
-                    ✅ Completed
-                </button>
-            `;
-        } else if (isActive) {
-            html += `
-                <button onclick="event.stopPropagation(); abandonMission('${missionId}')" style="width: 100%; padding: 8px; background: #e74c3c; border: 1px solid #c0392b; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; pointer-events: auto;">
-                    ❌ Abandon
-                </button>
-            `;
-        } else if (isAvailable) {
-            html += `
-                <button onclick="event.stopPropagation(); openMissionDialog('${missionId}')" style="width: 100%; padding: 8px; background: #4caf50; border: 1px solid #45a049; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; pointer-events: auto;">
-                    ▶️ View Mission
-                </button>
-            `;
-        } else if (isLocked) {
-            const canStart = GameEngine.canStartMission(missionId);
-            html += `
-                <button style="width: 100%; padding: 8px; background: #555; border: 1px solid #444; border-radius: 4px; color: #aaa; font-weight: bold; cursor: not-allowed; pointer-events: auto;">
-                    🔒 ${canStart.reason || 'Locked'}
-                </button>
-            `;
+        // Action Button
+        let actionHtml = '';
+        if (status === 'available') {
+            actionHtml = `<button class="mission-action start" data-action="start-mission" data-mission="${mission.id}">Start Mission</button>`;
+        } else if (status === 'active') {
+            const canComplete = this.canComplete(mission.id);
+            if (canComplete) {
+                actionHtml = `<button class="mission-action complete" data-action="complete-mission" data-mission="${mission.id}">Complete Mission</button>`;
+            } else {
+                actionHtml = `<button class="mission-action abandon" data-action="abandon-mission" data-mission="${mission.id}">Abandon</button>`;
+            }
         }
-        html += `</div>`;
 
-        html += `</div>`;
-
-        return html;
+        return `
+            <div class="expanded-content">
+                ${dialogHtml}
+                ${objectivesHtml}
+                <div class="expanded-actions">${actionHtml}</div>
+            </div>
+        `;
     },
 
-    /**
-     * Render rewards preview
-     */
-    renderRewardsPreview(rewards) {
+    formatRewardsPreview(rewards) {
+        if (!rewards) return '';
+
         const parts = [];
 
-        if (rewards.base) {
-            // Experience
-            if (rewards.base.exp) {
-                const expParts = [];
-                for (let skillId in rewards.base.exp) {
-                    expParts.push(`${rewards.base.exp[skillId]} ${skillId}`);
-                }
-                if (expParts.length > 0) {
-                    parts.push(`✨ ${expParts.join(', ')} XP`);
-                }
-            }
+        if (rewards.characterXP || rewards.experience) {
+            const xp = rewards.characterXP || rewards.experience;
+            parts.push(`<span class="reward-xp">⭐ ${xp}</span>`);
+        }
 
-            // Currencies
-            if (rewards.base.currencies) {
-                for (let currencyId in rewards.base.currencies) {
-                    const icons = { 'gold': '💰', 'medals': '🏅', 'tomes': '📚', 'gems': '💎' };
-                    const icon = icons[currencyId] || '💰';
-                    parts.push(`${icon} ${rewards.base.currencies[currencyId]} ${currencyId}`);
-                }
-            }
+        if (rewards.gold) {
+            parts.push(`<span class="reward-gold">💰 ${rewards.gold}</span>`);
+        }
 
-            // Items count
-            if (rewards.base.items && rewards.base.items.length > 0) {
-                parts.push(`🎁 ${rewards.base.items.length} item${rewards.base.items.length > 1 ? 's' : ''}`);
+        if (rewards.items?.length > 0) {
+            // Show first 2 items max
+            rewards.items.slice(0, 2).forEach(item => {
+                const def = typeof ItemRegistry !== 'undefined' ? ItemRegistry.get(item.itemId) : null;
+                const icon = def?.icon || '📦';
+                const name = def?.name || item.itemId;
+                // Use emoji if icon is emoji, otherwise show generic package icon
+                const displayIcon = icon.length <= 2 ? icon : '📦';
+                parts.push(`<span class="reward-item" title="${item.quantity || 1}x ${name}">${displayIcon}</span>`);
+            });
+
+            if (rewards.items.length > 2) {
+                parts.push(`<span class="reward-more">+${rewards.items.length - 2}</span>`);
             }
         }
 
-        return `<div style="font-size: 0.85em; color: #aaa;"><strong>Rewards:</strong> ${parts.join(' • ')}</div>`;
+        return parts.join('');
+    },
+
+    getProgress(missionId, state) {
+        const progress = state.activeProgress?.[missionId];
+        if (!progress?.objectives) return null;
+
+        let total = 0, done = 0;
+        Object.values(progress.objectives).forEach(obj => {
+            total += obj.required || 1;
+            done += Math.min(obj.current || 0, obj.required || 1);
+        });
+
+        return total > 0 ? Math.round((done / total) * 100) : 0;
+    },
+
+    canComplete(missionId) {
+        const state = GameEngine.state.missions || {};
+        const progress = state.activeProgress?.[missionId];
+        if (!progress?.objectives) return false;
+
+        return Object.values(progress.objectives).every(obj =>
+            (obj.current || 0) >= (obj.required || 1)
+        );
     },
 
     /**
-     * Get chain display name
+     * Mark available missions as seen (removes them from notification badge)
      */
-    getChainName(chainId) {
-        const chainNames = {
-            'tutorial_chain': '🎓 Beginner\'s Path',
-            'mining_chain': '⛏️ Mining Mastery',
-            'combat_chain': '⚔️ Warrior\'s Journey',
-            'crafting_chain': '🔨 Artisan\'s Way'
+    markMissionsAsSeen(state) {
+        if (!state.available || !GameEngine.state.missions) return;
+
+        // Initialize seenMissions array if it doesn't exist
+        if (!GameEngine.state.missions.seenMissions) {
+            GameEngine.state.missions.seenMissions = [];
+        }
+
+        const seenMissions = GameEngine.state.missions.seenMissions;
+        let changed = false;
+
+        // Add any available missions that haven't been seen yet
+        for (const missionId of state.available) {
+            if (!seenMissions.includes(missionId)) {
+                seenMissions.push(missionId);
+                changed = true;
+            }
+        }
+
+        // Also mark active missions as seen
+        if (state.active) {
+            for (const missionId of state.active) {
+                if (!seenMissions.includes(missionId)) {
+                    seenMissions.push(missionId);
+                    changed = true;
+                }
+            }
+        }
+
+        // Trigger badge update if we marked any new missions as seen
+        if (changed && typeof UICore !== 'undefined' && UICore.updateNotificationBadges) {
+            UICore.updateNotificationBadges();
+        }
+    },
+
+    getRegionInfo(regionId) {
+        const regions = {
+            'region_-3_-4': { name: 'The Cradle', icon: '🏠' },
+            'region_-2_-4': { name: 'Peaceful Meadows', icon: '🌾' },
+            'region_-1_-4': { name: 'The Frontier', icon: '🌲' }
         };
-        return chainNames[chainId] || chainId;
+        return regions[regionId] || { name: regionId, icon: '📍' };
     },
 
-    /**
-     * Render mission dialog
-     */
-    renderDialog(missionId) {
-        const mission = GameEngine.definitions.missions[missionId];
-        if (!mission || !mission.dialog) {
-            return '<div style="padding: 20px; color: #f88;">Error: Mission dialog not found</div>';
+    isRegionUnlocked(regionId, state) {
+        // The Cradle (starting region) always unlocked
+        if (regionId === 'region_-3_-4') return true;
+
+        // Peaceful Meadows requires completing mission_106
+        if (regionId === 'region_-2_-4') {
+            return state.completed?.includes('mission_106');
         }
 
-        const isActive = GameEngine.state.missions.active.includes(missionId);
-        const dialog = mission.dialog;
-        const progress = GameEngine.getMissionProgress(missionId);
-
-        let html = `
-            <div style="padding: 20px; max-width: 900px; margin: 0 auto;">
-                <!-- Dialog Header -->
-                <div style="background: #2a2a3a; border: 2px solid #4a9eff; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                        <div style="font-size: 3em;">${dialog.npcIcon || '👤'}</div>
-                        <div>
-                            <div style="font-size: 1.3em; font-weight: bold;">${dialog.npc || 'Unknown'}</div>
-                            <div style="font-size: 0.9em; color: #aaa;">${mission.name}</div>
-                        </div>
-                    </div>
-
-                    <!-- Dialog Text -->
-                    <div style="background: rgba(0,0,0,0.3); border-radius: 4px; padding: 15px; margin: 15px 0; line-height: 1.6;">
-                        <p style="margin: 0 0 10px 0; font-style: italic; color: #ddd;">"${dialog.intro}"</p>
-                        <p style="margin: 10px 0; color: #ccc; white-space: pre-line;">${dialog.body}</p>
-                        ${!isActive ? `<p style="margin: 10px 0 0 0; font-style: italic; color: #ddd;">"${dialog.completion}"</p>` : ''}
-                    </div>
-
-                    <!-- Region Requirement -->
-                    ${mission.metadata.region ? this.renderRegionRequirement(mission.metadata.region) : ''}
-
-                    <!-- Objectives -->
-                    ${this.renderDialogObjectives(mission, progress)}
-
-                    <!-- Rewards -->
-                    ${this.renderDialogRewards(mission.rewards)}
-
-                    <!-- Unlocks -->
-                    ${mission.metadata.unlocks && mission.metadata.unlocks.length > 0 ? this.renderUnlocks(mission.metadata.unlocks) : ''}
-
-                    <!-- Buttons -->
-                    <div style="display: flex; gap: 10px; margin-top: 20px;">
-        `;
-
-        // Check if player is in correct region
-        const currentRegion = GameEngine.state.currentRegion;
-        const requiredRegion = mission.metadata.region;
-        const inCorrectRegion = !requiredRegion || currentRegion === requiredRegion;
-        const regionDef = requiredRegion ? GameEngine.definitions.worldMap[requiredRegion] : null;
-
-        if (!isActive) {
-            const canStart = GameEngine.canStartMission(missionId);
-
-            // Travel button if not in correct region
-            if (requiredRegion && !inCorrectRegion && regionDef) {
-                const canTravel = GameEngine.canTravelToRegion(requiredRegion);
-                html += `
-                    <button onclick="travelToRegion('${requiredRegion}')"
-                            style="flex: 1; padding: 12px; background: ${canTravel ? '#ff9800' : '#555'}; border: 1px solid ${canTravel ? '#f57c00' : '#444'}; border-radius: 4px; color: white; font-weight: bold; font-size: 1em; cursor: ${canTravel ? 'pointer' : 'not-allowed'};" ${!canTravel ? 'disabled' : ''}>
-                        ${canTravel ? `🗺️ Travel to ${regionDef.name}` : `🔒 Cannot Travel (Discover Path First)`}
-                    </button>
-                `;
-            }
-
-            if (canStart.canStart) {
-                html += `
-                    <button onclick="acceptMission('${missionId}')" style="flex: 1; padding: 12px; background: #4caf50; border: 1px solid #45a049; border-radius: 4px; color: white; font-weight: bold; font-size: 1em; cursor: pointer;">
-                        ✅ Accept Mission
-                    </button>
-                `;
-            } else {
-                html += `
-                    <div style="flex: 1; padding: 12px; background: #555; border: 1px solid #444; border-radius: 4px; color: #aaa; text-align: center;">
-                        🔒 ${canStart.reason}
-                    </div>
-                `;
-            }
-        } else {
-            // Check if all objectives are complete
-            const allObjectivesComplete = progress && Object.values(progress.objectives).every(obj => obj.completed);
-
-            if (allObjectivesComplete) {
-                html += `
-                    <button onclick="completeMission('${missionId}'); closeMissionDialog();" style="flex: 1; padding: 12px; background: #4caf50; border: 1px solid #45a049; border-radius: 4px; color: white; font-weight: bold; font-size: 1em; cursor: pointer;">
-                        ✅ Complete Mission
-                    </button>
-                `;
-            }
-
-            html += `
-                <button onclick="abandonMission('${missionId}'); closeMissionDialog();" style="flex: 1; padding: 12px; background: #e74c3c; border: 1px solid #c0392b; border-radius: 4px; color: white; font-weight: bold; font-size: 1em; cursor: pointer;">
-                    ❌ Abandon Mission
-                </button>
-            `;
+        // The Frontier requires completing region 2
+        if (regionId === 'region_-1_-4') {
+            // TODO: Add proper check when region 2 missions exist
+            return false;
         }
 
-        html += `
-                        <button onclick="closeMissionDialog()" style="flex: 1; padding: 12px; background: #555; border: 1px solid #444; border-radius: 4px; color: white; font-weight: bold; font-size: 1em; cursor: pointer;">
-                            ${isActive ? '📋 Back to Missions' : '↩️ Back'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        return html;
+        return false;
     },
 
-    /**
-     * Render objectives in dialog
-     */
-    renderDialogObjectives(mission, progress) {
-        let html = `
-            <div style="margin: 15px 0; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 4px;">
-                <strong>Objectives:</strong>
-                <div style="margin-top: 10px; display: grid; gap: 8px;">
-        `;
-
-        for (let objective of mission.objectives) {
-            const objProgress = progress?.objectives[objective.id];
-            const isCompleted = objProgress?.completed || false;
-            const current = objProgress?.current || 0;
-
-            html += `
-                <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px;">
-                    <div style="font-size: 1.2em;">${isCompleted ? '✅' : '⬜'}</div>
-                    <div style="flex: 1;">
-                        <div style="font-size: 0.9em; font-weight: bold; margin-bottom: 3px;">${objective.description}</div>
-                        <div style="font-size: 0.75em; color: #888;">${this.getObjectiveTypeLabel(objective.type)}</div>
-                    </div>
-                    ${progress ? `
-                        <div style="min-width: 60px; text-align: right; color: ${isCompleted ? '#4caf50' : '#4a9eff'}; font-weight: bold;">
-                            ${current}/${objective.required}
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        }
-
-        html += `
-                </div>
-            </div>
-        `;
-
-        return html;
-    },
-
-    /**
-     * Render rewards in dialog - HIGHLIGHTED VERSION
-     */
-    renderDialogRewards(rewards) {
-        let html = `
-            <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,165,0,0.1)); border: 2px solid #ffd700; border-radius: 6px; box-shadow: 0 0 15px rgba(255,215,0,0.3);">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                    <span style="font-size: 1.5em;">🎁</span>
-                    <strong style="font-size: 1.1em; color: #ffd700;">REWARDS</strong>
-                </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 12px;">
-        `;
-
-        // Items - Highlighted
-        if (rewards.base && rewards.base.items) {
-            for (let itemReward of rewards.base.items) {
-                const itemDef = GameEngine.definitions.items[itemReward.itemId];
-                if (itemDef) {
-                    html += `
-                        <div style="background: linear-gradient(135deg, #2a2a3a, #1a1a2a); border: 2px solid #4caf50; border-radius: 6px; padding: 12px; text-align: center; min-width: 90px; box-shadow: 0 2px 8px rgba(76,175,80,0.3);">
-                            <div style="font-size: 2em;">${itemDef.image}</div>
-                            <div style="font-size: 0.85em; margin-top: 6px; font-weight: bold; color: #fff;">${itemDef.name}</div>
-                            <div style="font-size: 0.8em; color: #4caf50; font-weight: bold;">×${itemReward.amount}</div>
-                        </div>
-                    `;
-                }
-            }
-        }
-
-        // Currencies - Highlighted
-        if (rewards.base && rewards.base.currencies) {
-            for (let currencyId in rewards.base.currencies) {
-                const amount = rewards.base.currencies[currencyId];
-                const currencyIcons = { 'gold': '💰', 'medals': '🏅', 'tomes': '📚', 'gems': '💎' };
-                const icon = currencyIcons[currencyId] || '💰';
-                html += `
-                    <div style="background: linear-gradient(135deg, #2a2a1a, #1a1a0a); border: 2px solid #ffd700; border-radius: 6px; padding: 12px; text-align: center; min-width: 90px; box-shadow: 0 2px 8px rgba(255,215,0,0.3);">
-                        <div style="font-size: 2em;">${icon}</div>
-                        <div style="font-size: 0.85em; margin-top: 6px; font-weight: bold; text-transform: capitalize; color: #ffd700;">${currencyId}</div>
-                        <div style="font-size: 0.9em; color: #4caf50; font-weight: bold;">+${amount}</div>
-                    </div>
-                `;
-            }
-        }
-
-        // Experience - Highlighted
-        if (rewards.base && rewards.base.exp) {
-            for (let skillId in rewards.base.exp) {
-                const amount = rewards.base.exp[skillId];
-                const skillDef = GameEngine.definitions.skills[skillId];
-                html += `
-                    <div style="background: linear-gradient(135deg, #1a2a3a, #0a1a2a); border: 2px solid #4a9eff; border-radius: 6px; padding: 12px; text-align: center; min-width: 90px; box-shadow: 0 2px 8px rgba(74,158,255,0.3);">
-                        <div style="font-size: 2em;">✨</div>
-                        <div style="font-size: 0.85em; margin-top: 6px; font-weight: bold; color: #4a9eff;">${skillDef?.name || skillId}</div>
-                        <div style="font-size: 0.9em; color: #4caf50; font-weight: bold;">+${amount} XP</div>
-                    </div>
-                `;
-            }
-        }
-
-        html += `
-                </div>
-            </div>
-        `;
-
-        return html;
-    },
-
-    /**
-     * Get objective type label
-     */
-    getObjectiveTypeLabel(type) {
-        const labels = {
-            'talk': '💬 Conversation',
-            'kill': '⚔️ Combat',
-            'collect': '📦 Gathering',
-            'skill': '📚 Skilling',
-            'craft': '🔨 Crafting',
-            'explore': '🗺️ Exploration',
-            'donate': '🎁 Donation'
+    renderLockedMessage(regionId) {
+        const requirements = {
+            'region_-2_-4': 'Complete "Force of Nature" to unlock',
+            'region_-1_-4': 'Complete Peaceful Meadows to unlock'
         };
-        return labels[type] || type;
-    },
-
-    /**
-     * Render region requirement display
-     */
-    renderRegionRequirement(regionId) {
-        const regionDef = GameEngine.definitions.worldMap[regionId];
-        const currentRegion = GameEngine.state.currentRegion;
-        const isInRegion = currentRegion === regionId;
-
-        if (!regionDef) return '';
-
-        const biomeDef = GameEngine.definitions.biomes[regionDef.biome];
-
         return `
-            <div style="margin: 10px 0; padding: 10px; background: ${isInRegion ? 'rgba(76,175,80,0.2)' : 'rgba(255,152,0,0.2)'}; border: 1px solid ${isInRegion ? '#4caf50' : '#ff9800'}; border-radius: 4px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 1.2em;">${isInRegion ? '✅' : '📍'}</span>
-                    <div style="flex: 1;">
-                        <strong style="font-size: 0.9em; color: ${isInRegion ? '#4caf50' : '#ff9800'};">
-                            ${isInRegion ? 'You are in the correct region' : 'Mission Location'}
-                        </strong>
-                        <div style="font-size: 0.85em; color: #aaa; margin-top: 2px;">
-                            ${biomeDef?.icon || '🗺️'} ${regionDef.name} (${biomeDef?.name || regionDef.biome})
-                        </div>
-                    </div>
-                </div>
+            <div class="locked-message">
+                <span class="lock-icon">🔒</span>
+                <p>${requirements[regionId] || 'Complete previous region'}</p>
             </div>
         `;
     },
 
-    /**
-     * Render unlocks section
-     */
-    renderUnlocks(unlocks) {
-        const missionDefs = GameEngine.definitions.missions;
+    // === INTERACTIONS ===
 
-        let html = `
-            <div style="margin: 15px 0; padding: 12px; background: rgba(156,39,176,0.1); border: 2px solid #9c27b0; border-radius: 6px;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                    <span style="font-size: 1.3em;">🔓</span>
-                    <strong style="color: #9c27b0;">UNLOCKS</strong>
-                </div>
-                <div style="display: grid; gap: 8px;">
-        `;
+    toggleMission(missionId) {
+        if (this.expandedMission === missionId) {
+            this.expandedMission = null;
+        } else {
+            this.expandedMission = missionId;
+        }
+        this.render();
+    },
 
-        for (let unlockedMissionId of unlocks) {
-            const unlockedMission = missionDefs[unlockedMissionId];
-            if (unlockedMission) {
-                const isCompleted = GameEngine.state.missions.completed && GameEngine.state.missions.completed.includes(unlockedMissionId);
-                const isActive = GameEngine.state.missions.active && GameEngine.state.missions.active.includes(unlockedMissionId);
-                const isAvailable = GameEngine.state.missions.available && GameEngine.state.missions.available.includes(unlockedMissionId);
+    updateProgress() {
+        // Quick update without full re-render
+        const state = GameEngine.state.missions || {};
 
-                let statusIcon = '🔒';
-                let statusColor = '#888';
-                if (isCompleted) {
-                    statusIcon = '✅';
-                    statusColor = '#4caf50';
-                } else if (isActive) {
-                    statusIcon = '🎯';
-                    statusColor = '#4a9eff';
-                } else if (isAvailable) {
-                    statusIcon = '📋';
-                    statusColor = '#ffd700';
-                }
+        state.active?.forEach(missionId => {
+            const progress = this.getProgress(missionId, state);
+            const row = this.container?.querySelector(`[data-mission="${missionId}"]`);
+            if (row && progress !== null) {
+                const fill = row.querySelector('.progress-fill');
+                const text = row.querySelector('.progress-text');
+                if (fill) fill.style.width = `${progress}%`;
+                if (text) text.textContent = `${progress}%`;
+            }
+        });
 
-                html += `
-                    <div style="background: rgba(0,0,0,0.3); border: 1px solid ${statusColor}; border-radius: 4px; padding: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="openMissionDialog('${unlockedMissionId}')">
-                        <span style="font-size: 1.2em;">${statusIcon}</span>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.9em; font-weight: bold; color: ${statusColor};">${unlockedMission.name}</div>
-                            <div style="font-size: 0.75em; color: #aaa;">${unlockedMission.description}</div>
-                        </div>
-                    </div>
-                `;
+        // Update expanded mission objectives if viewing an active mission
+        if (this.expandedMission && state.active?.includes(this.expandedMission)) {
+            this._updateExpandedObjectives(this.expandedMission, state);
+        }
+    },
+
+    _updateExpandedObjectives(missionId, state) {
+        const row = this.container?.querySelector(`[data-mission="${missionId}"]`);
+        if (!row) return;
+
+        const objectivesList = row.querySelector('.expanded-objectives ul');
+        if (!objectivesList) return;
+
+        const mission = this._getMissionDef(missionId);
+        if (!mission?.objectives) return;
+
+        const missionProgress = state.activeProgress?.[missionId];
+        const objectives = missionProgress?.objectives;
+
+        const listItems = objectivesList.querySelectorAll('li');
+        mission.objectives.forEach((obj, index) => {
+            const li = listItems[index];
+            if (!li) return;
+
+            const objId = obj.id || `obj_${index + 1}`;
+            const objProgress = objectives?.[objId];
+            const current = objProgress?.current || 0;
+            const required = objProgress?.required || obj.count || 1;
+            const isComplete = current >= required;
+
+            li.className = isComplete ? 'complete' : '';
+
+            const icon = li.querySelector('.obj-check');
+            if (icon) icon.textContent = isComplete ? '✅' : '⬜';
+
+            const count = li.querySelector('.obj-progress');
+            if (count) count.textContent = `${current}/${required}`;
+        });
+
+        // Update action button if mission is now completable
+        const isComplete = this.canComplete(missionId);
+        const actionsDiv = row.querySelector('.expanded-actions');
+        if (actionsDiv && isComplete) {
+            const existingCompleteBtn = actionsDiv.querySelector('[data-action="complete-mission"]');
+            if (!existingCompleteBtn) {
+                actionsDiv.innerHTML = `<button class="mission-action complete" data-action="complete-mission" data-mission="${missionId}">Complete Mission</button>`;
             }
         }
+    },
 
-        html += `
-                </div>
-            </div>
-        `;
+    scrollToActive(state) {
+        requestAnimationFrame(() => {
+            const active = state.active?.[0];
+            const available = state.available?.find(id => this.parseMissionId(id).isMainStory);
+            const target = active || available;
 
-        return html;
+            if (target) {
+                const row = this.container?.querySelector(`[data-mission="${target}"]`);
+                row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    },
+
+    // === HELPER METHODS ===
+
+    _getMissionDef(missionId) {
+        if (typeof MissionRegistry !== 'undefined') {
+            return MissionRegistry.get(missionId);
+        }
+        return GameEngine.definitions?.missions?.[missionId];
+    },
+
+    // === LEGACY COMPATIBILITY ===
+
+    // These methods maintain compatibility with old code
+    selectMission(missionId) {
+        this.toggleMission(missionId);
+    },
+
+    hideDetailPanel() {
+        this.expandedMission = null;
+        this.render();
+    },
+
+    openMissionDialog(missionId) {
+        this.toggleMission(missionId);
+    },
+
+    closeMissionDialog() {
+        this.hideDetailPanel();
+    },
+
+    acceptMission(missionId) {
+        const result = GameEngine.startMission(missionId);
+        if (result.success) {
+            this.expandedMission = missionId;
+            this.render();
+        } else {
+            console.warn(`Could not accept mission: ${result.reason}`);
+        }
+    },
+
+    abandonMission(missionId) {
+        if (confirm('Are you sure you want to abandon this mission?')) {
+            GameEngine.abandonMission(missionId);
+            this.expandedMission = null;
+            this.render();
+        }
+    },
+
+    submitMission(missionId) {
+        const result = GameEngine.submitMission?.(missionId) || GameEngine.completeMission?.(missionId);
+        if (result?.success !== false) {
+            this.expandedMission = null;
+            this.render();
+        }
+    },
+
+    switchTab(tabName) {
+        // No-op - quest path has no tabs
+        console.log('MissionsUI.switchTab() called but quest path view has no tabs');
     }
 };
+
+// Global handlers for backwards compatibility
+function openMissionDialog(missionId) {
+    MissionsUI.openMissionDialog(missionId);
+}
+
+function closeMissionDialog() {
+    MissionsUI.closeMissionDialog();
+}
+
+function acceptMission(missionId) {
+    MissionsUI.acceptMission(missionId);
+}
+
+function abandonMission(missionId) {
+    MissionsUI.abandonMission(missionId);
+}
+
+function completeMission(missionId) {
+    GameEngine.completeMission(missionId);
+    MissionsUI.closeMissionDialog();
+}
+
+// Initialize when DOM is ready
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => MissionsUI.init());
+    } else {
+        MissionsUI.init();
+    }
+}
+
+// Browser global access
+if (typeof window !== 'undefined') {
+    window.MissionsUI = MissionsUI;
+}

@@ -946,4 +946,687 @@ const DevItemTools = {
             </div>
         `);
     },
+
+    /**
+     * Grant all tutorial tools to player
+     * Quick dev function to get all starting gathering tools
+     *
+     * @param {boolean} waitForEngine - If true, waits for game engine to be ready (default: true)
+     * @returns {Promise<object>|object} - Results object with granted and failed arrays
+     */
+    grantTutorialTools(waitForEngine = true) {
+        // Check if GameEngine exists and is ready
+        if (typeof GameEngine === 'undefined') {
+            console.error('❌ GameEngine not found');
+            return { granted: [], failed: ['GameEngine not found'] };
+        }
+
+        if (!GameEngine.addItemToBank) {
+            console.error('❌ addItemToBank not found on GameEngine');
+            return { granted: [], failed: ['addItemToBank function not found'] };
+        }
+
+        // If engine isn't ready and we should wait, return a promise that waits
+        if (waitForEngine && (!GameEngine || !GameEngine.addItemToBank)) {
+            console.log('⏳ Game engine not ready yet. Waiting for initialization...');
+
+            return new Promise((resolve) => {
+                const checkReady = setInterval(() => {
+                    if (GameEngine && GameEngine.addItemToBank) {
+                        clearInterval(checkReady);
+                        console.log('✅ Game engine ready! Granting tools...\n');
+                        resolve(this._performToolGrant());
+                    }
+                }, 100); // Check every 100ms
+
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    clearInterval(checkReady);
+                    console.error('❌ Timeout waiting for game engine. Try calling DevItemTools.grantTutorialTools() after game loads.');
+                    resolve({ granted: [], failed: ['Timeout - game engine not ready after 10 seconds'] });
+                }, 10000);
+            });
+        }
+
+        // Engine is ready, grant immediately
+        return this._performToolGrant();
+    },
+
+    /**
+     * Internal function that performs the actual tool granting
+     * @private
+     */
+    _performToolGrant() {
+        console.log('🎁 Granting all tutorial tools...\n');
+
+        const tutorialTools = [
+            'caneRod',         // Fishing
+            'lightPickaxe',    // Mining
+            'utilityHatchet',  // Logging
+            'wovenBasket',     // Foraging
+            'huntingBlade',    // Hunting
+            'compass'          // Navigation
+        ];
+
+        const granted = [];
+        const failed = [];
+
+        tutorialTools.forEach(toolId => {
+            try {
+                // Check if item exists
+                const item = ItemRegistry.getItem(toolId);
+                if (!item) {
+                    failed.push(`${toolId} - not found in registry`);
+                    return;
+                }
+
+                // Add to bank (Items tab)
+                if (GameEngine && GameEngine.addItemToBank) {
+                    const result = GameEngine.addItemToBank(toolId, 1);
+                    if (result.success !== false) {
+                        granted.push(`${item.icon} ${item.name}`);
+                        console.log(`✅ Granted: ${item.icon} ${item.name}`);
+                    } else {
+                        failed.push(`${toolId} - ${result.reason || 'failed to add'}`);
+                    }
+                } else {
+                    failed.push(`${toolId} - game engine not ready`);
+                }
+            } catch (error) {
+                failed.push(`${toolId} - ${error.message}`);
+            }
+        });
+
+        // Show summary
+        console.log('\n' + '='.repeat(50));
+        console.log('📦 TUTORIAL TOOLS GRANT SUMMARY');
+        console.log('='.repeat(50));
+        console.log(`✅ Granted: ${granted.length} tools`);
+        console.log(`❌ Failed: ${failed.length} tools`);
+
+        if (granted.length > 0) {
+            console.log('\n✅ Successfully granted:');
+            granted.forEach(tool => console.log(`   ${tool}`));
+        }
+
+        if (failed.length > 0) {
+            console.warn('\n❌ Failed to grant:');
+            failed.forEach(err => console.warn(`   ${err}`));
+        }
+
+        console.log('\n💡 TIP: Equip these tools in your weapon slot to gather resources!');
+        console.log('   Skills: Fishing, Mining, Logging, Foraging, Hunting, Navigation\n');
+
+        // Show in UI
+        this.showResults(`
+            <div style="padding: 20px;">
+                <h3 style="color: #4a9eff; margin-top: 0;">🎁 Tutorial Tools Granted</h3>
+                <div style="background: rgba(74, 158, 255, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 10px;">
+                        ✅ ${granted.length}/${tutorialTools.length} tools added to bank
+                    </div>
+                    ${granted.map(tool => `<div style="padding: 5px 0;">   ${tool}</div>`).join('')}
+                </div>
+                ${failed.length > 0 ? `
+                    <div style="background: rgba(255, 0, 0, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="font-weight: bold; margin-bottom: 10px; color: #ff6b6b;">❌ Failed: ${failed.length}</div>
+                        ${failed.map(err => `<div style="padding: 3px 0; color: #ff6b6b;">   ${err}</div>`).join('')}
+                    </div>
+                ` : ''}
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                    <div style="font-weight: bold; margin-bottom: 8px;">💡 Next Steps:</div>
+                    <ol style="margin: 5px 0; padding-left: 20px;">
+                        <li>Go to Items tab to find your new tools</li>
+                        <li>Equip a tool in your weapon slot (Loadout)</li>
+                        <li>Navigate to Skills tab</li>
+                        <li>Select the matching skill (e.g., Fishing for Cane Rod)</li>
+                        <li>Start gathering resources!</li>
+                    </ol>
+                </div>
+            </div>
+        `);
+
+        return { granted, failed };
+    },
+
+    /**
+     * Discover all nodes in the current region for testing
+     */
+    discoverAllNodesInRegion() {
+        if (typeof GameEngine === 'undefined') {
+            console.error('❌ GameEngine not found');
+            return { discovered: [], failed: ['GameEngine not found'] };
+        }
+
+        const currentRegion = GameEngine.state.currentRegion;
+        const regionData = GameEngine.state.regions[currentRegion];
+
+        if (!regionData) {
+            console.error('❌ Current region not found');
+            return { discovered: [], failed: ['Region not found'] };
+        }
+
+        console.log(`🔍 Discovering all nodes in ${currentRegion}...`);
+
+        const discovered = [];
+        const failed = [];
+
+        // Get all available nodes from the region
+        if (regionData.availableNodes) {
+            for (let nodeId in regionData.availableNodes) {
+                const nodeState = regionData.availableNodes[nodeId];
+                if (!nodeState.discovered) {
+                    nodeState.discovered = true;
+
+                    // Get node definition from NodeRegistry only
+                    if (typeof NodeRegistry !== 'undefined') {
+                        const nodeDef = NodeRegistry.getAllActive()[nodeId];
+                        if (nodeDef) {
+                            discovered.push(`${nodeDef.icon || '📦'} ${nodeDef.name || nodeId}`);
+                            console.log(`✅ Discovered: ${nodeDef.name || nodeId}`);
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log(`\n✅ Discovered ${discovered.length} nodes in ${currentRegion}`);
+
+        if (discovered.length === 0) {
+            console.log('💡 No undiscovered nodes found. Nodes may already be discovered or region has no nodes.');
+        }
+
+        return { discovered, failed };
+    },
+
+    /**
+     * Add Tier 1 Starter Kit items to the player's bank for testing
+     */
+    addTier1StarterKit() {
+        if (typeof GameEngine === 'undefined') {
+            console.error('❌ GameEngine not found');
+            return { granted: [], failed: ['GameEngine not found'] };
+        }
+
+        if (typeof ItemRegistry === 'undefined') {
+            console.error('❌ ItemRegistry not found');
+            return { granted: [], failed: ['ItemRegistry not found'] };
+        }
+
+        console.log('\n🎁 ADDING TIER 1 STARTER KIT...\n');
+
+        const tier1Items = [
+            // Weapons
+            { id: 'scrapBow', quantity: 1 },
+            { id: 'scrappedPistol', quantity: 1 },
+            { id: 'patchedRifle', quantity: 1 },
+            { id: 'roughBlade', quantity: 1 },
+
+            // Ammunition
+            { id: 'flintheadArrows', quantity: 100 },
+            { id: 'copperiteRounds', quantity: 100 },
+
+            // Armor
+            { id: 'unityScoutSet', quantity: 1 },
+            { id: 'waxedWaderSet', quantity: 1 },
+            { id: 'harvestersGarb', quantity: 1 },
+
+            // Food
+            { id: 'solfishBake', quantity: 20 },
+            { id: 'smallGameStew', quantity: 20 },
+            { id: 'fishOilTonic', quantity: 15 },
+
+            // Materials for crafting
+            { id: 'flintstone', quantity: 50 },
+            { id: 'feather', quantity: 50 },
+            { id: 'copperite', quantity: 50 },
+            { id: 'linen', quantity: 50 },
+            { id: 'wax', quantity: 50 },
+            { id: 'solfish', quantity: 30 },
+            { id: 'smallGameMeat', quantity: 30 },
+            { id: 'fishoil', quantity: 30 },
+        ];
+
+        const granted = [];
+        const failed = [];
+
+        for (const { id, quantity } of tier1Items) {
+            try {
+                const itemDef = ItemRegistry.getAllActive()[id];
+
+                if (!itemDef) {
+                    failed.push(`Item not found: ${id}`);
+                    console.warn(`❌ Item not found: ${id}`);
+                    continue;
+                }
+
+                // Add to bank using GameEngine
+                if (itemDef.instanced) {
+                    // Instanced items (equipment, weapons, armor) - add each individually
+                    for (let i = 0; i < quantity; i++) {
+                        const result = GameEngine.addItemToBank(id);
+                        if (result.success) {
+                            granted.push(`${itemDef.icon || '📦'} ${itemDef.name}`);
+                            console.log(`✅ Added: ${itemDef.name}`);
+                        } else {
+                            failed.push(`Failed to add ${itemDef.name}: ${result.message || 'Unknown error'}`);
+                            console.warn(`❌ Failed to add: ${itemDef.name}`);
+                        }
+                    }
+                } else {
+                    // Stackable items (materials, consumables, ammo) - add with quantity
+                    const result = GameEngine.addItemToBank(id, quantity);
+                    if (result.success) {
+                        granted.push(`${itemDef.icon || '📦'} ${itemDef.name} x${quantity}`);
+                        console.log(`✅ Added: ${itemDef.name} x${quantity}`);
+                    } else {
+                        failed.push(`Failed to add ${itemDef.name}: ${result.message || 'Unknown error'}`);
+                        console.warn(`❌ Failed to add: ${itemDef.name}`);
+                    }
+                }
+            } catch (error) {
+                failed.push(`Error adding ${id}: ${error.message}`);
+                console.error(`❌ Error adding ${id}:`, error);
+            }
+        }
+
+        // Log summary
+        console.log('\n📦 TIER 1 STARTER KIT SUMMARY');
+        console.log('='.repeat(50));
+        console.log(`✅ Granted: ${granted.length} items`);
+        console.log(`❌ Failed: ${failed.length} items`);
+
+        if (granted.length > 0) {
+            console.log('\n✅ Successfully granted:');
+            granted.forEach(item => console.log(`   ${item}`));
+        }
+
+        if (failed.length > 0) {
+            console.warn('\n❌ Failed to grant:');
+            failed.forEach(err => console.warn(`   ${err}`));
+        }
+
+        console.log('\n💡 TIP: Check your Items tab to see the new Tier 1 items!');
+        console.log('   Weapons: Scrap Bow, Scrapped Pistol, Patched Rifle, Rough Blade');
+        console.log('   Armor: Unity Scout Set, Waxed Wader Set, Harvester\'s Garb');
+        console.log('   Food: Solfish Bake, Small Game Stew, Fish Oil Tonic\n');
+
+        // Show in UI
+        this.showResults(`
+            <div style="padding: 20px;">
+                <h3 style="color: #4a9eff; margin-top: 0;">🎁 Tier 1 Starter Kit Granted</h3>
+                <div style="background: rgba(74, 158, 255, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 10px;">
+                        ✅ ${granted.length} items added to bank
+                    </div>
+                    ${granted.map(item => `<div style="padding: 3px 0;">   ${item}</div>`).join('')}
+                </div>
+                ${failed.length > 0 ? `
+                    <div style="background: rgba(255, 0, 0, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="font-weight: bold; margin-bottom: 10px; color: #ff6b6b;">❌ Failed: ${failed.length}</div>
+                        ${failed.map(err => `<div style="padding: 3px 0; color: #ff6b6b;">   ${err}</div>`).join('')}
+                    </div>
+                ` : ''}
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px;">
+                    <div style="font-weight: bold; margin-bottom: 8px;">💡 What's in the Kit:</div>
+                    <ul style="margin: 5px 0; padding-left: 20px; line-height: 1.6;">
+                        <li><strong>4 Weapons:</strong> Scrap Bow, Scrapped Pistol, Patched Rifle, Rough Blade</li>
+                        <li><strong>2 Ammo Types:</strong> Flinthead Arrows, Copperite Rounds (100 each)</li>
+                        <li><strong>3 Armor Sets:</strong> Unity Scout Set, Waxed Wader Set, Harvester's Garb</li>
+                        <li><strong>3 Food Items:</strong> Solfish Bake, Small Game Stew, Fish Oil Tonic</li>
+                        <li><strong>Crafting Materials:</strong> Various T1 materials for recipes</li>
+                    </ul>
+                </div>
+            </div>
+        `);
+
+        return { granted, failed };
+    }
 };
+
+/**
+ * QUICK TEST EQUIP UTILITY
+ *
+ * Console utility for quickly equipping combat gear for testing.
+ * Usage: TestEquip.combatKit() - equips weapon, armor, food, and ammo
+ */
+const TestEquip = {
+    /**
+     * Equip a full combat kit for testing
+     * Creates instances for weapons/armor, adds consumables, and equips everything
+     */
+    combatKit() {
+        console.log('\n🎮 === COMBAT TEST KIT ===\n');
+
+        const results = {
+            weapon: null,
+            armor: null,
+            food: null,
+            ammo: null
+        };
+
+        // 1. Create and equip weapon (Sidekick 22 pistol)
+        results.weapon = this._equipInstancedItem('sidekick22', 'weapon');
+
+        // 2. Create and equip armor (Unity Scout Set)
+        results.armor = this._equipInstancedItem('unityScoutSet', 'armor');
+
+        // 3. Add and equip food (Solfish Bake - 50 units)
+        results.food = this._equipStackableItem('solfishBake', 50, 'food');
+
+        // 4. Add and equip ammo (Copperite Rounds - 100 units)
+        results.ammo = this._equipStackableItem('copperiteRounds', 100, 'ammo');
+
+        // Summary
+        console.log('\n📊 COMBAT KIT SUMMARY');
+        console.log('='.repeat(40));
+        console.log(`Weapon: ${results.weapon ? '✅' : '❌'} Sidekick 22`);
+        console.log(`Armor:  ${results.armor ? '✅' : '❌'} Unity Scout Set`);
+        console.log(`Food:   ${results.food ? '✅' : '❌'} Solfish Bake x50`);
+        console.log(`Ammo:   ${results.ammo ? '✅' : '❌'} Copperite Rounds x100`);
+        console.log('\n🎯 Ready for combat testing!\n');
+
+        return results;
+    },
+
+    /**
+     * Equip a melee combat kit (sword + armor + food)
+     */
+    meleeKit() {
+        console.log('\n⚔️ === MELEE TEST KIT ===\n');
+
+        const results = {
+            weapon: null,
+            armor: null,
+            food: null
+        };
+
+        results.weapon = this._equipInstancedItem('unityBlade', 'weapon');
+        results.armor = this._equipInstancedItem('unityScoutSet', 'armor');
+        results.food = this._equipStackableItem('smallGameStew', 30, 'food');
+
+        console.log('\n📊 MELEE KIT SUMMARY');
+        console.log('='.repeat(40));
+        console.log(`Weapon: ${results.weapon ? '✅' : '❌'} Unity Blade`);
+        console.log(`Armor:  ${results.armor ? '✅' : '❌'} Unity Scout Set`);
+        console.log(`Food:   ${results.food ? '✅' : '❌'} Small Game Stew x30`);
+        console.log('\n⚔️ Ready for melee combat!\n');
+
+        return results;
+    },
+
+    /**
+     * Equip a ranged combat kit (bow + arrows + armor)
+     */
+    rangedKit() {
+        console.log('\n🏹 === RANGED TEST KIT ===\n');
+
+        const results = {
+            weapon: null,
+            armor: null,
+            food: null,
+            ammo: null
+        };
+
+        results.weapon = this._equipInstancedItem('greensmanTrainingBow', 'weapon');
+        results.armor = this._equipInstancedItem('unityScoutSet', 'armor');
+        results.food = this._equipStackableItem('solfishBake', 50, 'food');
+        results.ammo = this._equipStackableItem('flintheadArrows', 100, 'ammo');
+
+        console.log('\n📊 RANGED KIT SUMMARY');
+        console.log('='.repeat(40));
+        console.log(`Weapon: ${results.weapon ? '✅' : '❌'} Greensman Training Bow`);
+        console.log(`Armor:  ${results.armor ? '✅' : '❌'} Unity Scout Set`);
+        console.log(`Food:   ${results.food ? '✅' : '❌'} Solfish Bake x50`);
+        console.log(`Ammo:   ${results.ammo ? '✅' : '❌'} Flinthead Arrows x100`);
+        console.log('\n🏹 Ready for ranged combat!\n');
+
+        return results;
+    },
+
+    /**
+     * Just add food and ammo (when you already have weapon/armor)
+     */
+    resupply(foodQty = 50, ammoQty = 100) {
+        console.log('\n📦 === RESUPPLY ===\n');
+
+        const results = {
+            food: null,
+            ammo: null
+        };
+
+        results.food = this._equipStackableItem('solfishBake', foodQty, 'food');
+        results.ammo = this._equipStackableItem('copperiteRounds', ammoQty, 'ammo');
+
+        console.log(`\n✅ Resupplied: ${foodQty} food, ${ammoQty} ammo\n`);
+
+        return results;
+    },
+
+    /**
+     * Internal: Create and equip an instanced item (weapon, armor)
+     */
+    _equipInstancedItem(baseItemId, slot) {
+        const itemDef = ItemRegistry?.getItem(baseItemId);
+        if (!itemDef) {
+            console.error(`❌ Item not found: ${baseItemId}`);
+            return false;
+        }
+
+        // Create equipment instance
+        const rarity = itemDef.rarity || 'common';
+        const stats = {};
+
+        if (typeof GameEngine.createEquipmentInstance !== 'function') {
+            console.error('❌ createEquipmentInstance not available');
+            return false;
+        }
+
+        const instance = GameEngine.createEquipmentInstance(baseItemId, rarity, stats);
+        if (!instance) {
+            console.error(`❌ Failed to create instance: ${baseItemId}`);
+            return false;
+        }
+
+        // Add to bank
+        const addResult = GameEngine.addEquipmentInstance(instance);
+        if (!addResult?.success) {
+            console.error(`❌ Failed to add instance to bank: ${baseItemId}`);
+            return false;
+        }
+
+        console.log(`📦 Added ${instance.name} to bank (${instance.instanceId})`);
+
+        // Equip it
+        const equipResult = GameEngine.equipItem(instance.instanceId);
+        if (!equipResult?.success) {
+            console.error(`❌ Failed to equip: ${equipResult?.reason || 'unknown error'}`);
+            return false;
+        }
+
+        console.log(`✅ Equipped ${instance.name} to ${slot}`);
+        return true;
+    },
+
+    /**
+     * Internal: Add and equip a stackable item (food, ammo)
+     */
+    _equipStackableItem(itemId, quantity, slot) {
+        const itemDef = ItemRegistry?.getItem(itemId);
+        if (!itemDef) {
+            console.error(`❌ Item not found: ${itemId}`);
+            return false;
+        }
+
+        // Add to bank first
+        const addResult = GameEngine.addItemToBank(itemId, quantity);
+        if (!addResult?.success) {
+            console.error(`❌ Failed to add ${itemId}: ${addResult?.reason || 'unknown error'}`);
+            return false;
+        }
+
+        console.log(`📦 Added ${quantity}x ${itemDef.name} to bank`);
+
+        // Equip it
+        const equipResult = GameEngine.equipItem(itemId);
+        if (!equipResult?.success) {
+            console.error(`❌ Failed to equip: ${equipResult?.reason || 'unknown error'}`);
+            return false;
+        }
+
+        console.log(`✅ Equipped ${itemDef.name} to ${slot}`);
+        return true;
+    },
+
+    /**
+     * Show available test kits
+     */
+    help() {
+        console.log(`
+🎮 TestEquip - Quick Combat Test Utility
+========================================
+
+Available commands:
+  TestEquip.combatKit()     - Full kit: pistol + armor + food + ammo
+  TestEquip.meleeKit()      - Melee kit: sword + armor + food
+  TestEquip.rangedKit()     - Ranged kit: bow + armor + arrows + food
+  TestEquip.resupply(50,100) - Add food and ammo only
+
+All kits will:
+  1. Create equipment instances for weapons/armor
+  2. Add items to bank
+  3. Equip everything automatically
+
+Ready for combat testing! ⚔️
+        `);
+    }
+};
+
+// Make TestEquip available globally
+if (typeof window !== 'undefined') {
+    window.TestEquip = TestEquip;
+}
+
+/**
+ * SAVE DIAGNOSTIC UTILITY
+ * Helps debug save/load issues
+ */
+const SaveDebug = {
+    /**
+     * Check if save exists and show key data
+     */
+    check() {
+        const saveKey = 'idleRpgSave_v1';
+        const savedData = localStorage.getItem(saveKey);
+
+        if (!savedData) {
+            console.log('❌ No save found in localStorage');
+            return null;
+        }
+
+        try {
+            const saveData = JSON.parse(savedData);
+            console.log('\n📊 === SAVE DEBUG INFO ===\n');
+            console.log('Save timestamp:', new Date(saveData.timestamp).toLocaleString());
+            console.log('Version:', saveData.version);
+
+            const state = saveData.state;
+            console.log('\n🎮 Skills:');
+            for (const [skill, data] of Object.entries(state.skills || {})) {
+                if (data.level > 1) {
+                    console.log(`  ${skill}: Level ${data.level}, XP ${data.exp}`);
+                }
+            }
+
+            console.log('\n💰 Currencies:', state.currencies);
+            console.log('👤 Character Level:', state.characterLevel?.level);
+            console.log('⚔️ Combat Attributes:', state.combatAttributes);
+
+            console.log('\n📦 Bank:');
+            console.log('  Stackable items:', Object.keys(state.bank?.stackable || {}).length);
+            console.log('  Instanced items:', Object.keys(state.bank?.instanced || {}).length);
+
+            return saveData;
+        } catch (e) {
+            console.error('❌ Error parsing save:', e);
+            return null;
+        }
+    },
+
+    /**
+     * Compare current state vs saved state
+     */
+    compare() {
+        const saveKey = 'idleRpgSave_v1';
+        const savedData = localStorage.getItem(saveKey);
+
+        if (!savedData) {
+            console.log('❌ No save to compare');
+            return;
+        }
+
+        const saveData = JSON.parse(savedData);
+        const savedState = saveData.state;
+        const currentState = GameEngine.state;
+
+        console.log('\n🔍 === STATE COMPARISON ===\n');
+
+        // Compare skills
+        console.log('📚 Skills:');
+        for (const skillId of Object.keys({...savedState.skills, ...currentState.skills})) {
+            const saved = savedState.skills?.[skillId]?.level || 0;
+            const current = currentState.skills?.[skillId]?.level || 0;
+            if (saved !== current) {
+                console.log(`  ❌ ${skillId}: Saved=${saved}, Current=${current}`);
+            }
+        }
+
+        // Compare character level
+        const savedLevel = savedState.characterLevel?.level || 1;
+        const currentLevel = currentState.characterLevel?.level || 1;
+        if (savedLevel !== currentLevel) {
+            console.log(`❌ Character Level: Saved=${savedLevel}, Current=${currentLevel}`);
+        } else {
+            console.log(`✅ Character Level: ${currentLevel}`);
+        }
+
+        // Compare currencies
+        console.log('\n💰 Currencies:');
+        for (const currency of ['gold', 'medals', 'tomes', 'gems']) {
+            const saved = savedState.currencies?.[currency] || 0;
+            const current = currentState.currencies?.[currency] || 0;
+            if (saved !== current) {
+                console.log(`  ❌ ${currency}: Saved=${saved}, Current=${current}`);
+            }
+        }
+    },
+
+    /**
+     * Force reload from save
+     */
+    reload() {
+        console.log('🔄 Force reloading from save...');
+        SaveSystem.load();
+        UICore.update();
+        console.log('✅ Reload complete');
+    },
+
+    /**
+     * Show help
+     */
+    help() {
+        console.log(`
+📊 SaveDebug - Save Diagnostic Utility
+======================================
+
+Commands:
+  SaveDebug.check()    - Show saved data summary
+  SaveDebug.compare()  - Compare saved vs current state
+  SaveDebug.reload()   - Force reload from save
+        `);
+    }
+};
+
+if (typeof window !== 'undefined') {
+    window.SaveDebug = SaveDebug;
+}

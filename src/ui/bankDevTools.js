@@ -267,7 +267,7 @@ const BankDevTools = {
 
         for (let itemId of testItems) {
             // Check if item definition exists
-            if (!GameDefinitions.items[itemId]) {
+            if (!ItemAccessHelper.getItem(itemId)) {
                 console.warn(`⚠️ Item definition not found: ${itemId}`);
                 skippedCount++;
                 continue;

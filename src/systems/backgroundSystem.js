@@ -31,8 +31,8 @@ const BackgroundSystem = {
     biomes: {
         plains: {
             name: 'Plains',
-            // Background image for plains region
-            image: 'assets/backgrounds/regions/region_plains_01.png',
+            // Background image for plains region (uses gradient fallback until art exists)
+            image: null, // Can add 'assets/backgrounds/regions/region_plains_01.png'
             gradient: 'linear-gradient(180deg, rgba(135, 206, 235, 0.3) 0%, rgba(154, 205, 50, 0.2) 100%)',
             // Fallback: CSS gradient background that looks like plains (used if image fails to load)
             backgroundColor: 'linear-gradient(180deg, #87CEEB 0%, #9ACD32 50%, #6B8E23 100%)',

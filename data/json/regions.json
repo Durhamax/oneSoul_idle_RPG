@@ -1,0 +1,37 @@
+{
+  "region_-3_-4": {
+    "name": "The Cradle",
+    "description": "A peaceful starting region with riverbeds, shallows of Cradle Lake, and evergreen forests. This is where your journey begins.",
+    "isStartingRegion": true,
+    "baseFogAmount": 100,
+    "biome": "plains",
+    "tier": 1,
+    "recommendedLevel": 1,
+    "craftingNodes": {
+      "chemistry": [],
+      "cooking": [
+        "campfire"
+      ],
+      "engineering": [],
+      "forging": [],
+      "machining": [],
+      "textiles": []
+    },
+    "gatheringNodes": {
+      "fishing": [
+        "cradle_lake_shallows"
+      ],
+      "foraging": [],
+      "hunting": [],
+      "logging": [
+        "evergreen_forest"
+      ],
+      "mining": [
+        "riverbed"
+      ],
+      "thieving": []
+    },
+    "locations": [],
+    "navigationRequirement": 0
+  }
+}

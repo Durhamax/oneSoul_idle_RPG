@@ -1,0 +1,310 @@
+/**
+ * INTERVAL BAR COMPONENT STYLES
+ *
+ * Reusable progress bar styles for all activity intervals.
+ * Uses CSS variables from variables.css for theming.
+ */
+
+/* ===========================
+   BASE CONTAINER
+   =========================== */
+
+.interval-bar-container {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md) var(--space-lg);
+    transition: border-color var(--transition-fast);
+}
+
+.interval-bar-container:hover {
+    border-color: var(--color-border-bright);
+}
+
+/* ===========================
+   HEADER
+   =========================== */
+
+.interval-bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-sm);
+}
+
+.interval-bar-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.interval-bar-icon {
+    font-size: 1.25rem;
+}
+
+.interval-bar-text {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+}
+
+.interval-bar-value {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.interval-bar-time {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-success);
+    font-family: var(--font-mono);
+}
+
+.interval-bar-percent {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary);
+    font-family: var(--font-mono);
+}
+
+/* ===========================
+   TRACK & FILL
+   =========================== */
+
+.interval-bar-track {
+    position: relative;
+    width: 100%;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.interval-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-sm);
+    transition: width 0.1s linear;
+}
+
+.interval-bar-fill.animated {
+    transition: width 0.05s linear;
+}
+
+/* Pulse effect on completion */
+.interval-bar-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: interval-pulse 1s ease-in-out infinite;
+}
+
+@keyframes interval-pulse {
+    0%, 100% { opacity: 0; transform: translateX(-100%); }
+    50% { opacity: 1; }
+    100% { transform: translateX(100%); }
+}
+
+/* ===========================
+   COMPACT VARIANT
+   =========================== */
+
+.interval-bar-compact {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-sm);
+}
+
+.interval-bar-track-compact {
+    flex: 1;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.interval-bar-time-compact {
+    font-size: var(--font-size-xs);
+    font-family: var(--font-mono);
+    color: var(--color-text-secondary);
+    min-width: 40px;
+    text-align: right;
+}
+
+/* ===========================
+   DETAILED VARIANT
+   =========================== */
+
+.interval-bar-detailed {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+}
+
+.interval-bar-header-detailed {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-md);
+}
+
+.interval-bar-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.interval-bar-icon-lg {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.interval-bar-title-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.interval-bar-label-text {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+}
+
+.interval-bar-subtitle {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+}
+
+.interval-bar-percent-badge {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    font-family: var(--font-mono);
+}
+
+.interval-bar-track-detailed {
+    position: relative;
+    width: 100%;
+    height: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: var(--space-md);
+}
+
+/* ===========================
+   STATS
+   =========================== */
+
+.interval-bar-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-top: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--color-border);
+}
+
+.interval-stat {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+}
+
+.interval-stat .stat-label {
+    color: var(--color-text-muted);
+}
+
+.interval-stat .stat-value {
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+}
+
+/* Stats Grid (Detailed variant) */
+.interval-bar-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: var(--space-sm);
+}
+
+.interval-stat-item {
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.2);
+    padding: var(--space-sm);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+.stat-item-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    margin-bottom: 2px;
+}
+
+.stat-item-value {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* ===========================
+   ACTIVITY-SPECIFIC COLORS
+   =========================== */
+
+/* Gathering */
+.interval-bar-container[data-activity="gathering"] .interval-bar-fill,
+.interval-bar-detailed[data-activity="gathering"] .interval-bar-fill {
+    background: linear-gradient(90deg, #4caf50, #8bc34a);
+}
+
+/* Crafting */
+.interval-bar-container[data-activity="crafting"] .interval-bar-fill,
+.interval-bar-detailed[data-activity="crafting"] .interval-bar-fill {
+    background: linear-gradient(90deg, #9c27b0, #e91e63);
+}
+
+/* Combat */
+.interval-bar-container[data-activity="combat"] .interval-bar-fill,
+.interval-bar-detailed[data-activity="combat"] .interval-bar-fill {
+    background: linear-gradient(90deg, #f44336, #ff5722);
+}
+
+/* Navigation */
+.interval-bar-container[data-activity="navigation"] .interval-bar-fill,
+.interval-bar-detailed[data-activity="navigation"] .interval-bar-fill {
+    background: linear-gradient(90deg, #2196F3, #64B5F6);
+}
+
+/* Recovery */
+.interval-bar-container[data-activity="recovery"] .interval-bar-fill,
+.interval-bar-detailed[data-activity="recovery"] .interval-bar-fill {
+    background: linear-gradient(90deg, #FFC107, #FF9800);
+}
+
+/* ===========================
+   RESPONSIVE
+   =========================== */
+
+@media (max-width: 768px) {
+    .interval-bar-detailed {
+        padding: var(--space-md);
+    }
+
+    .interval-bar-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .interval-bar-icon-lg {
+        font-size: 1.5rem;
+    }
+}

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export Procedural Regions to Static File</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #4CAF50;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #output {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre;
+            font-size: 12px;
+        }
+        .stats {
+            background: #333;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .warning {
+            color: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <h1>🗺️ Region Export Tool</h1>
+    <p>This tool runs the procedural generation once and exports all regions to a static JavaScript object.</p>
+
+    <div class="stats" id="stats">
+        <div>Status: <span id="status">Ready</span></div>
+        <div>Regions Generated: <span id="regionCount">0</span></div>
+    </div>
+
+    <button onclick="generateAndExport()">Generate & Export Regions</button>
+    <button onclick="copyToClipboard()">Copy to Clipboard</button>
+    <button onclick="downloadFile()">Download as worldRegions.js</button>
+
+    <div id="output"></div>
+
+    <!-- Load required scripts -->
+    <script src="../src/core/definitions.js?v=2"></script>
+    <script src="../src/data/worldTilemap.js?v=2"></script>
+
+    <script>
+        let generatedCode = '';
+        let worldMapData = null;
+
+        // Minimal GameEngine for generation
+        const GameEngine = {
+            definitions: GameDefinitions,
+            gameBalance: {
+                complicationScaling: 0.05  // From gameEngine.js
+            },
+
+            // Copy of generateWorldMap function
+            generateWorldMap(mapRadius = 10) {
+                const worldMap = {};
+                const biomeTypes = ['plains', 'forest', 'mountains', 'tundra', 'desert', 'swamp', 'coast'];
+
+                // Helper: Get hex neighbors in axial coordinates
+                const getNeighbors = (q, r) => {
+                    return [
+                        { q: q + 1, r: r, dir: "E" },      // East
+                        { q: q + 1, r: r - 1, dir: "NE" }, // Northeast
+                        { q: q, r: r - 1, dir: "NW" },     // Northwest
+                        { q: q - 1, r: r, dir: "W" },      // West
+                        { q: q - 1, r: r + 1, dir: "SW" }, // Southwest
+                        { q: q, r: r + 1, dir: "SE" }      // Southeast
+                    ];
+                };
+
+                // Helper: Get biome based on position
+                const getBiome = (q, r) => {
+                    const startQ = -3;
+                    const startR = -4;
+
+                    if (q === startQ && r === startR) return 'plains';
+
+                    const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
+
+                    if (distanceFromStart < 2) return 'plains';
+
+                    if (q < -mapRadius * 0.4) {
+                        return r < 0 ? 'forest' : 'plains';
+                    }
+
+                    if (r < -mapRadius * 0.4) {
+                        return q > 0 ? 'tundra' : 'mountains';
+                    }
+
+                    if (r > mapRadius * 0.4) {
+                        return q > 0 ? 'coast' : 'swamp';
+                    }
+
+                    if (q > mapRadius * 0.4) {
+                        return r > 0 ? 'desert' : 'forest';
+                    }
+
+                    const hash = Math.abs(q * 73 + r * 37) % biomeTypes.length;
+                    return biomeTypes[hash];
+                };
+
+                // Helper: Calculate region complication factor
+                const getComplicationFactor = (q, r, biome) => {
+                    const startQ = -3;
+                    const startR = -4;
+                    const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
+
+                    const biomeDifficulty = {
+                        'plains': 1.0,
+                        'forest': 1.2,
+                        'coast': 1.1,
+                        'desert': 1.3,
+                        'swamp': 1.4,
+                        'mountains': 1.5,
+                        'tundra': 1.6
+                    };
+
+                    const baseComplication = biomeDifficulty[biome] || 1.0;
+                    const distanceComplication = distanceFromStart * this.gameBalance.complicationScaling;
+
+                    return parseFloat((baseComplication + distanceComplication).toFixed(2));
+                };
+
+                // Helper: Generate region name
+                const getRegionName = (q, r, biome) => {
+                    const startQ = -3;
+                    const startR = -4;
+
+                    if (q === startQ && r === startR) return "The Scar";
+
+                    const prefixes = {
+                        plains: ["Green", "Sunny", "Peaceful", "Rolling", "Golden"],
+                        forest: ["Dark", "Deep", "Ancient", "Verdant", "Misty"],
+                        mountains: ["Highland", "Snowy", "Rocky", "Towering", "Peak"],
+                        tundra: ["Frozen", "Icy", "Bitter", "Arctic", "Frost"],
+                        desert: ["Arid", "Burning", "Dry", "Sandy", "Scorched"],
+                        swamp: ["Murky", "Foggy", "Dank", "Mossy", "Fetid"],
+                        coast: ["Coastal", "Sandy", "Windy", "Harbor", "Tidal"]
+                    };
+
+                    const suffixes = {
+                        plains: ["Plains", "Meadows", "Fields", "Grassland", "Valley"],
+                        forest: ["Woods", "Forest", "Grove", "Thicket", "Woodland"],
+                        mountains: ["Ridge", "Peak", "Mountains", "Summit", "Heights"],
+                        tundra: ["Tundra", "Wastes", "Expanse", "Barrens", "Flats"],
+                        desert: ["Desert", "Wastes", "Dunes", "Sands", "Expanse"],
+                        swamp: ["Swamp", "Marsh", "Bog", "Fen", "Mire"],
+                        coast: ["Shores", "Coast", "Beach", "Bay", "Cove"]
+                    };
+
+                    const prefix = prefixes[biome][Math.abs(q + r * 3) % prefixes[biome].length];
+                    const suffix = suffixes[biome][Math.abs(q * 2 + r) % suffixes[biome].length];
+
+                    return `${prefix} ${suffix}`;
+                };
+
+                // Helper: Get background image for region
+                const getBackgroundImage = (q, r, regionName) => {
+                    const startQ = -3;
+                    const startR = -4;
+
+                    if (q === startQ && r === startR) {
+                        return 'assets/backgrounds/regions/region_the_scar_01.png';
+                    }
+
+                    return null;
+                };
+
+                // Generate regions only for tiles in the tilemap
+                const startQ = -3;
+                const startR = -4;
+
+                // Get tiles from WorldTilemap
+                const tiles = typeof WorldTilemap !== 'undefined' ? WorldTilemap.getTiles() : [];
+                console.log(`📍 Generating regions for ${tiles.length} tiles from WorldTilemap...`);
+
+                for (let tile of tiles) {
+                    const { q, r } = tile;
+                    const regionId = `region_${q}_${r}`;
+                    const biome = getBiome(q, r);
+                    const distanceFromStart = Math.sqrt((q - startQ) ** 2 + (r - startR) ** 2);
+
+                    // Navigation requirement
+                    let navRequirement = 1;
+                    if (q !== startQ || r !== startR) {
+                        const stepsUp = Math.max(0, startR - r);
+                        const stepsRight = Math.max(0, q - startQ);
+                        const stepsDown = Math.max(0, r - startR);
+                        const stepsLeft = Math.max(0, startQ - q);
+
+                        navRequirement = 1 + (stepsUp * 2) + stepsRight + Math.floor(stepsDown / 2) + Math.floor(stepsLeft / 2);
+                    }
+
+                    // Get valid neighbors (only those in the tilemap)
+                    const neighbors = getNeighbors(q, r);
+                    const validNeighbors = neighbors.filter(n => {
+                        return WorldTilemap.hasTile(n.q, n.r);
+                    });
+
+                    const isStartingRegion = (q === startQ && r === startR);
+                    const description = isStartingRegion
+                        ? "A massive crater, home to the Unity members long banished to this corner of the new planet. The Scar is heavily wooded and features a large lake of trapped freshwater. This is where your journey begins."
+                        : `A ${biome} region in the ${q > 0 ? 'eastern' : q < 0 ? 'western' : 'central'} ${r > 0 ? 'south' : r < 0 ? 'north' : 'lands'}`;
+
+                    const regionName = getRegionName(q, r, biome);
+
+                    // Get biome definition
+                    const biomeDef = this.definitions.biomes[biome];
+
+                    // Get discoverable nodes from biome
+                    const discoverableNodes = [];
+                    if (biomeDef && biomeDef.gatheringNodes) {
+                        for (let skill in biomeDef.gatheringNodes) {
+                            discoverableNodes.push(...biomeDef.gatheringNodes[skill]);
+                        }
+                    }
+
+                    // Get discoverable enemies
+                    const discoverableEnemies = [];
+                    if (this.definitions.enemies) {
+                        const maxEnemyLevel = Math.max(1, Math.floor(distanceFromStart * 1.5));
+                        for (let enemyId in this.definitions.enemies) {
+                            const enemy = this.definitions.enemies[enemyId];
+                            const enemyLevel = enemy.level || 1;
+                            if (enemyLevel <= maxEnemyLevel) {
+                                discoverableEnemies.push(enemyId);
+                            }
+                        }
+                    }
+
+                    // Get missions
+                    const availableMissions = [];
+                    if (this.definitions.missions) {
+                        for (let missionId in this.definitions.missions) {
+                            const mission = this.definitions.missions[missionId];
+                            if (mission.region === regionId || (isStartingRegion && mission.region === "region_0_0")) {
+                                availableMissions.push(missionId);
+                            }
+                        }
+                    }
+
+                    worldMap[regionId] = {
+                        name: regionName,
+                        description: description,
+                        biome: biome,
+                        backgroundImage: getBackgroundImage(q, r, regionName),
+                        hexCoords: { q, r },
+                        navigationRequirement: navRequirement,
+                        complication: getComplicationFactor(q, r, biome),
+                        requiredMissionToLeave: isStartingRegion ? "tutorial_elder" : null,
+                        discoverableNodes: discoverableNodes,
+                        discoverableEnemies: discoverableEnemies,
+                        availableMissions: availableMissions,
+                        adjacent: validNeighbors.reduce((obj, n) => {
+                            obj[n.dir] = `region_${n.q}_${n.r}`;
+                            return obj;
+                        }, {})
+                    };
+                }
+
+                return worldMap;
+            }
+        };
+
+        function generateAndExport() {
+            document.getElementById('status').innerHTML = '<span class="warning">Generating...</span>';
+
+            setTimeout(() => {
+                try {
+                    // Generate the world map
+                    worldMapData = GameEngine.generateWorldMap(7);
+
+                    // Count regions
+                    const regionCount = Object.keys(worldMapData).length;
+                    document.getElementById('regionCount').textContent = regionCount;
+
+                    // Format as JavaScript code
+                    generatedCode = formatAsJavaScript(worldMapData);
+
+                    // Display
+                    document.getElementById('output').textContent = generatedCode;
+                    document.getElementById('status').innerHTML = '<span class="success">✅ Generated!</span>';
+
+                    console.log('Generated regions:', worldMapData);
+                } catch (error) {
+                    document.getElementById('status').innerHTML = '<span style="color: #f44336;">❌ Error: ' + error.message + '</span>';
+                    console.error(error);
+                }
+            }, 100);
+        }
+
+        function formatAsJavaScript(worldMap) {
+            let code = '/**\n';
+            code += ' * WORLD REGIONS - Exported from Procedural Generation\n';
+            code += ' * Generated: ' + new Date().toISOString() + '\n';
+            code += ' * Total Regions: ' + Object.keys(worldMap).length + '\n';
+            code += ' */\n\n';
+            code += 'const WorldRegions = {\n';
+
+            const regionIds = Object.keys(worldMap).sort((a, b) => {
+                // Sort by coordinates for easier navigation
+                const aParts = a.split('_');
+                const bParts = b.split('_');
+                const aQ = parseInt(aParts[1]);
+                const bQ = parseInt(bParts[1]);
+                const aR = parseInt(aParts[2]);
+                const bR = parseInt(bParts[2]);
+
+                if (aR !== bR) return aR - bR;
+                return aQ - bQ;
+            });
+
+            regionIds.forEach((regionId, index) => {
+                const region = worldMap[regionId];
+
+                code += `    "${regionId}": {\n`;
+                code += `        name: "${region.name}",\n`;
+                code += `        description: "${region.description}",\n`;
+                code += `        biome: "${region.biome}",\n`;
+                code += `        backgroundImage: ${region.backgroundImage ? '"' + region.backgroundImage + '"' : 'null'},\n`;
+                code += `        hexCoords: { q: ${region.hexCoords.q}, r: ${region.hexCoords.r} },\n`;
+                code += `        navigationRequirement: ${region.navigationRequirement},\n`;
+                code += `        complication: ${region.complication},\n`;
+                code += `        requiredMissionToLeave: ${region.requiredMissionToLeave ? '"' + region.requiredMissionToLeave + '"' : 'null'},\n`;
+                code += `        discoverableNodes: [],  // Use biome defaults\n`;
+                code += `        discoverableCraftingStations: [],  // Use biome defaults\n`;
+                code += `        discoverableEnemies: ${JSON.stringify(region.discoverableEnemies)},\n`;
+                code += `        discoverableLocations: [],\n`;
+                code += `        availableMissions: ${JSON.stringify(region.availableMissions)},\n`;
+                code += `        adjacent: ${JSON.stringify(region.adjacent, null, 12).replace(/\n/g, '\n        ')}\n`;
+                code += `    }${index < regionIds.length - 1 ? ',' : ''}\n`;
+
+                if (index < regionIds.length - 1) {
+                    code += '\n';
+                }
+            });
+
+            code += '};\n';
+
+            return code;
+        }
+
+        function copyToClipboard() {
+            if (!generatedCode) {
+                alert('Generate regions first!');
+                return;
+            }
+
+            navigator.clipboard.writeText(generatedCode).then(() => {
+                alert('✅ Copied to clipboard! Paste into worldRegions.js');
+            }).catch(err => {
+                alert('❌ Failed to copy: ' + err);
+            });
+        }
+
+        function downloadFile() {
+            if (!generatedCode) {
+                alert('Generate regions first!');
+                return;
+            }
+
+            const blob = new Blob([generatedCode], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'worldRegions.js';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

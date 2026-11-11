@@ -1,19 +1,21 @@
 /**
- * MODERN PERK GRID UI
+ * PERK GRID UI (7x7 System)
  *
- * Sleek 5x5 grid interface with row/column totals and hover effects
- * Shows strategic medal placement and equipment synergy
+ * Modern interface for the 7x7 perk grid with medal management
  *
  * Layout:
- * - Left Panel: Summary statistics
- * - Center: 5x5 grid with row totals (left) and column totals (top)
- * - Right Panel: Medal inventory
+ * - Left Panel: Grid statistics and active perks summary
+ * - Center: 7x7 grid with row/column edge totals
+ * - Right Panel: Medal inventory and crafting
  */
 
 const PerkGridUI = {
-    lastGridState: null,
-    selectedMedal: null,
-    hoveredCell: null,
+    selectedMedalId: null,
+    selectedGridCell: null,
+    craftingTab: 'inventory', // 'inventory', 'forge', 'combine', 'salvage'
+    selectedForCombine: [],
+    selectedForSalvage: [],
+    forgeTier: 1,
 
     /**
      * Main render function
@@ -22,27 +24,40 @@ const PerkGridUI = {
         const container = document.getElementById('perkGridView');
         if (!container) return;
 
-        const gridCalc = GameEngine.calculateGridPerks(GameEngine.state);
-        this.lastGridState = gridCalc;
+        const gridState = GameEngine.getGridState();
+        const multipliers = GameEngine.getPerkMultipliers();
+        const inventoryInfo = GameEngine.getMedalInventoryInfo();
+        const fragments = GameEngine.state.currencies?.medalFragments || 0;
 
         container.innerHTML = `
-            <div class="perk-grid-container">
-                <!-- Left Panel: Summary Stats -->
-                <div class="grid-summary-panel">
-                    <h3>Grid Overview</h3>
-                    ${this.renderSummaryStats(gridCalc)}
+            <div class="perk-grid-container-7x7">
+                <!-- Left Panel: Stats Summary -->
+                <div class="grid-stats-panel">
+                    ${this.renderStatsPanel(gridState, multipliers)}
                 </div>
 
-                <!-- Center: Main Grid Area -->
-                <div class="grid-main-area">
-                    <h3>Perk Grid (5x5)</h3>
-                    ${this.renderGridWithTotals(gridCalc)}
+                <!-- Center: Main Grid -->
+                <div class="grid-main-panel">
+                    <div class="grid-header">
+                        <h3>Perk Grid</h3>
+                        <div class="grid-info">
+                            Level ${gridState.characterLevel} |
+                            ${gridState.unlockedCount}/${gridState.totalTiles} tiles unlocked
+                            ${gridState.nextUnlockLevel ? ` | Next unlock: Lv.${gridState.nextUnlockLevel}` : ' | All unlocked!'}
+                        </div>
+                    </div>
+                    ${this.renderGrid(gridState)}
                 </div>
 
-                <!-- Right Panel: Medal Inventory -->
-                <div class="medal-inventory-panel">
-                    <h3>Available Medals</h3>
-                    ${this.renderMedalInventory()}
+                <!-- Right Panel: Medal Management -->
+                <div class="medal-management-panel">
+                    <div class="medal-currency">
+                        <span class="fragment-icon">◆</span>
+                        <span class="fragment-count">${fragments.toLocaleString()}</span>
+                        <span class="fragment-label">Fragments</span>
+                    </div>
+                    ${this.renderMedalTabs()}
+                    ${this.renderMedalContent(inventoryInfo, fragments)}
                 </div>
             </div>
         `;
@@ -51,265 +66,418 @@ const PerkGridUI = {
     },
 
     /**
-     * Render summary statistics panel
+     * Render stats panel
      */
-    renderSummaryStats(gridCalc) {
-        const perks = gridCalc.perks;
-        const summary = gridCalc.summary;
+    renderStatsPanel(gridState, multipliers) {
+        const summary = gridState.activeSummary;
+        const edgeTotals = gridState.edgeTotals;
 
-        if (!perks || Object.keys(perks).length === 0) {
-            return `
-                <div class="summary-empty">
-                    <p>No perks active yet!</p>
-                    <p class="hint">Place medals on the grid to gain bonuses.</p>
-                </div>
-            `;
-        }
-
-        // Sort perks by value (highest first)
-        const sortedPerks = Object.entries(perks)
-            .sort(([,a], [,b]) => b - a);
+        // Get non-1.0 multipliers (actual bonuses)
+        const activeMultipliers = Object.entries(multipliers)
+            .filter(([_, val]) => val !== 1.0)
+            .sort(([_, a], [__, b]) => b - a);
 
         return `
-            <div class="summary-content">
-                <div class="summary-highlight">
-                    <div class="stat-label">Total Bonus</div>
-                    <div class="stat-value grand-total">+${summary.totalBonus.toFixed(2)}%</div>
+            <div class="stats-section">
+                <h4>Grid Status</h4>
+                <div class="stat-row">
+                    <span>Medals Placed</span>
+                    <span>${gridState.placedCount}</span>
                 </div>
-
-                <div class="summary-highlight">
-                    <div class="stat-label">Active Perks</div>
-                    <div class="stat-value">${summary.totalPerks}</div>
+                <div class="stat-row">
+                    <span>Empty Slots</span>
+                    <span>${gridState.emptyUnlockedCount}</span>
                 </div>
+            </div>
 
-                ${summary.strongestPerk ? `
-                    <div class="summary-highlight">
-                        <div class="stat-label">Strongest</div>
-                        <div class="stat-value">
-                            ${this.formatPerkName(summary.strongestPerk.type)}
-                            <span class="perk-value">+${summary.strongestPerk.value.toFixed(2)}%</span>
-                        </div>
+            <div class="stats-section">
+                <h4>Active Bonuses (${activeMultipliers.length})</h4>
+                ${activeMultipliers.length === 0 ? `
+                    <div class="no-bonuses">Place medals to gain bonuses</div>
+                ` : `
+                    <div class="bonus-list">
+                        ${activeMultipliers.slice(0, 10).map(([stat, mult]) => {
+                            const perkInfo = typeof PERK_STAT_POOL !== 'undefined' ? PERK_STAT_POOL[stat] : null;
+                            const name = perkInfo?.name || stat;
+                            const icon = perkInfo?.icon || '•';
+                            const percent = ((mult - 1) * 100).toFixed(1);
+                            return `
+                                <div class="bonus-row">
+                                    <span class="bonus-icon">${icon}</span>
+                                    <span class="bonus-name">${name}</span>
+                                    <span class="bonus-value ${mult > 1 ? 'positive' : 'negative'}">
+                                        ${mult > 1 ? '+' : ''}${percent}%
+                                    </span>
+                                </div>
+                            `;
+                        }).join('')}
+                        ${activeMultipliers.length > 10 ? `
+                            <div class="bonus-more">+${activeMultipliers.length - 10} more...</div>
+                        ` : ''}
                     </div>
-                ` : ''}
+                `}
+            </div>
 
-                <div class="perk-breakdown">
-                    <h4>Active Perks:</h4>
-                    ${sortedPerks.map(([type, value]) => `
-                        <div class="perk-line">
-                            <span class="perk-name">${this.formatPerkName(type)}</span>
-                            <span class="perk-value">+${value.toFixed(2)}%</span>
-                        </div>
-                    `).join('')}
-                </div>
+            <div class="stats-section">
+                <h4>Perk Categories</h4>
+                ${Object.entries(summary).map(([category, perks]) => `
+                    <div class="category-row">
+                        <span class="category-name">${category}</span>
+                        <span class="category-count">${Object.keys(perks).length} active</span>
+                    </div>
+                `).join('')}
             </div>
         `;
     },
 
     /**
-     * Render the 5x5 grid with row and column totals
+     * Render the 7x7 grid with edge totals
      */
-    renderGridWithTotals(gridCalc) {
-        const grid = gridCalc.gridData;
-        const rowTotals = gridCalc.rowTotals;
-        const columnTotals = gridCalc.columnTotals;
+    renderGrid(gridState) {
+        const edgeTotals = gridState.edgeTotals;
+        const size = gridState.size;
 
-        // Build column totals header
-        let html = '<div class="grid-with-totals">';
-
-        // Top row: column totals
-        html += '<div class="column-totals">';
-        html += '<div class="corner-spacer"></div>'; // Empty corner
-        for (let col = 0; col < 5; col++) {
-            html += this.renderColumnTotal(col, columnTotals);
+        // Build column headers (edge totals)
+        let columnHeaders = '<div class="grid-corner"></div>';
+        for (let col = 0; col < size; col++) {
+            const colTotal = edgeTotals.columns[col] || 0;
+            const hasBonus = colTotal > 0;
+            columnHeaders += `
+                <div class="grid-edge-total column-total ${hasBonus ? 'has-bonus' : ''}">
+                    ${hasBonus ? `+${(colTotal * 100).toFixed(0)}%` : '-'}
+                </div>
+            `;
         }
-        html += '</div>';
 
-        // Grid rows with row totals on left
-        html += '<div class="grid-rows">';
-        for (let row = 0; row < 5; row++) {
-            html += '<div class="grid-row-container">';
+        // Build grid rows
+        let gridRows = '';
+        for (let row = 0; row < size; row++) {
+            const rowTotal = edgeTotals.rows[row] || 0;
+            const hasRowBonus = rowTotal > 0;
 
             // Row total on left
-            html += this.renderRowTotal(row, rowTotals);
+            gridRows += `
+                <div class="grid-edge-total row-total ${hasRowBonus ? 'has-bonus' : ''}">
+                    ${hasRowBonus ? `+${(rowTotal * 100).toFixed(0)}%` : '-'}
+                </div>
+            `;
 
-            // Row cells
-            html += '<div class="grid-row">';
-            for (let col = 0; col < 5; col++) {
-                html += this.renderGridCell(row, col, grid[row][col]);
+            // Grid cells
+            for (let col = 0; col < size; col++) {
+                const tile = gridState.tiles.find(t => t.row === row && t.col === col);
+                gridRows += this.renderGridCell(tile);
             }
-            html += '</div>';
-
-            html += '</div>';
         }
-        html += '</div>';
 
-        html += '</div>';
-        return html;
+        return `
+            <div class="grid-7x7-wrapper">
+                <div class="grid-7x7" style="grid-template-columns: 40px repeat(${size}, 1fr);">
+                    ${columnHeaders}
+                    ${gridRows}
+                </div>
+            </div>
+            ${this.selectedMedalId ? `
+                <div class="grid-instructions">
+                    Click an empty unlocked tile to place the selected medal
+                </div>
+            ` : ''}
+        `;
     },
 
     /**
      * Render a single grid cell
      */
-    renderGridCell(row, col, tile) {
-        const cellKey = `${row}_${col}`;
-        const isEquipmentZone = (row >= 1 && row <= 3 && col >= 1 && col <= 3);
-        const equipSlot = PerkGridSystem.equipmentSlotMap[cellKey];
+    renderGridCell(tile) {
+        if (!tile) return '<div class="grid-cell locked"></div>';
+
+        const { row, col, isUnlocked, medal, isEmpty, unlockLevel } = tile;
 
         let classes = ['grid-cell'];
         let content = '';
-        let tooltip = '';
+        let dataAttrs = `data-row="${row}" data-col="${col}"`;
 
-        if (tile) {
-            if (tile.type === 'medal') {
-                classes.push('has-medal');
-                const medal = tile.source;
-                const rarity = medal.rarity || 'common';
-                classes.push(`rarity-${rarity}`);
+        if (!isUnlocked) {
+            classes.push('locked');
+            content = `<span class="lock-level">Lv.${unlockLevel || '?'}</span>`;
+        } else if (medal) {
+            classes.push('has-medal');
+            classes.push(`rarity-${medal.rarity}`);
 
-                content = `
-                    <div class="medal-icon">${this.getMedalIcon(medal)}</div>
-                    <div class="medal-name">${medal.name || 'Medal'}</div>
-                `;
+            const perkCount = medal.perks?.length || 0;
+            const primaryPerk = medal.perks?.[0];
+            const perkIcon = primaryPerk && typeof PERK_STAT_POOL !== 'undefined'
+                ? PERK_STAT_POOL[primaryPerk.stat]?.icon || '★'
+                : '★';
 
-                tooltip = this.buildMedalTooltip(medal, tile.perks, row, col);
-            } else if (tile.type === 'equipment') {
-                classes.push('has-equipment');
-                const equip = tile.source;
+            // Build ribbon style from medal's generated gradient
+            const ribbonStyle = medal.ribbon?.cssGradient
+                ? `background: ${medal.ribbon.cssGradient};`
+                : '';
 
-                content = `
-                    <div class="equipment-icon">${this.getEquipmentIcon(tile.slot)}</div>
-                    <div class="equipment-name">${equip.name || tile.slot}</div>
-                `;
-
-                tooltip = this.buildEquipmentTooltip(equip, tile.perks, tile.slot);
-            }
-        } else if (isEquipmentZone) {
-            classes.push('equipment-zone');
             content = `
-                <div class="empty-equipment-slot">
-                    <div class="slot-icon">${this.getEquipmentIcon(equipSlot)}</div>
-                    <div class="slot-name">${equipSlot}</div>
+                ${medal.ribbon ? `<div class="grid-cell-ribbon" style="${ribbonStyle}"></div>` : ''}
+                <div class="medal-display">
+                    <span class="medal-icon">${perkIcon}</span>
+                    <span class="medal-perk-count">${perkCount}</span>
                 </div>
             `;
-            tooltip = `<div class="tooltip-text">Equipment Slot: ${equipSlot}<br><em>Equip an item here</em></div>`;
+            dataAttrs += ` data-medal-id="${medal.id}"`;
         } else {
-            classes.push('empty-slot');
-            content = `<div class="empty-indicator">+</div>`;
-            tooltip = `<div class="tooltip-text">Empty Medal Slot<br><em>Click to place a medal</em></div>`;
+            classes.push('empty');
+            if (this.selectedMedalId) {
+                classes.push('placeable');
+            }
+            content = '<span class="empty-slot">+</span>';
+        }
+
+        if (this.selectedGridCell === `${row}_${col}`) {
+            classes.push('selected');
         }
 
         return `
-            <div class="${classes.join(' ')}"
-                 data-row="${row}"
-                 data-col="${col}"
-                 data-tooltip="${this.escapeHtml(tooltip)}">
+            <div class="${classes.join(' ')}" ${dataAttrs}>
                 ${content}
             </div>
         `;
     },
 
     /**
-     * Render column total display
+     * Render medal management tabs
      */
-    renderColumnTotal(col, columnTotals) {
-        const perksInColumn = {};
-
-        // Collect all perk types in this column
-        Object.entries(columnTotals).forEach(([perkType, columns]) => {
-            const colData = columns.find(c => c.column === col);
-            if (colData) {
-                perksInColumn[perkType] = colData.value;
-            }
-        });
-
-        const totalValue = Object.values(perksInColumn).reduce((sum, v) => sum + v, 0) * 100;
-        const hasPerk = totalValue > 0;
-
-        const tooltip = this.buildColumnTooltip(col, perksInColumn);
-
+    renderMedalTabs() {
         return `
-            <div class="column-total ${hasPerk ? 'has-perk' : ''}"
-                 data-tooltip="${this.escapeHtml(tooltip)}">
-                <div class="total-label">Col ${col}</div>
-                <div class="total-value">${hasPerk ? '+' + totalValue.toFixed(1) + '%' : '-'}</div>
+            <div class="medal-tabs">
+                <button class="medal-tab ${this.craftingTab === 'inventory' ? 'active' : ''}"
+                        data-tab="inventory">Inventory</button>
+                <button class="medal-tab ${this.craftingTab === 'forge' ? 'active' : ''}"
+                        data-tab="forge">Forge</button>
+                <button class="medal-tab ${this.craftingTab === 'combine' ? 'active' : ''}"
+                        data-tab="combine">Combine</button>
+                <button class="medal-tab ${this.craftingTab === 'salvage' ? 'active' : ''}"
+                        data-tab="salvage">Salvage</button>
             </div>
         `;
     },
 
     /**
-     * Render row total display
+     * Render medal content based on active tab
      */
-    renderRowTotal(row, rowTotals) {
-        const perksInRow = {};
-
-        // Collect all perk types in this row
-        Object.entries(rowTotals).forEach(([perkType, rows]) => {
-            const rowData = rows.find(r => r.row === row);
-            if (rowData) {
-                perksInRow[perkType] = rowData.value;
-            }
-        });
-
-        const totalValue = Object.values(perksInRow).reduce((sum, v) => sum + v, 0) * 100;
-        const hasPerk = totalValue > 0;
-
-        const tooltip = this.buildRowTooltip(row, perksInRow);
-
-        return `
-            <div class="row-total ${hasPerk ? 'has-perk' : ''}"
-                 data-tooltip="${this.escapeHtml(tooltip)}">
-                <div class="total-label">Row ${row}</div>
-                <div class="total-value">${hasPerk ? '+' + totalValue.toFixed(1) + '%' : '-'}</div>
-            </div>
-        `;
+    renderMedalContent(inventoryInfo, fragments) {
+        switch (this.craftingTab) {
+            case 'inventory':
+                return this.renderMedalInventory(inventoryInfo);
+            case 'forge':
+                return this.renderForgePanel(fragments);
+            case 'combine':
+                return this.renderCombinePanel(inventoryInfo);
+            case 'salvage':
+                return this.renderSalvagePanel(inventoryInfo);
+            default:
+                return this.renderMedalInventory(inventoryInfo);
+        }
     },
 
     /**
      * Render medal inventory
      */
-    renderMedalInventory() {
-        const craftedMedals = GameEngine.state.craftedMedals || [];
-        const placedMedals = GameEngine.state.perkGrid?.placedMedals || {};
-        const placedMedalIds = new Set(
-            Object.values(placedMedals).map(p => p.medal?.id).filter(Boolean)
-        );
-
-        // Filter to only unplaced medals
-        const availableMedals = craftedMedals.filter(m => !placedMedalIds.has(m.id));
-
-        if (availableMedals.length === 0) {
-            return `
-                <div class="inventory-empty">
-                    <p>No medals available</p>
-                    <p class="hint">Craft medals to place them on the grid!</p>
-                </div>
-            `;
-        }
+    renderMedalInventory(inventoryInfo) {
+        const { medals, count, capacity } = inventoryInfo;
 
         return `
             <div class="medal-inventory">
-                ${availableMedals.map(medal => this.renderMedalCard(medal)).join('')}
+                <div class="inventory-header">
+                    <span>${count}/${capacity} medals</span>
+                    ${inventoryInfo.canExpand ? `
+                        <button class="expand-btn" data-action="expand">
+                            Expand (+${typeof MEDAL_INVENTORY_CONFIG !== 'undefined' ? MEDAL_INVENTORY_CONFIG.expansionAmount : 10})
+                            <span class="cost">${inventoryInfo.expansionCost}◆</span>
+                        </button>
+                    ` : ''}
+                </div>
+                <div class="medal-grid">
+                    ${medals.length === 0 ? `
+                        <div class="empty-inventory">
+                            No medals yet. Forge some!
+                        </div>
+                    ` : medals.map(medal => this.renderMedalCard(medal, 'inventory')).join('')}
+                </div>
             </div>
         `;
     },
 
     /**
-     * Render a medal card in inventory
+     * Render a medal card
      */
-    renderMedalCard(medal) {
-        const rarity = medal.rarity || 'common';
-        const isSelected = this.selectedMedal?.id === medal.id;
+    renderMedalCard(medal, context = 'inventory') {
+        const isSelected = this.selectedMedalId === medal.id;
+        const isSelectedForCombine = this.selectedForCombine.includes(medal.id);
+        const isSelectedForSalvage = this.selectedForSalvage.includes(medal.id);
+
+        let classes = ['medal-card', `rarity-${medal.rarity}`];
+        if (isSelected) classes.push('selected');
+        if (isSelectedForCombine) classes.push('selected-combine');
+        if (isSelectedForSalvage) classes.push('selected-salvage');
+
+        const rarityInfo = typeof MEDAL_RARITIES !== 'undefined' ? MEDAL_RARITIES[medal.rarity] : null;
+        const rarityName = rarityInfo?.name || medal.rarity;
+
+        // Build ribbon style from generated gradient
+        const ribbonStyle = medal.ribbon?.cssGradient
+            ? `background: ${medal.ribbon.cssGradient};`
+            : '';
 
         return `
-            <div class="medal-card rarity-${rarity} ${isSelected ? 'selected' : ''}"
-                 data-medal-id="${medal.id}">
-                <div class="medal-card-icon">${this.getMedalIcon(medal)}</div>
-                <div class="medal-card-name">${medal.name || 'Medal'}</div>
-                <div class="medal-card-rarity">${rarity}</div>
-                <div class="medal-card-perks">
-                    ${medal.perks.map(p => `
-                        <div class="medal-perk-line">
-                            ${this.formatPerkName(p.type)}: +${(p.value * 100).toFixed(1)}%
+            <div class="${classes.join(' ')}" data-medal-id="${medal.id}" data-context="${context}">
+                ${medal.ribbon ? `
+                    <div class="medal-ribbon-visual" style="${ribbonStyle}"></div>
+                ` : ''}
+                <div class="medal-header">
+                    <span class="medal-rarity">${rarityName}</span>
+                    <span class="medal-perk-count">${medal.perks?.length || 0} perks</span>
+                </div>
+                <div class="medal-perks">
+                    ${(medal.perks || []).slice(0, 3).map(perk => {
+                        const perkInfo = typeof PERK_STAT_POOL !== 'undefined' ? PERK_STAT_POOL[perk.stat] : null;
+                        const icon = perkInfo?.icon || '•';
+                        const name = perkInfo?.name || perk.stat;
+                        const categoryColor = perkInfo ? CATEGORY_COLORS[perkInfo.category] || '#888' : '#888';
+                        return `
+                            <div class="medal-perk">
+                                <span class="perk-icon" style="color: ${categoryColor}">${icon}</span>
+                                <span class="perk-name">${name}</span>
+                                <span class="perk-value">+${(perk.value * 100).toFixed(1)}%</span>
+                            </div>
+                        `;
+                    }).join('')}
+                    ${(medal.perks?.length || 0) > 3 ? `
+                        <div class="medal-perk more">+${medal.perks.length - 3} more</div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Render forge panel
+     */
+    renderForgePanel(fragments) {
+        const tiers = typeof CRAFTING_TIERS !== 'undefined' ? CRAFTING_TIERS : {};
+        const tierKeys = Object.keys(tiers).map(Number).sort((a, b) => a - b);
+
+        return `
+            <div class="forge-panel">
+                <div class="forge-description">
+                    Spend fragments to forge new medals. Higher tiers have better rarity chances.
+                </div>
+
+                <div class="tier-selector">
+                    ${tierKeys.map(tier => {
+                        const config = tiers[tier];
+                        const canAfford = fragments >= config.cost;
+                        const isSelected = this.forgeTier === tier;
+
+                        return `
+                            <button class="tier-btn ${isSelected ? 'selected' : ''} ${!canAfford ? 'unaffordable' : ''}"
+                                    data-tier="${tier}">
+                                <div class="tier-name">${config.name}</div>
+                                <div class="tier-cost">${config.cost}◆</div>
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+
+                ${this.forgeTier && tiers[this.forgeTier] ? `
+                    <div class="forge-preview">
+                        <h4>${tiers[this.forgeTier].name} Forge</h4>
+                        <div class="rarity-chances">
+                            ${Object.entries(tiers[this.forgeTier].rarityWeights || {}).map(([rarity, weight]) => {
+                                const totalWeight = Object.values(tiers[this.forgeTier].rarityWeights).reduce((a, b) => a + b, 0);
+                                const percent = ((weight / totalWeight) * 100).toFixed(1);
+                                return `
+                                    <div class="rarity-chance rarity-${rarity}">
+                                        <span>${rarity}</span>
+                                        <span>${percent}%</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div class="forge-actions">
+                            <button class="forge-btn" data-action="forge" data-count="1"
+                                    ${fragments < tiers[this.forgeTier].cost ? 'disabled' : ''}>
+                                Forge 1 (${tiers[this.forgeTier].cost}◆)
+                            </button>
+                            <button class="forge-btn" data-action="forge" data-count="10"
+                                    ${fragments < tiers[this.forgeTier].cost * 10 ? 'disabled' : ''}>
+                                Forge 10 (${tiers[this.forgeTier].cost * 10}◆)
+                            </button>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    },
+
+    /**
+     * Render combine panel
+     */
+    renderCombinePanel(inventoryInfo) {
+        const medals = inventoryInfo.medals;
+        const preview = GameEngine.getCombinePreview ? GameEngine.getCombinePreview(this.selectedForCombine) : null;
+
+        // Group medals by rarity for easier selection
+        const byRarity = {};
+        medals.forEach(m => {
+            if (!byRarity[m.rarity]) byRarity[m.rarity] = [];
+            byRarity[m.rarity].push(m);
+        });
+
+        return `
+            <div class="combine-panel">
+                <div class="combine-description">
+                    Combine 3 medals of the same rarity to create 1 medal of higher rarity.
+                    Stats from source medals influence the result.
+                </div>
+
+                <div class="combine-selection">
+                    <h4>Selected: ${this.selectedForCombine.length}/3</h4>
+                    <div class="selected-medals">
+                        ${this.selectedForCombine.map(id => {
+                            const medal = medals.find(m => m.id === id);
+                            return medal ? this.renderMedalCard(medal, 'combine') : '';
+                        }).join('')}
+                        ${[...Array(3 - this.selectedForCombine.length)].map(() => `
+                            <div class="medal-slot-empty">?</div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                ${preview && preview.valid ? `
+                    <div class="combine-preview">
+                        <div class="preview-arrow">→</div>
+                        <div class="preview-result rarity-${preview.resultRarity}">
+                            ${preview.resultRarity} Medal
+                        </div>
+                        ${preview.inheritancePreview?.length > 0 ? `
+                            <div class="inheritance-hint">
+                                Likely perks: ${preview.inheritancePreview.slice(0, 3).map(p => p.name).join(', ')}
+                            </div>
+                        ` : ''}
+                    </div>
+                    <button class="combine-btn" data-action="combine">
+                        Combine Medals
+                    </button>
+                ` : preview && !preview.valid ? `
+                    <div class="combine-error">${preview.error || 'Select 3 medals of the same rarity'}</div>
+                ` : ''}
+
+                <div class="available-medals">
+                    <h4>Available Medals</h4>
+                    ${Object.entries(byRarity).map(([rarity, rarityMedals]) => `
+                        <div class="rarity-group">
+                            <div class="rarity-label rarity-${rarity}">${rarity} (${rarityMedals.length})</div>
+                            <div class="rarity-medals">
+                                ${rarityMedals.map(m => this.renderMedalCard(m, 'combine-select')).join('')}
+                            </div>
                         </div>
                     `).join('')}
                 </div>
@@ -318,252 +486,383 @@ const PerkGridUI = {
     },
 
     /**
-     * Build tooltip for medal
+     * Render salvage panel
      */
-    buildMedalTooltip(medal, perks, row, col) {
+    renderSalvagePanel(inventoryInfo) {
+        const medals = inventoryInfo.medals;
+        const preview = GameEngine.getSalvagePreview ? GameEngine.getSalvagePreview(this.selectedForSalvage) : null;
+
         return `
-            <div class="tooltip-content">
-                <div class="tooltip-header">${medal.name || 'Medal'}</div>
-                <div class="tooltip-location">Position: [${row},${col}]</div>
-                <div class="tooltip-section">
-                    <strong>Perks:</strong>
-                    ${perks.map(p => `
-                        <div class="tooltip-perk">
-                            ${this.formatPerkName(p.type)}: +${(p.value * 100).toFixed(2)}%
-                        </div>
-                    `).join('')}
+            <div class="salvage-panel">
+                <div class="salvage-description">
+                    Destroy medals to recover fragments. Higher rarity medals yield more fragments.
                 </div>
-                <div class="tooltip-hint">Click to remove</div>
-            </div>
-        `;
-    },
 
-    /**
-     * Build tooltip for equipment
-     */
-    buildEquipmentTooltip(equip, perks, slot) {
-        return `
-            <div class="tooltip-content">
-                <div class="tooltip-header">${equip.name || slot}</div>
-                <div class="tooltip-location">Equipment Slot: ${slot}</div>
-                <div class="tooltip-section">
-                    <strong>Adopted Perks:</strong>
-                    ${perks.length > 0 ? perks.map(p => `
-                        <div class="tooltip-perk">
-                            ${this.formatPerkName(p.type)}: +${(p.value * 100).toFixed(2)}%
+                <div class="salvage-selection">
+                    <h4>Selected: ${this.selectedForSalvage.length}</h4>
+                    ${preview ? `
+                        <div class="salvage-preview">
+                            Will recover: <span class="fragment-gain">+${preview.totalFragments}◆</span>
                         </div>
-                    `).join('') : '<em>No perks</em>'}
+                    ` : ''}
+                    <button class="salvage-btn" data-action="salvage"
+                            ${this.selectedForSalvage.length === 0 ? 'disabled' : ''}>
+                        Salvage ${this.selectedForSalvage.length} Medal${this.selectedForSalvage.length !== 1 ? 's' : ''}
+                    </button>
                 </div>
-                <div class="tooltip-hint">Can be overridden by medal</div>
-            </div>
-        `;
-    },
 
-    /**
-     * Build tooltip for row total
-     */
-    buildRowTooltip(row, perks) {
-        if (Object.keys(perks).length === 0) {
-            return `<div class="tooltip-text">Row ${row}: No perks</div>`;
-        }
-
-        return `
-            <div class="tooltip-content">
-                <div class="tooltip-header">Row ${row} Total</div>
-                ${Object.entries(perks).map(([type, value]) => `
-                    <div class="tooltip-perk">
-                        ${this.formatPerkName(type)}: +${(value * 100).toFixed(2)}%
+                <div class="salvage-medals">
+                    <h4>Click medals to select for salvage</h4>
+                    <div class="medal-grid">
+                        ${medals.map(m => this.renderMedalCard(m, 'salvage')).join('')}
                     </div>
-                `).join('')}
+                </div>
             </div>
         `;
     },
 
     /**
-     * Build tooltip for column total
-     */
-    buildColumnTooltip(col, perks) {
-        if (Object.keys(perks).length === 0) {
-            return `<div class="tooltip-text">Column ${col}: No perks</div>`;
-        }
-
-        return `
-            <div class="tooltip-content">
-                <div class="tooltip-header">Column ${col} Total</div>
-                ${Object.entries(perks).map(([type, value]) => `
-                    <div class="tooltip-perk">
-                        ${this.formatPerkName(type)}: +${(value * 100).toFixed(2)}%
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    },
-
-    /**
-     * Get medal icon (using text)
-     */
-    getMedalIcon(medal) {
-        const rarityIcons = {
-            common: '[C]',
-            uncommon: '[U]',
-            rare: '[R]',
-            epic: '[E]',
-            legendary: '[L]'
-        };
-        return rarityIcons[medal.rarity] || '[M]';
-    },
-
-    /**
-     * Get equipment slot icon (using text abbreviations)
-     */
-    getEquipmentIcon(slot) {
-        const icons = {
-            weapon: 'WPN',
-            helmet: 'HLM',
-            back: 'BCK',
-            gloves: 'GLV',
-            chest: 'CHT',
-            neck: 'NCK',
-            boots: 'BTS',
-            legs: 'LGS',
-            ring: 'RNG'
-        };
-        return icons[slot] || 'EQP';
-    },
-
-    /**
-     * Format perk type name for display
-     */
-    formatPerkName(type) {
-        const names = {
-            attackDamage: 'Attack Damage',
-            attackSpeed: 'Attack Speed',
-            criticalChance: 'Crit Chance',
-            criticalDamage: 'Crit Damage',
-            accuracy: 'Accuracy',
-            maxHealth: 'Max Health',
-            damageReduction: 'Damage Reduction',
-            evasion: 'Evasion',
-            miningSpeed: 'Mining Speed',
-            woodcuttingSpeed: 'Woodcutting',
-            fishingSpeed: 'Fishing'
-        };
-        return names[type] || type;
-    },
-
-    /**
-     * Escape HTML for tooltip attributes
-     */
-    escapeHtml(html) {
-        return html.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    },
-
-    /**
-     * Attach event listeners for interactivity
+     * Attach event listeners
      */
     attachEventListeners() {
-        // Medal card selection
-        document.querySelectorAll('.medal-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                const medalId = card.dataset.medalId;
-                this.selectMedal(medalId);
+        const container = document.getElementById('perkGridView');
+        if (!container) return;
+
+        // Tab switching
+        container.querySelectorAll('.medal-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                this.craftingTab = e.target.dataset.tab;
+                this.selectedForCombine = [];
+                this.selectedForSalvage = [];
+                this.render();
             });
         });
 
         // Grid cell clicks
-        document.querySelectorAll('.grid-cell').forEach(cell => {
-            cell.addEventListener('click', (e) => {
-                const row = parseInt(cell.dataset.row);
-                const col = parseInt(cell.dataset.col);
-                this.handleCellClick(row, col);
+        container.querySelectorAll('.grid-cell').forEach(cell => {
+            cell.addEventListener('click', (e) => this.handleGridCellClick(e));
+        });
+
+        // Medal card clicks
+        container.querySelectorAll('.medal-card').forEach(card => {
+            card.addEventListener('click', (e) => this.handleMedalClick(e));
+        });
+
+        // Tier selection
+        container.querySelectorAll('.tier-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.forgeTier = parseInt(e.currentTarget.dataset.tier);
+                this.render();
             });
         });
 
-        // Tooltip hover effects
-        document.querySelectorAll('[data-tooltip]').forEach(elem => {
-            elem.addEventListener('mouseenter', (e) => {
-                this.showTooltip(elem, elem.dataset.tooltip);
-            });
-            elem.addEventListener('mouseleave', () => {
-                this.hideTooltip();
+        // Action buttons
+        container.querySelectorAll('[data-action]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent event bubbling to globalHandlers
+                this.handleAction(e);
             });
         });
-    },
-
-    /**
-     * Select a medal from inventory
-     */
-    selectMedal(medalId) {
-        const medal = GameEngine.state.craftedMedals?.find(m => m.id === medalId);
-        if (!medal) return;
-
-        this.selectedMedal = medal;
-        this.render(); // Re-render to show selection
-        console.log('Selected medal:', medal.name);
     },
 
     /**
      * Handle grid cell click
      */
-    handleCellClick(row, col) {
-        const tile = this.lastGridState?.gridData?.[row]?.[col];
+    handleGridCellClick(e) {
+        const cell = e.currentTarget;
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        const medalId = cell.dataset.medalId;
 
-        if (tile && tile.type === 'medal') {
-            // Remove medal
-            const result = GameEngine.removeMedalFromGrid(row, col);
-            if (result.success) {
-                console.log(`Removed medal from [${row},${col}]`);
-                this.render();
-            }
-        } else if (this.selectedMedal) {
+        if (cell.classList.contains('locked')) {
+            return; // Can't interact with locked cells
+        }
+
+        if (this.selectedMedalId && cell.classList.contains('empty')) {
             // Place selected medal
-            const result = GameEngine.placeMedalOnGrid(row, col, this.selectedMedal);
+            const result = GameEngine.placeMedalFromInventory(this.selectedMedalId, row, col);
             if (result.success) {
-                console.log(`Placed ${this.selectedMedal.name} at [${row},${col}]`);
-                this.selectedMedal = null;
+                this.selectedMedalId = null;
                 this.render();
             } else {
-                console.warn('Cannot place medal:', result.reason);
-                alert(result.reason);
+                console.warn('Failed to place medal:', result.error);
             }
-        } else {
-            console.log('Select a medal from inventory first');
+        } else if (medalId) {
+            // Click on existing medal - return to inventory
+            const result = GameEngine.returnMedalToInventory(row, col);
+            if (result.success) {
+                this.render();
+            } else {
+                console.warn('Failed to return medal:', result.error);
+            }
         }
     },
 
     /**
-     * Show tooltip
+     * Handle medal card click
      */
-    showTooltip(element, html) {
-        let tooltip = document.getElementById('perk-grid-tooltip');
-        if (!tooltip) {
-            tooltip = document.createElement('div');
-            tooltip.id = 'perk-grid-tooltip';
-            tooltip.className = 'perk-grid-tooltip';
-            document.body.appendChild(tooltip);
+    handleMedalClick(e) {
+        const card = e.currentTarget;
+        const medalId = card.dataset.medalId;
+        const context = card.dataset.context;
+
+        switch (context) {
+            case 'inventory':
+                // Select for placement
+                this.selectedMedalId = this.selectedMedalId === medalId ? null : medalId;
+                this.render();
+                break;
+
+            case 'combine-select':
+                // Toggle selection for combining
+                const combineIdx = this.selectedForCombine.indexOf(medalId);
+                if (combineIdx >= 0) {
+                    this.selectedForCombine.splice(combineIdx, 1);
+                } else if (this.selectedForCombine.length < 3) {
+                    this.selectedForCombine.push(medalId);
+                }
+                this.render();
+                break;
+
+            case 'combine':
+                // Deselect from combine
+                const idx = this.selectedForCombine.indexOf(medalId);
+                if (idx >= 0) {
+                    this.selectedForCombine.splice(idx, 1);
+                    this.render();
+                }
+                break;
+
+            case 'salvage':
+                // Toggle selection for salvage
+                const salvageIdx = this.selectedForSalvage.indexOf(medalId);
+                if (salvageIdx >= 0) {
+                    this.selectedForSalvage.splice(salvageIdx, 1);
+                } else {
+                    this.selectedForSalvage.push(medalId);
+                }
+                this.render();
+                break;
         }
-
-        tooltip.innerHTML = html;
-        tooltip.style.display = 'block';
-
-        // Position tooltip near cursor
-        const rect = element.getBoundingClientRect();
-        tooltip.style.left = (rect.left + rect.width / 2) + 'px';
-        tooltip.style.top = (rect.top - 10) + 'px';
     },
 
     /**
-     * Hide tooltip
+     * Handle action buttons
      */
-    hideTooltip() {
-        const tooltip = document.getElementById('perk-grid-tooltip');
-        if (tooltip) {
-            tooltip.style.display = 'none';
+    handleAction(e) {
+        const action = e.currentTarget.dataset.action;
+
+        switch (action) {
+            case 'forge':
+                const count = parseInt(e.currentTarget.dataset.count) || 1;
+                if (count === 1) {
+                    const result = GameEngine.forgeMedal(this.forgeTier);
+                    if (result.success) {
+                        console.log('Forged medal:', result.medal);
+                        this.showForgeResultModal([result.medal]);
+                    } else {
+                        console.warn('Forge failed:', result.error);
+                        this.showForgeErrorModal(result.error);
+                    }
+                } else {
+                    const result = GameEngine.forgeMedalBatch(this.forgeTier, count);
+                    if (result.success) {
+                        console.log(`Forged ${result.medals.length} medals`);
+                        this.showForgeResultModal(result.medals);
+                    } else {
+                        console.warn('Batch forge failed:', result.error);
+                        this.showForgeErrorModal(result.error);
+                    }
+                }
+                this.render();
+                break;
+
+            case 'combine':
+                if (this.selectedForCombine.length === 3) {
+                    const result = GameEngine.combineMedals(this.selectedForCombine);
+                    if (result.success) {
+                        console.log('Combined into:', result.medal);
+                        this.selectedForCombine = [];
+                    } else {
+                        console.warn('Combine failed:', result.error);
+                    }
+                    this.render();
+                }
+                break;
+
+            case 'salvage':
+                if (this.selectedForSalvage.length > 0) {
+                    const result = GameEngine.salvageMedals(this.selectedForSalvage);
+                    if (result.success) {
+                        console.log(`Salvaged ${result.medalsDestroyed} medals for ${result.fragmentsGained} fragments`);
+                        this.selectedForSalvage = [];
+                    }
+                    this.render();
+                }
+                break;
+
+            case 'expand':
+                const expandResult = GameEngine.expandMedalInventory();
+                if (expandResult.success) {
+                    console.log('Inventory expanded to', expandResult.newCapacity);
+                } else {
+                    console.warn('Expand failed:', expandResult.error);
+                }
+                this.render();
+                break;
         }
+    },
+
+    /**
+     * Show forge result modal with medal details
+     */
+    showForgeResultModal(medals) {
+        // Remove any existing modal
+        const existing = document.querySelector('.forge-result-modal');
+        if (existing) existing.remove();
+
+        // Group medals by rarity for summary
+        const rarityCounts = {};
+        medals.forEach(m => {
+            rarityCounts[m.rarity] = (rarityCounts[m.rarity] || 0) + 1;
+        });
+
+        const modal = document.createElement('div');
+        modal.className = 'forge-result-modal';
+        modal.innerHTML = `
+            <div class="forge-result-backdrop"></div>
+            <div class="forge-result-content">
+                <div class="forge-result-header">
+                    <h3>Forged ${medals.length} Medal${medals.length !== 1 ? 's' : ''}!</h3>
+                    <div class="forge-result-summary">
+                        ${Object.entries(rarityCounts).map(([rarity, count]) => `
+                            <span class="rarity-badge rarity-${rarity}">${count}x ${rarity}</span>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="forge-result-medals">
+                    ${medals.map(medal => this.renderForgeResultMedal(medal)).join('')}
+                </div>
+                <div class="forge-result-footer">
+                    <button class="forge-result-close">Continue</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Close handlers
+        modal.querySelector('.forge-result-backdrop').addEventListener('click', () => modal.remove());
+        modal.querySelector('.forge-result-close').addEventListener('click', () => modal.remove());
+
+        // Animate in
+        requestAnimationFrame(() => {
+            modal.classList.add('visible');
+        });
+    },
+
+    /**
+     * Render a medal for the forge result modal
+     */
+    renderForgeResultMedal(medal) {
+        const rarityInfo = typeof MEDAL_RARITIES !== 'undefined' ? MEDAL_RARITIES[medal.rarity] : null;
+        const rarityName = rarityInfo?.name || medal.rarity;
+
+        // Build ribbon style from generated gradient
+        const ribbonStyle = medal.ribbon?.cssGradient
+            ? `background: ${medal.ribbon.cssGradient};`
+            : '';
+
+        return `
+            <div class="forge-result-medal rarity-${medal.rarity}">
+                ${medal.ribbon ? `
+                    <div class="medal-ribbon-visual" style="${ribbonStyle}"></div>
+                ` : ''}
+                <div class="medal-result-header">
+                    <span class="medal-result-rarity">${rarityName}</span>
+                    <span class="medal-result-perk-count">${medal.perks?.length || 0} perk${(medal.perks?.length || 0) !== 1 ? 's' : ''}</span>
+                </div>
+                <div class="medal-result-perks">
+                    ${(medal.perks || []).map(perk => {
+                        const perkInfo = typeof PERK_STAT_POOL !== 'undefined' ? PERK_STAT_POOL[perk.stat] : null;
+                        const icon = perkInfo?.icon || '•';
+                        const name = perkInfo?.name || perk.stat;
+                        const categoryColor = perkInfo ? CATEGORY_COLORS[perkInfo.category] || '#888' : '#888';
+                        const percent = (perk.value * 100).toFixed(1);
+                        return `
+                            <div class="medal-result-perk">
+                                <span class="perk-icon" style="color: ${categoryColor}">${icon}</span>
+                                <span class="perk-name">${name}</span>
+                                <span class="perk-value">+${percent}%</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Show forge error modal
+     */
+    showForgeErrorModal(error) {
+        // Remove any existing modal
+        const existing = document.querySelector('.forge-result-modal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.className = 'forge-result-modal forge-error-modal';
+        modal.innerHTML = `
+            <div class="forge-result-backdrop"></div>
+            <div class="forge-result-content error-content">
+                <div class="forge-result-header error-header">
+                    <h3>Forge Failed</h3>
+                </div>
+                <div class="forge-error-message">
+                    <span class="error-icon">⚠</span>
+                    <p>${error}</p>
+                </div>
+                <div class="forge-result-footer">
+                    <button class="forge-result-close">OK</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Close handlers
+        modal.querySelector('.forge-result-backdrop').addEventListener('click', () => modal.remove());
+        modal.querySelector('.forge-result-close').addEventListener('click', () => modal.remove());
+
+        // Animate in
+        requestAnimationFrame(() => {
+            modal.classList.add('visible');
+        });
+    },
+
+    /**
+     * Get color for rarity
+     */
+    getRarityColor(rarity) {
+        const colors = {
+            common: '#9e9e9e',
+            uncommon: '#4caf50',
+            rare: '#2196f3',
+            epic: '#9c27b0',
+            legendary: '#ff9800',
+            mythic: '#f44336',
+            divine: '#00bcd4',
+            transcendent: '#e91e63',
+            creator: '#ffd700',
+            batch: '#4a9eff',
+            error: '#f44336',
+            info: '#4a9eff'
+        };
+        return colors[rarity] || colors.info;
     }
 };
 
-// Auto-render when perk grid view becomes visible
-if (typeof GameEngine !== 'undefined') {
-    console.log('Perk Grid UI loaded');
+// Make globally accessible
+if (typeof window !== 'undefined') {
+    window.PerkGridUI = PerkGridUI;
 }

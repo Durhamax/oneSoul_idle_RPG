@@ -14,6 +14,10 @@ const SkillsUI = {
      */
     updateSkills() {
         const container = document.getElementById("skillsDisplay");
+
+        // If skillsDisplay doesn't exist, skip (new SkillCard UI is being used)
+        if (!container) return;
+
         const skills = GameEngine.state.skills;
 
         // Create state snapshot (include character level and attributes for proper updates)
@@ -30,6 +34,16 @@ const SkillsUI = {
         const charLevel = GameEngine.state.characterLevel;
         const attributes = GameEngine.state.combatAttributes;
         const attributeDefs = GameEngine.definitions.combatAttributes;
+
+        // Debug logging
+        console.log('🔍 SkillsUI Debug:', {
+            skillsCount: Object.keys(skills).length,
+            skillDefsCount: Object.keys(skillDefs || {}).length,
+            attributesCount: Object.keys(attributes).length,
+            attributeDefsCount: Object.keys(attributeDefs || {}).length,
+            sampleSkillIds: Object.keys(skills).slice(0, 5),
+            sampleSkillDefIds: Object.keys(skillDefs || {}).slice(0, 5)
+        });
 
         let html = `<div class="dashboard-grid">`;
 
@@ -69,39 +83,59 @@ const SkillsUI = {
         // Define skill order and groups
         const prioritySkills = ['navigation', 'engineering'];
         const gatheringSkills = ['mining', 'logging', 'fishing', 'hunting', 'foraging', 'thieving'];
-        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'textiles'];
+        const craftingSkills = ['cooking', 'chemistry', 'smithing', 'mechanics', 'electronics', 'tailoring'];
 
         // Helper function to render a skill card
         const renderSkill = (skillId, icon) => {
             const skill = skills[skillId];
             const def = skillDefs[skillId];
 
-            if (!skill || !skill.unlocked) return '';
+            if (!skill || !skill.unlocked || !def) return '';
 
             const expRequired = GameEngine.getSkillExpRequired(skillId);
             const expPercent = (skill.exp / expRequired) * 100;
 
-            // Make gathering skills, navigation, crafting skills, and engineering clickable
+            // Determine click behavior based on skill type
             const isGatheringSkill = gatheringSkills.includes(skillId);
             const isNavigationSkill = skillId === 'navigation';
             const isEngineeringSkill = skillId === 'engineering';
             const isCraftingSkill = craftingSkills.includes(skillId);
-            const isClickable = isGatheringSkill || isNavigationSkill || isEngineeringSkill || isCraftingSkill;
 
             let clickHandler = '';
-            let clickHint = '';
+            let extraContent = '';
+
             if (isGatheringSkill) {
                 clickHandler = `onclick="selectSkillForNodes('${skillId}')" style="cursor: pointer;"`;
-                clickHint = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to view nodes</div>';
+                extraContent = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to view nodes</div>';
             } else if (isNavigationSkill) {
                 clickHandler = `onclick="switchView('navigation')" style="cursor: pointer;"`;
-                clickHint = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to open navigation</div>';
+                extraContent = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to open navigation</div>';
             } else if (isEngineeringSkill) {
-                clickHandler = `onclick="switchView('engineering')" style="cursor: pointer;"`;
-                clickHint = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to open engineering</div>';
+                // Engineering now goes to Crafting tab (Engineering sub-tab)
+                clickHandler = `onclick="UnifiedCraftingUI.openToSkill('engineering'); UnifiedCraftingUI.switchTab('engineering');" style="cursor: pointer;"`;
+                extraContent = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to open engineering lab</div>';
             } else if (isCraftingSkill) {
-                clickHandler = `onclick="openCraftingForSkill('${skillId}')" style="cursor: pointer;"`;
-                clickHint = '<div style="font-size: 0.7em; color: #00d9ff; margin-top: 4px;">👆 Click to open crafting</div>';
+                // Crafting skills show recipe progression and link to Crafting tab
+                const recipeCount = this.getRecipeProgress(skillId, skill.level);
+                extraContent = `
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <div style="font-size: 0.75em; color: #aaa; margin-bottom: 4px;">
+                            📜 Recipes: ${recipeCount.unlocked}/${recipeCount.total}
+                        </div>
+                        ${recipeCount.next ? `
+                            <div style="font-size: 0.7em; color: #ff9800;">
+                                Next: ${recipeCount.next.name} (Lv.${recipeCount.next.level})
+                            </div>
+                        ` : ''}
+                        <button onclick="event.stopPropagation(); UnifiedCraftingUI.openToSkill('${skillId}');"
+                                style="margin-top: 6px; padding: 4px 10px; background: linear-gradient(90deg, #4a9eff, #7b3ff2);
+                                       border: none; border-radius: 4px; color: white; font-size: 0.75em; cursor: pointer;
+                                       width: 100%;">
+                            🔨 Go to Crafting
+                        </button>
+                    </div>
+                `;
+                clickHandler = `style="cursor: default;"`;
             }
 
             return `
@@ -114,13 +148,13 @@ const SkillsUI = {
                         </div>
                     </div>
                     <div style="font-size: 0.8em; color: #b8b8c4; margin-bottom: 8px; line-height: 1.4;">${def.description}</div>
-                    ${clickHint}
                     <div style="background: rgba(0, 0, 0, 0.5); border-radius: 4px; height: 8px; overflow: hidden; margin: 8px 0 4px 0;">
                         <div style="background: linear-gradient(90deg, #533483 0%, #7b3ff2 100%); height: 100%; width: ${expPercent}%; transition: width 0.3s;"></div>
                     </div>
                     <div style="font-size: 0.7em; color: #888; text-align: center;">
                         ${Formatting.formatNumber(skill.exp)} / ${Formatting.formatNumber(expRequired)} XP
                     </div>
+                    ${extraContent}
                 </div>
             `;
         };
@@ -168,7 +202,7 @@ const SkillsUI = {
                 smithing: '🔨',
                 mechanics: '⚙️',
                 electronics: '⚡',
-                textiles: '🧵'
+                tailoring: '🧵'
             };
             return renderSkill(skillId, icons[skillId] || '🔧');
         }).join('');
@@ -199,6 +233,9 @@ const SkillsUI = {
         const def = attributeDefs[attrId];
         const hasPoints = unassignedPoints > 0;
 
+        // Skip if attribute or definition is missing
+        if (value === undefined || !def) return '';
+
         return `
             <div style="background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.1);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
@@ -222,6 +259,36 @@ const SkillsUI = {
                 ${this.renderAttributeBonuses(attrId, value)}
             </div>
         `;
+    },
+
+    /**
+     * Get recipe progress for a crafting skill
+     */
+    getRecipeProgress(skillId, playerLevel) {
+        let total = 0;
+        let unlocked = 0;
+        let nextRecipe = null;
+
+        // Get recipes from RecipeRegistry
+        if (typeof RecipeRegistry !== 'undefined' && RecipeRegistry.getRecipesBySkill) {
+            const recipesObj = RecipeRegistry.getRecipesBySkill(skillId);
+            // Convert object to array (RecipeRegistry returns an object, not array)
+            const recipes = Object.values(recipesObj || {});
+            total = recipes.length;
+
+            for (const recipe of recipes) {
+                if (playerLevel >= recipe.skillLevelRequired) {
+                    unlocked++;
+                } else if (!nextRecipe || recipe.skillLevelRequired < nextRecipe.level) {
+                    nextRecipe = {
+                        name: recipe.name,
+                        level: recipe.skillLevelRequired
+                    };
+                }
+            }
+        }
+
+        return { total, unlocked, next: nextRecipe };
     },
 
     /**

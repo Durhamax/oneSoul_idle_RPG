@@ -1,0 +1,152 @@
+{
+  "gold": {
+    "name": "Gold Coins",
+    "icon": "💰",
+    "category": "currency",
+    "rarity": "common",
+    "description": "Shiny gold coins used for trading",
+    "value": 1,
+    "stackLimit": 10000,
+    "tags": [
+      "currency"
+    ]
+  },
+  "clay": {
+    "name": "Clay",
+    "icon": "🟤",
+    "category": "material",
+    "rarity": "common",
+    "description": "Soft clay from riverbeds, useful for crafting and pottery",
+    "value": 3,
+    "stackLimit": 100,
+    "resourceType": "ore",
+    "gatherSkill": "mining",
+    "gatherLevel": 1,
+    "tags": [
+      "material",
+      "clay",
+      "mining",
+      "crafting"
+    ]
+  },
+  "flint": {
+    "name": "Flint",
+    "icon": "⚫",
+    "category": "material",
+    "rarity": "common",
+    "description": "Sharp flint stone, essential for tool-making and fire-starting",
+    "value": 5,
+    "stackLimit": 100,
+    "resourceType": "ore",
+    "gatherSkill": "mining",
+    "gatherLevel": 1,
+    "tags": [
+      "material",
+      "flint",
+      "mining",
+      "tool-making"
+    ]
+  },
+  "goldFlakes": {
+    "name": "Gold Flakes",
+    "icon": "✨",
+    "category": "material",
+    "rarity": "rare",
+    "description": "Tiny flakes of gold found in riverbeds. Rare and valuable.",
+    "value": 100,
+    "stackLimit": 50,
+    "resourceType": "ore",
+    "gatherSkill": "mining",
+    "gatherLevel": 1,
+    "tags": [
+      "material",
+      "gold",
+      "mining",
+      "rare",
+      "precious"
+    ]
+  },
+  "solfish": {
+    "name": "Solfish",
+    "icon": "🐟",
+    "category": "material",
+    "rarity": "common",
+    "description": "A small, silvery fish found in shallow lakes. Common catch for beginners.",
+    "value": 4,
+    "stackLimit": 100,
+    "resourceType": "fish",
+    "gatherSkill": "fishing",
+    "gatherLevel": 1,
+    "tags": [
+      "material",
+      "fish",
+      "fishing",
+      "food"
+    ]
+  },
+  "stone_pickaxe": {
+    "name": "Stone Pickaxe",
+    "icon": "⛏️",
+    "category": "tool",
+    "rarity": "common",
+    "description": "A crude pickaxe made from stone. Better than nothing.",
+    "value": 10,
+    "stackLimit": 1,
+    "slot": "weapon",
+    "tags": [
+      "tool",
+      "pickaxe",
+      "mining",
+      "starter"
+    ]
+  },
+  "stone_hatchet": {
+    "name": "Stone Hatchet",
+    "icon": "🪓",
+    "category": "tool",
+    "rarity": "common",
+    "description": "A crude hatchet with a stone head. Useful for chopping wood.",
+    "value": 10,
+    "stackLimit": 1,
+    "slot": "weapon",
+    "tags": [
+      "tool",
+      "hatchet",
+      "logging",
+      "starter"
+    ]
+  },
+  "fishing_net": {
+    "name": "Fishing Net",
+    "icon": "🎣",
+    "category": "tool",
+    "rarity": "common",
+    "description": "A simple net for catching fish.",
+    "value": 10,
+    "stackLimit": 1,
+    "slot": "weapon",
+    "tags": [
+      "tool",
+      "fishing",
+      "starter"
+    ]
+  },
+  "lightRations": {
+    "name": "Light Rations",
+    "icon": "🍖",
+    "category": "consumable",
+    "rarity": "common",
+    "description": "Simple preserved food rations. Restores 10 HP and used for navigation rest.",
+    "value": 5,
+    "stackLimit": 100,
+    "resourceType": "food",
+    "slot": "food",
+    "tags": [
+      "consumable",
+      "food",
+      "rations",
+      "healing",
+      "navigation"
+    ]
+  }
+}

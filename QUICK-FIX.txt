@@ -1,0 +1,44 @@
+================================
+🚨 BROWSER SHOWING 404 ERRORS?
+================================
+
+You need a web server! The game can't run from file:// protocol.
+
+QUICKEST FIX (2 minutes):
+-------------------------
+1. Download Node.js: https://nodejs.org/
+   (Click the big green "LTS" button)
+
+2. Install it (just click Next, Next, Next, Finish)
+
+3. Close your terminal/command prompt and open a NEW one
+
+4. Navigate to game folder:
+   cd C:\Users\durha\oneSoul_idle_RPG
+
+5. Run the launcher:
+   start-dev.bat
+
+6. Game will open at: http://localhost:8080/index.html
+
+
+ALTERNATIVE (if you have Python):
+----------------------------------
+1. Open terminal in game folder
+2. Run: python -m http.server 8080
+3. Open browser to: http://localhost:8080/index.html
+
+
+WHY THIS IS NEEDED:
+-------------------
+The game uses versioned JavaScript files (e.g., gameEngine.js?v=2.2)
+for cache control. These don't work with file:// protocol - you need
+an HTTP server.
+
+The 404 errors you're seeing:
+- definitions.js?v=3.0 → Browser looking for file literally named "definitions.js?v=3.0"
+- gameEngine.js?v=2.2 → Browser looking for file literally named "gameEngine.js?v=2.2"
+
+With HTTP server:
+- definitions.js?v=3.0 → Loads "definitions.js" with cache-busting parameter
+- gameEngine.js?v=2.2 → Loads "gameEngine.js" with cache-busting parameter

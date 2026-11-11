@@ -26,19 +26,37 @@ const ItemCard = {
      * @returns {string} HTML string for the item card
      */
     create(itemId, context = 'bank', options = {}) {
-        const itemDef = GameEngine.definitions.items[itemId];
+        // DUAL-BANK: Check all storage locations (instanced, stackable, legacy)
+        const instancedItem = GameEngine.state.bank.instanced?.[itemId];
+        const stackableItem = GameEngine.state.bank.stackable?.[itemId];
+        const legacyItem = GameEngine.state.bank.items?.[itemId];
+        const bankItem = instancedItem || stackableItem || legacyItem;
+
+        // For instanced items, use baseItemId to get definition
+        const lookupId = bankItem?.baseItemId || itemId;
+        const itemDef = ItemAccessHelper.getItem(lookupId);
+
         if (!itemDef) {
-            console.warn(`Item definition not found for: ${itemId}`);
+            console.warn(`Item definition not found for: ${itemId} (lookup: ${lookupId})`);
             return '';
         }
 
-        // Get item data from bank
-        const bankItem = GameEngine.state.bank.items[itemId];
-        const quantity = options.quantity !== undefined ? options.quantity : (bankItem ? bankItem.quantity : 0);
+        const quantity = options.quantity !== undefined ? options.quantity : (bankItem ? bankItem.quantity || 1 : 0);
         const isNew = options.isNew !== undefined ? options.isNew : (bankItem ? bankItem.isNew : false);
 
         // Get rarity information
-        const rarity = GameEngine.getItemRarity(itemId);
+        // For instanced items, use the instance's rarity (rolled at craft time)
+        // For non-instanced items, use the base item definition's rarity
+        let rarityTier = 'common';
+        if (instancedItem && instancedItem.rarity) {
+            // Instanced item: use the rarity stored on the instance
+            rarityTier = instancedItem.rarity;
+        } else {
+            // Non-instanced item: get rarity from item definition
+            const itemDefRarity = itemDef.rarity || 'common';
+            rarityTier = itemDefRarity;
+        }
+        const rarity = GameEngine.definitions.RARITY_TIERS[rarityTier] || GameEngine.definitions.RARITY_TIERS.common;
         const rarityColor = rarity ? rarity.color : '#9e9e9e';
         const rarityGlow = rarity && rarity.glow;
         const rarityName = rarity ? rarity.name : 'Common';
@@ -56,6 +74,11 @@ const ItemCard = {
         if (isEquipped) classes.push('item-card-equipped');
         if (options.compact) classes.push('item-card-compact');
         if (rarityGlow) classes.push('item-card-glow');
+
+        // Add armor class for full armor sets (equipSlot === 'armor')
+        if (itemDef.equipSlot === 'armor' || itemDef.slot === 'armor') {
+            classes.push('item-card-armor');
+        }
 
         // Build inline styles
         const styles = [];
@@ -83,7 +106,8 @@ const ItemCard = {
             rarityName,
             context,
             showActions: options.showActions,
-            compact: options.compact
+            compact: options.compact,
+            bankItem: bankItem  // Pass bankItem for attachment badge rendering
         });
     },
 
@@ -104,7 +128,8 @@ const ItemCard = {
             rarityName,
             context,
             showActions,
-            compact
+            compact,
+            bankItem
         } = params;
 
         let html = `
@@ -131,11 +156,25 @@ const ItemCard = {
 
         html += '</div>';
 
+        // Top-left badges/indicators
+        html += '<div class="item-card-badges-left">';
+
+        // Attachment indicator for modified weapons (instances)
+        // Use the bankItem we already retrieved with dual-bank support
+        if (bankItem && bankItem.attachments) {
+            const attachmentCount = Object.values(bankItem.attachments).filter(a => a).length;
+            if (attachmentCount > 0) {
+                html += `<div class="item-card-attachment-badge" title="${attachmentCount} Attachment${attachmentCount > 1 ? 's' : ''} Installed">⚙️${attachmentCount}</div>`;
+            }
+        }
+
+        html += '</div>';
+
         // Main content
         html += `<div class="item-card-content">`;
 
         // Icon/Image
-        html += `<div class="item-card-icon">${itemDef.image || '📦'}</div>`;
+        html += `<div class="item-card-icon">${IconHelper.getItemIconHTML(itemDef, {size: 48, className: 'card-icon'})}</div>`;
 
         // Name (colored by rarity)
         html += `<div class="item-card-name" style="color: ${rarityColor};">${itemDef.name}</div>`;
@@ -259,7 +298,7 @@ const ItemCard = {
      * Get default click handler based on context
      */
     getDefaultClickHandler(itemId, context) {
-        const itemDef = GameEngine.definitions.items[itemId];
+        const itemDef = ItemAccessHelper.getItem(itemId);
 
         switch (context) {
             case 'bank':

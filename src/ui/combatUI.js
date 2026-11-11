@@ -30,8 +30,6 @@ const CombatUI = {
             playerHealth: Math.floor(combat.player.currentHealth / 10), // Track in chunks of 10 HP to reduce re-renders
             // Only track log during respawn, not during active combat (too many re-renders block buttons)
             logLength: combat.inCombat ? -1 : combat.combatLog.length,
-            combatLevel: GameEngine.state.skills.combat.level,
-            combatExp: GameEngine.state.skills.combat.exp,
             unassignedPoints: GameEngine.state.characterLevel.unassignedAttributePoints,
             attributes: JSON.stringify(GameEngine.state.combatAttributes),
             waitingForRespawn: combat.waitingForRespawn,
@@ -51,8 +49,6 @@ const CombatUI = {
             this.lastCombatState.enemy === currentState.enemy &&
             this.lastCombatState.playerHealth === currentState.playerHealth &&
             this.lastCombatState.logLength === currentState.logLength &&
-            this.lastCombatState.combatLevel === currentState.combatLevel &&
-            this.lastCombatState.combatExp === currentState.combatExp &&
             this.lastCombatState.unassignedPoints === currentState.unassignedPoints &&
             this.lastCombatState.attributes === currentState.attributes &&
             this.lastCombatState.waitingForRespawn === currentState.waitingForRespawn &&
@@ -139,18 +135,15 @@ const CombatUI = {
      * Render combat stats display - COMPACT VERSION
      */
     renderCombatStats() {
-        const combatSkill = GameEngine.state.skills.combat;
         const attributes = GameEngine.state.combatAttributes;
         const attributeDefs = GameEngine.definitions.combatAttributes;
         const unassignedPoints = GameEngine.state.characterLevel.unassignedAttributePoints;
-
-        const expRequired = GameEngine.getSkillExpRequired('combat');
-        const expPercent = (combatSkill.exp / expRequired) * 100;
+        const characterLevel = GameEngine.state.characterLevel.level;
 
         let html = `
             <div class="dashboard-panel" style="margin-bottom: 12px;">
                 <div class="panel-header" style="padding: 8px 12px;">
-                    <div class="panel-title" style="font-size: 0.9em;">⚔️ Combat Level ${combatSkill.level}</div>
+                    <div class="panel-title" style="font-size: 0.9em;">⚔️ Character Stats (Lv ${characterLevel})</div>
                     ${unassignedPoints > 0 ? `<div class="panel-subtitle" style="color: #ffd700;">📈 ${unassignedPoints} Point${unassignedPoints !== 1 ? 's' : ''}</div>` : ''}
                 </div>
                 <div class="panel-content" style="padding: 10px;">
@@ -198,7 +191,7 @@ const CombatUI = {
             return '';
         }
 
-        const foodDef = GameEngine.definitions.items[equippedFood];
+        const foodDef = ItemAccessHelper.getItem(equippedFood);
         if (!foodDef) {
             return '';
         }
@@ -615,7 +608,7 @@ const CombatUI = {
         // Render items
         for (let itemId in aggregatedLoot.items) {
             const amount = aggregatedLoot.items[itemId];
-            const itemDef = GameEngine.definitions.items[itemId];
+            const itemDef = ItemAccessHelper.getItem(itemId);
             if (itemDef) {
                 html += `
                     <div style="background: rgba(0,0,0,0.3); border: 1px solid #555; border-radius: 4px; padding: 6px; text-align: center;" title="${itemDef.name}">
@@ -1521,7 +1514,7 @@ const CombatUI = {
         // Food
         const equippedFood = GameEngine.state.equipment.food;
         if (equippedFood && GameEngine.state.combat.equippedFoodQuantity > 0) {
-            const foodDef = GameEngine.definitions.items[equippedFood];
+            const foodDef = ItemAccessHelper.getItem(equippedFood);
             html += `
                 <div class="stat-row">
                     <span>${foodDef.image} ${foodDef.name}</span>

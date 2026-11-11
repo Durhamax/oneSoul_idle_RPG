@@ -15,13 +15,8 @@
  */
 const ITEM_CATEGORIES = {
     EQUIPMENT: 'equipment',        // Equippable items (weapons, armor, tools)
-    CONSUMABLE: 'consumable',      // Single-use items (potions, food, scrolls)
-    MATERIAL: 'material',          // Crafting materials (ores, wood, textiles)
-    RESOURCE: 'resource',          // Gathered resources (similar to material)
-    CURRENCY: 'currency',          // Special currency items (gold, medals, gems)
-    QUEST: 'quest',                // Quest-related items
-    KEY: 'key',                    // Keys and access items
-    SPECIAL: 'special',            // Unique/special items that don't fit other categories
+    CONSUMABLE: 'consumable',      // Items that go in consumable slots (ammo, food, potions)
+    MATERIAL: 'material',          // Raw resources from nodes, not yet processed
 };
 
 /**
@@ -35,26 +30,52 @@ const ITEM_RARITIES = {
     RARE: 'rare',                  // Blue - Notable quality
     EPIC: 'epic',                  // Purple - High quality
     LEGENDARY: 'legendary',        // Orange - Exceptional items
-    MYTHIC: 'mythic',             // Red - Extremely rare
+    MYTHIC: 'mythic',              // Red - Extremely rare
+    DIVINE: 'divine',              // Gold - Near-impossible
+    TRANSCENDENT: 'transcendent',  // Cyan - Boss-only tier
+    CREATOR: 'creator',            // Magenta - Apex tier
 };
+// NOTE: 9-tier scale, uniform with definitions.js RARITY_TIERS, medals, and engineering perfection.
 
 /**
  * Equipment Slots
  *
- * Valid slots for equippable items
+ * Valid slots for items (3-1-3 Grid System)
  *
- * DEPRECATED: 'shield' - Use 'offhand' instead
+ * EQUIPMENT (category: 'equipment'):
+ *   - tool: Skilling items (pickaxes, axes, fishing rods) → Tools tab
+ *   - weapon: Combat weapons → Weapons tab
+ *   - armor: Full armor set (head/chest/legs combined) → Armor tab
+ *   - back: Capes/Cloaks → Armor tab
+ *   - gloves: Gloves → Armor tab
+ *   - neck: Necklaces/Amulets → Armor tab
+ *   - boots: Boots → Armor tab
+ *   - ring: Rings → Armor tab
+ *
+ * CONSUMABLES (category: 'consumable'):
+ *   - ammo/food/potion: Consumable slots → Consumables tab
+ *
+ * MATERIALS (category: 'material'):
+ *   - resource: Raw materials → Resources tab
  */
 const EQUIPMENT_SLOTS = {
-    HEAD: 'head',
-    BODY: 'body',
-    LEGS: 'legs',
-    FEET: 'feet',
-    HANDS: 'hands',
-    WEAPON: 'weapon',
-    OFFHAND: 'offhand',           // Replaces deprecated 'shield'
-    ACCESSORY: 'accessory',
-    TOOL: 'tool',
+    // Equipment slots (3-1-3 Grid)
+    TOOL: 'tool',                 // Skilling equipment
+    WEAPON: 'weapon',             // Combat weapons
+    ARMOR: 'armor',               // Full armor set (unified head/chest/legs)
+    BACK: 'back',                 // Cape/Cloak
+    GLOVES: 'gloves',             // Gloves
+    NECK: 'neck',                 // Necklace/Amulet
+    BOOTS: 'boots',               // Boots
+    RING: 'ring',                 // Ring
+
+    // Consumable slots
+    AMMO: 'ammo',                 // Ammo consumable
+    FOOD: 'food',                 // Food consumable
+    POTION: 'potion',             // Potion consumable
+
+    // Material slot
+    RESOURCE: 'resource',         // Raw materials
 };
 
 /**
@@ -133,12 +154,28 @@ const ITEM_SCHEMA = {
     icon: '',
 
     /**
+     * Path to PNG icon image (optional, falls back to emoji icon)
+     * @type {string}
+     * @optional
+     * @example "assets/icons/tools/light-pickaxe.png"
+     */
+    iconPath: '',
+
+    /**
      * Primary category of the item
      * @type {string}
      * @required
      * @see ITEM_CATEGORIES
      */
     category: '',
+
+    /**
+     * Whether this item is instanced (unique) or stackable
+     * @type {boolean}
+     * @required
+     * @default false for resources/consumables, true for equipment/mods
+     */
+    instanced: false,
 
     /**
      * Item rarity level
@@ -209,13 +246,23 @@ const ITEM_SCHEMA = {
     // =================================================================
 
     /**
-     * Equipment slot this item occupies
+     * Equipment slot this item occupies (for bank tab categorization)
      * @type {string}
      * @category equipment
      * @required
      * @see EQUIPMENT_SLOTS
      */
     slot: '',
+
+    /**
+     * Equipment slot where this item is actually equipped (where it goes on character)
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @see EQUIPMENT_SLOTS
+     * @example "weapon" (for both weapons and tools)
+     */
+    equipSlot: '',
 
     /**
      * Equipment tier for progression
@@ -225,6 +272,41 @@ const ITEM_SCHEMA = {
      * @see EQUIPMENT_TIERS
      */
     tier: '',
+
+    /**
+     * Weapon category for accuracy modifier calculations
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "rifle", "bow", "pistol", "balancedMelee", "heavyMelee", "precisionMelee", "tool"
+     */
+    weaponCategory: '',
+
+    /**
+     * Tool type for gathering/skilling
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "mining", "woodcutting", "fishing", "hunting"
+     */
+    toolType: '',
+
+    /**
+     * Tool tier for gathering effectiveness
+     * @type {number}
+     * @category equipment
+     * @optional
+     */
+    toolTier: 1,
+
+    /**
+     * Skill this equipment is associated with
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "mining", "logging", "fishing", "combat"
+     */
+    skill: '',
 
     /**
      * Combat attributes bonuses
@@ -260,11 +342,11 @@ const ITEM_SCHEMA = {
     },
 
     /**
-     * Skill requirements to equip
+     * Requirements to equip/use item
      * @type {Object}
      * @category equipment
      * @optional
-     * @example { combat: 10, smithing: 5 }
+     * @example { characterLevel: 10, mining: 5 }
      */
     requirements: {},
 
@@ -288,6 +370,48 @@ const ITEM_SCHEMA = {
      * @example "ironWarrior", "arcaneScholar"
      */
     setId: null,
+
+    // =================================================================
+    // ATTACHMENT PROPERTIES (slot: 'attachment')
+    // =================================================================
+
+    /**
+     * Item type (used for filtering attachments)
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "attachment"
+     */
+    itemType: '',
+
+    /**
+     * Which attachment slot this fits into (legacy: attachmentSlot)
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "muzzle", "scope", "grip", "stock"
+     */
+    attachmentSlot: '',
+    modType: '',  // Alias for attachmentSlot
+
+    /**
+     * Which stat this attachment boosts (legacy: bonusStat)
+     * @type {string}
+     * @category equipment
+     * @optional
+     * @example "attackDamage", "accuracy", "criticalChance"
+     */
+    bonusStat: '',
+    modStat: '',  // Alias for bonusStat
+
+    /**
+     * The magnitude of the stat bonus (multiplicative)
+     * @type {number}
+     * @category equipment
+     * @optional
+     * @example 0.02 (2% increase), 0.10 (10% increase)
+     */
+    bonusValue: 0,
 
     // =================================================================
     // CONSUMABLE PROPERTIES (category: 'consumable')
@@ -365,6 +489,28 @@ const ITEM_SCHEMA = {
      * @optional
      */
     gatherLevel: 1,
+
+    /**
+     * Whether this material can be used as fuel for campfires
+     * @type {boolean}
+     * @category material
+     * @optional
+     * @default false
+     */
+    fuel: false,
+
+    /**
+     * Fuel properties for campfire system (only if fuel: true)
+     * @type {Object}
+     * @category material
+     * @optional
+     * @example { burnTime: 60, warmth: 10, efficiency: 1.0 }
+     */
+    fuelStats: {
+        burnTime: 30,       // Seconds of burn time per unit
+        warmth: 5,          // Warmth bonus provided
+        efficiency: 1.0,    // Recovery efficiency multiplier
+    },
 
     // =================================================================
     // CRAFTING PROPERTIES
@@ -448,7 +594,7 @@ const EXAMPLE_ITEMS = {
             attackSpeed: 1.0,
         },
         requirements: {
-            combat: 5,
+            characterLevel: 5,
         },
         tags: ['weapon', 'sword', 'melee', 'iron'],
     },

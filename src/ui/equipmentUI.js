@@ -9,18 +9,60 @@ const EquipmentUI = {
     // State caching for performance optimization
     lastBankState: null,
     lastEquipmentState: null,
+    // Debounce timer for bank updates
+    bankUpdatePending: false,
+    bankUpdateTimeout: null,
+
+    /**
+     * Initialize event listeners for instant updates
+     */
+    init() {
+        // Listen to inventory events for instant bank updates
+        if (typeof EventBus !== 'undefined') {
+            EventBus.on('item-added', (data) => this.handleItemChanged(data));
+            EventBus.on('item-removed', (data) => this.handleItemChanged(data));
+            EventBus.on('equipment-instance-added', (data) => this.handleItemChanged(data));
+            console.log('✅ EquipmentUI event listeners registered');
+        }
+    },
+
+    /**
+     * Handle inventory change events for instant UI updates
+     * Uses debouncing to prevent rapid re-renders during crafting
+     */
+    handleItemChanged(data) {
+        // Only update if we're currently viewing the bank tab
+        if (UICore.currentView === 'bank') {
+            // Debounce: wait 150ms before updating to batch rapid changes
+            if (this.bankUpdateTimeout) {
+                clearTimeout(this.bankUpdateTimeout);
+            }
+            this.bankUpdatePending = true;
+            this.bankUpdateTimeout = setTimeout(() => {
+                this.bankUpdatePending = false;
+                this.updateBank();
+            }, 150);
+        }
+    },
 
     /**
      * Update bank display
      */
     updateBank() {
+        // Skip if a debounced update is already pending (prevents double updates)
+        if (this.bankUpdatePending) {
+            return;
+        }
+
         const bank = GameEngine.state.bank;
 
-        // Create a snapshot of current bank state
+        // DUAL-BANK: Create a snapshot of current bank state (all storage locations)
         const currentState = {
             activeTab: bank.activeTab,
-            itemsHash: JSON.stringify(bank.items),
-            newItemsCount: bank.newItems.length,
+            itemsHash: JSON.stringify(bank.items || {}),
+            instancedHash: JSON.stringify(bank.instanced || {}),
+            stackableHash: JSON.stringify(bank.stackable || {}),
+            newItemsCount: bank.newItems?.length || 0,
             medalsCount: GameEngine.state.craftedMedals?.length || 0
         };
 
@@ -28,6 +70,8 @@ const EquipmentUI = {
         const hasChanged = !this.lastBankState ||
             this.lastBankState.activeTab !== currentState.activeTab ||
             this.lastBankState.itemsHash !== currentState.itemsHash ||
+            this.lastBankState.instancedHash !== currentState.instancedHash ||
+            this.lastBankState.stackableHash !== currentState.stackableHash ||
             this.lastBankState.newItemsCount !== currentState.newItemsCount ||
             this.lastBankState.medalsCount !== currentState.medalsCount;
 
@@ -48,8 +92,15 @@ const EquipmentUI = {
 
         const bank = GameEngine.state.bank;
 
-        const totalItems = Object.keys(bank.items).length;
-        const totalQuantity = Object.values(bank.items).reduce((sum, item) => sum + item.quantity, 0);
+        // DUAL-BANK: Calculate stats from both storages
+        const stackableTypes = Object.keys(bank.stackable || {}).length;
+        const stackableQuantity = Object.values(bank.stackable || {}).reduce((sum, qty) => sum + qty, 0);
+
+        const instancedTypes = Object.keys(bank.instanced || {}).length;
+
+        const totalTypes = stackableTypes + instancedTypes;
+        const totalQuantity = stackableQuantity + instancedTypes; // Instances count as 1 each
+
         const newItemCount = bank.newItems.length;
 
         // Add medals to total count
@@ -61,7 +112,7 @@ const EquipmentUI = {
 
         html += `
             <div style="background: #2a2a2a; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px;">
-                <strong>Total Items:</strong> ${totalItems} types |
+                <strong>Total Items:</strong> ${totalTypes} types |
                 <strong>Total Quantity:</strong> ${totalQuantity} |
                 <strong>Medals:</strong> ${medalCount} |
                 <strong>New Items:</strong> <span style="color: #ffeb3b;">${newItemCount}</span>
@@ -126,12 +177,15 @@ const EquipmentUI = {
 
         const items = GameEngine.getItemsInTab(activeTab);
 
+        console.log(`[Bank] Active tab: ${activeTab}, Items found: ${items.length}`);
+
         if (items.length === 0) {
             container.innerHTML = '<div class="bank-empty">No items in this tab yet...<br><br>💡 Use debug buttons to add items!</div>';
             return;
         }
 
         let html = "";
+        let renderedCount = 0;
 
         for (let item of items) {
             const def = item.definition;
@@ -142,13 +196,22 @@ const EquipmentUI = {
                 continue;
             }
 
-            // Use the standardized ItemCard component
-            html += ItemCard.create(item.itemId, 'bank', {
+            // Use the ItemCard component
+            const cardHtml = ItemCard.create(item.itemId, 'bank', {
                 quantity: item.quantity,
                 isNew: item.isNew
+                // onClick defaults to inspectItem() for bank context
             });
+
+            if (cardHtml) {
+                html += cardHtml;
+                renderedCount++;
+            } else {
+                console.warn(`⚠️ ItemCard.create returned empty for ${item.itemId}`);
+            }
         }
 
+        console.log(`[Bank] Rendered ${renderedCount} item cards, HTML length: ${html.length}`);
         container.innerHTML = html;
     },
 
@@ -216,8 +279,12 @@ const EquipmentUI = {
      */
     updateEquipment() {
         const equipment = GameEngine.state.equipment;
-        const playerHealth = GameEngine.state.combat.player.currentHealth;
-        const totalWeight = GameEngine.getTotalEquippedWeight();
+        // Get player health - check multiple possible locations
+        const playerHealth = GameEngine.state.player?.currentHP
+            || GameEngine.state.combat?.player?.currentHealth
+            || GameEngine.state.combat?.player?.currentHP
+            || 100;
+        const totalWeight = GameEngine.getTotalEquippedWeight ? GameEngine.getTotalEquippedWeight() : 0;
 
         // Create state snapshot
         const currentState = {
@@ -233,81 +300,15 @@ const EquipmentUI = {
             this.lastEquipmentState.weight !== currentState.weight;
 
         if (hasChanged) {
-            this.updatePlayerStats();
             this.updateEquipmentSlots();
             this.lastEquipmentState = currentState;
         }
     },
 
     /**
-     * Update player stats display
-     */
-    updatePlayerStats() {
-        // Use new summary stats container in horizontal layout
-        let container = document.getElementById("equipmentSummaryStats");
-
-        // Fallback to old playerStats container if horizontal layout not present
-        if (!container) {
-            container = document.getElementById("playerStats");
-        }
-
-        if (!container) return;
-
-        const stats = GameEngine.getPlayerCombatStats();
-        const currentWeight = GameEngine.getTotalEquippedWeight();
-        const maxWeight = GameEngine.getMaxEquipmentWeight();
-
-        // Get type information
-        const weaponDamageType = GameEngine.getWeaponDamageType();
-        const playerArmorType = GameEngine.getPlayerDominantArmorType();
-        const weaponTypeDef = GameEngine.definitions.damageTypes[weaponDamageType];
-        const armorTypeDef = GameEngine.definitions.armorTypes[playerArmorType];
-
-        // Determine weight color based on capacity
-        let weightColor = "#4a9eff"; // Default blue
-        const weightPercent = (currentWeight / maxWeight) * 100;
-        if (weightPercent >= 100) {
-            weightColor = "#f44336"; // Red when at/over capacity
-        } else if (weightPercent >= 80) {
-            weightColor = "#ff9800"; // Orange when near capacity
-        }
-
-        let html = `
-            <div class="stat-row">
-                <span class="stat-label">⚖️ Equipment Weight:</span>
-                <span class="stat-value" style="color: ${weightColor};">${currentWeight} / ${maxWeight}</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">${weaponTypeDef.icon} Weapon Type:</span>
-                <span class="stat-value" style="color: ${weaponTypeDef.color};">${weaponTypeDef.name}</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">${armorTypeDef.icon} Armor Type:</span>
-                <span class="stat-value" style="color: ${armorTypeDef.color};">${armorTypeDef.name}</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">⚔️ Attack Damage:</span>
-                <span class="stat-value">${stats.attackDamage.toFixed(1)}</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">⚡ Attack Speed:</span>
-                <span class="stat-value">${stats.attackSpeed.toFixed(2)}/s</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">🎯 Accuracy:</span>
-                <span class="stat-value">${stats.accuracy.toFixed(0)}%</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">❤️ Health:</span>
-                <span class="stat-value">${Math.floor(stats.currentHealth)}/${Math.floor(stats.maxHealth)}</span>
-            </div>
-        `;
-
-        container.innerHTML = html;
-    },
-
-    /**
      * Update equipment slots display
+     * Uses split layout: Equipment (vertical stack) on left, Presets on right
+     * Below 1000px: Everything stacks vertically
      */
     updateEquipmentSlots() {
         const container = document.getElementById("equipmentGrid");
@@ -316,11 +317,105 @@ const EquipmentUI = {
             return;
         }
 
-        // Use EquipmentComponent with horizontal layout mode (3 containers side-by-side)
-        container.innerHTML = EquipmentComponent.render({
-            mode: 'horizontal',
-            showLabels: true,
-            interactive: true
-        });
+        const equipment = GameEngine.state.equipment || {};
+        const intellect = GameEngine.state.combatAttributes?.intellect || 0;
+        const renderer = typeof LoadoutSlotRenderer !== 'undefined' ? LoadoutSlotRenderer : null;
+
+        let html = '';
+
+        // Split layout: Equipment (left) | Presets (right)
+        html += `<div class="equipment-view-container">`;
+
+        // Left side: Equipment panels stacked vertically
+        html += `<div class="equipment-main-panel">`;
+
+        // Equipment Grid Container
+        html += `
+            <div class="equipment-section-card">
+                <div class="equipment-section-header">
+                    <span class="section-icon">⚔️</span>
+                    <span class="section-title">Equipment</span>
+                    <span class="section-subtitle">Main Gear</span>
+                </div>
+                <div class="equipment-section-content">
+                    ${renderer ? renderer.renderEquipmentGrid({
+                        equipment,
+                        size: 'lg',
+                        showLabels: true,
+                        showNames: true,
+                        interactive: true,
+                        onSlotClick: (slot) => `openEquipModal('${slot}', event)`
+                    }) : this._renderEquipmentGridFallback()}
+                </div>
+            </div>
+        `;
+
+        // Consumables Container
+        html += `
+            <div class="equipment-section-card">
+                <div class="equipment-section-header">
+                    <span class="section-icon">🍖</span>
+                    <span class="section-title">Consumables</span>
+                    <span class="section-subtitle">Food • Potions • Ammo</span>
+                </div>
+                <div class="equipment-section-content">
+                    ${renderer ? renderer.renderConsumablesRow({
+                        equipment,
+                        size: 'lg',
+                        showLabels: true,
+                        interactive: true,
+                        onSlotClick: (slot) => `openEquipModal('${slot}', event)`
+                    }) : ''}
+                </div>
+            </div>
+        `;
+
+        // Technology Container
+        html += `
+            <div class="equipment-section-card">
+                <div class="equipment-section-header">
+                    <span class="section-icon">⚡</span>
+                    <span class="section-title">Technology</span>
+                    <span class="section-subtitle">Advanced Tech Slots</span>
+                </div>
+                <div class="equipment-section-content">
+                    ${renderer ? renderer.renderTechRow({
+                        equipment,
+                        intellect,
+                        size: 'lg',
+                        showLabels: true,
+                        interactive: true,
+                        onSlotClick: (slot) => `openEquipModal('${slot}', event)`
+                    }) : ''}
+                </div>
+            </div>
+        `;
+
+        html += `</div>`; // Close equipment-main-panel
+
+        // Right side: Presets panel (if EquipmentPresetsUI is available)
+        if (typeof EquipmentPresetsUI !== 'undefined') {
+            html += `
+                <div class="equipment-presets-panel">
+                    <div class="equipment-presets-header">
+                        <span class="presets-icon">💾</span>
+                        <span class="presets-title">Equipment Presets</span>
+                    </div>
+                    ${EquipmentPresetsUI.render()}
+                </div>
+            `;
+        }
+
+        html += `</div>`; // Close equipment-view-container
+
+        container.innerHTML = html;
+    },
+
+    /**
+     * Fallback equipment grid rendering
+     * @private
+     */
+    _renderEquipmentGridFallback() {
+        return EquipmentComponent.renderEquipmentGrid(true, true);
     }
 };

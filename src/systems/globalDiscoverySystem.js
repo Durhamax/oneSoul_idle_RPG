@@ -30,9 +30,15 @@ const GlobalDiscoverySystem = {
      * @param {string} regionId - Region where discovered
      */
     discoverNodeGlobally(nodeId, regionId) {
-        const nodeDef = this.definitions.resourceNodes?.[nodeId];
+        // Get node from NodeRegistry only
+        if (typeof NodeRegistry === 'undefined') {
+            console.error(`❌ NodeRegistry not available`);
+            return;
+        }
+
+        const nodeDef = NodeRegistry.getAllActive()[nodeId];
         if (!nodeDef) {
-            console.error(`❌ Node ${nodeId} not found in definitions`);
+            console.error(`❌ Node ${nodeId} not found in NodeRegistry`);
             return;
         }
 
@@ -69,6 +75,11 @@ const GlobalDiscoverySystem = {
         const regionCount = Object.keys(globalNode.regionContributions).length;
 
         console.log(`🌟 Discovered ${nodeDef.name} in ${regionId}! (+${HEALTH_PER_REGION} health, total regions: ${regionCount}, total bonus: ${globalNode.totalHealthBonus})`);
+
+        // Initialize node health for mining system if this is a mining node
+        if (nodeDef.nodeType === 'mining' && this.initializeNodeHealth) {
+            this.initializeNodeHealth(nodeId);
+        }
 
         return {
             newDiscovery: true,

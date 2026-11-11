@@ -8,6 +8,11 @@
 window.addEventListener('DOMContentLoaded', () => {
     console.log('%c🌲 Node System Loading...', 'color: #4caf50; font-weight: bold; font-size: 14px;');
 
+    // Register items embedded in node definitions
+    if (typeof NodeItemIntegration !== 'undefined') {
+        NodeItemIntegration.registerNodeItems(NodeRegistry);
+    }
+
     // Run validation
     const validation = NodeUtils.validateAllNodes();
 

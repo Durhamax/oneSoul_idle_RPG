@@ -95,6 +95,16 @@ const UICore = {
                 break;
             case 'skills':
                 SkillsUI.updateSkills();
+                // Render gathering activity display if active
+                if (typeof GatheringUI !== 'undefined') {
+                    GatheringUI.render();
+                }
+                break;
+            case 'gather':
+                // New GatherUI handles its own updates
+                if (typeof GatherUI !== 'undefined' && GatherUI.updateIntervalBar) {
+                    GatherUI.updateIntervalBar();
+                }
                 break;
             case 'bank':
                 EquipmentUI.updateBank();
@@ -106,7 +116,13 @@ const UICore = {
                 CombatUI.updateCombat();
                 break;
             case 'crafting':
-                CraftingUI.updateCrafting();
+                // Use new UnifiedCraftingUI if available, fallback to legacy
+                if (typeof UnifiedCraftingUI !== 'undefined') {
+                    // Only update queue sidebar, don't re-render entire UI each tick
+                    UnifiedCraftingUI.update();
+                } else if (typeof CraftingUI !== 'undefined') {
+                    CraftingUI.updateCrafting();
+                }
                 break;
             case 'navigation':
                 NavigationUI.updateNavigation();
@@ -114,9 +130,6 @@ const UICore = {
                 if (typeof MapRenderer !== 'undefined' && MapRenderer.ctx) {
                     MapRenderer.render();
                 }
-                break;
-            case 'nodes':
-                NavigationUI.updateNodes();
                 break;
             case 'regions':
                 NavigationUI.updateCurrentRegion();
@@ -146,6 +159,11 @@ const UICore = {
      * Update character level and attribute points
      */
     updateCharacterLevel() {
+        // Safety check: Don't update if systems aren't initialized yet
+        if (!GameEngine.getCharacterExpRequired) {
+            return;
+        }
+
         const charLevel = GameEngine.state.characterLevel;
         const expRequired = GameEngine.getCharacterExpRequired();
         const expPercent = (charLevel.exp / expRequired) * 100;
@@ -208,9 +226,10 @@ const UICore = {
         }
 
         // Update each currency with flash animation if changed
+        // Note: UI element "medalsAmount" displays medalFragments (from combat drops)
         const currencyElements = {
             gold: document.getElementById("goldAmount"),
-            medals: document.getElementById("medalsAmount"),
+            medalFragments: document.getElementById("medalsAmount"),  // medalFragments displayed as "Medals"
             tomes: document.getElementById("tomesAmount"),
             gems: document.getElementById("gemsAmount")
         };
@@ -244,7 +263,7 @@ const UICore = {
         const regionText = document.getElementById("currentRegionText");
 
         // Update current region
-        const currentRegion = GameEngine.definitions.worldMap?.[state.currentRegion];
+        const currentRegion = state.worldMap?.[state.currentRegion];
         if (regionText && currentRegion) {
             regionText.textContent = `${currentRegion.name || "Unknown"}`;
         }
@@ -286,20 +305,20 @@ const UICore = {
             }
         } else if (state.currentActivity === 'navigation' && state.activeNavigation.isNavigating) {
             // Show navigation activity
-            const currentRegion = GameEngine.definitions.worldMap?.[state.currentRegion];
+            const currentRegion = state.worldMap?.[state.currentRegion];
             const regionName = currentRegion?.name || "Unknown Region";
 
             text = `🧭 Exploring ${regionName}`;
 
             const regionState = state.regions[state.currentRegion];
-            const totalDiscoveryItems = regionState.discoveredNodeTypes.length +
-                                       regionState.discoveredCraftingStations.length +
-                                       regionState.discoveredExitPaths.length;
+            const totalDiscoveryItems = (regionState?.discoveredNodeTypes?.length || 0) +
+                                       (regionState?.discoveredCraftingStations?.length || 0) +
+                                       (regionState?.discoveredExitPaths?.length || 0);
 
             progress = (state.activeNavigation.regionHealth / state.activeNavigation.maxRegionHealth) * 100;
             progressText = `${totalDiscoveryItems} Discoveries | ${Math.floor(state.activeNavigation.regionHealth)} HP`;
             barColor = "linear-gradient(90deg, #FF9800, #FFC107)";
-        } else if (state.currentActivity === 'combat' && state.combat.inCombat) {
+        } else if (state.currentActivity === 'combat' && state.combat?.inCombat) {
             // Show combat activity
             const enemy = state.combat.currentEnemy;
             const enemyDef = GameEngine.definitions.enemies[enemy.enemyId];
@@ -310,7 +329,7 @@ const UICore = {
                 progressText = `Enemy: ${Math.floor(enemy.currentHealth)} / ${enemyDef.health} HP`;
                 barColor = "linear-gradient(90deg, #f44336, #e91e63)";
             }
-        } else if (state.currentActivity === 'crafting' && state.crafting.activeCrafts.length > 0) {
+        } else if (state.currentActivity === 'crafting' && state.crafting?.activeCrafts?.length > 0) {
             // Show crafting activity (first active craft)
             const craft = state.crafting.activeCrafts[0];
             const recipeDef = GameEngine.definitions.recipes[craft.recipeId];
@@ -350,25 +369,146 @@ const UICore = {
     },
 
     /**
+     * Switch to a different view
+     * @param {string} viewName - The view to switch to (e.g., 'skills', 'bank', 'combat')
+     */
+    switchView(viewName) {
+        // Update current view
+        this.currentView = viewName;
+
+        // Hide all views
+        const views = document.querySelectorAll('.view');
+        views.forEach(view => view.classList.remove('active'));
+
+        // Show selected view
+        const selectedView = document.getElementById(`view-${viewName}`);
+        if (selectedView) {
+            selectedView.classList.add('active');
+
+            // Trigger fade-in animation
+            if (typeof Animations !== 'undefined') {
+                Animations.fadeInView(selectedView);
+            }
+        }
+
+        // Update navigation menu active state (both horizontal nav and sidebar)
+        const navItems = document.querySelectorAll('.nav-item, .sidebar-item');
+        navItems.forEach(item => {
+            if (item.getAttribute('data-view') === viewName) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+
+        // Special handling for bank view - clear new items notification
+        if (viewName === 'bank') {
+            // Clear all new item flags when visiting bank
+            GameEngine.state.bank.newItems = [];
+
+            // Clear isNew flag on all bank items
+            for (let itemId in GameEngine.state.bank.items) {
+                if (GameEngine.state.bank.items[itemId].isNew) {
+                    GameEngine.state.bank.items[itemId].isNew = false;
+                }
+            }
+        }
+
+        // Special handling for crafting view - render UnifiedCraftingUI or sync legacy stations
+        if (viewName === 'crafting') {
+            if (typeof UnifiedCraftingUI !== 'undefined') {
+                UnifiedCraftingUI.render();
+            } else if (typeof CraftingUI !== 'undefined' && CraftingUI.syncCraftingStations) {
+                CraftingUI.syncCraftingStations();
+            }
+        }
+
+        // Special handling for combat view - render new combat UI
+        if (viewName === 'combat') {
+            if (typeof CombatUI !== 'undefined' && CombatUI.render) {
+                CombatUI.render();
+            }
+        }
+
+        // Special handling for gather view - render new GatherUI
+        if (viewName === 'gather') {
+            if (typeof GatherUI !== 'undefined' && GatherUI.render) {
+                GatherUI.render();
+            }
+        }
+
+        // Special handling for perks view - render perk grid
+        if (viewName === 'perks') {
+            if (typeof PerkGridUI !== 'undefined' && PerkGridUI.render) {
+                PerkGridUI.render();
+            }
+        }
+
+        // Special handling for developer view - render medal crafting simulator
+        if (viewName === 'developer') {
+            const container = document.getElementById('medalCraftingSimulator');
+            if (container && typeof MedalCraftingUI !== 'undefined') {
+                container.innerHTML = MedalCraftingUI.render();
+            }
+        }
+
+        // Update developer stats panel for the new view
+        if (typeof DevStatsPanel !== 'undefined') {
+            DevStatsPanel.update(viewName);
+        }
+
+        // Emit tab-visited event for mission objective tracking
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('tab-visited', { tab: viewName });
+        }
+
+        // Force update of the new view
+        this.update();
+    },
+
+    /**
      * Update notification badges on navigation tabs
      */
     updateNotificationBadges() {
         const state = GameEngine.state;
 
-        // Skills tab: Unassigned attribute points
-        const skillsCount = state.characterLevel.unassignedAttributePoints;
-        this.updateTabBadge('skills', skillsCount);
+        // Overview tab: Unassigned attribute points (attributes are assigned on overview)
+        const attributePoints = state.characterLevel.unassignedAttributePoints;
+        this.updateTabBadge('overview', attributePoints);
 
-        // Missions tab: Available missions (not started yet)
-        let availableMissionsCount = 0;
-        if (state.missions && GameEngine.definitions.missions) {
-            for (let missionId in GameEngine.definitions.missions) {
-                if (!state.missions[missionId] || state.missions[missionId].status === 'available') {
-                    availableMissionsCount++;
+        // Show/update persistent banner if points available
+        this.updateAttributePointsBanner(attributePoints);
+
+        // Missions tab: Only show badge for actionable items
+        // 1. New available missions user hasn't seen yet
+        // 2. Active missions ready to complete
+        let missionBadgeCount = 0;
+        if (state.missions) {
+            const seenMissions = state.missions.seenMissions || [];
+            const available = state.missions.available || [];
+            const active = state.missions.active || [];
+
+            // Count new unseen available missions
+            for (const missionId of available) {
+                if (!seenMissions.includes(missionId)) {
+                    missionBadgeCount++;
+                }
+            }
+
+            // Count active missions that are ready to complete
+            for (const missionId of active) {
+                const progress = state.missions.activeProgress?.[missionId];
+                if (progress?.objectives) {
+                    const allComplete = Object.values(progress.objectives).every(obj =>
+                        (obj.current || 0) >= (obj.required || 1)
+                    );
+                    if (allComplete) {
+                        missionBadgeCount++;
+                    }
                 }
             }
         }
-        this.updateTabBadge('missions', availableMissionsCount);
+        this.updateTabBadge('missions', missionBadgeCount);
 
         // Bank tab: New items count
         const newItemsCount = state.bank.newItems.length;
@@ -410,6 +550,63 @@ const UICore = {
             badge.classList.remove('hidden');
         } else {
             badge.classList.add('hidden');
+        }
+    },
+
+    /**
+     * Show/hide a prominent banner for unassigned attribute points
+     * @param {number} points - Number of unassigned points
+     */
+    updateAttributePointsBanner(points) {
+        const bannerId = 'attribute-points-banner';
+        let banner = document.getElementById(bannerId);
+
+        if (points > 0) {
+            // Create banner if it doesn't exist
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = bannerId;
+                banner.className = 'attribute-points-banner';
+                banner.innerHTML = `
+                    <div class="banner-content">
+                        <span class="banner-icon">✨</span>
+                        <span class="banner-text">
+                            <strong>${points}</strong> Attribute Point${points !== 1 ? 's' : ''} Available!
+                        </span>
+                        <span class="banner-action">Click to assign</span>
+                    </div>
+                `;
+                banner.addEventListener('click', () => {
+                    if (typeof switchView === 'function') {
+                        switchView('overview');
+                    }
+                    // Scroll to attributes panel after a brief delay
+                    setTimeout(() => {
+                        const panel = document.querySelector('.panel-attributes');
+                        if (panel) {
+                            panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            panel.classList.add('highlight-pulse');
+                            setTimeout(() => panel.classList.remove('highlight-pulse'), 2000);
+                        }
+                    }, 100);
+                });
+
+                // Insert at top of main content area
+                const mainContent = document.querySelector('.main-content') || document.body;
+                mainContent.insertBefore(banner, mainContent.firstChild);
+            } else {
+                // Update existing banner text
+                const textEl = banner.querySelector('.banner-text');
+                if (textEl) {
+                    textEl.innerHTML = `<strong>${points}</strong> Attribute Point${points !== 1 ? 's' : ''} Available!`;
+                }
+                banner.classList.remove('hidden');
+            }
+        } else {
+            // Hide banner if no points
+            if (banner) {
+                banner.classList.add('hidden');
+            }
         }
     }
 };

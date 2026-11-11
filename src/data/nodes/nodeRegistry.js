@@ -221,23 +221,40 @@ const NodeRegistry = {
      * Check if player has required tool
      */
     hasRequiredTool(requiredTools, minTier, playerState) {
-        // Check equipped tool slot
-        const equippedTool = playerState.equipment.tool;
-        if (!equippedTool) return false;
+        if (!requiredTools || requiredTools.length === 0) return true;
 
-        // Get tool definition
-        const toolDef = window.GameEngine?.definitions?.items?.[equippedTool];
-        if (!toolDef) return false;
+        // Check all equipment slots for a matching tool
+        for (const slot in playerState.equipment) {
+            const equippedItemId = playerState.equipment[slot];
+            if (!equippedItemId) continue;
 
-        // Check if tool type matches
-        const toolType = toolDef.category || toolDef.toolType;
-        if (!requiredTools.includes(toolType)) return false;
+            // Parse instance ID to get base item ID
+            let lookupId = equippedItemId;
+            if (equippedItemId.includes('_instance_')) {
+                lookupId = equippedItemId.split('_instance_')[0];
+            } else if (equippedItemId.includes('_')) {
+                const parts = equippedItemId.split('_');
+                if (parts.length >= 3 && /^\d{13}$/.test(parts[parts.length - 2])) {
+                    lookupId = parts.slice(0, -2).join('_');
+                }
+            }
 
-        // Check tier
-        const toolTier = toolDef.tier || 1;
-        if (toolTier < minTier) return false;
+            // Get tool definition
+            const toolDef = ItemRegistry?.getItem(lookupId) || window.GameEngine?.definitions?.items?.[lookupId];
+            if (!toolDef) continue;
 
-        return true;
+            // Check if tool type matches
+            const toolType = toolDef.toolType || toolDef.category;
+            if (!requiredTools.includes(toolType)) continue;
+
+            // Check tier
+            const toolTier = toolDef.toolTier || toolDef.tier || 1;
+            if (toolTier < minTier) continue;
+
+            return true;
+        }
+
+        return false;
     },
 
     // === STATISTICS ===

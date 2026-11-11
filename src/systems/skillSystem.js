@@ -77,8 +77,25 @@ const SkillSystem = {
     gainSkillExp(skillId, amount) {
         if (!skillId || !this.state.skills[skillId]) return;
 
+        // Serum/potion dosing during skilling — a completed skilling action maintains the
+        // equipped serum's buff and depletes it (consistent with food/ammo consumption).
+        if (typeof AutoConsumption !== 'undefined') {
+            AutoConsumption.pruneExpiredEffects(this.state);
+            AutoConsumption.processSerumDose(this.state, { inCombat: false });
+        }
+
         const skill = this.state.skills[skillId];
         skill.exp += amount;
+
+        // Emit event for UI update (SkillCard component)
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('skill-xp-gained', {
+                skillId: skillId,
+                amount: amount,
+                currentExp: skill.exp,
+                level: skill.level
+            });
+        }
 
         // Check for level up
         const expRequired = this.getSkillExpRequired(skillId);
@@ -87,6 +104,14 @@ const SkillSystem = {
             skill.level++;
             const def = this.definitions.skills[skillId];
             console.log(`⬆️ ${def.name} leveled up to ${skill.level}!`);
+
+            // Emit level-up event
+            if (typeof EventBus !== 'undefined') {
+                EventBus.emit('skill-level-up', {
+                    skillId: skillId,
+                    newLevel: skill.level
+                });
+            }
         }
 
         // Also grant character XP at reduced rate
@@ -165,6 +190,11 @@ const SkillSystem = {
 
         console.log(`✨ Assigned point to ${this.definitions.combatAttributes[attributeId].name}`);
 
+        // Recompile player stats (attributes affect all derived stats)
+        if (typeof this.compilePlayerStats === 'function') {
+            this.compilePlayerStats();
+        }
+
         // Trigger UI update to refresh immediately
         if (typeof UICore !== 'undefined' && UICore.update) {
             UICore.update();
@@ -186,6 +216,11 @@ const SkillSystem = {
 
         // Return points to unassigned pool
         this.state.characterLevel.unassignedAttributePoints += totalPoints;
+
+        // Recompile player stats (attributes affect all derived stats)
+        if (typeof this.compilePlayerStats === 'function') {
+            this.compilePlayerStats();
+        }
 
         console.log(`🔄 Reset all attributes. ${totalPoints} points available to reassign.`);
         return { success: true, pointsReturned: totalPoints };

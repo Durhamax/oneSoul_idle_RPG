@@ -286,7 +286,7 @@ const OfflineCombatUI = {
 
         const lootItems = lootEntries
             .map(([itemId, amount]) => {
-                const itemDef = GameEngine.definitions.items[itemId];
+                const itemDef = ItemAccessHelper.getItem(itemId);
                 const itemName = itemDef ? itemDef.name : itemId;
                 const itemIcon = itemDef ? itemDef.image : '📦';
 

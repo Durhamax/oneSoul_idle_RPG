@@ -1,0 +1,32 @@
+// Before migration - inspect old bank structure
+console.group('🔍 BANK INSPECTION');
+
+console.group('Old Structure (bank.items)');
+if (GameEngine.state.bank.items) {
+    console.log('Item count:', Object.keys(GameEngine.state.bank.items).length);
+    console.table(GameEngine.state.bank.items);
+} else {
+    console.log('No old structure found');
+}
+console.groupEnd();
+
+console.group('New Structure (dual-bank)');
+console.log('Stackable count:', Object.keys(GameEngine.state.bank.stackable || {}).length);
+console.log('Instanced count:', Object.keys(GameEngine.state.bank.instanced || {}).length);
+console.table(GameEngine.state.bank.stackable);
+console.table(GameEngine.state.bank.instanced);
+console.groupEnd();
+
+console.group('Backup');
+if (GameEngine.state.bank.items_backup) {
+    console.log('Backup exists:', Object.keys(GameEngine.state.bank.items_backup).length, 'items');
+} else {
+    console.log('No backup found');
+}
+console.groupEnd();
+
+console.groupEnd();
+
+// Validate
+DualBankSystem.validate();
+DualBankSystem.getStatistics();

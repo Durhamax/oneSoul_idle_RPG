@@ -190,6 +190,11 @@ const NavigationUI = {
         // Always update active node display (shows health bar)
         this.updateActiveNodeDisplay();
 
+        // Update mining UI if mining is active
+        if (GameEngine.state.currentActivity === 'mining' && typeof renderMiningUI === 'function') {
+            renderMiningUI();
+        }
+
         // Only update available nodes if selection changed
         if (needsGridUpdate) {
             this.updateNodesDisplay();
@@ -213,10 +218,15 @@ const NavigationUI = {
             return;
         }
 
-        const nodeDef = GameEngine.definitions.resourceNodes[activeNode.nodeId];
-        const nodeState = GameEngine.getNodeStateInRegion(activeNode.nodeId);
+        // Get node data from GatheringSystem (not NodeCollectionSystem)
+        const gatheringSession = GameEngine.state.gatheringSession;
+        if (!gatheringSession || gatheringSession.nodeId !== activeNode.nodeId) {
+            container.innerHTML = "";
+            return;
+        }
 
-        if (!nodeDef || !nodeState) {
+        const nodeDef = NodeRegistry.getAllActive()[activeNode.nodeId];
+        if (!nodeDef) {
             container.innerHTML = "";
             return;
         }
@@ -226,27 +236,15 @@ const NavigationUI = {
             let html = `
                 <div style="padding: 15px; background: #2a2a3a; border-radius: 4px; border: 2px solid #4a9eff;">
                     <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 10px;">
-                        ${nodeDef.image} Harvesting: ${nodeDef.name}
+                        ${nodeDef.icon} Harvesting: ${nodeDef.name}
                     </div>
                     <div style="margin: 10px 0;">
-                        <strong>Harvests Remaining:</strong>
-                        <div class="health-bar">
-                            <div class="health-bar-fill" id="nodeHarvestsFill" style="width: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width 0.3s ease-out;"></div>
-                            <div class="health-bar-text" id="nodeHarvestsText">0/0</div>
+                        <div style="font-size: 0.85em; color: #aaa;">
+                            Node health and progress shown in persistent action bar above
                         </div>
                     </div>
-                    <div style="margin: 10px 0;">
-                        <strong id="harvestProgressLabel">Harvest Progress:</strong>
-                        <div class="health-bar">
-                            <div class="health-bar-fill" id="harvestIntervalBar" style="width: 0%; background: linear-gradient(90deg, #2196F3, #03A9F4); transition: width 0.3s ease-out;"></div>
-                            <div class="health-bar-text" id="harvestIntervalText">Ready</div>
-                        </div>
-                    </div>
-                    <div style="font-size: 0.85em; color: #aaa; margin-top: 10px;">
-                        ⏱️ Harvest time: ${(nodeDef.harvestTime / 1000).toFixed(1)}s
-                    </div>
-                    <button onclick="stopNodeHarvesting()" style="margin-top: 10px; width: 100%;">
-                        ⏹️ Stop Harvesting
+                    <button onclick="GameEngine.stopGathering()" style="margin-top: 10px; width: 100%;">
+                        ⏹️ Stop Gathering
                     </button>
                 </div>
             `;
@@ -254,62 +252,7 @@ const NavigationUI = {
             this.lastActiveNodeId = activeNode.nodeId;
         }
 
-        // Always update progress bars
-        const harvestsPercent = (nodeState.harvestsRemaining / nodeState.maxHarvests) * 100;
-        const harvestsFill = document.getElementById("nodeHarvestsFill");
-        const harvestsText = document.getElementById("nodeHarvestsText");
-
-        if (harvestsFill) {
-            harvestsFill.style.width = `${harvestsPercent}%`;
-        }
-        if (harvestsText) {
-            harvestsText.textContent = `${nodeState.harvestsRemaining}/${nodeState.maxHarvests}`;
-        }
-
-        // Update harvest/respawn interval bar
-        const now = Date.now();
-        const intervalBar = document.getElementById("harvestIntervalBar");
-        const intervalText = document.getElementById("harvestIntervalText");
-        const progressLabel = document.getElementById("harvestProgressLabel");
-
-        if (intervalBar && intervalText) {
-            // Check if waiting for respawn
-            if (activeNode.waitingForRespawn) {
-                // Show respawn progress
-                const elapsed = now - (nodeState.depletedAt || now);
-                const progress = Math.min(100, (elapsed / nodeState.respawnTime) * 100);
-
-                // Change bar color to orange for respawn
-                intervalBar.style.background = "linear-gradient(90deg, #FF9800, #FFC107)";
-                ProgressBar.applyProgressWithReset(intervalBar, progress, this.lastHarvestProgress || 0);
-                this.lastHarvestProgress = progress;
-
-                const remaining = Math.max(0, (nodeState.respawnTime - elapsed) / 1000);
-                intervalText.textContent = remaining > 0 ? `Respawning ${remaining.toFixed(1)}s` : "Respawned!";
-
-                // Update label
-                if (progressLabel) {
-                    progressLabel.textContent = "Respawn Progress:";
-                }
-            } else {
-                // Show harvest progress
-                const elapsed = now - activeNode.startTime;
-                const progress = Math.min(100, (elapsed / activeNode.harvestTime) * 100);
-
-                // Use blue color for harvesting
-                intervalBar.style.background = "linear-gradient(90deg, #2196F3, #03A9F4)";
-                ProgressBar.applyProgressWithReset(intervalBar, progress, this.lastHarvestProgress || 0);
-                this.lastHarvestProgress = progress;
-
-                const remaining = Math.max(0, (activeNode.harvestTime - elapsed) / 1000);
-                intervalText.textContent = remaining > 0 ? `${remaining.toFixed(1)}s` : "Harvesting!";
-
-                // Update label
-                if (progressLabel) {
-                    progressLabel.textContent = "Harvest Progress:";
-                }
-            }
-        }
+        // All progress is now shown in PersistentActionBar - no need for duplicate display here
     },
 
     /**
@@ -377,27 +320,19 @@ const NavigationUI = {
             const state = nodeData.state;
             const isLocked = nodeData.locked;
             const isActive = activeNodeId === nodeData.nodeId;
+            const isDepleted = nodeData.isDepleted; // Depletion status provided by NodeCollectionSystem
 
             // Tier stars
             const tierStars = '⭐'.repeat(def.tier);
 
-            // Availability status
-            const isDepleted = state && state.harvestsRemaining <= 0;
+            // Status display removed - using PersistentActionBar for node health
             let statusColor = '#4caf50'; // Available
-            if (isDepleted) statusColor = '#f44336'; // Depleted
-            else if (isLocked) statusColor = '#888'; // Locked
+            if (isLocked) statusColor = '#888'; // Locked
 
-            // Respawn timer if depleted
-            let availabilityText = '';
-            if (isDepleted && state.depletedAt) {
-                const timeUntilRespawn = Math.max(0, Math.ceil((state.depletedAt + state.respawnTime - Date.now()) / 1000));
-                availabilityText = `<span style="color: #f44336;">⏳ Respawns in ${timeUntilRespawn}s</span>`;
-            } else if (state) {
-                availabilityText = `<span style="color: ${statusColor};">${state.harvestsRemaining}/${state.maxHarvests} harvests</span>`;
-            }
+            let availabilityText = isLocked ? '<span style="color: #888;">Locked</span>' : '<span style="color: #4caf50;">Available</span>';
 
             html += `
-                <div class="panel" style="padding: 15px; ${isLocked ? 'opacity: 0.5;' : ''} ${isActive ? 'border: 2px solid #4a9eff;' : ''} ${isDepleted ? 'opacity: 0.7;' : ''}">
+                <div class="panel" style="padding: 15px; ${isLocked ? 'opacity: 0.5;' : ''} ${isActive ? 'border: 2px solid #4a9eff;' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="font-size: 0.8em; color: #ff9800;">${tierStars}</div>
                         <div style="font-size: 0.75em; color: #888;">Lv.${def.skillLevel}</div>
@@ -450,7 +385,7 @@ const NavigationUI = {
         const totalWeight = normalLoot.reduce((sum, entry) => sum + entry.weight, 0);
 
         for (let entry of normalLoot) {
-            const itemName = GameEngine.definitions.items[entry.itemId]?.name || entry.itemId;
+            const itemName = ItemAccessHelper.getItem(entry.itemId)?.name || entry.itemId;
             const chance = Math.round((entry.weight / totalWeight) * 100);
             html += `<div style="margin-bottom: 2px;">• ${entry.min}-${entry.max} ${itemName} <span style="color: #888;">(${chance}%)</span></div>`;
         }
@@ -465,8 +400,8 @@ const NavigationUI = {
 
         let html = '';
         for (let entry of rareLoot) {
-            const itemName = GameEngine.definitions.items[entry.itemId]?.name || entry.itemId;
-            const itemDef = GameEngine.definitions.items[entry.itemId];
+            const itemName = ItemAccessHelper.getItem(entry.itemId)?.name || entry.itemId;
+            const itemDef = ItemAccessHelper.getItem(entry.itemId);
             const chance = (entry.chance * 100).toFixed(1);
             const rarityColor = itemDef?.rarity === 'legendary' ? '#9c27b0' : itemDef?.rarity === 'epic' ? '#ff9800' : '#4a9eff';
             html += `<div style="margin-bottom: 2px; color: ${rarityColor};">✨ ${itemName} <span style="color: #888;">(${chance}%)</span></div>`;
@@ -489,7 +424,7 @@ const NavigationUI = {
                 }
             } else if (reward.itemId) {
                 // Item reward
-                const itemName = GameEngine.definitions.items[reward.itemId]?.name || reward.itemId;
+                const itemName = ItemAccessHelper.getItem(reward.itemId)?.name || reward.itemId;
                 html += `<div style="font-size: 0.8em;">${reward.min}-${reward.max} ${itemName} (${chancePercent}%)</div>`;
             }
         }
@@ -519,7 +454,7 @@ const NavigationUI = {
                 <div style="color: #ff9800; padding: 20px;">
                     <h3>⚠️ Navigation System Initializing...</h3>
                     <p>Current Region ID: ${regionId}</p>
-                    <p>World Map Generated: ${worldMap ? `✓ (${Object.keys(worldMap).length} regions)` : '✗'}</p>
+                    <p>World Map Generated: ${GameEngine.definitions.worldMap ? `✓ (${Object.keys(GameEngine.definitions.worldMap).length} regions)` : '✗'}</p>
                     <p>Region Definition: ${hexDef ? '✓' : '✗ (not found in worldMap)'}</p>
                     <p>Biome Data: ${biomeDef ? '✓' : `✗ (biome: ${hexDef?.biome})`}</p>
                     <p>Region State: ${regionState ? '✓' : '✗ (not in state.regions)'}</p>
@@ -535,22 +470,20 @@ const NavigationUI = {
                 biomeDef,
                 regionState,
                 activeNav,
-                worldMapKeys: worldMap ? Object.keys(worldMap).slice(0, 5) : 'null'
+                worldMapKeys: GameEngine.definitions.worldMap ? Object.keys(GameEngine.definitions.worldMap).slice(0, 5) : 'null'
             });
             return;
         }
 
-        // Create state snapshot
+        // Create state snapshot - only track things that affect map display or major UI changes
         const currentState = {
             regionId: regionId,
             isNavigating: activeNav.isNavigating,
-            endurance: activeNav.endurance,
             currentActivity: state.currentActivity,
-            discoveredNodes: JSON.stringify(regionState.discoveredNodeTypes),
-            discoveredStations: JSON.stringify(regionState.discoveredCraftingStations),
-            discoveredPaths: JSON.stringify(regionState.discoveredExitPaths),
-            navigationLevel: state.skills.navigation.level,
-            navigationExp: state.skills.navigation.exp
+            discoveredPaths: JSON.stringify(regionState.discoveredExitPaths)
+            // Removed: isRecovering (progress bar state, doesn't require full rebuild)
+            // Removed: discoveredNodes, discoveredStations (shown in Nodes tab, not map)
+            // Removed: navigationLevel, navigationExp (don't affect map display)
         };
 
         // Only re-render if state changed, but always update progress bars
@@ -562,6 +495,7 @@ const NavigationUI = {
         const stats = GameEngine.getNavigationStats();
         const endurancePercent = (activeNav.endurance / activeNav.maxEndurance) * 100;
         const isNavigating = activeNav.isNavigating && state.currentActivity === 'navigation';
+        const isRecovering = activeNav.isRecovering || false;
         const hasOtherActivity = state.currentActivity !== null && state.currentActivity !== 'navigation';
 
         let html = '';
@@ -581,49 +515,60 @@ const NavigationUI = {
                 </div>
             </div>
 
-            <!-- Action Interval Bar -->
+            <!-- Endurance Bar -->
             <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px;">
-                <div style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
-                    ${isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action'}
+                <div id="navigationEnduranceLabel" style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
+                    ${isRecovering ? '💤 Resting' : '💪 Endurance'}
                 </div>
-                ${isNavigating ? `
-                    <div class="health-bar" style="margin-bottom: 8px;">
-                        <div class="health-bar-fill" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #FF9800, #FFC107); transition: width 0.3s ease-out;"></div>
-                        <div class="health-bar-text" id="navigationIntervalText">Ready</div>
-                    </div>
-                    <div style="font-size: 0.75em; color: #888;">Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)</div>
-                ` : `
-                    <div style="font-size: 0.85em; color: #888; margin-bottom: 8px;">
-                        Click Explore to discover resources and enemies in this region
-                    </div>
-                `}
+                <div class="health-bar" style="margin-bottom: 5px;">
+                    <div class="health-bar-fill" id="navigationHealthBar" style="width: ${endurancePercent}%; background: linear-gradient(90deg, ${isRecovering ? '#FFC107, #FF9800' : '#4caf50, #8bc34a'}); transition: width 0.3s ease-out;"></div>
+                    <div class="health-bar-text" id="navigationHealthText">${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}</div>
+                </div>
+                <div id="navigationEnduranceDesc" style="font-size: 0.75em; color: #888;">
+                    ${isRecovering ? '💤 Recovering endurance (consuming rest resources)' : isNavigating ? '⚡ Draining while exploring' : '🛑 Paused'}
+                </div>
+            </div>
+
+            <!-- Navigation Action Interval Bar -->
+            <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px;">
+                <div id="navigationIntervalLabel" style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
+                    ${isRecovering ? '💤 Recovery Mode' : isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action'}
+                </div>
+                <div class="health-bar" style="margin-bottom: 8px;">
+                    <div class="health-bar-fill" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #2196F3, #64B5F6); transition: width 0.3s ease-out;"></div>
+                    <div class="health-bar-text" id="navigationIntervalText">${isRecovering ? 'Resting' : isNavigating ? '0.0s' : 'Not Exploring'}</div>
+                </div>
+                <div id="navigationIntervalDesc" style="font-size: 0.75em; color: #888; margin-bottom: 8px;">
+                ${isRecovering ? 'Resting to recover endurance - Discovery paused' : isNavigating ? `Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)` : 'Click Start Exploring to discover resources and enemies in this region'}
+                </div>
                 <button onclick="${isNavigating ? 'stopNavigating()' : 'startNavigating()'}"
                         style="width: 100%; background: ${isNavigating ? '#d32f2f' : '#4a9eff'}; margin-top: 5px;">
                     ${isNavigating ? '⏹️ Stop Exploring' : '🧭 Start Exploring'}
                 </button>
             </div>
 
-            <!-- Rest Resource Consumption Bar -->
-            ${isNavigating ? `
+            <!-- Rest Resource Equipment -->
             <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px;">
-                <div style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">🔥 Rest Resources</div>
-                <div class="health-bar" style="margin-bottom: 8px;">
-                    <div class="health-bar-fill" id="restIntervalBar" style="width: 0%; background: linear-gradient(90deg, #FF9800, #d32f2f); transition: width 0.3s ease-out;"></div>
-                    <div class="health-bar-text" id="restIntervalText">6.0s</div>
+                <div style="margin-bottom: 10px; font-size: 0.9em; font-weight: bold;">🔥 Campfire Resources</div>
+                <div style="font-size: 0.75em; color: #888; margin-bottom: 10px;">
+                    Select fuel and food for campfire recovery. Better fuel = faster recovery.
                 </div>
-                <div style="font-size: 0.75em; color: #888;">Consuming 1 food + 1 log every 6 seconds</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    ${this.renderRestEquipmentSlot('food')}
+                    ${this.renderFuelSelector()}
+                </div>
+                ${this.renderCampfireStatus()}
             </div>
-            ` : ''}
         `;
 
         container.innerHTML = html;
         this.lastNavigationState = currentState;
 
-        // Initialize map grid system if map is expanded
-        if (typeof MapGridSystem !== 'undefined') {
+        // Initialize hex grid system after DOM update
+        if (typeof HexGridSystem !== 'undefined') {
             setTimeout(() => {
                 if (document.getElementById('hexMapContainer')) {
-                    MapGridSystem.init('hexMapContainer');
+                    HexGridSystem.init('hexMapContainer');
                 }
             }, 50);
         }
@@ -637,18 +582,77 @@ const NavigationUI = {
      */
     updateNavigationProgressBars() {
         const activeNav = GameEngine.state.activeNavigation;
-        if (!activeNav || !activeNav.isNavigating) return;
+        if (!activeNav) return;
 
-        // Update endurance bar
+        const isNavigating = activeNav.isNavigating && GameEngine.state.currentActivity === 'navigation';
+        const isRecovering = activeNav.isRecovering || false;
+
+        // Always update endurance bar (whether navigating or not)
         const healthBar = document.getElementById("navigationHealthBar");
         const healthText = document.getElementById("navigationHealthText");
+        const enduranceLabel = document.getElementById("navigationEnduranceLabel");
+        const enduranceDesc = document.getElementById("navigationEnduranceDesc");
+
         if (healthBar && healthText) {
             const endurancePercent = (activeNav.endurance / activeNav.maxEndurance) * 100;
             healthBar.style.width = `${endurancePercent}%`;
             healthText.textContent = `${Math.max(0, Math.floor(activeNav.endurance))}/${activeNav.maxEndurance}`;
+
+            // Update color based on recovery state
+            healthBar.style.background = isRecovering
+                ? 'linear-gradient(90deg, #FFC107, #FF9800)'
+                : 'linear-gradient(90deg, #4caf50, #8bc34a)';
         }
 
-        // Update interval bar
+        // Update endurance label and description based on recovery state
+        if (enduranceLabel) {
+            enduranceLabel.textContent = isRecovering ? '💤 Resting' : '💪 Endurance';
+        }
+        if (enduranceDesc) {
+            enduranceDesc.textContent = isRecovering
+                ? '💤 Recovering endurance (consuming rest resources)'
+                : isNavigating ? '⚡ Draining while exploring' : '🛑 Paused';
+        }
+
+        // Update interval label and description
+        const intervalLabel = document.getElementById("navigationIntervalLabel");
+        const intervalDesc = document.getElementById("navigationIntervalDesc");
+
+        if (intervalLabel) {
+            intervalLabel.textContent = isRecovering
+                ? '💤 Recovery Mode'
+                : isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action';
+        }
+        if (intervalDesc) {
+            const stats = GameEngine.getNavigationStats();
+            intervalDesc.textContent = isRecovering
+                ? 'Resting to recover endurance - Discovery paused'
+                : isNavigating
+                    ? `Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)`
+                    : 'Click Start Exploring to discover resources and enemies in this region';
+        }
+
+        // Only update interval and rest bars if navigating
+        if (!isNavigating) {
+            // Reset interval bar when not navigating
+            const intervalBar = document.getElementById("navigationIntervalBar");
+            const intervalText = document.getElementById("navigationIntervalText");
+            if (intervalBar && intervalText) {
+                intervalBar.style.width = "0%";
+                intervalText.textContent = "Not Exploring";
+            }
+
+            // Reset rest bar when not navigating
+            const restBar = document.getElementById("restIntervalBar");
+            const restText = document.getElementById("restIntervalText");
+            if (restBar && restText) {
+                restBar.style.width = "0%";
+                restText.textContent = "Not Active";
+            }
+            return;
+        }
+
+        // Update interval bar (when navigating)
         const stats = GameEngine.getNavigationStats();
         const lastTick = activeNav.lastNavigationTick;
         const nextTick = lastTick + stats.discoveryInterval;
@@ -666,11 +670,16 @@ const NavigationUI = {
             intervalText.textContent = remaining > 0 ? `${remaining.toFixed(1)}s` : "Discovering!";
         }
 
-        // Update rest resource consumption bar
-        const CONSUMPTION_INTERVAL = 6000; // 6 seconds
+        // Update rest resource consumption bar (when navigating)
+        // Consumption interval based on health: base 3000ms + (health * 200ms)
+        const health = GameEngine.state.combatAttributes?.health || 1;
+        const BASE_INTERVAL = 3000;
+        const HEALTH_BONUS = 200;
+        const consumptionInterval = BASE_INTERVAL + (health * HEALTH_BONUS);
+
         const now = Date.now();
         const lastRestConsumption = activeNav.lastRestConsumption || now;
-        const nextRestConsumption = lastRestConsumption + CONSUMPTION_INTERVAL;
+        const nextRestConsumption = lastRestConsumption + consumptionInterval;
         const restProgress = ProgressBar.calculateIntervalProgress(lastRestConsumption, nextRestConsumption);
 
         const restBar = document.getElementById("restIntervalBar");
@@ -804,34 +813,20 @@ const NavigationUI = {
             const nodeDef = GameEngine.definitions.resourceNodes[nodeId];
             if (!nodeDef) continue;
 
-            // Get node state in this region (with fallback if function doesn't exist)
-            let nodeState = null;
-            if (GameEngine.getNodeStateInRegion) {
-                nodeState = GameEngine.getNodeStateInRegion(nodeId);
-            }
-
             // Check if player can collect this node
             const playerSkillLevel = GameEngine.state.skills[nodeDef.skill]?.level || 0;
             const canCollect = playerSkillLevel >= nodeDef.skillLevel;
             const isActive = GameEngine.state.nodeCollection.activeNode?.nodeId === nodeId;
 
-            // Check if depleted
-            const isDepleted = nodeState && nodeState.harvestsRemaining <= 0;
-
             html += `
-                <div style="background: #1a1a1a; padding: 10px; border-radius: 5px; border: 1px solid ${isActive ? '#4a9eff' : '#444'}; cursor: ${canCollect && !isDepleted ? 'pointer' : 'default'}; position: relative; ${isDepleted ? 'opacity: 0.6;' : ''}"
-                     ${canCollect && !isDepleted ? `onclick="startHarvestingFromNavigation('${nodeId}')" onmouseenter="this.style.borderColor='#4a9eff'" onmouseleave="this.style.borderColor='${isActive ? '#4a9eff' : '#444'}'"` : ''}
-                     class="${canCollect && !isDepleted ? 'node-clickable' : ''}">
+                <div style="background: #1a1a1a; padding: 10px; border-radius: 5px; border: 1px solid ${isActive ? '#4a9eff' : '#444'}; cursor: ${canCollect ? 'pointer' : 'default'}; position: relative;"
+                     ${canCollect ? `onclick="startHarvestingFromNavigation('${nodeId}')" onmouseenter="this.style.borderColor='#4a9eff'" onmouseleave="this.style.borderColor='${isActive ? '#4a9eff' : '#444'}'"` : ''}
+                     class="${canCollect ? 'node-clickable' : ''}">
                     <div style="font-weight: bold; margin-bottom: 5px;">${nodeDef.image} ${nodeDef.name}</div>
-                    <div style="font-size: 0.8em; color: #aaa;">Harvests: ${nodeState?.harvestsRemaining || 0}/${nodeState?.maxHarvests || 0}</div>
                     <div style="font-size: 0.75em; color: #888; margin-top: 5px;">${nodeDef.skill} Lv.${nodeDef.skillLevel}</div>
-                    ${isDepleted ? `
-                        <div style="font-size: 0.75em; color: #f44336; margin-top: 5px;">
-                            ⏳ Depleted
-                        </div>
-                    ` : canCollect ? `
+                    ${canCollect ? `
                         <div style="font-size: 0.75em; color: #4a9eff; margin-top: 5px;">
-                            ${isActive ? '✅ Harvesting' : '👆 Click to harvest'}
+                            ${isActive ? '✅ Gathering' : '👆 Click to gather'}
                         </div>
                     ` : `
                         <div style="font-size: 0.75em; color: #ff9800; margin-top: 5px;">
@@ -1232,6 +1227,171 @@ const NavigationUI = {
             isDragging = false;
             svg.style.cursor = 'default';
         });
+    },
+
+    /**
+     * Render fuel selector slot for campfire system (matches food slot pattern)
+     */
+    renderFuelSelector() {
+        // Check if CampfireSystem is available
+        if (typeof CampfireSystem === 'undefined' || !GameEngine.getCampfireStats) {
+            // Fallback to old wood slot if CampfireSystem not loaded
+            return this.renderRestEquipmentSlot('wood');
+        }
+
+        const campfireStats = GameEngine.getCampfireStats();
+        const selectedFuelId = campfireStats?.selectedFuelId || null;
+        const selectedFuel = selectedFuelId ? GameEngine.getFuelDefinition(selectedFuelId) : null;
+
+        // Get quantity in bank for selected fuel
+        // DualBankSystem stores stackable items as { itemId: quantity } (direct numbers)
+        let quantity = 0;
+        if (selectedFuelId && GameEngine.state.bank.stackable) {
+            quantity = GameEngine.state.bank.stackable[selectedFuelId] || 0;
+        }
+
+        const isEquipped = selectedFuelId !== null && selectedFuel !== null;
+
+        return `
+            <div class="rest-equipment-slot ${isEquipped ? 'equipped' : ''}"
+                 onclick="openFuelModal(event)"
+                 style="background: rgba(0, 0, 0, 0.3);
+                        border: 2px solid ${isEquipped ? 'rgba(255, 152, 0, 0.5)' : '#444'};
+                        border-radius: 8px;
+                        padding: 10px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;">
+                <div style="font-size: 0.75em; color: #888; margin-bottom: 5px; font-weight: 600;">
+                    🔥 Fuel
+                </div>
+                ${isEquipped ? `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="font-size: 2rem;">${IconHelper.getItemIconHTML(selectedFuel, {size: 32})}</div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.85em; font-weight: 600; color: #fff;">${selectedFuel.name}</div>
+                            <div style="font-size: 0.75em; color: #FF9800;">×${quantity}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 6px; font-size: 0.7em; color: #aaa;">
+                        ⚡ ${selectedFuel.fuelStats?.efficiency || 1.0}x efficiency
+                    </div>
+                ` : `
+                    <div style="text-align: center; padding: 20px; color: #666;">
+                        <div style="font-size: 2.5rem; margin-bottom: 5px;">🪵</div>
+                        <div style="font-size: 0.75em;">Empty Slot</div>
+                    </div>
+                `}
+            </div>
+        `;
+    },
+
+    /**
+     * Render campfire status display
+     */
+    renderCampfireStatus() {
+        // Check if CampfireSystem is available
+        if (typeof CampfireSystem === 'undefined' || !GameEngine.getCampfireStats) {
+            return '';
+        }
+
+        const stats = GameEngine.getCampfireStats();
+        const isRecovering = GameEngine.state.activeNavigation?.isRecovering || false;
+
+        if (!isRecovering && !stats.active) {
+            return ''; // Don't show status when not camping
+        }
+
+        const fuelPercent = stats.fuelRemaining > 0
+            ? Math.min(100, (stats.fuelRemaining / 120) * 100) // Normalize to ~2 min max display
+            : 0;
+
+        return `
+            <div style="margin-top: 10px; padding: 10px; background: rgba(255, 152, 0, 0.1);
+                        border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 0.8em; font-weight: 600; color: #FF9800;">
+                        🔥 Campfire ${stats.active ? 'Active' : 'Inactive'}
+                    </span>
+                    <span style="font-size: 0.75em; color: #aaa;">
+                        ${stats.selectedFuelName || 'No fuel'}
+                    </span>
+                </div>
+                <div style="background: #1a1a1a; border-radius: 4px; height: 8px; overflow: hidden;">
+                    <div style="width: ${fuelPercent}%;
+                                height: 100%;
+                                background: linear-gradient(90deg, #FF9800, #FFC107);
+                                transition: width 0.3s ease;">
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.7em; color: #888;">
+                    <span>🌡️ Warmth: ${stats.warmth}</span>
+                    <span>⚡ ${stats.efficiency}x recovery</span>
+                    <span>⏱️ ${Math.floor(stats.fuelRemaining)}s remaining</span>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Render rest equipment slot (food) - uses equipment.food from loadout
+     * Food is shared between combat and navigation - same slot, same quantity
+     */
+    renderRestEquipmentSlot(slotType) {
+        // Food slot now reads from equipment.food (shared with combat loadout)
+        // equipment.food is { itemId: string, quantity: number }
+        const foodSlot = GameEngine.state.equipment?.food;
+
+        let equippedItemId = null;
+        let quantity = 0;
+        let itemDef = null;
+        let isEquipped = false;
+
+        if (foodSlot && typeof foodSlot === 'object' && foodSlot.itemId) {
+            equippedItemId = foodSlot.itemId;
+            quantity = foodSlot.quantity || 0;
+            itemDef = ItemRegistry.getItem(equippedItemId);
+            isEquipped = itemDef !== null && quantity > 0;
+        } else if (foodSlot && typeof foodSlot === 'string') {
+            // Legacy format: just the item ID, quantity in bank
+            equippedItemId = foodSlot;
+            itemDef = ItemRegistry.getItem(equippedItemId);
+            // Check bank for quantity (DualBankSystem uses stackable)
+            quantity = GameEngine.state.bank?.stackable?.[equippedItemId] || 0;
+            isEquipped = itemDef !== null && quantity > 0;
+        }
+
+        return `
+            <div class="rest-equipment-slot ${isEquipped ? 'equipped' : ''}"
+                 onclick="openFoodEquipModal(event)"
+                 style="background: rgba(0, 0, 0, 0.3);
+                        border: 2px solid ${isEquipped ? 'rgba(76, 175, 80, 0.5)' : '#444'};
+                        border-radius: 8px;
+                        padding: 10px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;">
+                <div style="font-size: 0.75em; color: #888; margin-bottom: 5px; font-weight: 600;">
+                    🍖 Food
+                </div>
+                ${isEquipped ? `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="font-size: 2rem;">${IconHelper.getItemIconHTML(itemDef, {size: 32})}</div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.85em; font-weight: 600; color: #fff;">${itemDef.name}</div>
+                            <div style="font-size: 0.75em; color: #4caf50;">×${quantity}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 6px; font-size: 0.7em; color: #aaa;">
+                        Shared with combat loadout
+                    </div>
+                ` : `
+                    <div style="text-align: center; padding: 20px; color: #666;">
+                        <div style="font-size: 2.5rem; margin-bottom: 5px;">🍖</div>
+                        <div style="font-size: 0.75em;">No Food Equipped</div>
+                        <div style="font-size: 0.65em; color: #555; margin-top: 4px;">Equip via Loadout</div>
+                    </div>
+                `}
+            </div>
+        `;
     },
 
     /**

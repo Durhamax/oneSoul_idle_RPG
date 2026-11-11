@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extract Tilemap from Current Configuration</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #4CAF50;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #output {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre;
+            font-size: 12px;
+        }
+        .stats {
+            background: #333;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .success {
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <h1>🗺️ Tilemap Extraction Tool</h1>
+    <p>This extracts the current landmass shape (which tiles to render) based on MapGridSystem exclusions.</p>
+
+    <div class="stats" id="stats">
+        <div>Status: <span id="status">Ready</span></div>
+        <div>Tiles in Landmass: <span id="tileCount">0</span></div>
+    </div>
+
+    <button onclick="extractTilemap()">Extract Tilemap</button>
+    <button onclick="copyToClipboard()">Copy to Clipboard</button>
+    <button onclick="downloadFile()">Download as worldTilemap.js</button>
+
+    <div id="output"></div>
+
+    <script>
+        let generatedCode = '';
+        let tilemapData = null;
+
+        function extractTilemap() {
+            document.getElementById('status').innerHTML = '<span class="warning">Extracting...</span>';
+
+            setTimeout(() => {
+                try {
+                    const mapRadius = 7;
+                    const tiles = [];
+
+                    // Exclusions from MapGridSystem.js
+                    const excludedColumns = [7];
+                    const excludedTiles = [
+                        // Column -7
+                        [-7, -6], [-7, -5], [-7, -2], [-7, 0], [-7, 2], [-7, 5], [-7, 6],
+                        // Column -6
+                        [-6, -6], [-6, 1], [-6, 6],
+                        // Column -5
+                        [-5, 5],
+                        // Column -4
+                        [-4, -5], [-4, 5],
+                        // Column -1
+                        [-1, -1],
+                        // Column 0
+                        [0, -3], [0, -2], [0, -1], [0, 0],
+                        // Column 2
+                        [2, -5], [2, -2], [2, 5],
+                        // Column 3
+                        [3, -5], [3, 5],
+                        // Column 4
+                        [4, -6], [4, -1], [4, 6],
+                        // Column 5
+                        [5, -6], [5, 4], [5, 6],
+                        // Column 6
+                        [6, -6], [6, -5], [6, -4], [6, -1], [6, 0], [6, 1], [6, 4], [6, 5], [6, 6]
+                    ];
+
+                    // Generate all possible tiles in hexagonal grid
+                    for (let q = -mapRadius; q <= mapRadius; q++) {
+                        const r1 = Math.max(-mapRadius, -q - mapRadius);
+                        const r2 = Math.min(mapRadius, -q + mapRadius);
+
+                        for (let loop_r = r1; loop_r <= r2; loop_r++) {
+                            const r = -loop_r;
+
+                            // Skip excluded columns
+                            if (excludedColumns.includes(q)) {
+                                continue;
+                            }
+
+                            // Skip excluded specific tiles
+                            if (excludedTiles.some(([eq, er]) => eq === q && er === r)) {
+                                continue;
+                            }
+
+                            // This tile is part of the landmass
+                            tiles.push({ q, r });
+                        }
+                    }
+
+                    // Sort tiles by r then q for readability
+                    tiles.sort((a, b) => {
+                        if (a.r !== b.r) return a.r - b.r;
+                        return a.q - b.q;
+                    });
+
+                    tilemapData = tiles;
+                    document.getElementById('tileCount').textContent = tiles.length;
+
+                    // Format as JavaScript
+                    generatedCode = formatAsJavaScript(tiles);
+                    document.getElementById('output').textContent = generatedCode;
+                    document.getElementById('status').innerHTML = '<span class="success">✅ Extracted!</span>';
+
+                    console.log('Extracted tilemap:', tiles);
+                } catch (error) {
+                    document.getElementById('status').innerHTML = '<span style="color: #f44336;">❌ Error: ' + error.message + '</span>';
+                    console.error(error);
+                }
+            }, 100);
+        }
+
+        function formatAsJavaScript(tiles) {
+            let code = '/**\n';
+            code += ' * WORLD TILEMAP - Landmass Shape Definition\n';
+            code += ' *\n';
+            code += ' * Defines which hex tiles exist in the game world (the landmass shape).\n';
+            code += ' * Each tile has axial coordinates (q, r) and will be linked to a region.\n';
+            code += ' *\n';
+            code += ' * Extracted: ' + new Date().toISOString() + '\n';
+            code += ' * Total Tiles: ' + tiles.length + '\n';
+            code += ' */\n\n';
+            code += 'const WorldTilemap = {\n';
+            code += '    // Array of all hex tiles that make up the landmass\n';
+            code += '    tiles: [\n';
+
+            // Group by rows for better readability
+            const tilesByRow = {};
+            tiles.forEach(tile => {
+                if (!tilesByRow[tile.r]) {
+                    tilesByRow[tile.r] = [];
+                }
+                tilesByRow[tile.r].push(tile);
+            });
+
+            const rows = Object.keys(tilesByRow).map(Number).sort((a, b) => a - b);
+
+            rows.forEach((r, rowIndex) => {
+                const rowTiles = tilesByRow[r];
+                code += `        // Row r=${r} (${rowTiles.length} tiles)\n`;
+
+                rowTiles.forEach((tile, index) => {
+                    code += `        { q: ${tile.q}, r: ${tile.r} }`;
+                    if (rowIndex < rows.length - 1 || index < rowTiles.length - 1) {
+                        code += ',';
+                    }
+                    code += '\n';
+                });
+
+                if (rowIndex < rows.length - 1) {
+                    code += '\n';
+                }
+            });
+
+            code += '    ],\n\n';
+            code += '    /**\n';
+            code += '     * Check if a tile exists in the tilemap\n';
+            code += '     * @param {number} q - Axial q coordinate\n';
+            code += '     * @param {number} r - Axial r coordinate\n';
+            code += '     * @returns {boolean} True if tile exists\n';
+            code += '     */\n';
+            code += '    hasTile(q, r) {\n';
+            code += '        return this.tiles.some(tile => tile.q === q && tile.r === r);\n';
+            code += '    },\n\n';
+            code += '    /**\n';
+            code += '     * Get region ID for a tile coordinate\n';
+            code += '     * @param {number} q - Axial q coordinate\n';
+            code += '     * @param {number} r - Axial r coordinate\n';
+            code += '     * @returns {string} Region ID (e.g., "region_-3_-4")\n';
+            code += '     */\n';
+            code += '    getRegionId(q, r) {\n';
+            code += '        return `region_${q}_${r}`;\n';
+            code += '    }\n';
+            code += '};\n';
+
+            return code;
+        }
+
+        function copyToClipboard() {
+            if (!generatedCode) {
+                alert('Extract tilemap first!');
+                return;
+            }
+
+            navigator.clipboard.writeText(generatedCode).then(() => {
+                alert('✅ Copied to clipboard!');
+            }).catch(err => {
+                alert('❌ Failed to copy: ' + err);
+            });
+        }
+
+        function downloadFile() {
+            if (!generatedCode) {
+                alert('Extract tilemap first!');
+                return;
+            }
+
+            const blob = new Blob([generatedCode], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'worldTilemap.js';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Auto-extract on load
+        window.addEventListener('load', () => {
+            extractTilemap();
+        });
+    </script>
+</body>
+</html>

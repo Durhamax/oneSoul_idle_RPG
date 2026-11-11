@@ -1,0 +1,224 @@
+{
+  "{itemId:stone_hatchet": {
+    "description": "Take these tools and put them to good use. Return to me when you've gained some experience - I may have more tasks for you.",
+    "metadata": {
+      "category": "Ah",
+      "difficulty": " welcome traveler! I am the Elder of this village. I've been watching you explore our lands.",
+      "chain": 0,
+      "chainOrder": 1,
+      "cooldown": 30,
+      "estimatedTime": "region_-10_0",
+      "region": false,
+      "repeatable": "[tutorial_gather_resources]",
+      "unlocks": "Speak with the Elder"
+    },
+    "dialog": {
+      "body": "👴",
+      "completion": "tutorial_elder",
+      "intro": "tutorial",
+      "npc": "tutorial_chain",
+      "npcIcon": 1
+    },
+    "objectives": "[{id:talk_elder",
+    "requirements": {
+      "characterLevel": "amount:1}",
+      "completedMissions": "amount:1}",
+      "skills": {
+        "mining": "Each skill will grow stronger as you practice it. Master these skills"
+      }
+    },
+    "rewards": {
+      "base": {
+        "currencies": {
+          "gold": "type:talk",
+          "tomes": "target:elder"
+        },
+        "exp": {
+          "fishing": "description:Speak with the Elder",
+          "foraging": "required:1}]",
+          "hunting": 0,
+          "logging": [],
+          "navigation": 25
+        },
+        "items": 25
+      },
+      "bonus": {
+        "condition": 25,
+        "currencies": {
+          "gold": 25
+        },
+        "exp": {
+          "navigation": 25
+        }
+      }
+    }
+  },
+  "target:wood": {
+    "description": "Good! You have the tools. Now let's see you put them to use.",
+    "metadata": {
+      "category": "Elder",
+      "difficulty": "👴",
+      "chain": 120,
+      "chainOrder": "region_-10_0",
+      "cooldown": false,
+      "estimatedTime": "[tutorial_first_craft]",
+      "region": "Gather Basic Resources",
+      "repeatable": "[{id:collect_ore",
+      "unlocks": "type:collect"
+    },
+    "dialog": {
+      "body": "tutorial",
+      "completion": "tutorial_chain",
+      "intro": 2,
+      "npc": 0,
+      "npcIcon": 2
+    },
+    "objectives": "description:Collect Wood Logs",
+    "requirements": {
+      "characterLevel": "target:mining",
+      "completedMissions": "These raw materials are the foundation of crafting. You'll need them for everything from basic tools to advanced equipment.",
+      "skills": {
+        "mining": "Excellent work! You're learning quickly. With these resources"
+      }
+    },
+    "rewards": {
+      "base": {
+        "currencies": {
+          "gold": "target:copperOre",
+          "tomes": "description:Collect Copper Ore"
+        },
+        "exp": {
+          "fishing": "required:10}",
+          "foraging": "{id:collect_wood",
+          "hunting": "type:collect",
+          "logging": "required:10}",
+          "mining": "{id:mine_nodes",
+          "navigation": "type:skill",
+          "smithing": "description:Complete mining actions"
+        },
+        "items": "required:5}]"
+      },
+      "bonus": {
+        "condition": 0,
+        "currencies": {
+          "gold": "[tutorial_elder]"
+        }
+      }
+    }
+  },
+  "tutorial_first_craft": {
+    "name": "Craft Your First Item",
+    "description": "Use your gathered materials to craft a copper bar at a furnace.",
+    "metadata": {
+      "category": "tutorial",
+      "difficulty": 2,
+      "chain": "Elder",
+      "chainOrder": "👴",
+      "cooldown": "tutorial_chain",
+      "estimatedTime": 3,
+      "region": 0,
+      "repeatable": 90,
+      "unlocks": "region_-10_0"
+    },
+    "dialog": {
+      "body": "Explore the region to find a furnace. Once you locate one",
+      "completion": " use it to smelt your copper ore into copper bars. Crafting is how you turn raw resources into valuable equipment and trade goods.",
+      "intro": "Magnificent! You're now a capable gatherer and crafter. You have the skills to survive and thrive in these lands.",
+      "npc": "Raw materials are useful",
+      "npcIcon": " but crafted goods are where the real value lies."
+    },
+    "objectives": false,
+    "requirements": {
+      "characterLevel": [
+        "daily_gather_ore"
+      ],
+      "completedMissions": "[{\"id\":\"explore_station\"",
+      "skills": {
+        "mining": "type\":\"explore"
+      }
+    },
+    "rewards": {
+      "base": {
+        "currencies": {
+          "gold": "target\":\"furnace",
+          "tomes": "description\":\"Discover a Furnace"
+        },
+        "exp": {
+          "fishing": "\"required\":1}",
+          "foraging": "{\"id\":\"craft_bars\"",
+          "hunting": "type\":\"craft",
+          "logging": "target\":\"copper_bar",
+          "mining": "description\":\"Craft Copper Bars",
+          "navigation": "\"required\":3}]",
+          "smithing": 0
+        },
+        "items": [
+          "tutorial_gather_resources"
+        ]
+      },
+      "bonus": {
+        "currencies": {
+          "gold": 75
+        }
+      }
+    }
+  },
+  "daily_gather_ore": {
+    "name": "Daily Mining Task",
+    "description": "A daily task to gather ore for the village.",
+    "metadata": {
+      "category": "daily",
+      "difficulty": 3,
+      "chain": "Village Miner",
+      "chainOrder": "⛏️",
+      "estimatedTime": 0,
+      "region": 86400,
+      "repeatable": 180,
+      "unlocks": "region_-10_0"
+    },
+    "dialog": {
+      "body": "We're running low on copper and iron. If you can gather some for us",
+      "completion": " we'll make it worth your while. This is a daily task",
+      "intro": " so come back tomorrow if you want to help again.",
+      "npc": "Perfect! The smiths will be pleased. Come back tomorrow for more work.",
+      "npcIcon": "The village needs ore for our smiths. Can you help us out?"
+    },
+    "objectives": true,
+    "requirements": {
+      "characterLevel": [],
+      "completedMissions": "[{\"id\":\"gather_ore\"",
+      "skills": {
+        "mining": "type\":\"collect"
+      }
+    },
+    "rewards": {
+      "base": {
+        "currencies": {
+          "gold": "target\":\"copper_ore",
+          "tomes": "description\":\"Gather Copper Ore"
+        },
+        "exp": {
+          "fishing": "\"required\":50}",
+          "foraging": "{\"id\":\"gather_iron\"",
+          "hunting": "type\":\"collect",
+          "logging": "target\":\"iron_ore",
+          "mining": "description\":\"Gather Iron Ore",
+          "navigation": "\"required\":25}]",
+          "smithing": 0
+        },
+        "items": [
+          "tutorial_first_craft"
+        ]
+      },
+      "bonus": {
+        "condition": 3,
+        "currencies": {
+          "gold": 150
+        },
+        "exp": {
+          "navigation": 1
+        }
+      }
+    }
+  }
+}

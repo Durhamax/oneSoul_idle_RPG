@@ -9,12 +9,30 @@ const SaveSystem = {
     SAVE_KEY: "idleRpgSave_v1",
     AUTO_SAVE_INTERVAL: 30000, // Auto-save every 30 seconds
     autoSaveTimer: null,
+    preventSave: false, // Flag to prevent saving during reset
+
+    SKIP_LOAD_FLAG: "idleRpg_skipLoad",
 
     /**
      * Initialize the save system
      */
     init() {
         console.log("💾 Save System Initialized");
+
+        // Check if we should skip loading (fresh start requested)
+        const skipLoad = localStorage.getItem(this.SKIP_LOAD_FLAG);
+        if (skipLoad) {
+            console.log("🔄 Fresh start detected - skipping save load");
+            localStorage.removeItem(this.SKIP_LOAD_FLAG);
+            localStorage.removeItem(this.SAVE_KEY);
+            console.log("📝 Starting new game (fresh start)");
+            DualBankSystem.initialize();
+            this.startAutoSave();
+            window.addEventListener("beforeunload", () => {
+                this.save();
+            });
+            return false;
+        }
 
         // Try to load existing save
         const loaded = this.load();
@@ -25,19 +43,30 @@ const SaveSystem = {
             // Run all migrations on the loaded save (centralized in MigrationSystem)
             MigrationSystem.runAllMigrations();
 
+            // Initialize Dual-Bank System (after migrations, creates new bank structure if needed)
+            DualBankSystem.initialize();
+
             // Ensure perk grid unlock order exists (legacy compatibility)
             if (!GameEngine.state.perkGrid.unlockOrder) {
                 GameEngine.state.perkGrid.unlockOrder = [];
             }
-            console.log(`✅ Perk grid loaded (5x5 system)`);
+            console.log(`✅ Perk grid loaded (7x7 system)`);
 
             // Update equipment cells to reflect any equipped items
             if (GameEngine.updateEquipmentCells) {
                 GameEngine.updateEquipmentCells();
                 console.log("✅ Updated perk grid equipment cells after save load");
             }
+
+            // Emit save-loaded event for UI components (EventBus communication)
+            if (typeof EventBus !== 'undefined') {
+                EventBus.emit('save-loaded');
+            }
         } else {
             console.log("📝 Starting new game");
+
+            // Initialize Dual-Bank System for new game
+            DualBankSystem.initialize();
         }
 
         // Start auto-save
@@ -55,6 +84,12 @@ const SaveSystem = {
      * Save the current game state to localStorage
      */
     save() {
+        // Skip save if preventSave flag is set (used during reset)
+        if (this.preventSave) {
+            console.log("💾 Save skipped (reset in progress)");
+            return false;
+        }
+
         try {
             // Update lastSaveTime before saving
             GameEngine.state.lastSaveTime = Date.now();
@@ -95,6 +130,14 @@ const SaveSystem = {
             // Load the saved state
             GameEngine.state = saveData.state;
 
+            // Update system references to new state object
+            if (GatheringSystem) {
+                GatheringSystem.state = GameEngine.state;
+            }
+            if (CombatSystem) {
+                CombatSystem.state = GameEngine.state;
+            }
+
             // Process offline time
             if (offlineTime > 5000) { // Only if offline for more than 5 seconds
                 const minutesOffline = Math.floor(offlineTime / 1000 / 60);
@@ -117,6 +160,12 @@ const SaveSystem = {
             // Restart the game loop with the loaded state
             GameEngine.state.lastTick = Date.now();
             GameEngine.startGameLoop();
+
+            // Recompile player stats after loading (applies saved perk grid and equipment)
+            if (typeof GameEngine.compilePlayerStats === 'function') {
+                GameEngine.compilePlayerStats();
+                console.log('✅ Player stats recompiled after save load');
+            }
 
             return true;
         } catch (error) {

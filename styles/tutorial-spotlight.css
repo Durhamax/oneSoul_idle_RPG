@@ -1,0 +1,968 @@
+/**
+ * TUTORIAL SPOTLIGHT SYSTEM STYLES
+ *
+ * Visual guidance system styling for tutorials.
+ * NO dark overlay - just highlights around target elements.
+ * Includes:
+ * - Glowing spotlight border around target
+ * - Pulsing ring animation
+ * - Smart tooltip positioning
+ * - Success animations
+ */
+
+/* ============================================
+   OVERLAY - Hidden/unused, kept for compatibility
+   ============================================ */
+
+.tutorial-overlay {
+    display: none;
+}
+
+.tutorial-overlay.hidden {
+    display: none;
+}
+
+/* ============================================
+   SPOTLIGHT - Glowing border around target (NO dark background)
+   ============================================ */
+
+.tutorial-spotlight {
+    position: fixed;
+    z-index: 10000;
+    border-radius: 8px;
+    border: 3px solid #00d4ff;
+    box-shadow:
+        0 0 30px 10px rgba(0, 212, 255, 0.5),
+        inset 0 0 20px rgba(0, 212, 255, 0.2);
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tutorial-spotlight.hidden {
+    opacity: 0 !important;
+    pointer-events: none;
+    display: none;
+}
+
+/* Success state - green glow when objective completes */
+.tutorial-spotlight.success {
+    border-color: #4caf50;
+    box-shadow:
+        0 0 50px 20px rgba(76, 175, 80, 0.6),
+        inset 0 0 30px rgba(76, 175, 80, 0.3);
+}
+
+/* Transitioning state */
+.tutorial-spotlight.transitioning {
+    opacity: 0.5;
+}
+
+/* ============================================
+   PULSE RING - Animated border effect
+   ============================================ */
+
+.tutorial-pulse-ring {
+    position: fixed;
+    z-index: 9998;
+    border-radius: 8px;
+    border: 3px solid #00d4ff;
+    pointer-events: none;
+    animation: spotlight-pulse 2s ease-in-out infinite;
+}
+
+.tutorial-pulse-ring.hidden {
+    opacity: 0 !important;
+    display: none;
+}
+
+@keyframes spotlight-pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+        border-color: rgba(0, 212, 255, 0.8);
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 0.5;
+        border-color: rgba(0, 212, 255, 0.4);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+        border-color: rgba(0, 212, 255, 0.8);
+    }
+}
+
+/* ============================================
+   HIGHLIGHTED TARGET ELEMENT
+   ============================================ */
+
+.tutorial-target {
+    animation: target-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes target-glow {
+    0%, 100% {
+        filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.6));
+    }
+    50% {
+        filter: drop-shadow(0 0 15px rgba(0, 212, 255, 0.9));
+    }
+}
+
+/* ============================================
+   TOOLTIP
+   ============================================ */
+
+.tutorial-tooltip {
+    position: fixed;
+    z-index: 10002;
+    width: 320px;
+    max-width: calc(100vw - 40px);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid #00d4ff;
+    border-radius: 12px;
+    padding: 0;
+    box-shadow:
+        0 0 30px rgba(0, 212, 255, 0.3),
+        0 10px 40px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+    overflow: visible;
+    pointer-events: auto;
+}
+
+.tutorial-tooltip.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.9);
+}
+
+/* ============================================
+   TOOLTIP ARROW
+   ============================================ */
+
+.tooltip-arrow {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid #00d4ff;
+    transform: rotate(45deg);
+}
+
+/* Arrow pointing left (tooltip is to the right of target) */
+.tutorial-tooltip.arrow-left .tooltip-arrow {
+    left: -10px;
+    top: 50%;
+    margin-top: -8px;
+    border-right: none;
+    border-top: none;
+}
+
+/* Arrow pointing right (tooltip is to the left of target) */
+.tutorial-tooltip.arrow-right .tooltip-arrow {
+    right: -10px;
+    top: 50%;
+    margin-top: -8px;
+    border-left: none;
+    border-bottom: none;
+}
+
+/* Arrow pointing up (tooltip is below target) */
+.tutorial-tooltip.arrow-top .tooltip-arrow {
+    top: -10px;
+    left: 50%;
+    margin-left: -8px;
+    border-bottom: none;
+    border-right: none;
+}
+
+/* Arrow pointing down (tooltip is above target) */
+.tutorial-tooltip.arrow-bottom .tooltip-arrow {
+    bottom: -10px;
+    left: 50%;
+    margin-left: -8px;
+    border-top: none;
+    border-left: none;
+}
+
+/* ============================================
+   TOOLTIP CONTENT
+   ============================================ */
+
+.tooltip-content {
+    padding: 20px;
+}
+
+.tooltip-step {
+    display: inline-block;
+    background: #00d4ff;
+    color: #000;
+    font-size: 0.75em;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+
+.tooltip-title {
+    color: #fff;
+    font-size: 1.2em;
+    font-weight: 600;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+.tooltip-body {
+    color: #aaa;
+    font-size: 0.95em;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.tooltip-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(0, 212, 255, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.hint-icon {
+    font-size: 1.2em;
+    animation: point-bounce 1s ease-in-out infinite;
+}
+
+@keyframes point-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+.hint-text {
+    color: #00d4ff;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.tooltip-hint.hidden {
+    display: none;
+}
+
+/* ============================================
+   TOOLTIP ACTIONS (Next Button)
+   ============================================ */
+
+.tooltip-actions {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.tooltip-actions.hidden {
+    display: none;
+}
+
+.tooltip-next-btn {
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    color: #000;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10003;
+}
+
+.tooltip-next-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+}
+
+.tooltip-next-btn:active {
+    transform: translateY(0);
+}
+
+/* ============================================
+   COMPLETION BURST ANIMATION
+   ============================================ */
+
+.tutorial-completion-burst {
+    position: fixed;
+    z-index: 10003;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 212, 255, 0.4) 0%, transparent 70%);
+    pointer-events: none;
+    animation: completion-burst 0.6s ease-out forwards;
+}
+
+@keyframes completion-burst {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.5);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 640px) {
+    .tutorial-tooltip {
+        width: calc(100vw - 32px);
+        max-width: none;
+        left: 16px !important;
+        right: 16px;
+        bottom: 100px;
+        top: auto !important;
+    }
+
+    .tutorial-tooltip .tooltip-arrow {
+        display: none;
+    }
+
+    .tooltip-content {
+        padding: 16px;
+    }
+
+    .tooltip-title {
+        font-size: 1.1em;
+    }
+
+    .tooltip-body {
+        font-size: 0.9em;
+    }
+}
+
+/* ============================================
+   SIDEBAR INTEGRATION
+   ============================================ */
+
+/* Ensure sidebar items can receive spotlight correctly */
+.sidebar-nav .sidebar-item.tutorial-target {
+    position: relative !important;
+    z-index: 10005 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Make the highlighted sidebar button more prominent */
+.sidebar-nav .sidebar-item.tutorial-target {
+    background: rgba(0, 212, 255, 0.3) !important;
+    border: 2px solid #00d4ff !important;
+    box-shadow:
+        0 0 20px rgba(0, 212, 255, 0.5),
+        inset 0 0 10px rgba(0, 212, 255, 0.2) !important;
+}
+
+.sidebar-nav .sidebar-item.tutorial-target .sidebar-icon,
+.sidebar-nav .sidebar-item.tutorial-target .sidebar-label {
+    color: #00d4ff !important;
+}
+
+/* Ensure the entire tutorial-target element is clickable */
+.tutorial-target {
+    position: relative !important;
+    z-index: 10005 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* ============================================
+   TOOLTIP HEADER WITH SKIP BUTTON
+   ============================================ */
+
+.tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.tooltip-skip {
+    background: transparent;
+    border: 1px solid #666;
+    color: #888;
+    font-size: 0.75em;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tooltip-skip:hover {
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+}
+
+/* ============================================
+   WELCOME MODAL
+   ============================================ */
+
+.welcome-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10010;
+    animation: fadeIn 0.5s ease;
+}
+
+.welcome-modal-overlay.fade-out {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.welcome-modal {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid var(--accent-color, #00d4ff);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 520px;
+    width: 90%;
+    box-shadow:
+        0 0 60px rgba(0, 212, 255, 0.2),
+        0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.5s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.welcome-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.welcome-icon {
+    font-size: 4em;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.welcome-header h2 {
+    color: #fff;
+    font-size: 1.8em;
+    margin: 0;
+}
+
+.welcome-body {
+    color: #ccc;
+    line-height: 1.7;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.welcome-body p {
+    margin: 0 0 10px 0;
+}
+
+.welcome-body strong {
+    color: var(--accent-color, #00d4ff);
+}
+
+.welcome-body em {
+    color: #999;
+}
+
+.welcome-npc {
+    display: flex;
+    gap: 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.npc-avatar {
+    font-size: 3em;
+    flex-shrink: 0;
+}
+
+.npc-dialogue {
+    flex: 1;
+}
+
+.npc-name {
+    color: var(--accent-color, #00d4ff);
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.npc-dialogue p {
+    color: #aaa;
+    font-style: italic;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.welcome-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.welcome-btn {
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.welcome-btn.primary {
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    color: #000;
+    border: none;
+}
+
+.welcome-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+}
+
+.welcome-btn.secondary {
+    background: transparent;
+    color: #888;
+    border: 1px solid #555;
+}
+
+.welcome-btn.secondary:hover {
+    border-color: #888;
+    color: #ccc;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 640px) {
+    .welcome-modal {
+        padding: 24px;
+        margin: 16px;
+    }
+
+    .welcome-header h2 {
+        font-size: 1.4em;
+    }
+
+    .welcome-npc {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .welcome-footer {
+        flex-direction: column;
+    }
+}
+
+/* ============================================
+   MISSION DEBRIEF MODAL
+   ============================================ */
+
+.debrief-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10010;
+    animation: fadeIn 0.5s ease;
+}
+
+.debrief-modal-overlay.fade-out {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+.debrief-modal {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid #4caf50;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 560px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow:
+        0 0 60px rgba(76, 175, 80, 0.3),
+        0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.5s ease;
+}
+
+/* Custom scrollbar for debrief modal */
+.debrief-modal::-webkit-scrollbar {
+    width: 8px;
+}
+
+.debrief-modal::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.debrief-modal::-webkit-scrollbar-thumb {
+    background: rgba(76, 175, 80, 0.5);
+    border-radius: 4px;
+}
+
+.debrief-modal::-webkit-scrollbar-thumb:hover {
+    background: rgba(76, 175, 80, 0.7);
+}
+
+.debrief-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.debrief-icon {
+    font-size: 4em;
+    display: block;
+    margin-bottom: 8px;
+    animation: bounce 0.6s ease;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.debrief-header h2 {
+    color: #4caf50;
+    font-size: 1.8em;
+    margin: 0 0 8px 0;
+    text-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+}
+
+.debrief-mission-name {
+    color: #fff;
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+.debrief-npc {
+    display: flex;
+    gap: 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.debrief-npc .npc-avatar {
+    font-size: 3em;
+    flex-shrink: 0;
+}
+
+.debrief-npc .npc-dialogue {
+    flex: 1;
+}
+
+.debrief-npc .npc-name {
+    color: #4caf50;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.debrief-npc .npc-dialogue p {
+    color: #aaa;
+    font-style: italic;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.debrief-rewards {
+    margin-bottom: 20px;
+}
+
+.debrief-rewards h3 {
+    color: #fff;
+    font-size: 1em;
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Currency/XP rewards row */
+.rewards-currency-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.reward-currency {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(76, 175, 80, 0.2);
+    animation: rewardSlide 0.4s ease backwards;
+}
+
+.reward-currency.xp {
+    background: rgba(255, 215, 0, 0.1);
+    border-color: rgba(255, 215, 0, 0.2);
+}
+
+.reward-currency.gold {
+    background: rgba(255, 193, 7, 0.1);
+    border-color: rgba(255, 193, 7, 0.2);
+}
+
+.reward-currency.skill-xp {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.2);
+}
+
+.reward-currency .reward-icon {
+    font-size: 1.2em;
+}
+
+.reward-currency .reward-text {
+    color: #fff;
+    font-size: 0.9em;
+}
+
+/* Item rewards grid - 4 columns */
+.rewards-items-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.reward-item-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    animation: rewardSlide 0.4s ease backwards;
+    text-align: center;
+}
+
+.reward-item-card:nth-child(1) { animation-delay: 0.1s; }
+.reward-item-card:nth-child(2) { animation-delay: 0.15s; }
+.reward-item-card:nth-child(3) { animation-delay: 0.2s; }
+.reward-item-card:nth-child(4) { animation-delay: 0.25s; }
+.reward-item-card:nth-child(5) { animation-delay: 0.3s; }
+.reward-item-card:nth-child(6) { animation-delay: 0.35s; }
+.reward-item-card:nth-child(7) { animation-delay: 0.4s; }
+.reward-item-card:nth-child(8) { animation-delay: 0.45s; }
+
+.reward-item-card .item-icon {
+    font-size: 2em;
+    margin-bottom: 6px;
+}
+
+.reward-item-card .item-name {
+    color: #fff;
+    font-size: 0.75em;
+    line-height: 1.2;
+    word-break: break-word;
+    max-width: 100%;
+}
+
+.reward-item-card .item-quantity {
+    color: #4caf50;
+    font-size: 0.7em;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+/* Rarity colors for item cards */
+.reward-item-card.rarity-common {
+    border-color: rgba(128, 128, 128, 0.4);
+}
+
+.reward-item-card.rarity-uncommon {
+    border-color: rgba(30, 144, 255, 0.5);
+    background: rgba(30, 144, 255, 0.1);
+}
+
+.reward-item-card.rarity-rare {
+    border-color: rgba(138, 43, 226, 0.5);
+    background: rgba(138, 43, 226, 0.1);
+}
+
+.reward-item-card.rarity-epic {
+    border-color: rgba(255, 165, 0, 0.5);
+    background: rgba(255, 165, 0, 0.1);
+}
+
+.reward-item-card.rarity-legendary {
+    border-color: rgba(255, 215, 0, 0.6);
+    background: rgba(255, 215, 0, 0.15);
+}
+
+@keyframes rewardSlide {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Legacy single-column rewards (for backwards compatibility) */
+.rewards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.reward-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.reward-item .reward-icon {
+    font-size: 1.4em;
+    width: 32px;
+    text-align: center;
+}
+
+.reward-item .reward-text {
+    color: #fff;
+    font-size: 0.95em;
+}
+
+.reward-item.xp {
+    background: rgba(255, 215, 0, 0.1);
+    border-color: rgba(255, 215, 0, 0.2);
+}
+
+.reward-item.gold {
+    background: rgba(255, 193, 7, 0.1);
+    border-color: rgba(255, 193, 7, 0.2);
+}
+
+.reward-item.skill-xp {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.2);
+}
+
+.reward-item.none {
+    color: #888;
+    justify-content: center;
+}
+
+/* Responsive: 2 columns on small screens */
+@media (max-width: 480px) {
+    .rewards-items-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.debrief-stats {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.debrief-stats .stat-label {
+    color: #888;
+    font-size: 0.9em;
+}
+
+.debrief-stats .stat-value {
+    color: #fff;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.debrief-footer {
+    display: flex;
+    justify-content: center;
+}
+
+.debrief-btn {
+    padding: 14px 40px;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.debrief-btn.primary {
+    background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+    color: #fff;
+    border: none;
+}
+
+.debrief-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .debrief-modal {
+        padding: 24px;
+        margin: 16px;
+    }
+
+    .debrief-header h2 {
+        font-size: 1.4em;
+    }
+
+    .debrief-npc {
+        flex-direction: column;
+        text-align: center;
+    }
+}
