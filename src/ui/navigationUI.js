@@ -582,9 +582,9 @@ const NavigationUI = {
                 </div>
 
                 <div class="nav-col nav-col--discoveries">
-                    <!-- Paths to neighboring tiles -->
+                    <!-- Explore new tiles -->
                     <div class="nav-control-block">
-                        <div class="nav-control-title">🧭 Paths to Neighboring Tiles</div>
+                        <div class="nav-control-title">🧭 Explore New Tiles</div>
                         ${this.renderAdjacentRegions(regionId, regionState, hexDef)}
                     </div>
 
@@ -916,14 +916,22 @@ const NavigationUI = {
 
         let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">';
 
+        let shownCount = 0;
         for (let direction in adjacentRegions) {
             const targetRegionId = adjacentRegions[direction];
             const targetHexDef = GameEngine.definitions.worldMap[targetRegionId];
             const targetBiomeDef = GameEngine.definitions.biomes[targetHexDef?.biome];
             const targetRegionState = GameEngine.state.regions[targetRegionId];
 
+            if (!targetHexDef || !targetBiomeDef) continue;
+
+            const hasLevelRequirement = navLevel >= (targetHexDef.navigationRequirement || 0);
+
+            // Only list tiles the player has the Navigation level to reach.
+            if (!hasLevelRequirement) continue;
+            shownCount++;
+
             const isPathDiscovered = discoveredPaths.includes(targetRegionId);
-            const hasLevelRequirement = navLevel >= targetHexDef.navigationRequirement;
             const canTravel = isPathDiscovered && hasLevelRequirement;
 
             html += `
@@ -948,13 +956,17 @@ const NavigationUI = {
                             ${canTravel ? `✈️ Travel ${direction}` : `🔒 Nav Lv.${targetHexDef.navigationRequirement} Required`}
                         </button>
                     ` : `
-                        <div style="font-size: 0.75em; color: #666;">🔒 Exit path not discovered</div>
+                        <div style="font-size: 0.75em; color: #ff9800;">🔍 Keep exploring here to find the path</div>
                     `}
                 </div>
             `;
         }
 
         html += '</div>';
+
+        if (shownCount === 0) {
+            return '<div style="color: #888; font-size: 0.9em;">No tiles within your Navigation level yet. Raise Navigation to reach farther tiles.</div>';
+        }
         return html;
     },
 

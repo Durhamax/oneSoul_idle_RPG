@@ -10,7 +10,7 @@ const MedalCraftingSystemNew = {
         if (!engine.state.currencies) {
             engine.state.currencies = {};
         }
-        // Perk-grid forging spends the bank "medals" currency (war trophies from combat).
+        // Perk-grid forging spends the "medals" currency (war trophies from combat).
         if (engine.state.currencies.medals === undefined) {
             engine.state.currencies.medals = 0;
         }
@@ -18,6 +18,13 @@ const MedalCraftingSystemNew = {
         if (engine.state.currencies.medalFragments) {
             engine.state.currencies.medals += engine.state.currencies.medalFragments;
             engine.state.currencies.medalFragments = 0;
+        }
+        // One-time migration: fold any medals that landed in the bank (older reward
+        // paths stored "medals" as a stackable bank item) into the currency so the
+        // Perks tab and bank are the same pool.
+        if (engine.state.bank?.stackable?.medals) {
+            engine.state.currencies.medals += engine.state.bank.stackable.medals;
+            delete engine.state.bank.stackable.medals;
         }
 
         if (!engine.state.medalInventory) {
@@ -114,7 +121,7 @@ const MedalCraftingSystemNew = {
 
         const fragments = this.state.currencies.medals || 0;
         if (fragments < tierConfig.cost) {
-            return { success: false, error: 'Not enough medal fragments' };
+            return { success: false, error: 'Not enough medals' };
         }
 
         const inventory = this.ensureMedalInventory();
@@ -160,7 +167,7 @@ const MedalCraftingSystemNew = {
         const fragments = this.state.currencies.medals || 0;
 
         if (fragments < totalCost) {
-            return { success: false, error: 'Not enough medal fragments' };
+            return { success: false, error: 'Not enough medals' };
         }
 
         const inventory = this.ensureMedalInventory();

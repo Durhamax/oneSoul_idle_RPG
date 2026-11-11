@@ -470,6 +470,20 @@ const NavigationSystem = {
             console.log("💤 Out of endurance! Entering recovery mode...");
             activeNav.isRecovering = true;
             activeNav.lastRecoveryTick = now;
+            activeNav.lastFoodConsumptionTime = now;
+
+            // Auto-light the campfire with the best available fuel (wood/logs) so resting
+            // actually consumes fuel without the player having to pick one every time.
+            if (typeof CampfireSystem !== 'undefined' && this.getOwnedFuelItems && this.selectCampfireFuel) {
+                const campfire = this.state.navigation?.campfire;
+                if (!campfire || !campfire.selectedFuelId) {
+                    const owned = this.getOwnedFuelItems();
+                    if (owned.length > 0) {
+                        this.selectCampfireFuel(owned[0].itemId);
+                        if (this.consumeFuel) this.consumeFuel();
+                    }
+                }
+            }
             return;
         }
 
@@ -773,24 +787,11 @@ const NavigationSystem = {
             return true;
         }
 
-        // Check if any adjacent discovered region has path to target
-        for (let regionId in this.state.regions) {
-            const regionState = this.state.regions[regionId];
-            if (regionState.discovered && regionState.discoveredExitPaths &&
-                regionState.discoveredExitPaths.includes(targetRegionId)) {
-
-                // Found a path! Now check if we can reach this region
-                if (regionId === currentRegionId) {
-                    return true; // Direct path from current region
-                }
-
-                // Check if this region is reachable (recursive pathfinding)
-                // For now, simple check: is it directly connected?
-                const currentRegionState = this.state.regions[currentRegionId];
-                if (currentRegionState?.discoveredExitPaths?.includes(regionId)) {
-                    return true;
-                }
-            }
+        // A discovered path is bidirectional: the way into a tile is also the way out.
+        // You can travel to any tile the CURRENT region has a discovered path to.
+        const currentRegionState = this.state.regions[currentRegionId];
+        if (currentRegionState?.discoveredExitPaths?.includes(targetRegionId)) {
+            return true;
         }
 
         return false;
@@ -844,6 +845,21 @@ const NavigationSystem = {
                 discoveredExitPaths: [],
                 availableNodes: {}
             };
+        }
+
+        // Arriving at a tile reveals it: mark it discovered and make sure the path back
+        // to where we came from is recorded (a path is a two-way road).
+        const targetState = this.state.regions[targetRegionId];
+        targetState.discovered = true;
+        if (!Array.isArray(targetState.discoveredExitPaths)) {
+            targetState.discoveredExitPaths = [];
+        }
+        if (!targetState.discoveredExitPaths.includes(currentRegionId)) {
+            targetState.discoveredExitPaths.push(currentRegionId);
+        }
+        if (currentRegionState && Array.isArray(currentRegionState.discoveredExitPaths) &&
+            !currentRegionState.discoveredExitPaths.includes(targetRegionId)) {
+            currentRegionState.discoveredExitPaths.push(targetRegionId);
         }
 
         // Reset navigation progress for new region

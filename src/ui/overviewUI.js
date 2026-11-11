@@ -633,8 +633,8 @@ const OverviewUI = {
                         size: 'auto',
                         showLabels: false,
                         showNames: false,
-                        interactive: false,
-                        onSlotClick: null
+                        interactive: true,
+                        onSlotClick: (slot) => `openEquipModal('${slot}', event)`
                     })}
 
                     <!-- Consumables -->
@@ -644,8 +644,10 @@ const OverviewUI = {
                             equipment,
                             size: 'auto',
                             showLabels: false,
-                            interactive: false,
-                            onSlotClick: null
+                            interactive: true,
+                            onSlotClick: (slot) => slot === 'food'
+                                ? 'openFoodEquipModal(event)'
+                                : `openEquipModal('${slot}', event)`
                         })}
                     </div>
 
@@ -657,8 +659,8 @@ const OverviewUI = {
                             intellect,
                             size: 'auto',
                             showLabels: false,
-                            interactive: false,
-                            onSlotClick: null
+                            interactive: true,
+                            onSlotClick: (slot) => `openEquipModal('${slot}', event)`
                         })}
                     </div>
 

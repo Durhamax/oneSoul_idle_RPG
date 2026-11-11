@@ -6,6 +6,13 @@
  */
 
 const EquipmentPresetSystem = {
+    // The real equipment slots in the current model (3-1-3 gear + consumables + tech).
+    ALL_SLOTS: [
+        'weapon', 'armor', 'back', 'gloves', 'neck', 'boots', 'ring',
+        'ammo', 'food', 'potion',
+        'tech1', 'tech2', 'tech3', 'tech4'
+    ],
+
     /**
      * Initialize preset system functions on the GameEngine
      */    /**
@@ -45,10 +52,22 @@ const EquipmentPresetSystem = {
             return { success: false, reason: 'Invalid preset slot' };
         }
 
-        // Create a snapshot of current equipment
+        // Snapshot current equipment. Equipment/tech slots hold instance-id strings;
+        // consumable slots (food/ammo/potion) hold { itemId, quantity } objects — store
+        // only the itemId so that LOADING pulls the full available stack from the bank
+        // (equip max quantity) rather than a frozen snapshot amount.
+        const snapshot = {};
+        for (const slot in this.state.equipment) {
+            const val = this.state.equipment[slot];
+            if (!val) { snapshot[slot] = null; continue; }
+            snapshot[slot] = (typeof val === 'object' && val.itemId) ? val.itemId : val;
+        }
+
+        // Preserve the existing name when overwriting unless a new one is passed.
+        const existing = this.state.equipmentPresets.presets[presetIndex];
         const presetData = {
-            name: name || `Preset ${presetIndex + 1}`,
-            equipment: { ...this.state.equipment },
+            name: name || existing?.name || `Preset ${presetIndex + 1}`,
+            equipment: snapshot,
             savedAt: Date.now()
         };
 
@@ -82,26 +101,26 @@ const EquipmentPresetSystem = {
             return { success: false, reason: 'No preset saved in this slot' };
         }
 
-        // Validate all items in preset still exist and are available
-        const validation = this.validatePreset(preset);
-        if (!validation.success) {
-            return validation;
-        }
-
-        // Unequip all current equipment first
+        // Unequip all current equipment first (returns gear + consumable stacks to the bank
+        // so the preset's items can be equipped — and so consumable stacks merge, letting
+        // the preset re-equip the FULL available quantity).
         this.unequipAllItems();
 
-        // Equip items from preset
+        // Equip items from preset. equipItem() resolves the item from any bank store and,
+        // for consumables, transfers the whole stack (max quantity). Items that are no
+        // longer available are skipped rather than aborting the whole load.
         const equipResults = [];
         for (let slot in preset.equipment) {
-            const itemId = preset.equipment[slot];
-            if (itemId) {
-                const result = this.equipItem(itemId);
-                equipResults.push({ slot, itemId, result });
+            const val = preset.equipment[slot];
+            if (!val) continue;
+            const itemId = (typeof val === 'object' && val.itemId) ? val.itemId : val;
+            if (!itemId) continue;
 
-                if (!result.success) {
-                    console.warn(`Failed to equip ${itemId} to ${slot}:`, result.reason);
-                }
+            const result = this.equipItem(itemId);
+            equipResults.push({ slot, itemId, result });
+
+            if (!result.success) {
+                console.warn(`Preset: could not equip ${itemId} to ${slot}:`, result.reason);
             }
         }
 
@@ -165,11 +184,7 @@ const EquipmentPresetSystem = {
      * Unequip all items (helper for preset loading)
      */
     unequipAllItems() {
-        const slots = [
-            'weapon', 'helmet', 'back', 'gloves', 'chest', 'neck', 'boots', 'legs', 'ring',
-            'ammo', 'food', 'potion',
-            'tech1', 'tech2', 'tech3', 'tech4'
-        ];
+        const slots = EquipmentPresetSystem.ALL_SLOTS;
 
         for (let slot of slots) {
             if (this.state.equipment[slot]) {
@@ -242,14 +257,10 @@ const EquipmentPresetSystem = {
      * Check if two equipment sets match
      */
     equipmentMatches(eq1, eq2) {
-        const slots = [
-            'weapon', 'helmet', 'back', 'gloves', 'chest', 'neck', 'boots', 'legs', 'ring',
-            'ammo', 'food', 'potion',
-            'tech1', 'tech2', 'tech3', 'tech4'
-        ];
+        const norm = (v) => (v && typeof v === 'object' && v.itemId) ? v.itemId : (v || null);
 
-        for (let slot of slots) {
-            if (eq1[slot] !== eq2[slot]) {
+        for (let slot of EquipmentPresetSystem.ALL_SLOTS) {
+            if (norm(eq1[slot]) !== norm(eq2[slot])) {
                 return false;
             }
         }

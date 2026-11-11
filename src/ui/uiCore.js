@@ -226,10 +226,10 @@ const UICore = {
         }
 
         // Update each currency with flash animation if changed
-        // Note: UI element "medalsAmount" displays medalFragments (from combat drops)
+        // "medalsAmount" shows the unified medals currency (same pool the Perks tab forges with)
         const currencyElements = {
             gold: document.getElementById("goldAmount"),
-            medalFragments: document.getElementById("medalsAmount"),  // medalFragments displayed as "Medals"
+            medals: document.getElementById("medalsAmount"),
             tomes: document.getElementById("tomesAmount"),
             gems: document.getElementById("gemsAmount")
         };

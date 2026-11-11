@@ -103,7 +103,10 @@ const LoadoutContainer = {
                                 equipment,
                                 foodQuantity,
                                 ammoQuantity,
-                                interactive: true
+                                interactive: true,
+                                onSlotClick: (slot) => slot === 'food'
+                                    ? 'openFoodEquipModal(event)'
+                                    : `openEquipModal('${slot}', event)`
                             })}
                         </div>
                     </div>

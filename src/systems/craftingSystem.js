@@ -325,6 +325,25 @@ const CraftingSystem = {
     },
 
     /**
+     * Clear every crafting queue across all skills (and the auto-repeat recipe).
+     * Used to enforce the single-active-activity rule: only one craft runs at a time.
+     * @param {object} engine - GameEngine reference
+     */
+    _clearAllCraftQueues(engine) {
+        if (engine.state.crafting?.activeQueues) {
+            for (const skill of CraftingSystem.VALID_SKILLS) {
+                engine.state.crafting.activeQueues[skill] = [];
+            }
+        }
+        if (Array.isArray(engine.state.crafting?.activeCrafts)) {
+            engine.state.crafting.activeCrafts = [];
+        }
+        if (engine.state.crafting) {
+            engine.state.crafting.autoRecipe = null;
+        }
+    },
+
+    /**
      * Start crafting a recipe
      * @param {string} recipeId - Recipe ID to craft
      * @param {number} quantity - Number of items to craft (default 1)
@@ -332,15 +351,22 @@ const CraftingSystem = {
      */
     startCraft(recipeId, quantity = 1) {
         const canCraftResult = this.canCraft(recipeId, quantity);
-        if (!canCraftResult.canCraft) {
+
+        // A full queue means a craft is already running: starting a new recipe SWITCHES
+        // to it (single active activity). Any other failure (level, materials, engineering)
+        // aborts without disturbing the current craft.
+        const queueFull = !canCraftResult.canCraft && /queue full/i.test(canCraftResult.reason || '');
+        if (!canCraftResult.canCraft && !queueFull) {
             return { success: false, reason: canCraftResult.reason };
         }
 
         const recipe = CraftingSystem._getRecipeDef(recipeId, this);
         const skill = recipe.skill;
 
-        // Stop other activities before starting crafting
+        // Single active activity: starting a craft stops gathering/combat/navigation AND
+        // every other in-progress craft (any skill), so only one activity runs at a time.
         CraftingSystem._stopOtherActivities(this);
+        CraftingSystem._clearAllCraftQueues(this);
 
         // Get workstation benefits
         const workstationTier = this.state.workstations?.[skill]?.tier || 1;
