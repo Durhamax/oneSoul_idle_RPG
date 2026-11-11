@@ -750,7 +750,14 @@ const CombatSystem = {
 
         // Calculate min/max damage (player only - enemies have this from definition)
         if (isPlayer && weaponDef) {
-            const baseDamage = weaponDef.baseDamage || 0;
+            // Weapon damage is stored inconsistently across item defs: some expose
+            // `baseDamage`, but most only carry `attackDamage` (aliased) or
+            // `combatStats.damage`. Reading `baseDamage` alone made most weapons deal
+            // 0 base damage. Resolve from all three so every weapon hits for its value.
+            const baseDamage = weaponDef.baseDamage
+                ?? weaponDef.attackDamage
+                ?? weaponDef.combatStats?.damage
+                ?? 0;
             let damageWithBonus = baseDamage;
 
             // Determine if weapon is melee or ranged based on weaponType/weaponCategory
@@ -1067,7 +1074,7 @@ const CombatSystem = {
             name: weaponDef.name,
             icon: weaponDef.icon,
             weaponType: weaponDef.weaponType || 'melee',
-            baseDamage: weaponDef.baseDamage || 10,
+            baseDamage: weaponDef.baseDamage ?? weaponDef.attackDamage ?? weaponDef.combatStats?.damage ?? 10,
             attackInterval: weaponDef.attackInterval || 2000,
             requiresAmmo: weaponDef.requiresAmmo || false,
             ammoType: weaponDef.ammoType || null,

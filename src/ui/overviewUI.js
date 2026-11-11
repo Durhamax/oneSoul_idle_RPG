@@ -377,8 +377,15 @@ const OverviewUI = {
      * Render combat stats panel
      */
     renderCombatStatsPanel() {
-        const stats = GameEngine.getPlayerCombatStats?.() || {};
+        const stats = this.getLiveCombatStats();
         const combatPower = this.calculateCombatPower();
+
+        const dr = (stats.damageReduction * 100).toFixed(1);
+        // Accuracy and Crit are weighted-roll RATINGS (not flat %): each hit rolls the
+        // rating against the enemy's opposing stat, so the true odds depend on the enemy.
+        const accTitle = `Accuracy rating ${stats.accuracy} — each hit rolls this against the enemy&#39;s evasion (hit chance = ACC / (ACC + enemy evasion)). Not a flat %.`;
+        const critTitle = `Crit rating ${stats.critRating} at ${stats.critMultiplier.toFixed(2)}&times; damage — rolled against the enemy&#39;s crit resistance. Not a flat %.`;
+        const defTitle = `Damage reduction ${dr}% &middot; Armor rating ${stats.armorRating}`;
 
         return `
             <div class="overview-panel panel-combat-stats">
@@ -398,37 +405,107 @@ const OverviewUI = {
                         <div class="stat-item">
                             <span class="stat-icon">❤️</span>
                             <span class="stat-label">HP</span>
-                            <span class="stat-value">${Math.floor(stats.currentHealth || 0)}/${Math.floor(stats.maxHealth || 100)}</span>
+                            <span class="stat-value">${stats.currentHP}/${stats.maxHealth}</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-icon">⚔️</span>
                             <span class="stat-label">Damage</span>
-                            <span class="stat-value">${(stats.attackDamage || 0).toFixed(1)}</span>
+                            <span class="stat-value">${stats.minDamage}&ndash;${stats.maxDamage}</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-icon">⚡</span>
                             <span class="stat-label">Speed</span>
-                            <span class="stat-value">${(stats.attackSpeed || 1).toFixed(2)}/s</span>
+                            <span class="stat-value">${stats.attacksPerSec.toFixed(2)}/s</span>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" title="${accTitle}">
                             <span class="stat-icon">🎯</span>
                             <span class="stat-label">Accuracy</span>
-                            <span class="stat-value">${(stats.accuracy || 0).toFixed(0)}%</span>
+                            <span class="stat-value">${stats.accuracy}</span>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" title="${defTitle}">
                             <span class="stat-icon">🛡️</span>
                             <span class="stat-label">Defense</span>
-                            <span class="stat-value">${((stats.damageReduction || 0) * 100).toFixed(1)}%</span>
+                            <span class="stat-value">${dr}%</span>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" title="${critTitle}">
                             <span class="stat-icon">🔄</span>
                             <span class="stat-label">Crit</span>
-                            <span class="stat-value">${((stats.critChance || 0) * 100).toFixed(1)}%</span>
+                            <span class="stat-value">${stats.critRating} &middot; ${stats.critMultiplier.toFixed(1)}&times;</span>
                         </div>
                     </div>
                 </div>
             </div>
         `;
+    },
+
+    /**
+     * Read the player's LIVE combat stats from state.compiledStats — the single
+     * source of truth the combat engine (StatCompiler + CombatRolls) actually uses.
+     * This replaces the legacy StatCalculator path (getPlayerCombatStats), whose
+     * formulas diverged from real combat.
+     */
+    getLiveCombatStats() {
+        // compiledStats is the documented source of truth; compile if missing.
+        if (!GameEngine.state?.compiledStats && typeof GameEngine.compilePlayerStats === 'function') {
+            GameEngine.compilePlayerStats();
+        }
+        const c = GameEngine.state?.compiledStats || {};
+        const attrs = GameEngine.state?.combatAttributes || {};
+
+        const maxHealth = Math.floor(c.maxHealth || 100);
+        // currentHP is only set during/after combat; fall back to full when idle.
+        const currentHP = Math.floor(GameEngine.state?.currentHP ?? maxHealth);
+        const attackInterval = c.attackInterval || 2000;
+        const attacksPerSec = c.attackSpeed || (1000 / attackInterval);
+        const dmg = this.getEffectiveWeaponDamage(attrs, c);
+
+        return {
+            maxHealth,
+            currentHP,
+            minDamage: dmg.min,
+            maxDamage: dmg.max,
+            attacksPerSec,
+            accuracy: Math.floor(c.accuracy || 0),
+            critRating: Math.floor(c.critRating || 0),
+            critMultiplier: c.critMultiplier || 1.5,
+            damageReduction: c.damageReduction || 0, // 0..0.75
+            armorRating: Math.floor(c.armorRating || 0)
+        };
+    },
+
+    /**
+     * Mirror of combatSystem.calculateCombatStats()'s weapon-damage path so the
+     * panel shows the exact min–max the damage roll uses (weapon base, +Strength
+     * for melee, perk multipliers), not the legacy StatCalculator value.
+     */
+    getEffectiveWeaponDamage(attrs, compiled) {
+        const weaponSlot = GameEngine.state?.equipment?.weapon;
+        if (!weaponSlot) return { min: 1, max: 3 };
+
+        const rawId = typeof weaponSlot === 'string' ? weaponSlot : (weaponSlot.itemId || weaponSlot.id);
+        const baseId = this.parseInstanceId(rawId);
+        const weaponDef = (typeof ItemRegistry !== 'undefined') ? ItemRegistry.getItem(baseId) : null;
+        if (!weaponDef) return { min: 1, max: 3 };
+
+        const mult = compiled.perkMultipliers || {};
+        // Resolve damage from the same fields combatSystem.calculateCombatStats uses
+        // (baseDamage is missing on most weapons; attackDamage/combatStats.damage carry it).
+        const baseDamage = weaponDef.baseDamage
+            ?? weaponDef.attackDamage
+            ?? weaponDef.combatStats?.damage
+            ?? 0;
+        const weaponType = weaponDef.weaponType || weaponDef.weaponCategory || 'melee';
+        const rangedTypes = ['ranged', 'pistol', 'rifle', 'bow', 'crossbow'];
+        const meleeTypes = ['melee', 'sword', 'axe', 'mace', 'dagger', 'balancedMelee'];
+
+        let dmg = baseDamage;
+        if (meleeTypes.includes(weaponType)) {
+            dmg = Math.floor((baseDamage + (attrs.strength || 0)) * (mult.meleeDamage || 1.0));
+        } else if (rangedTypes.includes(weaponType)) {
+            dmg = Math.floor(baseDamage * (mult.rangedDamage || 1.0));
+        }
+
+        return { min: Math.floor(dmg * 0.5), max: Math.floor(dmg * 1.5) };
     },
 
     /**
@@ -892,31 +969,51 @@ const OverviewUI = {
      * Calculate combat power
      */
     calculateCombatPower() {
-        if (typeof GameEngine.calculateCombatPower === 'function') {
-            return GameEngine.calculateCombatPower();
+        // Build POWER from the LIVE compiled stats so it matches the stats shown
+        // below it. (GameEngine.calculateCombatPower uses the legacy StatCalculator
+        // path, which diverges from real combat — only fall back to it if stats
+        // haven't been compiled yet.)
+        if (!GameEngine.state?.compiledStats) {
+            if (typeof GameEngine.calculateCombatPower === 'function') {
+                return GameEngine.calculateCombatPower();
+            }
         }
 
-        // Fallback calculation
-        const stats = GameEngine.getPlayerCombatStats?.() || {};
+        const stats = this.getLiveCombatStats();
+        const charLevel = GameEngine.state?.characterLevel?.level || 1;
+        const weight = GameEngine.state?.compiledStats?.weight || 0;
+        const avgDamage = (stats.minDamage + stats.maxDamage) / 2;
+
+        // Average unlocked non-combat skill level (matches equipmentSystem formula)
+        const skills = GameEngine.state?.skills || {};
+        let totalSkillLevels = 0, skillCount = 0;
+        for (const id in skills) {
+            if (id !== 'combat' && skills[id]?.unlocked) {
+                totalSkillLevels += skills[id].level || 0;
+                skillCount++;
+            }
+        }
+        const avgSkillLevel = skillCount > 0 ? totalSkillLevels / skillCount : 0;
+
         const power = Math.floor(
-            (stats.maxHealth || 0) * 0.5 +
-            (stats.attackDamage || 0) * 2 +
-            (stats.attackSpeed || 1) * 10
+            (charLevel * 10) +                 // Base: character level
+            (stats.maxHealth / 10) +           // Health contribution
+            (avgDamage * 5) +                  // Damage contribution
+            (stats.damageReduction * 100) +    // Defense contribution
+            (stats.attacksPerSec * 20) +       // Speed contribution
+            (weight * 0.5) +                   // Equipment weight
+            (avgSkillLevel * 2)                // Skill average
         );
 
+        // Tiers match equipmentSystem.calculateCombatPower for consistency
         const tiers = [
-            { threshold: 0, name: 'Novice', color: '#888' },
-            { threshold: 50, name: 'Apprentice', color: '#4caf50' },
-            { threshold: 100, name: 'Journeyman', color: '#2196f3' },
-            { threshold: 200, name: 'Expert', color: '#9c27b0' },
-            { threshold: 400, name: 'Master', color: '#ff9800' },
-            { threshold: 800, name: 'Legendary', color: '#f44336' }
+            { threshold: 5000, name: 'Master', color: '#ff9800' },
+            { threshold: 2000, name: 'Expert', color: '#9c27b0' },
+            { threshold: 1000, name: 'Skilled', color: '#2196f3' },
+            { threshold: 500, name: 'Capable', color: '#4caf50' },
+            { threshold: 0, name: 'Novice', color: '#ffffff' }
         ];
-
-        let currentTier = tiers[0];
-        for (const tier of tiers) {
-            if (power >= tier.threshold) currentTier = tier;
-        }
+        const currentTier = tiers.find(t => power >= t.threshold) || tiers[tiers.length - 1];
 
         return { power, tier: currentTier.name, tierColor: currentTier.color };
     },
