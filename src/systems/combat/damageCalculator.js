@@ -126,23 +126,19 @@ const DamageCalculator = {
      * Calculate total damage reduction from all sources
      */
     calculateTotalDamageReduction(defender) {
-        const mult = defender.perkMultipliers || {};
         const compiled = defender.compiledStats || {};
         const defense = compiled.defense || {};
-        const attributes = defender.attributes || {};
+        const nd = defender.defense || {};
 
-        // Source 1: Armor DR (from armor set + accessories)
-        let armorDR = defense.damageReduction || 0;
+        // Source 1: Compiled damage reduction (single source of truth). The Defense attribute
+        // is ALREADY baked in here by StatCompiler (Defense*0.01); it is NOT re-added below,
+        // which previously double-counted it. Read flat so enemy DR applies too.
+        const armorDR = defender.damageReduction ?? defense.damageReduction ?? nd.damageReduction ?? 0;
 
-        // Source 2: Defense Attribute
-        const defenseBase = ((attributes.defense || 0) * this.COMBAT_BALANCE.defensePerPoint)
-            - this.COMBAT_BALANCE.defenseOffset;
-        const defenseDR = Math.max(0, defenseBase * (mult.defenseScaling || 1.0));
-
-        // Source 3: Set Bonuses (if any)
+        // Source 2: Set Bonuses (if any)
         const setBonusDR = defender.setBonuses?.damageReduction || 0;
 
-        // Source 4: Active Effects
+        // Source 3: Active Effects
         let effectsDR = 0;
         for (const effect of defender.activeEffects || []) {
             if (effect.damageReduction) {
@@ -150,14 +146,13 @@ const DamageCalculator = {
             }
         }
 
-        const rawTotal = armorDR + defenseDR + setBonusDR + effectsDR;
+        const rawTotal = armorDR + setBonusDR + effectsDR;
         const cappedTotal = Math.min(this.COMBAT_BALANCE.maxDamageReduction, rawTotal);
 
         return {
             total: cappedTotal,
             breakdown: {
                 armorDR: armorDR,
-                defenseDR: defenseDR,
                 setBonusDR: setBonusDR,
                 effectsDR: effectsDR,
                 raw: rawTotal,

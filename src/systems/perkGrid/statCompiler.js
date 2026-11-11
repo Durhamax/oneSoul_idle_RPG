@@ -281,6 +281,7 @@ const StatCompiler = {
         const health = attributes.health || 1;
         const defense = attributes.defense || 1;
         const stealth = attributes.stealth || 1;
+        const perception = attributes.perception || 1;
 
         // Max health: base 100 + health attribute * 10
         const baseHealth = 100;
@@ -291,13 +292,15 @@ const StatCompiler = {
         );
 
         // Evasion: Stealth-based — Stealth lowers an attacker's chance to hit the player.
-        // (Mobility governs attack speed, not dodge.)
-        const baseEvasion = stealth * 1.5;
-        const evasion = Math.min(50, Math.floor(
+        // (Mobility governs attack speed, not dodge.) This is a weighted-roll POOL value
+        // (rolled against the attacker's accuracy), not a flat %, so it is NOT capped at 50;
+        // Stealth*10 keeps it on the same scale as accuracy (70 + Perception*2).
+        const baseEvasion = stealth * 10;
+        const evasion = Math.floor(
             (baseEvasion + equipmentStats.evasion)
             * (perks.stealthScaling || 1.0)
             * (perks.evasion || 1.0)
-        ));
+        );
 
         // Armor rating: defense-based
         const baseArmor = defense * 3;
@@ -314,11 +317,13 @@ const StatCompiler = {
             * (perks.damageReduction || 1.0)
         );
 
-        // Crit resistance
-        const critResistance = Math.min(50, Math.floor(
-            (defense * 0.5 + equipmentStats.critResistance)
+        // Crit resistance: Perception-based (reading the attack coming). Another weighted-roll
+        // POOL value — rolled against the attacker's crit rating (5 + Perception*0.5) — so it is
+        // uncapped and scaled by Perception*10 to sit alongside crit rating.
+        const critResistance = Math.floor(
+            (perception * 10 + equipmentStats.critResistance)
             * (perks.critResistance || 1.0)
-        ));
+        );
 
         return {
             maxHealth,

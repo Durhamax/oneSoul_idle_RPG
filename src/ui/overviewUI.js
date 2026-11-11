@@ -386,6 +386,8 @@ const OverviewUI = {
         const accTitle = `Accuracy rating ${stats.accuracy} — each hit rolls this against the enemy&#39;s evasion (hit chance = ACC / (ACC + enemy evasion)). Not a flat %.`;
         const critTitle = `Crit rating ${stats.critRating} at ${stats.critMultiplier.toFixed(2)}&times; damage — rolled against the enemy&#39;s crit resistance. Not a flat %.`;
         const defTitle = `Damage reduction ${dr}% &middot; Armor rating ${stats.armorRating}`;
+        const critMin = Math.round(stats.maxDamage / 2);
+        const dmgTitle = `Normal hit rolls ${stats.minDamage}&ndash;${stats.maxDamage}. Crit rolls ${critMin}&ndash;${stats.maxDamage} (upper half) &times; ${stats.critMultiplier.toFixed(2)} crit multiplier. Misses deal 0.`;
 
         return `
             <div class="overview-panel panel-combat-stats">
@@ -407,7 +409,7 @@ const OverviewUI = {
                             <span class="stat-label">HP</span>
                             <span class="stat-value">${stats.currentHP}/${stats.maxHealth}</span>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" title="${dmgTitle}">
                             <span class="stat-icon">⚔️</span>
                             <span class="stat-label">Damage</span>
                             <span class="stat-value">${stats.minDamage}&ndash;${stats.maxDamage}</span>
@@ -505,7 +507,8 @@ const OverviewUI = {
             dmg = Math.floor(baseDamage * (mult.rangedDamage || 1.0));
         }
 
-        return { min: Math.floor(dmg * 0.5), max: Math.floor(dmg * 1.5) };
+        // A landed normal hit rolls 1..max (misses deal 0). Perks may raise the floor above 1.
+        return { min: Math.max(1, Math.floor(mult.minDamageBonus || 0) || 1), max: Math.floor(dmg * 1.5) };
     },
 
     /**

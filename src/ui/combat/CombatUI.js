@@ -292,6 +292,7 @@ const CombatUI = {
             accuracy: enemyDef.accuracy || 50,
             evasion: enemyDef.evasion || 0,
             critRating: enemyDef.critRating || enemyDef.stealth || 5,
+            critResistance: enemyDef.critResistance ?? 10, // crit resistance so the player isn't guaranteed a crit
             critMultiplier: enemyDef.critMultiplier || 1.5,
             damageType: enemyDef.damageType || 'pierce',
             armorType: enemyDef.armorType || 'plated',

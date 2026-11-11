@@ -93,68 +93,80 @@ const CombatRolls = {
 
     /**
      * Roll 3: Damage Roll
-     * Random between min and max damage
+     *
+     * Normal hit: rolls between the attacker's minimum (>= 1) and maxDamage.
+     * Crit: the roll's FLOOR jumps to half of max (round(maxDamage / 2)), so a crit always
+     * lands in the TOP HALF of the range — this happens BEFORE the crit multiplier is applied
+     * by performAttack. (A miss never reaches this roll; it deals 0.)
+     *
+     * Example — normal range 1–9: a crit rolls 5–9 (9/2 = 4.5 → 5), then × crit multiplier.
      */
-    performDamageRoll(attacker) {
-        const minDmg = attacker.minDamage || 0;
+    performDamageRoll(attacker, isCrit = false) {
         const maxDmg = attacker.maxDamage || 0;
 
-        if (minDmg === 0 && maxDmg === 0) {
-            return { damage: 0, min: 0, max: 0 };
+        if (maxDmg <= 0) {
+            return { damage: 0, min: 0, max: 0, isCrit: !!isCrit };
         }
+
+        // Crit raises the floor to the upper half; otherwise use the attacker's min (>= 1,
+        // perks may raise it above 1).
+        let minDmg = isCrit
+            ? Math.round(maxDmg / 2)
+            : Math.max(1, attacker.minDamage || 1);
+        if (minDmg > maxDmg) minDmg = maxDmg;
 
         const damage = minDmg + Math.floor(Math.random() * (maxDmg - minDmg + 1));
 
         return {
             damage: damage,
             min: minDmg,
-            max: maxDmg
+            max: maxDmg,
+            isCrit: !!isCrit
         };
     },
 
     /**
-     * Calculate defense pool (evasion + armor rating)
+     * Calculate defense pool (evasion + armor rating).
+     *
+     * Reads the defender's COMPILED stats as flat fields — never recomputes from
+     * attributes. This is the single source of truth: the player's values are compiled
+     * by StatCompiler (evasion = Stealth*10, etc.) and set flat on the combatant; enemies
+     * carry their values flat from their definition. Covers all three combatant shapes:
+     *   • flat field        (player combatant + production enemy)  → defender.evasion
+     *   • player compiled   (StatCompiler)                         → compiledStats.defense
+     *   • nested enemy       (EnemyStats dev path)                  → defender.defense
      */
+    calculateCritResistanceSource(defender) {
+        const cd = defender.compiledStats?.defense || {};
+        const nd = defender.defense || {};
+        return defender.critResistance ?? cd.critResistance ?? nd.critResistance ?? 0;
+    },
+
     calculateDefensePool(defender) {
-        const mult = defender.perkMultipliers || {};
-        const compiled = defender.compiledStats || {};
-        const defense = compiled.defense || {};
-        // Player uses combatAttributes, enemies use attributes
-        const attributes = defender.attributes || defender.combatAttributes || {};
+        const cd = defender.compiledStats?.defense || {};
+        const nd = defender.defense || {};
 
-        // Evasion from Stealth — Stealth lowers an attacker's chance to hit this defender.
-        // (Mobility governs attack speed, not dodge.)
-        let evasion = (attributes.stealth || 0) * 10
-            * (mult.stealthScaling || 1.0)
-            * (mult.evasion || 1.0);
-
-        // Flat evasion from equipment
-        evasion += defense.flatEvasionBonus || 0;
-
-        // Armor Rating
-        const armorRating = defense.armorRating || 0;
+        const flatEvasionBonus = cd.flatEvasionBonus ?? nd.flatEvasionBonus ?? 0;
+        const evasion = Math.floor(
+            (defender.evasion ?? cd.evasion ?? nd.evasion ?? 0) + flatEvasionBonus
+        );
+        const armorRating = defender.armorRating ?? cd.armorRating ?? nd.armorRating ?? 0;
 
         return {
-            evasion: Math.floor(evasion),
+            evasion: evasion,
             armorRating: armorRating,
             total: Math.floor(evasion + armorRating)
         };
     },
 
     /**
-     * Calculate crit resistance
+     * Calculate crit resistance — read as a flat compiled field (same single-source rule
+     * as the defense pool). Player: Perception*10 (compiled); enemies: their defined value.
+     * A timed Perception buff (Minty Tincture) still hardens the defender against crits.
      */
     calculateCritResistance(defender) {
-        const mult = defender.perkMultipliers || {};
-        // Player uses combatAttributes, enemies use attributes
-        const attributes = defender.attributes || defender.combatAttributes || {};
-
-        const perception = (attributes.perception || 0) + this.activePerceptionBonus(defender);
-        const critResistance = perception * 10
-            * (mult.perceptionScaling || 1.0)
-            * (mult.critResistance || 1.0);
-
-        return Math.floor(critResistance);
+        const base = this.calculateCritResistanceSource(defender);
+        return Math.floor(base + this.activePerceptionBonus(defender) * 10);
     }
 };
 

@@ -529,13 +529,19 @@ const CombatSystem = {
         // Roll 2: Crit Check
         const critRoll = CombatRolls.performCritRoll(attacker, defender);
 
-        // Roll 3: Damage Roll
-        const damageRoll = CombatRolls.performDamageRoll(attacker);
+        // Roll 3: Damage Roll — a crit raises the roll's floor to half of max (upper-half
+        // roll) BEFORE the crit multiplier below is applied.
+        const damageRoll = CombatRolls.performDamageRoll(attacker, critRoll.success);
 
-        // Apply crit multiplier if crit
+        // Apply crit multiplier if crit. Use the attacker's COMPILED critMultiplier (single
+        // source of truth — base 1.5, matching the Overview panel), not a hardcoded 2.0.
         let rawDamage = damageRoll.damage;
         if (critRoll.success) {
-            const critMult = (attacker.perkMultipliers?.critMultiplier || 1.0) * 2.0;
+            const baseCritMult = attacker.critMultiplier
+                ?? attacker.compiledStats?.critMultiplier
+                ?? (typeof GameEngine !== 'undefined' && GameEngine.state?.compiledStats?.critMultiplier)
+                ?? 1.5;
+            const critMult = baseCritMult * (attacker.perkMultipliers?.critMultiplier || 1.0);
             rawDamage = Math.floor(rawDamage * critMult);
         }
 
@@ -778,7 +784,9 @@ const CombatSystem = {
                 damageWithBonus = Math.floor(damageWithBonus * (mult.rangedDamage || 1.0));
             }
 
-            combatant.minDamage = Math.floor(damageWithBonus * 0.5);
+            // A landed normal hit rolls between 1 and maxDamage (misses already deal 0).
+            // Perks that raise the minimum (mult.minDamageBonus, flat) lift this floor.
+            combatant.minDamage = Math.max(1, Math.floor(mult.minDamageBonus || 0) || 1);
             combatant.maxDamage = Math.floor(damageWithBonus * 1.5);
         } else {
             combatant.minDamage = combatant.minDamage || 1;
