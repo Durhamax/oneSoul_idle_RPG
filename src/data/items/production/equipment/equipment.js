@@ -27,6 +27,8 @@ const EQUIPMENT_ITEMS = {
         equipSlot: 'weapon',
         tier: 'starter',
         weaponCategory: 'bow',
+        requiresAmmo: true,
+        ammoType: 'arrow',
         combatStats: {
             damage: 6,
             attackSpeed: 1.0,
@@ -88,6 +90,8 @@ const EQUIPMENT_ITEMS = {
         equipSlot: 'weapon',
         tier: 'starter',
         weaponCategory: 'rifle',
+        requiresAmmo: true,
+        ammoType: 'rifle',
         combatStats: {
             damage: 9,
             attackSpeed: 0.8,

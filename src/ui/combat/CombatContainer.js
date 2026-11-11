@@ -591,9 +591,12 @@ const CombatContainer = {
                     if (loot.itemId === 'gold') {
                         player.currencies.gold = (player.currencies.gold || 0) + loot.quantity;
                         collected.currencies.gold = (collected.currencies.gold || 0) + loot.quantity;
-                    } else if (loot.itemId === 'medalFragments') {
-                        player.currencies.medalFragments = (player.currencies.medalFragments || 0) + loot.quantity;
-                        collected.currencies.medalFragments = (collected.currencies.medalFragments || 0) + loot.quantity;
+                    } else if (loot.itemId === 'medalFragments' || loot.itemId === 'medals') {
+                        // Medals are the single perk-grid currency (canon: war trophies → perk rolls).
+                        // Route legacy "medalFragments" drops into currencies.medals so combat
+                        // rewards feed the Perks tab forge.
+                        player.currencies.medals = (player.currencies.medals || 0) + loot.quantity;
+                        collected.currencies.medals = (collected.currencies.medals || 0) + loot.quantity;
                     }
                 }
             } else if (loot.isItem || loot.itemId) {

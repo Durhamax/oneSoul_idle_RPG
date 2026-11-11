@@ -108,6 +108,28 @@ const CombatSystem = {
             return null;
         }
 
+        // Single active activity: starting a fight stops any gathering, navigation, or
+        // crafting that is currently running (only one activity at a time).
+        if (typeof GameEngine !== 'undefined' && GameEngine.state) {
+            const ge = GameEngine;
+            if (typeof ge.stopGathering === 'function' &&
+                (ge.state.currentActivity === 'gathering' || ge.state.gatheringSession)) {
+                ge.stopGathering();
+            }
+            if (typeof ge.stopNavigation === 'function' &&
+                (ge.state.currentActivity === 'navigation' || ge.state.activeNavigation?.isNavigating)) {
+                ge.stopNavigation();
+            }
+            if (ge.state.crafting?.activeQueues) {
+                for (const sk of ['smithing', 'mechanics', 'electronics', 'tailoring', 'chemistry', 'cooking']) {
+                    if (ge.state.crafting.activeQueues[sk]?.length > 0) {
+                        ge.state.crafting.activeQueues[sk] = [];
+                    }
+                }
+                ge.state.crafting.autoRecipe = null;
+            }
+        }
+
         console.log(`⚔️ [COMBAT START] vs ${enemy.name} (Lv.${enemy.level})`);
         console.log(`   Enemy: ${enemy.maxHP} HP | ${enemy.minDamage}-${enemy.maxDamage} dmg | ${enemy.attackInterval}ms interval | ${enemy.damageType} dmg / ${enemy.armorType} armor`);
         console.log(`   Enemy Accuracy: ${enemy.accuracy} | Enemy Evasion: ${enemy.evasion} | Enemy CritRating: ${enemy.critRating}`);
@@ -944,8 +966,8 @@ const CombatSystem = {
                     // Emit event for UI to show in loot box
                     if (typeof EventBus !== 'undefined') {
                         EventBus.emit('loot-dropped', {
-                            itemId: 'medalFragments',
-                            name: 'Medal Fragments',
+                            itemId: 'medals',
+                            name: 'Medals',
                             icon: '🏅',
                             quantity: fragments,
                             rarity: 'currency',

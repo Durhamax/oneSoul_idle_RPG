@@ -369,7 +369,7 @@ const PerkGridUI = {
         return `
             <div class="forge-panel">
                 <div class="forge-description">
-                    Spend fragments to forge new medals. Higher tiers have better rarity chances.
+                    Spend medals to forge new perk medals. Higher tiers have better rarity chances.
                 </div>
 
                 <div class="tier-selector">

@@ -29,6 +29,7 @@ const MigrationSystem = {
             this.migrateCraftingSystem,
             this.migrateMissionSystem,
             this.migrateMedalCrafting,
+            this.migrateMedalCurrency,
             this.migrateNodeCollection,
             this.migrateCharacterLevel,
             this.migrateCombatPendingLoot,
@@ -468,6 +469,44 @@ const MigrationSystem = {
                 craftedByTier: {},
                 craftedByRarity: {}
             };
+            changes++;
+        }
+
+        return changes;
+    },
+
+    /**
+     * Unify the medal pool. Perk-grid forging spends currencies.medals (war trophies
+     * from combat). Older reward paths deposited medals either as currencies.medalFragments
+     * or as a stackable bank item (bank.stackable.medals). Fold both into currencies.medals
+     * so the Perks tab, HUD, and bank all read the same pool.
+     *
+     * Runs AFTER save load (unlike the medal system's init migration, which runs on the
+     * pre-load default state and is therefore overwritten by the loaded save).
+     */
+    migrateMedalCurrency() {
+        let changes = 0;
+
+        if (!GameEngine.state.currencies) {
+            GameEngine.state.currencies = {};
+        }
+        if (GameEngine.state.currencies.medals === undefined) {
+            GameEngine.state.currencies.medals = 0;
+        }
+
+        // Fold legacy medalFragments currency into medals.
+        if (GameEngine.state.currencies.medalFragments) {
+            GameEngine.state.currencies.medals += GameEngine.state.currencies.medalFragments;
+            console.log(`  ✅ Folded ${GameEngine.state.currencies.medalFragments} medalFragments into medals`);
+            GameEngine.state.currencies.medalFragments = 0;
+            changes++;
+        }
+
+        // Fold medals that landed in the stackable bank into the currency.
+        if (GameEngine.state.bank?.stackable?.medals) {
+            GameEngine.state.currencies.medals += GameEngine.state.bank.stackable.medals;
+            console.log(`  ✅ Folded ${GameEngine.state.bank.stackable.medals} bank medals into medals currency`);
+            delete GameEngine.state.bank.stackable.medals;
             changes++;
         }
 
