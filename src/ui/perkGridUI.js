@@ -27,16 +27,12 @@ const PerkGridUI = {
         const gridState = GameEngine.getGridState();
         const multipliers = GameEngine.getPerkMultipliers();
         const inventoryInfo = GameEngine.getMedalInventoryInfo();
-        const fragments = GameEngine.state.currencies?.medalFragments || 0;
+        // Perk grid uses the bank "medals" currency (war trophies from combat).
+        const medals = GameEngine.state.currencies?.medals || 0;
 
         container.innerHTML = `
             <div class="perk-grid-container-7x7">
-                <!-- Left Panel: Stats Summary -->
-                <div class="grid-stats-panel">
-                    ${this.renderStatsPanel(gridState, multipliers)}
-                </div>
-
-                <!-- Center: Main Grid -->
+                <!-- Left 2/3: the perk grid itself (expands to fill) -->
                 <div class="grid-main-panel">
                     <div class="grid-header">
                         <h3>Perk Grid</h3>
@@ -49,15 +45,21 @@ const PerkGridUI = {
                     ${this.renderGrid(gridState)}
                 </div>
 
-                <!-- Right Panel: Medal Management -->
-                <div class="medal-management-panel">
-                    <div class="medal-currency">
-                        <span class="fragment-icon">◆</span>
-                        <span class="fragment-count">${fragments.toLocaleString()}</span>
-                        <span class="fragment-label">Fragments</span>
+                <!-- Right 1/3: stats summary (top) + medal management (below) -->
+                <div class="perk-right-column">
+                    <div class="grid-stats-panel">
+                        ${this.renderStatsPanel(gridState, multipliers)}
                     </div>
-                    ${this.renderMedalTabs()}
-                    ${this.renderMedalContent(inventoryInfo, fragments)}
+
+                    <div class="medal-management-panel">
+                        <div class="medal-currency">
+                            <span class="fragment-icon">🏅</span>
+                            <span class="fragment-count">${medals.toLocaleString()}</span>
+                            <span class="fragment-label">Medals</span>
+                        </div>
+                        ${this.renderMedalTabs()}
+                        ${this.renderMedalContent(inventoryInfo, medals)}
+                    </div>
                 </div>
             </div>
         `;
@@ -290,7 +292,7 @@ const PerkGridUI = {
                     ${inventoryInfo.canExpand ? `
                         <button class="expand-btn" data-action="expand">
                             Expand (+${typeof MEDAL_INVENTORY_CONFIG !== 'undefined' ? MEDAL_INVENTORY_CONFIG.expansionAmount : 10})
-                            <span class="cost">${inventoryInfo.expansionCost}◆</span>
+                            <span class="cost">${inventoryInfo.expansionCost}🏅</span>
                         </button>
                     ` : ''}
                 </div>
@@ -380,7 +382,7 @@ const PerkGridUI = {
                             <button class="tier-btn ${isSelected ? 'selected' : ''} ${!canAfford ? 'unaffordable' : ''}"
                                     data-tier="${tier}">
                                 <div class="tier-name">${config.name}</div>
-                                <div class="tier-cost">${config.cost}◆</div>
+                                <div class="tier-cost">${config.cost}🏅</div>
                             </button>
                         `;
                     }).join('')}
@@ -404,11 +406,11 @@ const PerkGridUI = {
                         <div class="forge-actions">
                             <button class="forge-btn" data-action="forge" data-count="1"
                                     ${fragments < tiers[this.forgeTier].cost ? 'disabled' : ''}>
-                                Forge 1 (${tiers[this.forgeTier].cost}◆)
+                                Forge 1 (${tiers[this.forgeTier].cost}🏅)
                             </button>
                             <button class="forge-btn" data-action="forge" data-count="10"
                                     ${fragments < tiers[this.forgeTier].cost * 10 ? 'disabled' : ''}>
-                                Forge 10 (${tiers[this.forgeTier].cost * 10}◆)
+                                Forge 10 (${tiers[this.forgeTier].cost * 10}🏅)
                             </button>
                         </div>
                     </div>
@@ -502,7 +504,7 @@ const PerkGridUI = {
                     <h4>Selected: ${this.selectedForSalvage.length}</h4>
                     ${preview ? `
                         <div class="salvage-preview">
-                            Will recover: <span class="fragment-gain">+${preview.totalFragments}◆</span>
+                            Will recover: <span class="fragment-gain">+${preview.totalFragments}🏅</span>
                         </div>
                     ` : ''}
                     <button class="salvage-btn" data-action="salvage"

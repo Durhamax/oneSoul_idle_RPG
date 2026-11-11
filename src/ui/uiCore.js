@@ -39,7 +39,7 @@ const UICore = {
         const requiredElements = [
             'resourcesDisplay', 'generatorsDisplay', 'upgradesDisplay',
             'skillsDisplay', 'currentRegionDisplay', 'regionsDisplay',
-            'bankStats', 'bankTabs', 'bankGrid',
+            'bankTabs', 'bankGrid',
             'playerStats', 'equipmentGrid', 'combatArea'
         ];
 

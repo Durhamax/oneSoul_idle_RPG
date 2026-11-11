@@ -328,7 +328,7 @@
 
 .bank-item.new {
     border-color: var(--color-warning);
-    box-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+    box-shadow: 0 0 10px rgba( 241, 196, 15, 0.5);
     animation: pulse 2s infinite;
 }
 
@@ -470,7 +470,7 @@
 
 .node-card.active {
     border-color: var(--color-success);
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    box-shadow: 0 0 20px rgba( 46, 204, 113, 0.3);
 }
 
 .node-card.depleted {
@@ -1904,49 +1904,54 @@
 .explore-button:disabled {
     background: #555;
 }
+/* Item-type tabs — canonical top-tab underline idiom (matches .crafting-tab) */
 .bank-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 15px;
-    border-bottom: 2px solid #444;
-    padding-bottom: 5px;
-    max-height: 120px;
-    overflow-y: auto;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    background: transparent;
+    border-bottom: 1px solid var(--color-border);
+    padding: 0 0.5rem;
 }
 .bank-tab {
-    padding: 6px 10px;
-    background: var(--color-bg-glass);
-    backdrop-filter: blur(var(--blur-sm));
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    backdrop-filter: none;
     border: none;
-    border-top: 1px solid var(--color-border);
-    border-left: 1px solid var(--color-border);
-    border-right: 1px solid var(--color-border);
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
     cursor: pointer;
-    color: var(--color-text-tertiary);
-    font-family: monospace;
-    font-size: 0.85em;
+    color: var(--color-text-secondary);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     transition: all var(--transition-base);
     white-space: nowrap;
 }
 .bank-tab:hover {
-    background: var(--color-bg-glass-light);
+    background: rgba(255, 255, 255, 0.04);
     color: var(--color-text-primary);
 }
 .bank-tab.active {
-    background: var(--color-bg-glass-light);
-    border-color: var(--color-primary);
+    background: transparent;
     color: var(--color-primary);
+    border-bottom: 2px solid var(--color-primary);
+    box-shadow: none;
 }
 .bank-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 10px;
-    max-height: 500px;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+    max-height: calc(100vh - 160px);
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 10px;
+    padding: 10px 10px 10px 0;
 }
 /* Make medals fit better in grid */
 #bankGrid .bank-item.medal-card {
@@ -2042,7 +2047,7 @@
 
 .item-card-new {
     border-color: var(--color-warning);
-    box-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+    box-shadow: 0 0 10px rgba( 241, 196, 15, 0.5);
     animation: pulse 2s infinite;
 }
 
@@ -2112,12 +2117,12 @@
 
 /* Attachment indicator badge */
 .item-card-attachment-badge {
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%);
     color: white;
     font-size: 0.75em;
     padding: 3px 7px;
     border-radius: var(--radius-sm);
-    box-shadow: 0 2px 6px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 2px 6px rgba( 230, 126, 34, 0.4);
     font-weight: var(--font-weight-bold);
     display: flex;
     align-items: center;
@@ -2127,10 +2132,10 @@
 
 @keyframes attachment-glow {
     0%, 100% {
-        box-shadow: 0 2px 6px rgba(255, 107, 53, 0.4);
+        box-shadow: 0 2px 6px rgba( 230, 126, 34, 0.4);
     }
     50% {
-        box-shadow: 0 2px 12px rgba(255, 107, 53, 0.7);
+        box-shadow: 0 2px 12px rgba( 230, 126, 34, 0.7);
     }
 }
 
@@ -2175,7 +2180,7 @@
     font-family: var(--font-mono);
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-bold);
-    color: var(--color-primary);
+    color: var(--color-text-primary);
     margin-top: auto;
 }
 
@@ -2204,7 +2209,7 @@
 
 .item-card-requirement.met {
     color: var(--color-success);
-    background: rgba(0, 255, 136, 0.1);
+    background: rgba( 46, 204, 113, 0.1);
 }
 
 .item-card-requirement.unmet {
@@ -2258,6 +2263,28 @@
 /* Context-specific styles */
 .item-card-bank {
     /* Bank-specific styles if needed */
+}
+
+/* Compact bank tiles (smaller than the default item card) */
+#bankGrid .item-card {
+    min-height: 84px;
+    padding: var(--space-sm);
+    border-width: 1px;
+}
+#bankGrid .item-card-icon {
+    min-height: 40px;
+    margin-bottom: 2px;
+}
+#bankGrid .item-card-icon img {
+    max-width: 40px;
+    max-height: 40px;
+}
+#bankGrid .item-card-name {
+    font-size: 10px;
+    letter-spacing: 0.3px;
+}
+#bankGrid .item-card-quantity {
+    font-size: var(--font-size-sm);
 }
 
 .item-card-loot {

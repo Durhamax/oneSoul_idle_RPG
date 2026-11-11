@@ -941,6 +941,69 @@
 }
 
 /* View Button */
+/* Carry-weight bar (loadout panel) */
+.loadout-weight-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.loadout-weight-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.loadout-weight-track {
+    flex: 1 1 auto;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.loadout-weight-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db, #2980b9);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.loadout-weight-value {
+    font-size: 11px;
+    font-weight: 600;
+    color: #ccc;
+    min-width: 46px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.loadout-weight-sep {
+    color: #666;
+    margin: 0 1px;
+}
+
+.loadout-weight-row.is-near .loadout-weight-fill {
+    background: linear-gradient(90deg, #f1c40f, #f39c12);
+}
+
+.loadout-weight-row.is-near .loadout-weight-value {
+    color: #f1c40f;
+}
+
+.loadout-weight-row.is-over .loadout-weight-fill {
+    background: linear-gradient(90deg, #e74c3c, #c0392b);
+}
+
+.loadout-weight-row.is-over .loadout-weight-value {
+    color: #e74c3c;
+}
+
 .loadout-view-btn {
     width: 100%;
     margin-top: 12px;

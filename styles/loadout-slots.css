@@ -371,6 +371,39 @@
     align-items: center;
 }
 
+/* Left cell: narrow vertical carry-weight bar + weapon/gloves/boots column */
+.unified-loadout-leftcell {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 8px;
+}
+
+/* Narrow vertical weight bar (~1/6 of a slot's width), green under threshold / red over */
+.loadout-weight-vbar {
+    width: calc(var(--slot-size-base) / 6);
+    min-width: 8px;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.loadout-weight-vbar__fill {
+    width: 100%;
+    background: linear-gradient(180deg, #2ecc71, #27ae60);
+    border-radius: 0 0 5px 5px;
+    transition: height 0.3s ease;
+}
+
+.loadout-weight-vbar.is-over .loadout-weight-vbar__fill {
+    background: linear-gradient(180deg, #e74c3c, #c0392b);
+}
+
 /* Middle column (armor) - center the armor slot */
 .unified-loadout-column--armor {
     display: flex;

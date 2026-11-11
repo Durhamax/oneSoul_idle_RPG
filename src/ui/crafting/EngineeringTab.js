@@ -26,6 +26,7 @@ const EngineeringTab = {
     render() {
         const engineeringLevel = GameEngine.state.skills?.engineering?.level || 1;
         const engineeringState = GameEngine.state.engineering || {};
+        const tomes = this.getTomes();
 
         return `
             <div class="engineering-tab">
@@ -35,16 +36,182 @@ const EngineeringTab = {
                         <span class="level-text">Engineering Lab</span>
                         <span class="level-value">Level ${engineeringLevel}</span>
                     </div>
+                    <div class="engineering-tomes" title="Tomes — the knowledge currency spent on research">
+                        📖 <span class="tomes-value">${Formatting.formatNumber(tomes)}</span> Tomes
+                    </div>
                 </div>
 
-                <div class="engineering-grid">
-                    ${this.renderPerfectionPanel(engineeringLevel)}
-                    ${this.renderTechnologyPanel(engineeringLevel)}
-                    ${this.renderSalvagePanel(engineeringLevel)}
-                    ${this.renderStatisticsPanel(engineeringState)}
+                <!-- PRIMARY VIEW: Knowledge / research tree -->
+                ${this.renderKnowledgeTree(engineeringLevel, tomes)}
+
+                <!-- Secondary lab tools -->
+                <div class="engineering-labtools">
+                    <h3 class="engineering-section-title">🧪 Lab Tools</h3>
+                    <div class="engineering-grid">
+                        ${this.renderPerfectionPanel(engineeringLevel)}
+                        ${this.renderTechnologyPanel(engineeringLevel)}
+                        ${this.renderSalvagePanel(engineeringLevel)}
+                        ${this.renderStatisticsPanel(engineeringState)}
+                    </div>
                 </div>
             </div>
         `;
+    },
+
+    /**
+     * PRIMARY ENGINEERING VIEW — the knowledge tree.
+     * Each engineering field is a horizontal research path of tiered nodes
+     * (unlocked left-to-right), gated by Engineering level, the previous tier,
+     * and Tomes. Reads GameEngine.definitions.engineeringFields.
+     */
+    renderKnowledgeTree(engineeringLevel, tomes) {
+        const fields = GameEngine.definitions?.engineeringFields || {};
+        const fieldKeys = Object.keys(fields);
+
+        if (fieldKeys.length === 0) {
+            return `
+                <div class="knowledge-tree">
+                    <div class="no-items-message"><p>No research fields defined.</p></div>
+                </div>
+            `;
+        }
+
+        const rows = fieldKeys.map(key => this.renderFieldRow(key, fields[key], engineeringLevel, tomes)).join('');
+
+        return `
+            <div class="knowledge-tree">
+                <div class="knowledge-tree-head">
+                    <h3 class="engineering-section-title">📚 Knowledge Tree</h3>
+                    <span class="knowledge-tree-hint">Spend Tomes to research each field, tier by tier</span>
+                </div>
+                <div class="knowledge-fields">
+                    ${rows}
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Render a single field's research path (a row of tier nodes).
+     */
+    renderFieldRow(fieldKey, field, engineeringLevel, tomes) {
+        const tiers = field.tiers || [];
+        const researchedCount = tiers.filter(t => this.isResearched(t.id)).length;
+
+        const nodes = tiers.map((node, idx) => {
+            const researched = this.isResearched(node.id);
+            const prevResearched = idx === 0 || this.isResearched(tiers[idx - 1].id);
+            const meetsLevel = engineeringLevel >= node.engLevel;
+            const tomeCost = node.cost?.tomes || 0;
+            const canAfford = tomes >= tomeCost;
+            const available = !researched && prevResearched && meetsLevel && canAfford;
+            const unlockable = !researched && prevResearched && meetsLevel; // reachable, maybe can't afford
+
+            let status = 'locked';
+            if (researched) status = 'researched';
+            else if (available) status = 'available';
+            else if (unlockable) status = 'reachable';
+
+            const extraCosts = Object.entries(node.cost || {})
+                .filter(([k]) => k !== 'tomes')
+                .map(([k, v]) => `${v} ${this.prettyMaterial(k)}`)
+                .join(', ');
+
+            const connector = idx < tiers.length - 1
+                ? `<div class="kn-connector ${this.isResearched(tiers[idx + 1].id) || researched ? 'filled' : ''}"></div>`
+                : '';
+
+            return `
+                <div class="kn-node kn-${status}" title="${node.unlocks ? node.unlocks.join(' • ') : ''}">
+                    <div class="kn-node-tier">T${node.tier}</div>
+                    <div class="kn-node-name">${node.name}</div>
+                    <div class="kn-node-req">Eng Lv.${node.engLevel}</div>
+                    <div class="kn-node-cost">
+                        <span class="kn-cost-tomes ${tomes >= (node.cost?.tomes || 0) ? 'ok' : 'short'}">📖 ${node.cost?.tomes || 0}</span>
+                        ${extraCosts ? `<span class="kn-cost-mats">${extraCosts}</span>` : ''}
+                    </div>
+                    ${node.unlocks && node.unlocks.length ? `<div class="kn-node-unlock">${node.unlocks[0]}</div>` : ''}
+                    ${
+                        researched
+                            ? `<div class="kn-node-badge">✓ Researched</div>`
+                            : available
+                                ? `<button class="kn-research-btn" onclick="EngineeringTab.research('${fieldKey}','${node.id}')">Research</button>`
+                                : `<button class="kn-research-btn locked" disabled>${!meetsLevel ? `🔒 Lv.${node.engLevel}` : !prevResearched ? '🔒 Prev tier' : '📖 Need tomes'}</button>`
+                    }
+                    ${connector}
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="knowledge-field">
+                <div class="knowledge-field-head">
+                    <span class="kf-icon">${field.icon || '🔬'}</span>
+                    <div class="kf-meta">
+                        <div class="kf-name">${field.name}</div>
+                        <div class="kf-desc">${field.description || ''}</div>
+                    </div>
+                    <div class="kf-progress">${researchedCount}/${tiers.length}</div>
+                </div>
+                <div class="knowledge-field-path">
+                    ${nodes}
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Current Tomes balance
+     */
+    getTomes() {
+        return GameEngine.state.currencies?.tomes || 0;
+    },
+
+    /**
+     * Whether a research node has been completed
+     */
+    isResearched(nodeId) {
+        return !!GameEngine.state.engineering?.research?.[nodeId];
+    },
+
+    /**
+     * Research a node: validates level, prerequisite tier, and tome cost,
+     * then deducts tomes and marks it researched.
+     */
+    research(fieldKey, nodeId) {
+        const field = GameEngine.definitions?.engineeringFields?.[fieldKey];
+        if (!field) return;
+        const idx = field.tiers.findIndex(t => t.id === nodeId);
+        const node = field.tiers[idx];
+        if (!node || this.isResearched(nodeId)) return;
+
+        const engLevel = GameEngine.state.skills?.engineering?.level || 1;
+        if (engLevel < node.engLevel) return;
+        if (idx > 0 && !this.isResearched(field.tiers[idx - 1].id)) return;
+
+        const cost = node.cost?.tomes || 0;
+        const tomes = this.getTomes();
+        if (tomes < cost) return;
+
+        // Deduct tomes and record the research
+        if (!GameEngine.state.currencies) GameEngine.state.currencies = {};
+        GameEngine.state.currencies.tomes = tomes - cost;
+        if (!GameEngine.state.engineering) GameEngine.state.engineering = {};
+        if (!GameEngine.state.engineering.research) GameEngine.state.engineering.research = {};
+        GameEngine.state.engineering.research[nodeId] = true;
+
+        if (typeof GameEngine.saveGame === 'function') GameEngine.saveGame();
+
+        // Re-render the engineering view
+        const content = document.getElementById('crafting-content');
+        if (content) content.innerHTML = this.render();
+    },
+
+    /**
+     * Turn a camelCase material id into a readable label
+     */
+    prettyMaterial(key) {
+        return String(key).replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()).trim();
     },
 
     /**

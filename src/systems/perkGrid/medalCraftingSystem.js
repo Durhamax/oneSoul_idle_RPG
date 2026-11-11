@@ -10,7 +10,13 @@ const MedalCraftingSystemNew = {
         if (!engine.state.currencies) {
             engine.state.currencies = {};
         }
-        if (engine.state.currencies.medalFragments === undefined) {
+        // Perk-grid forging spends the bank "medals" currency (war trophies from combat).
+        if (engine.state.currencies.medals === undefined) {
+            engine.state.currencies.medals = 0;
+        }
+        // One-time migration: fold any legacy medalFragments into medals.
+        if (engine.state.currencies.medalFragments) {
+            engine.state.currencies.medals += engine.state.currencies.medalFragments;
             engine.state.currencies.medalFragments = 0;
         }
 
@@ -56,8 +62,8 @@ const MedalCraftingSystemNew = {
         if (!this.state.currencies) {
             this.state.currencies = {};
         }
-        if (this.state.currencies.medalFragments === undefined) {
-            this.state.currencies.medalFragments = 0;
+        if (this.state.currencies.medals === undefined) {
+            this.state.currencies.medals = 0;
         }
 
         // Ensure medal inventory exists
@@ -106,7 +112,7 @@ const MedalCraftingSystemNew = {
             return { success: false, error: 'Invalid crafting tier' };
         }
 
-        const fragments = this.state.currencies.medalFragments || 0;
+        const fragments = this.state.currencies.medals || 0;
         if (fragments < tierConfig.cost) {
             return { success: false, error: 'Not enough medal fragments' };
         }
@@ -117,7 +123,7 @@ const MedalCraftingSystemNew = {
         }
 
         // Consume fragments
-        this.state.currencies.medalFragments -= tierConfig.cost;
+        this.state.currencies.medals -= tierConfig.cost;
 
         // Roll rarity
         const rarity = MedalCraftingSystemNew.rollRarity(tierConfig.rarityWeights);
@@ -151,7 +157,7 @@ const MedalCraftingSystemNew = {
         }
 
         const totalCost = tierConfig.cost * count;
-        const fragments = this.state.currencies.medalFragments || 0;
+        const fragments = this.state.currencies.medals || 0;
 
         if (fragments < totalCost) {
             return { success: false, error: 'Not enough medal fragments' };
@@ -165,7 +171,7 @@ const MedalCraftingSystemNew = {
         }
 
         // Consume fragments
-        this.state.currencies.medalFragments -= totalCost;
+        this.state.currencies.medals -= totalCost;
 
         // Generate medals
         const medals = [];
@@ -264,7 +270,7 @@ const MedalCraftingSystemNew = {
             inventory.medals.splice(index, 1);
         }
 
-        this.state.currencies.medalFragments += totalFragments;
+        this.state.currencies.medals += totalFragments;
         this.state.medalCrafting.totalSalvaged += destroyed.length;
 
         return { success: true, fragmentsGained: totalFragments, medalsDestroyed: destroyed.length };
@@ -281,12 +287,12 @@ const MedalCraftingSystemNew = {
             return { success: false, error: 'Inventory already at maximum capacity' };
         }
 
-        const fragments = this.state.currencies.medalFragments || 0;
+        const fragments = this.state.currencies.medals || 0;
         if (fragments < MEDAL_INVENTORY_CONFIG.expansionCost) {
             return { success: false, error: 'Not enough medal fragments' };
         }
 
-        this.state.currencies.medalFragments -= MEDAL_INVENTORY_CONFIG.expansionCost;
+        this.state.currencies.medals -= MEDAL_INVENTORY_CONFIG.expansionCost;
         inventory.capacity = Math.min(
             inventory.capacity + MEDAL_INVENTORY_CONFIG.expansionAmount,
             MEDAL_INVENTORY_CONFIG.maxCapacity
@@ -328,7 +334,7 @@ const MedalCraftingSystemNew = {
         if (!tierConfig) return false;
 
         const totalCost = tierConfig.cost * count;
-        return (this.state.currencies.medalFragments || 0) >= totalCost;
+        return (this.state.currencies.medals || 0) >= totalCost;
     },
 
     /**
@@ -342,7 +348,7 @@ const MedalCraftingSystemNew = {
         if (!tierConfig) return null;
 
         const inventory = this.state.medalInventory;
-        const fragments = this.state.currencies.medalFragments || 0;
+        const fragments = this.state.currencies.medals || 0;
         const totalCost = tierConfig.cost * count;
         const availableSlots = inventory.capacity - inventory.medals.length;
 

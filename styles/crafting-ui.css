@@ -34,37 +34,66 @@
    TAB NAVIGATION
    =========================== */
 
+/* Canonical mode-tab bar — shared underline idiom across views
+   (see also .combat-tab-bar / .combat-tab in combat-ui.css). */
 .crafting-tabs {
     display: flex;
-    gap: 0.5rem;
-    border-bottom: 2px solid var(--border-color, #333);
-    padding-bottom: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    background: transparent;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 0.5rem;
+}
+
+/* Visual separator between the crafting-skill tabs and Workshop/Engineering */
+.crafting-tabs-divider {
+    width: 1px;
+    align-self: stretch;
+    margin: 0.4rem 0.5rem;
+    background: var(--border-color);
+}
+
+/* Queue-count badge on a crafting-skill tab */
+.crafting-tab .tab-badge {
+    margin-left: 0.4rem;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent-primary);
+    border-radius: 9px;
+    line-height: 1;
 }
 
 .crafting-tab {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: var(--bg-secondary, #2a2a2a);
-    border: 1px solid var(--border-color, #444);
-    border-radius: 8px 8px 0 0;
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: var(--text-secondary, #aaa);
+    color: var(--text-secondary);
     font-size: 0.9rem;
 }
 
 .crafting-tab:hover {
-    background: var(--bg-tertiary, #3a3a3a);
-    color: var(--text-primary, #e0e0e0);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
 }
 
 .crafting-tab.active {
-    background: var(--bg-primary, #1a1a1a);
-    color: var(--accent-primary, #4a9eff);
-    border-bottom: 2px solid var(--accent-primary, #4a9eff);
-    transform: translateY(2px);
+    background: transparent;
+    color: var(--accent-primary);
+    border-bottom: 2px solid var(--accent-primary);
 }
 
 .crafting-tab .tab-icon {
@@ -87,13 +116,14 @@
    SKILL SELECTOR PILLS
    =========================== */
 
+/* See-through sub-nav: skill pills sit directly on the background (no panel box)
+   so they read as primary navigation and the backdrop shows through. */
 .skill-selector {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    padding: 1rem;
-    background: var(--bg-secondary, #2a2a2a);
-    border-radius: 8px;
+    padding: 0.25rem 0;
+    background: transparent;
     margin-bottom: 1rem;
 }
 
@@ -845,9 +875,182 @@
 }
 
 .engineering-header {
-    text-align: center;
-    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
 }
+
+.engineering-tomes {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: rgba(241, 196, 15, 0.12);
+    border: 1px solid rgba(241, 196, 15, 0.35);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.engineering-tomes .tomes-value {
+    font-weight: 700;
+    color: var(--color-warning, #f1c40f);
+}
+
+.engineering-section-title {
+    margin: 0 0 0.75rem 0;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+/* ===========================
+   KNOWLEDGE TREE (primary engineering view)
+   =========================== */
+.knowledge-tree {
+    margin-bottom: 1.75rem;
+}
+.knowledge-tree-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.knowledge-tree-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+.knowledge-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.knowledge-field {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+}
+.knowledge-field-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.kf-icon { font-size: 1.6rem; line-height: 1; }
+.kf-meta { flex: 1; min-width: 0; }
+.kf-name { font-weight: 700; color: var(--text-primary); }
+.kf-desc { font-size: 0.75rem; color: var(--text-muted); }
+.kf-progress {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    background: rgba(52, 152, 219, 0.12);
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+}
+
+/* Horizontal research path */
+.knowledge-field-path {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 0.35rem;
+}
+.kn-node {
+    position: relative;
+    flex: 0 0 150px;
+    width: 150px;
+    margin-right: 22px;           /* room for the connector */
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.55rem 0.6rem 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.kn-node:last-child { margin-right: 0; }
+.kn-connector {
+    position: absolute;
+    top: 50%;
+    right: -22px;
+    width: 22px;
+    height: 2px;
+    background: var(--border-color);
+    transform: translateY(-50%);
+}
+.kn-connector.filled { background: var(--color-success, #2ecc71); }
+
+.kn-node-tier {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+.kn-node-name {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    line-height: 1.1;
+}
+.kn-node-req { font-size: 0.7rem; color: var(--text-muted); }
+.kn-node-cost {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+}
+.kn-cost-tomes.ok { color: var(--color-warning, #f1c40f); }
+.kn-cost-tomes.short { color: var(--color-danger, #e74c3c); }
+.kn-cost-mats { color: var(--text-muted); }
+.kn-node-unlock {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-top: 0.1rem;
+}
+.kn-node-badge {
+    margin-top: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-success, #2ecc71);
+    text-align: center;
+}
+.kn-research-btn {
+    margin-top: 0.35rem;
+    width: 100%;
+    padding: 0.35rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent-primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.kn-research-btn:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+.kn-research-btn.locked {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+/* Node status accents */
+.kn-node.kn-researched {
+    border-color: rgba(46, 204, 113, 0.55);
+    background: rgba(46, 204, 113, 0.08);
+}
+.kn-node.kn-available {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.25);
+}
+.kn-node.kn-reachable { opacity: 0.92; }
+.kn-node.kn-locked { opacity: 0.5; }
+
+.engineering-labtools { margin-top: 0.5rem; }
 
 .engineering-level {
     display: inline-flex;

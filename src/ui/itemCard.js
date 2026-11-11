@@ -144,10 +144,8 @@ const ItemCard = {
         // Top-right badges/indicators
         html += '<div class="item-card-badges">';
 
-        // Stack limit indicator (top-right corner)
-        if (context === 'bank' || context === 'loot') {
-            html += `<div class="item-card-stack-limit">${stackInfo}</div>`;
-        }
+        // Stack-limit "/cap" denominator intentionally omitted — the plain
+        // quantity is shown at the bottom of the card instead (QTY only).
 
         // Equipped indicator
         if (isEquipped) {

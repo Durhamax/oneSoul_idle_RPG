@@ -388,7 +388,8 @@ const LoadoutSlotRenderer = {
             showLabels = false,
             showNames = false,
             interactive = true,
-            onSlotClick = null
+            onSlotClick = null,
+            showWeightBar = true
         } = options;
 
         const getClickHandler = (slot) => {
@@ -397,12 +398,18 @@ const LoadoutSlotRenderer = {
             return `openEquipModal('${slot}', event)`;
         };
 
-        // Left column: Weapon, Gloves, Boots
+        // Carry-weight bar: narrow vertical bar left of the weapon/gloves/boots column.
+        const weightBarHTML = showWeightBar ? this._renderWeightBar() : '';
+
+        // Left column: Weapon, Gloves, Boots (with the weight bar to its left)
         const leftColumn = `
-            <div class="unified-loadout-column">
-                ${this.renderSlot({ slotName: 'weapon', itemData: equipment.weapon, size, showLabel: showLabels, showName: showNames, interactive, onClick: getClickHandler('weapon') })}
-                ${this.renderSlot({ slotName: 'gloves', itemData: equipment.gloves, size, showLabel: showLabels, showName: showNames, interactive, onClick: getClickHandler('gloves') })}
-                ${this.renderSlot({ slotName: 'boots', itemData: equipment.boots, size, showLabel: showLabels, showName: showNames, interactive, onClick: getClickHandler('boots') })}
+            <div class="unified-loadout-leftcell">
+                ${weightBarHTML}
+                <div class="unified-loadout-column">
+                    ${this.renderSlot({ slotName: 'weapon', itemData: equipment.weapon, size, showLabel: showLabels, showName: showNames, interactive, onClick: getClickHandler('weapon') })}
+                    ${this.renderSlot({ slotName: 'gloves', itemData: equipment.gloves, size, showLabel: showLabels, showName: showNames, interactive, onClick: getClickHandler('gloves') })}
+                    ${this.renderSlot({ slotName: 'boots', itemData: equipment.boots, size, showLabel: showLabels, showName: showNames, interactive, onClick: getClickHandler('boots') })}
+                </div>
             </div>
         `;
 
@@ -508,6 +515,30 @@ const LoadoutSlotRenderer = {
     // ===========================
     // PRIVATE HELPER METHODS
     // ===========================
+
+    /**
+     * Render the narrow vertical carry-weight bar (green under threshold, red over).
+     * Uses the equipment-weight system (equipped weights vs 50 + strength*10).
+     * Returns '' when weight data is unavailable.
+     * @private
+     */
+    _renderWeightBar() {
+        if (typeof GameEngine === 'undefined' || typeof GameEngine.getTotalEquippedWeight !== 'function') {
+            return '';
+        }
+        const cur = GameEngine.getTotalEquippedWeight() || 0;
+        const max = (typeof GameEngine.getMaxEquipmentWeight === 'function')
+            ? (GameEngine.getMaxEquipmentWeight() || 0)
+            : 0;
+        const pct = max > 0 ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0;
+        const isOver = max > 0 && cur > max;
+        const curTxt = Math.round(cur * 10) / 10;
+        return `
+            <div class="loadout-weight-vbar ${isOver ? 'is-over' : ''}" title="Carry weight ${curTxt} / ${max}">
+                <div class="loadout-weight-vbar__fill" style="height:${pct}%"></div>
+            </div>
+        `;
+    },
 
     /**
      * Extract item ID from various input formats

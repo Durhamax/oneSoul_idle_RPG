@@ -41,12 +41,8 @@ const CombatContainer = {
 
         return `
             <div class="combat-active">
-                <!-- Header -->
-                <div class="combat-header">
-                    <div class="combat-header-title">
-                        <span class="combat-icon">⚔️</span>
-                        <span class="combat-title">COMBAT</span>
-                    </div>
+                <!-- Header (title removed; controls only) -->
+                <div class="combat-header combat-header--controls-only">
                     <div class="combat-header-actions">
                         <label class="auto-toggle">
                             <input type="checkbox"
@@ -60,7 +56,10 @@ const CombatContainer = {
 
                 <!-- Combatants Grid (side-by-side on desktop, stacked on mobile) -->
                 <div class="combatants-grid">
-                    ${this.renderPlayerCard(player, combat)}
+                    <div class="combat-col combat-col--player">
+                        ${this.renderPlayerCard(player, combat)}
+                        ${(typeof OverviewUI !== 'undefined' && OverviewUI.renderLoadoutPanel) ? OverviewUI.renderLoadoutPanel() : ''}
+                    </div>
                     ${this.renderEnemyCard(enemy, combat)}
                 </div>
 
@@ -149,8 +148,25 @@ const CombatContainer = {
         const damageType = enemy.damageType || 'pierce';
         const armorType = enemy.armorType || 'plated';
 
+        // The live combat enemy is a trimmed instance; pull artwork/description from the
+        // full definition for the expanded display.
+        const enemyId = enemy.enemyId || enemy.id;
+        const def = (typeof EnemyRegistry !== 'undefined' && EnemyRegistry.get)
+            ? (EnemyRegistry.get(enemyId) || {})
+            : {};
+        const assetPath = def.assetPath || (enemyId ? `assets/enemies/${enemyId}.png` : '');
+        const hasAsset = !!(def.assetPath || def.useAsset);
+        const fallbackIcon = enemy.icon || def.icon || '👾';
+        const artwork = (hasAsset && assetPath)
+            ? `<img src="${assetPath}" alt="${enemy.name}" class="enemy-art-img"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+               <span class="enemy-art-fallback" style="display:none;">${fallbackIcon}</span>`
+            : `<span class="enemy-art-fallback">${fallbackIcon}</span>`;
+
+        const drPct = Math.round((enemy.damageReduction || 0) * 100);
+
         return `
-            <div class="combatant-card combatant-card--enemy">
+            <div class="combatant-card combatant-card--enemy combatant-card--enemy-expanded">
                 <div class="damage-anchor" id="enemyDamageAnchor"></div>
 
                 <div class="combatant-header-row">
@@ -181,9 +197,16 @@ const CombatContainer = {
                     <span class="stat-pill">🛡️ ${this.capitalize(armorType)}</span>
                 </div>
 
-                <div class="enemy-icon-display">
-                    <span class="enemy-icon-large">${enemy.icon || '👾'}</span>
+                <div class="enemy-info-stats">
+                    <div class="enemy-info-stat"><span>Accuracy</span><span>${enemy.accuracy ?? '—'}</span></div>
+                    <div class="enemy-info-stat"><span>Evasion</span><span>${enemy.evasion ?? 0}</span></div>
+                    <div class="enemy-info-stat"><span>Armor</span><span>${enemy.armorRating ?? 0}</span></div>
+                    <div class="enemy-info-stat"><span>Damage Red.</span><span>${drPct}%</span></div>
                 </div>
+
+                ${def.description ? `<div class="enemy-description">${def.description}</div>` : ''}
+
+                <div class="enemy-art">${artwork}</div>
             </div>
         `;
     },
@@ -230,9 +253,14 @@ const CombatContainer = {
 
         const isEmpty = quantity === 0;
 
+        // Render the icon as an image when it is an asset path, otherwise as an emoji/text.
+        const iconHtml = (typeof itemIcon === 'string' && (itemIcon.startsWith('assets/') || itemIcon.endsWith('.png')))
+            ? `<img src="${itemIcon}" alt="" class="consumable-icon-img" onerror="this.replaceWith(document.createTextNode('${icon}'))">`
+            : itemIcon;
+
         return `
             <div class="consumable-slot ${isEmpty ? 'consumable-slot--empty' : ''}">
-                <span class="consumable-icon">${itemIcon}</span>
+                <span class="consumable-icon">${iconHtml}</span>
                 <div class="consumable-info">
                     <span class="consumable-label">${label}</span>
                     <span class="consumable-qty">x${this.formatNumber(quantity)}</span>

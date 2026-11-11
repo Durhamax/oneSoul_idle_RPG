@@ -97,31 +97,29 @@ const GatherUI = {
     renderSkillPills() {
         const skills = GameEngine.state.skills;
 
-        const pills = this.GATHERING_SKILLS.map(skillId => {
+        const tabs = this.GATHERING_SKILLS.map(skillId => {
             const skill = skills[skillId];
             if (!skill || !skill.unlocked) return '';
 
             const isActive = this.selectedSkill === skillId;
             const icon = this.SKILL_ICONS[skillId];
-            const color = this.SKILL_COLORS[skillId];
             const nodeCount = this.getNodeCountForSkill(skillId);
 
             return `
-                <button class="skill-pill ${isActive ? 'active' : ''}"
+                <button class="crafting-tab gather-skill-tab ${isActive ? 'active' : ''}"
                         data-skill="${skillId}"
-                        style="${isActive ? `border-color: ${color}; --skill-color: ${color};` : ''}"
                         onclick="GatherUI.selectSkill('${skillId}')">
-                    <span class="skill-pill-icon">${icon}</span>
-                    <span class="skill-pill-name">${this.capitalizeFirst(skillId)}</span>
-                    <span class="skill-pill-level">Lv.${skill.level}</span>
-                    ${nodeCount > 0 ? `<span class="skill-pill-badge">${nodeCount}</span>` : ''}
+                    <span class="tab-icon">${icon}</span>
+                    <span class="tab-label">${this.capitalizeFirst(skillId)}</span>
+                    <span class="tab-level">Lv.${skill.level}</span>
+                    ${nodeCount > 0 ? `<span class="tab-badge">${nodeCount}</span>` : ''}
                 </button>
             `;
         }).join('');
 
         return `
-            <div class="skill-selector">
-                ${pills}
+            <div class="crafting-tabs gather-skill-tabs">
+                ${tabs}
             </div>
         `;
     },
@@ -202,26 +200,29 @@ const GatherUI = {
                     })}
                 </div>
 
-                <!-- Session Stats -->
-                <div class="gather-session-stats">
-                    <div class="stat-box">
-                        <div class="stat-box-label">Actions</div>
-                        <div class="stat-box-value">${session.totalActions || 0}</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-label">XP Gained</div>
-                        <div class="stat-box-value stat-success">${session.totalXP || 0}</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-label">Duration</div>
-                        <div class="stat-box-value">${this.formatDuration(now - session.startTime)}</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-label">Node Health</div>
-                        <div class="stat-box-value ${isRecovering ? 'stat-warning' : ''}">
-                            ${session.nodeHealth !== undefined ? session.nodeHealth : 0}/${session.maxNodeHealth !== undefined ? session.maxNodeHealth : 10}
-                        </div>
-                    </div>
+                <!-- Node Health depleting bar -->
+                ${this.renderNodeHealthBar(session, isRecovering)}
+            </div>
+        `;
+    },
+
+    /**
+     * Render the node-health depleting bar for the active gathering panel
+     */
+    renderNodeHealthBar(session, isRecovering) {
+        const health = (session && session.nodeHealth !== undefined) ? session.nodeHealth : 0;
+        const maxHealth = (session && session.maxNodeHealth !== undefined) ? session.maxNodeHealth : 10;
+        const pct = maxHealth > 0 ? Math.max(0, Math.min(100, (health / maxHealth) * 100)) : 0;
+        const low = pct <= 30;
+
+        return `
+            <div class="gather-nodehealth">
+                <div class="gather-nodehealth-head">
+                    <span class="gather-nodehealth-label">${isRecovering ? '💤 Node Recovering' : '🪨 Node Health'}</span>
+                </div>
+                <div class="gather-nodehealth-track">
+                    <div class="gather-nodehealth-fill ${isRecovering ? 'is-recovering' : ''} ${low && !isRecovering ? 'is-low' : ''}"
+                         id="gather-node-health-fill" style="width: ${pct}%;"></div>
                 </div>
             </div>
         `;
@@ -304,10 +305,17 @@ const GatherUI = {
         const harvestTime = this.calculateHarvestTime(node, playerSkillLevel);
         const rareChance = this.calculateRareChance(node, playerSkillLevel);
 
-        // Get node health/state
-        const nodeState = GameEngine.state.nodeHealth?.[node.id] || { currentHealth: node.maxHealth || 10, maxHealth: node.maxHealth || 10 };
-        const healthPercent = (nodeState.currentHealth / nodeState.maxHealth) * 100;
-        const isDepleted = nodeState.currentHealth <= 0;
+        // Get node health/state (runtime state stores currentHP/maxHP)
+        const rawState = GameEngine.state.nodeHealth?.[node.id];
+        const defaultMax = node.maxHealth || node.baseHealth || 10;
+        const curHealth = rawState
+            ? (rawState.currentHP ?? rawState.currentHealth ?? defaultMax)
+            : defaultMax;
+        const maxHealth = rawState
+            ? (rawState.maxHP ?? rawState.maxHealth ?? defaultMax)
+            : defaultMax;
+        const healthPercent = maxHealth > 0 ? (curHealth / maxHealth) * 100 : 0;
+        const isDepleted = curHealth <= 0;
 
         // Check if currently gathering this node
         const session = GameEngine.state.gatheringSession;
@@ -335,7 +343,7 @@ const GatherUI = {
                         <div class="node-health-fill" style="width: ${healthPercent}%;"></div>
                     </div>
                     <span class="node-health-text">
-                        ${isDepleted ? 'Depleted' : `${nodeState.currentHealth}/${nodeState.maxHealth}`}
+                        ${isDepleted ? 'Depleted' : `${curHealth}/${maxHealth}`}
                     </span>
                 </div>
 
@@ -500,16 +508,14 @@ const GatherUI = {
         console.log(`[GatherUI] Selecting skill: ${skillId}`);
         this.selectedSkill = skillId;
 
-        // Update skill pills
-        document.querySelectorAll('.skill-pill').forEach(pill => {
-            pill.classList.remove('active');
-            pill.style.borderColor = '';
+        // Update skill tabs (Craft top-tab style)
+        document.querySelectorAll('.gather-skill-tab').forEach(tab => {
+            tab.classList.remove('active');
         });
 
-        const activePill = document.querySelector(`.skill-pill[data-skill="${skillId}"]`);
-        if (activePill) {
-            activePill.classList.add('active');
-            activePill.style.borderColor = this.SKILL_COLORS[skillId];
+        const activeTab = document.querySelector(`.gather-skill-tab[data-skill="${skillId}"]`);
+        if (activeTab) {
+            activeTab.classList.add('active');
         }
 
         // Re-render content
@@ -620,11 +626,22 @@ const GatherUI = {
         // Update interval bar
         IntervalBar.update('gather-progress', progress, interval);
 
-        // Update duration stat
-        const durationEl = document.querySelector('.gather-session-stats .stat-box:nth-child(3) .stat-box-value');
-        if (durationEl) {
-            durationEl.textContent = this.formatDuration(now - session.startTime);
-        }
+        // Keep the node-health depleting bar in sync
+        this.updateNodeHealthBar(session);
+    },
+
+    /**
+     * Update just the node-health bar width (cheap, called on tick and on action)
+     */
+    updateNodeHealthBar(session) {
+        const fill = document.getElementById('gather-node-health-fill');
+        if (!fill || !session) return;
+        const maxHealth = session.maxNodeHealth !== undefined ? session.maxNodeHealth : 10;
+        const health = session.nodeHealth !== undefined ? session.nodeHealth : 0;
+        const pct = maxHealth > 0 ? Math.max(0, Math.min(100, (health / maxHealth) * 100)) : 0;
+        fill.style.width = `${pct}%`;
+        fill.classList.toggle('is-low', pct <= 30 && !session.isRecovering);
+        fill.classList.toggle('is-recovering', !!session.isRecovering);
     },
 
     /**
@@ -779,22 +796,12 @@ const GatherUI = {
             sidebarContent.innerHTML = this.renderSessionLoot(GameEngine.state.gatheringSession.totalResources);
         }
 
-        // Update stats
-        const actionsEl = document.querySelector('.gather-session-stats .stat-box:first-child .stat-box-value');
-        const xpEl = document.querySelector('.gather-session-stats .stat-box:nth-child(2) .stat-box-value');
-        const healthEl = document.querySelector('.gather-session-stats .stat-box:nth-child(4) .stat-box-value');
-
-        if (actionsEl) actionsEl.textContent = GameEngine.state.gatheringSession?.totalActions || 0;
-        if (xpEl) xpEl.textContent = GameEngine.state.gatheringSession?.totalXP || 0;
-        if (healthEl && data) {
-            healthEl.textContent = `${data.nodeHealth}/${data.maxHealth}`;
-        }
+        // Update the node-health depleting bar
+        this.updateNodeHealthBar(GameEngine.state.gatheringSession);
     },
 
     onGatheringMiss(data) {
-        // Update stats on miss (action count still increments)
-        const actionsEl = document.querySelector('.gather-session-stats .stat-box:first-child .stat-box-value');
-        if (actionsEl) actionsEl.textContent = GameEngine.state.gatheringSession?.totalActions || 0;
+        // Node health unchanged on a miss; nothing to update in the slimmed panel
     }
 };
 

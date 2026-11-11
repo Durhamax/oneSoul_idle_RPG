@@ -498,66 +498,102 @@ const NavigationUI = {
         const isRecovering = activeNav.isRecovering || false;
         const hasOtherActivity = state.currentActivity !== null && state.currentActivity !== 'navigation';
 
+        // Current location data for the banner
+        const fogProgress = (regionState.fogProgress ?? regionState.discoveryProgress ?? 0);
+        const fogPercent = Math.min(100, Math.max(0, fogProgress)).toFixed(0);
+        const isFullyExplored = fogProgress >= 100;
+
         let html = '';
 
         html += `
-            <!-- Hex Grid Map -->
-            <div style="background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <div style="margin-bottom: 10px;">
-                    <h3 style="margin: 0;">🗺️ World Map</h3>
+            <!-- Current Location (front & center) -->
+            <div class="nav-location-banner">
+                <div class="nav-location-icon">${biomeDef.icon || '📍'}</div>
+                <div class="nav-location-main">
+                    <div class="nav-location-label">Current Location</div>
+                    <div class="nav-location-name">${hexDef.name}</div>
+                    <div class="nav-location-biome">${biomeDef.name}</div>
                 </div>
-                <!-- Integrated Map Container (map + hex grid) -->
-                <div id="hexMapContainer" style="border: 2px solid rgba(0, 217, 255, 0.3);"></div>
-
-                <div style="margin-top: 10px; font-size: 0.85em; color: #888; text-align: center;">
-                    <span style="margin: 0 10px;">📍 Click a hex to view region details</span>
-                    <span style="margin: 0 10px;">🖱️ Scroll to zoom • Drag map to pan</span>
-                </div>
-            </div>
-
-            <!-- Endurance Bar -->
-            <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px;">
-                <div id="navigationEnduranceLabel" style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
-                    ${isRecovering ? '💤 Resting' : '💪 Endurance'}
-                </div>
-                <div class="health-bar" style="margin-bottom: 5px;">
-                    <div class="health-bar-fill" id="navigationHealthBar" style="width: ${endurancePercent}%; background: linear-gradient(90deg, ${isRecovering ? '#FFC107, #FF9800' : '#4caf50, #8bc34a'}); transition: width 0.3s ease-out;"></div>
-                    <div class="health-bar-text" id="navigationHealthText">${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}</div>
-                </div>
-                <div id="navigationEnduranceDesc" style="font-size: 0.75em; color: #888;">
-                    ${isRecovering ? '💤 Recovering endurance (consuming rest resources)' : isNavigating ? '⚡ Draining while exploring' : '🛑 Paused'}
+                <div class="nav-location-progress">
+                    <div class="nav-location-progress-head">
+                        <span>Exploration</span>
+                        <span>${fogPercent}%${isFullyExplored ? ' ✓' : ''}</span>
+                    </div>
+                    <div class="skill-exp-bar">
+                        <div class="skill-exp-fill" style="width: ${fogPercent}%; background: linear-gradient(90deg, var(--color-primary-dark), var(--color-primary));"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Navigation Action Interval Bar -->
-            <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 10px;">
-                <div id="navigationIntervalLabel" style="margin-bottom: 5px; font-size: 0.9em; font-weight: bold;">
-                    ${isRecovering ? '💤 Recovery Mode' : isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action'}
-                </div>
-                <div class="health-bar" style="margin-bottom: 8px;">
-                    <div class="health-bar-fill" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #2196F3, #64B5F6); transition: width 0.3s ease-out;"></div>
-                    <div class="health-bar-text" id="navigationIntervalText">${isRecovering ? 'Resting' : isNavigating ? '0.0s' : 'Not Exploring'}</div>
-                </div>
-                <div id="navigationIntervalDesc" style="font-size: 0.75em; color: #888; margin-bottom: 8px;">
-                ${isRecovering ? 'Resting to recover endurance - Discovery paused' : isNavigating ? `Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)` : 'Click Start Exploring to discover resources and enemies in this region'}
-                </div>
-                <button onclick="${isNavigating ? 'stopNavigating()' : 'startNavigating()'}"
-                        style="width: 100%; background: ${isNavigating ? '#d32f2f' : '#4a9eff'}; margin-top: 5px;">
-                    ${isNavigating ? '⏹️ Stop Exploring' : '🧭 Start Exploring'}
-                </button>
+            <!-- Integrated Map Container (map + hex grid), un-boxed -->
+            <div id="hexMapContainer"></div>
+            <div class="nav-map-hint">
+                <span>📍 Click a hex to view region details</span>
+                <span>🖱️ Scroll to zoom • Drag to pan</span>
             </div>
 
-            <!-- Rest Resource Equipment -->
-            <div style="background: #2a2a2a; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px;">
-                <div style="margin-bottom: 10px; font-size: 0.9em; font-weight: bold;">🔥 Campfire Resources</div>
-                <div style="font-size: 0.75em; color: #888; margin-bottom: 10px;">
-                    Select fuel and food for campfire recovery. Better fuel = faster recovery.
+            <!-- Two columns: exploration controls (left) + discoveries (right) -->
+            <div class="nav-columns">
+                <div class="nav-col nav-col--controls">
+                    <!-- Endurance Bar -->
+                    <div class="nav-control-block">
+                        <div id="navigationEnduranceLabel" class="nav-control-title">
+                            ${isRecovering ? '💤 Resting' : '💪 Endurance'}
+                        </div>
+                        <div class="health-bar" style="margin-bottom: 5px;">
+                            <div class="health-bar-fill" id="navigationHealthBar" style="width: ${endurancePercent}%; background: linear-gradient(90deg, ${isRecovering ? '#FFC107, #FF9800' : '#4caf50, #8bc34a'}); transition: width 0.3s ease-out;"></div>
+                            <div class="health-bar-text" id="navigationHealthText">${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}</div>
+                        </div>
+                        <div id="navigationEnduranceDesc" class="nav-control-desc">
+                            ${isRecovering ? '💤 Recovering endurance (consuming rest resources)' : isNavigating ? '⚡ Draining while exploring' : '🛑 Paused'}
+                        </div>
+                    </div>
+
+                    <!-- Navigation Action Interval Bar -->
+                    <div class="nav-control-block">
+                        <div id="navigationIntervalLabel" class="nav-control-title">
+                            ${isRecovering ? '💤 Recovery Mode' : isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action'}
+                        </div>
+                        <div class="health-bar" style="margin-bottom: 8px;">
+                            <div class="health-bar-fill" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #2196F3, #64B5F6); transition: width 0.3s ease-out;"></div>
+                            <div class="health-bar-text" id="navigationIntervalText">${isRecovering ? 'Resting' : isNavigating ? '0.0s' : 'Not Exploring'}</div>
+                        </div>
+                        <div id="navigationIntervalDesc" class="nav-control-desc" style="margin-bottom: 8px;">
+                        ${isRecovering ? 'Resting to recover endurance - Discovery paused' : isNavigating ? `Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)` : 'Click Start Exploring to discover resources and enemies in this region'}
+                        </div>
+                        <button onclick="${isNavigating ? 'stopNavigating()' : 'startNavigating()'}"
+                                style="width: 100%; background: ${isNavigating ? 'var(--color-danger)' : 'var(--color-primary)'}; margin-top: 5px;">
+                            ${isNavigating ? '⏹️ Stop Exploring' : '🧭 Start Exploring'}
+                        </button>
+                    </div>
+
+                    <!-- Rest Resource Equipment -->
+                    <div class="nav-control-block">
+                        <div class="nav-control-title">🔥 Campfire Resources</div>
+                        <div class="nav-control-desc" style="margin-bottom: 10px;">
+                            Select fuel and food for campfire recovery. Better fuel = faster recovery.
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            ${this.renderRestEquipmentSlot('food')}
+                            ${this.renderFuelSelector()}
+                        </div>
+                        ${this.renderCampfireStatus()}
+                    </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    ${this.renderRestEquipmentSlot('food')}
-                    ${this.renderFuelSelector()}
+
+                <div class="nav-col nav-col--discoveries">
+                    <!-- Paths to neighboring tiles -->
+                    <div class="nav-control-block">
+                        <div class="nav-control-title">🧭 Paths to Neighboring Tiles</div>
+                        ${this.renderAdjacentRegions(regionId, regionState, hexDef)}
+                    </div>
+
+                    <!-- Discovered nodes -->
+                    <div class="nav-control-block">
+                        <div class="nav-control-title">🌿 Discovered Here</div>
+                        ${this.renderDiscoveredNodes(regionState, biomeDef)}
+                    </div>
                 </div>
-                ${this.renderCampfireStatus()}
             </div>
         `;
 
