@@ -16,7 +16,7 @@
 | [REGIONS_GEOGRAPHY.md](REGIONS_GEOGRAPHY.md) | The expansion engine — geography, the resource/tech gradient, per-region economy. |
 | [RESOURCE_DESIGN.md](RESOURCE_DESIGN.md) | Resource naming registers, the inorganic=familiar/organic=alien rule, the combat-driven loot method, and the node/gathering model + archetype library. |
 | [COMBAT_PROGRESSION.md](COMBAT_PROGRESSION.md) | The power curve, build archetypes, encounter/sequence (dungeon) model, type system. |
-| [SYSTEMS_OVERVIEW.md](SYSTEMS_OVERVIEW.md) | How every system interconnects; per-system reference; the content-spread rule. |
+| [SYSTEMS_OVERVIEW.md](SYSTEMS_OVERVIEW.md) | How every system interconnects; **the attribute model (the build axis — one identity per attribute across combat/gather/craft/nav)**; per-system reference; the content-spread rule. |
 | [ENGINEERING_DESIGN.md](ENGINEERING_DESIGN.md) | Engineering as the build system — the 16-field research tree, tomes, tech slots, fields→builds, open decisions. |
 
 ## Per-region buildout

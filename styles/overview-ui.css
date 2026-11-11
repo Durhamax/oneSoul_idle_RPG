@@ -662,12 +662,20 @@
     transition: color 0.15s;
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
-    flex: 1;
+    /* Fixed width so every skill's XP bar begins at the same x position.
+       Long names (ENGINEERING/ELECTRONICS) truncate with an ellipsis. */
+    flex: 0 0 94px !important;
+    width: 94px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 .panel-skills .skill-xp-container {
-    width: 180px !important;
-    flex-shrink: 0 !important;
+    /* Flexes to fill the space between the fixed name column and the level,
+       so the level (up to LV.9999) is always visible instead of being pushed out. */
+    flex: 1 1 auto !important;
+    min-width: 40px !important;
     margin: 0 8px 0 0 !important; /* Reset margin-bottom from developer.css, keep right margin */
     align-self: center !important;
     display: flex !important;
@@ -694,9 +702,10 @@
     font-size: 13px !important;
     font-weight: 600;
     color: #3498db;
-    min-width: 42px; /* Accommodates 3-digit levels (LV.100) */
+    min-width: 58px; /* Accommodates 4-digit levels (LV.9999) */
     text-align: right;
     flex-shrink: 0;
+    white-space: nowrap;
     text-transform: uppercase;
 }
 
