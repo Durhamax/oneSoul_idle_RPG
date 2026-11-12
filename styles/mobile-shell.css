@@ -1,0 +1,392 @@
+/* =====================================================================
+   MOBILE-FIRST APP SHELL — top ribbon · level bar · bottom ribbon
+   Base styles target phones; desktop adapts via min-width queries.
+   Colors / glass / glow reuse the existing design-system variables so
+   theming, background and effects are preserved.
+   ===================================================================== */
+
+:root {
+    --topbar-h: 52px;
+    --levelbar-h: 30px;
+    --ribbon-h: 64px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ---------- Top ribbon: HP + currencies + menu (notch-safe) ---------- */
+.topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: calc(var(--topbar-h) + var(--safe-top));
+    padding: var(--safe-top) var(--space-md) 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    background: var(--color-bg-glass);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+    border-bottom: 1px solid var(--color-border-accent);
+    box-shadow: var(--shadow-md);
+    z-index: 100;
+}
+
+.topbar-hp {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    background: rgba(244, 67, 54, 0.12);
+    border: 1px solid rgba(244, 67, 54, 0.4);
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+.topbar-hp .hp-icon { font-size: 0.9em; }
+.topbar-hp .hp-text {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: #ff9aa6;
+    white-space: nowrap;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    min-width: 0;
+}
+
+/* currencies reuse .curr from header.css; tighten for the narrow bar */
+.topbar .currencies { gap: 4px; flex-wrap: nowrap; overflow: hidden; }
+.topbar .curr { padding: 2px 6px; font-size: var(--font-size-xs); }
+
+.topbar-menu-btn {
+    flex-shrink: 0;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--color-bg-glass);
+    border: 1px solid var(--color-border-accent);
+    border-radius: var(--radius-sm);
+    color: var(--color-primary);
+    font-size: 20px; line-height: 1;
+    cursor: pointer;
+}
+.topbar-menu-btn:active { transform: scale(0.94); }
+
+/* ---------- HUD menu dropdown (save / reset / dev / settings) ---------- */
+.hud-menu {
+    position: fixed;
+    top: calc(var(--topbar-h) + var(--safe-top) + 4px);
+    right: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    min-width: 170px;
+    background: var(--color-bg-secondary, #10151f);
+    border: 1px solid var(--color-border-accent);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    z-index: 200;
+}
+.hud-menu[hidden] { display: none; }
+.hud-menu-item {
+    padding: 13px 16px;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-family: var(--font-display);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+}
+.hud-menu-item:last-child { border-bottom: none; }
+.hud-menu-item:active { background: rgba(52, 152, 219, 0.15); color: var(--color-text-primary); }
+
+/* ---------- Play view area (between the bars) ---------- */
+.main-content {
+    margin: 0 !important;
+    padding-top: calc(var(--topbar-h) + var(--safe-top)) !important;
+    padding-bottom: calc(var(--ribbon-h) + var(--levelbar-h) + var(--safe-bottom)) !important;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* dashboard grid was capped to the old sidebar width; free it on mobile */
+.dashboard-grid { max-width: 100% !important; }
+
+/* ---------- Character hub sub-tabs (Items · Loadout · Missions · Perks) ---------- */
+.character-subtabs {
+    position: sticky;
+    top: calc(var(--topbar-h) + var(--safe-top));
+    display: flex;
+    gap: 4px;
+    padding: 6px 8px;
+    background: var(--color-bg-glass);
+    backdrop-filter: blur(var(--blur-sm));
+    -webkit-backdrop-filter: blur(var(--blur-sm));
+    border-bottom: 1px solid var(--color-border-accent);
+    z-index: 50;
+}
+.character-subtab {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 2px;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-tertiary);
+    font-family: var(--font-display);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.character-subtab.active {
+    background: rgba(52, 152, 219, 0.15);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+/* ---------- Level bar (slim; tap to Overview) ---------- */
+.levelbar {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: calc(var(--ribbon-h) + var(--safe-bottom));
+    height: var(--levelbar-h);
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 var(--space-md);
+    background: var(--color-bg-glass);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+    border-top: 1px solid var(--color-border-accent);
+    cursor: pointer;
+    text-align: left;
+    color: var(--color-text-secondary);
+    font-family: var(--font-display);
+    z-index: 100;
+}
+.levelbar:active { background: var(--color-bg-glass-light); }
+.levelbar-lv {
+    display: flex; align-items: baseline; gap: 4px;
+    flex-shrink: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-primary);
+    font-weight: var(--font-weight-bold);
+    white-space: nowrap;
+}
+.levelbar-lv-label { font-size: var(--font-size-xs); color: var(--color-text-tertiary); }
+/* flex item blockifies, but its children are <span>s — force block so width/height apply */
+.levelbar-xp {
+    flex: 1 1 auto;
+    min-width: 40px;
+    display: block;
+}
+.levelbar-xp .xp-bar {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 6px;
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--color-border-accent);
+}
+.levelbar-xp .xp-fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--color-primary-dark), var(--color-primary), var(--color-primary-light));
+    transition: width var(--transition-slow);
+}
+.levelbar-xptext {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+}
+.levelbar .points-badge { flex-shrink: 0; }
+
+/* Unassigned attribute points: golden glow + very subtle pulse on the whole
+   bar, steering the player to tap through to Overview to spend them. */
+.levelbar.has-points {
+    border-top-color: rgba(255, 200, 60, 0.8);
+    background:
+        linear-gradient(0deg, rgba(255, 190, 40, 0.14), rgba(255, 190, 40, 0.04)),
+        var(--color-bg-glass);
+    animation: levelbar-point-glow 2.4s ease-in-out infinite;
+}
+.levelbar.has-points .levelbar-lv { color: #ffd257; }
+.levelbar.has-points .points-badge {
+    animation: levelbar-badge-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes levelbar-point-glow {
+    0%, 100% { box-shadow: 0 -2px 10px rgba(255, 190, 40, 0.25), 0 -1px 0 rgba(255, 200, 60, 0.35); }
+    50%      { box-shadow: 0 -3px 18px rgba(255, 190, 40, 0.55), 0 -1px 0 rgba(255, 200, 60, 0.6); }
+}
+@keyframes levelbar-badge-breathe {
+    0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 2px rgba(255, 200, 60, 0.4)); }
+    50%      { transform: scale(1.08); filter: drop-shadow(0 0 7px rgba(255, 200, 60, 0.75)); }
+}
+
+/* Transient level-up toast: rises and fades above the level bar, then removes
+   itself (no persistent fixture in the play view). */
+.levelup-toast {
+    position: fixed;
+    transform: translateX(-50%);
+    z-index: 150;
+    padding: 5px 14px;
+    background: linear-gradient(135deg, rgba(255, 210, 80, 0.95), rgba(255, 170, 30, 0.95));
+    color: #2a1a00;
+    font-family: var(--font-display);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+    border-radius: var(--radius-pill, 999px);
+    box-shadow: 0 2px 14px rgba(255, 190, 40, 0.6);
+    pointer-events: none;
+    white-space: nowrap;
+    animation: levelup-rise 2.2s ease-out forwards;
+}
+@keyframes levelup-rise {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.9); }
+    15%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    70%  { opacity: 1; transform: translateX(-50%) translateY(-18px) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-40px) scale(1); }
+}
+
+/* ---------- Bottom ribbon nav ---------- */
+.ribbon {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    height: calc(var(--ribbon-h) + var(--safe-bottom));
+    padding-bottom: var(--safe-bottom);
+    display: flex;
+    align-items: stretch;
+    background: var(--color-bg-glass);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+    border-top: 1px solid var(--color-border-accent);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+.ribbon-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    transition: color var(--transition-base);
+    position: relative;
+}
+.ribbon-icon { font-size: 22px; line-height: 1; }
+.ribbon-label {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+}
+.ribbon-item.active { color: var(--color-primary); }
+.ribbon-item.active .ribbon-icon { filter: drop-shadow(0 0 8px var(--color-primary-glow)); }
+
+/* ---------- Desktop: keep the mobile shell, center it as a canvas ---------- */
+@media (min-width: 768px) {
+    .topbar,
+    .levelbar,
+    .ribbon,
+    .character-subtabs {
+        max-width: 720px;
+        margin-inline: auto;
+    }
+    .main-content {
+        max-width: 720px;
+        margin-inline: auto !important;
+    }
+}
+
+/* =====================================================================
+   PER-VIEW MOBILE FIXES
+   Each view below had desktop-width assumptions that overflow a phone.
+   ===================================================================== */
+
+/* ---- Perk grid (7x7): drop the 50px cell floor so 1fr tiles fit width ---- */
+@media (max-width: 600px) {
+    .perk-grid-container-7x7 { padding: var(--space-sm); gap: var(--space-md); }
+    .grid-main-panel { padding: var(--space-sm); }
+
+    .grid-7x7 { gap: 4px; max-width: 100%; }
+
+    .grid-cell {
+        min-width: 0;
+        min-height: 0;
+        border-width: 1px;
+        border-radius: var(--radius-sm);
+    }
+    .grid-cell.locked .lock-level { font-size: 9px; }
+    .grid-cell.empty .empty-slot { font-size: var(--font-size-md); }
+    .grid-edge-total { font-size: 9px; padding: 0; }
+
+    .medal-display .medal-icon { font-size: var(--font-size-sm); }
+    .medal-display .medal-perk-count { font-size: 9px; }
+}
+
+/* ---- Loadout: let the equipment panels + slot grid shrink to the viewport ---- */
+@media (max-width: 600px) {
+    /* game-ui.css caps this view at `100vw - 95px` to leave room for the old
+       desktop sidebar, which no longer exists — reclaim the full width. */
+    #view-equipment { max-width: 100%; }
+
+    .equipment-view-container,
+    .equipment-main-panel,
+    .equipment-presets-panel,
+    .equipment-section-card,
+    .equipment-section-content {
+        min-width: 0;
+        max-width: 100%;
+    }
+    .equipment-section-content { overflow-x: hidden; }
+
+    /* The `:has()` rule in layout.css sets max-width:none; pin it back to the viewport */
+    .equipment-grid,
+    .equipment-grid:has(.unified-loadout-grid) { max-width: 100%; }
+    .unified-loadout-grid {
+        column-gap: 8px;
+        max-width: 100%;
+        padding: 0 4px;
+    }
+
+    /* The renderer tags slots with a hardcoded `--lg` size class that carries
+       `!important`, so it beats the responsive <480px sizing and the slots stay
+       110px — three of those can't fit a phone. Force every slot to the small
+       size with higher specificity + !important so three columns fit. */
+    .unified-loadout-grid .unified-slot,
+    .unified-loadout-grid .unified-slot--sm,
+    .unified-loadout-grid .unified-slot--md,
+    .unified-loadout-grid .unified-slot--lg,
+    .unified-loadout-grid .unified-slot--xl {
+        width: var(--slot-size-sm) !important;
+        height: var(--slot-size-sm) !important;
+    }
+    .unified-loadout-grid .unified-slot--armor {
+        width: var(--slot-size-sm) !important;
+        height: calc(var(--slot-size-sm) * var(--slot-armor-multiplier)) !important;
+    }
+}
+

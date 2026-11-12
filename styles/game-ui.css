@@ -1,85 +1,8 @@
 /* =====================================================================
-   ATTRIBUTE POINTS BANNER - Prominent notification for unassigned points
+   Unassigned attribute points are signalled by the level bar's golden
+   pulsing glow (see styles/mobile-shell.css, `.levelbar.has-points`).
+   The old persistent banner was removed — it pushed the whole view down.
    ===================================================================== */
-
-.attribute-points-banner {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 165, 0, 0.1));
-    border: 2px solid rgba(255, 215, 0, 0.5);
-    border-radius: 8px;
-    margin: 8px 16px;
-    padding: 12px 20px;
-    cursor: pointer;
-    animation: banner-pulse 2s ease-in-out infinite;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-    transition: all 0.3s ease;
-}
-
-.attribute-points-banner:hover {
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 165, 0, 0.2));
-    border-color: rgba(255, 215, 0, 0.8);
-    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-    transform: translateY(-2px);
-}
-
-.attribute-points-banner.hidden {
-    display: none;
-}
-
-.attribute-points-banner .banner-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-}
-
-.attribute-points-banner .banner-icon {
-    font-size: 1.5em;
-    animation: icon-sparkle 1s ease-in-out infinite;
-}
-
-.attribute-points-banner .banner-text {
-    color: #fff;
-    font-size: 1.1em;
-    font-weight: 500;
-}
-
-.attribute-points-banner .banner-text strong {
-    color: #FFD700;
-    font-size: 1.2em;
-    font-weight: 700;
-}
-
-.attribute-points-banner .banner-action {
-    color: rgba(255, 215, 0, 0.9);
-    font-size: 0.85em;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    padding: 4px 12px;
-    background: rgba(255, 215, 0, 0.2);
-    border-radius: 4px;
-}
-
-@keyframes banner-pulse {
-    0%, 100% {
-        box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
-    }
-    50% {
-        box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-    }
-}
-
-@keyframes icon-sparkle {
-    0%, 100% {
-        transform: scale(1) rotate(0deg);
-    }
-    50% {
-        transform: scale(1.2) rotate(10deg);
-    }
-}
 
 /* Highlight pulse animation for attributes panel */
 .panel-attributes.highlight-pulse {

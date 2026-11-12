@@ -85,6 +85,7 @@ const UICore = {
         this.updateGameInfo();
         this.updateCharacterLevel();
         this.updateCurrencies();
+        this.updateHP();
         this.updateCurrentActivity();
         this.updateNotificationBadges();
 
@@ -187,6 +188,12 @@ const UICore = {
             this.showXPDrop(xpGained);
         }
         this.lastCharacterExp = currentExp;
+
+        // Transient level-up toast above the level bar (not a persistent fixture).
+        if (this.lastCharacterLevel !== undefined && charLevel.level > this.lastCharacterLevel) {
+            this.showLevelUpToast(charLevel.level);
+        }
+        this.lastCharacterLevel = charLevel.level;
     },
 
     /**
@@ -250,6 +257,36 @@ const UICore = {
 
         // Update last currencies
         this.lastCurrencies = { ...currencies };
+    },
+
+    /**
+     * Update the top-ribbon HP readout from the player's live combat stats.
+     */
+    updateHP() {
+        const el = document.getElementById('hudHP');
+        if (!el) return;
+        if (!GameEngine.state?.compiledStats && typeof GameEngine.compilePlayerStats === 'function') {
+            try { GameEngine.compilePlayerStats(); } catch (e) {}
+        }
+        const maxHealth = Math.floor(GameEngine.state?.compiledStats?.maxHealth || 0);
+        const currentHP = Math.floor(GameEngine.state?.currentHP ?? maxHealth);
+        el.textContent = `${currentHP}/${maxHealth}`;
+    },
+
+    /**
+     * Keep the mobile shell in sync with the active view: the Character hub
+     * covers four views, so its ribbon button and the sub-tab bar need custom
+     * active handling beyond the plain data-view match.
+     */
+    syncMobileShell(viewName) {
+        const CHARACTER_VIEWS = ['bank', 'equipment', 'missions', 'perks'];
+        const inCharacter = CHARACTER_VIEWS.includes(viewName);
+
+        const charBtn = document.getElementById('ribbonCharacter');
+        if (charBtn) charBtn.classList.toggle('active', inCharacter);
+
+        const subtabs = document.getElementById('characterSubtabs');
+        if (subtabs) subtabs.style.display = inCharacter ? 'flex' : 'none';
     },
 
     /**
@@ -391,8 +428,8 @@ const UICore = {
             }
         }
 
-        // Update navigation menu active state (both horizontal nav and sidebar)
-        const navItems = document.querySelectorAll('.nav-item, .sidebar-item');
+        // Update navigation menu active state (horizontal nav, legacy sidebar, mobile ribbon + sub-tabs)
+        const navItems = document.querySelectorAll('.nav-item, .sidebar-item, .ribbon-item, .character-subtab');
         navItems.forEach(item => {
             if (item.getAttribute('data-view') === viewName) {
                 item.classList.add('active');
@@ -400,6 +437,9 @@ const UICore = {
                 item.classList.remove('active');
             }
         });
+
+        // Sync the mobile shell (Character hub button + sub-tab bar)
+        this.syncMobileShell(viewName);
 
         // Special handling for bank view - clear new items notification
         if (viewName === 'bank') {
@@ -554,59 +594,43 @@ const UICore = {
     },
 
     /**
-     * Show/hide a prominent banner for unassigned attribute points
+     * Signal unassigned attribute points on the always-visible level bar.
+     * We no longer render a persistent banner (it pushed the whole view down);
+     * instead the level bar gets a golden pulsing glow and already taps through
+     * to the Overview tab where points are spent.
      * @param {number} points - Number of unassigned points
      */
     updateAttributePointsBanner(points) {
-        const bannerId = 'attribute-points-banner';
-        let banner = document.getElementById(bannerId);
+        // Remove the legacy persistent banner if it exists (old DOM / saves).
+        const legacy = document.getElementById('attribute-points-banner');
+        if (legacy) legacy.remove();
 
-        if (points > 0) {
-            // Create banner if it doesn't exist
-            if (!banner) {
-                banner = document.createElement('div');
-                banner.id = bannerId;
-                banner.className = 'attribute-points-banner';
-                banner.innerHTML = `
-                    <div class="banner-content">
-                        <span class="banner-icon">✨</span>
-                        <span class="banner-text">
-                            <strong>${points}</strong> Attribute Point${points !== 1 ? 's' : ''} Available!
-                        </span>
-                        <span class="banner-action">Click to assign</span>
-                    </div>
-                `;
-                banner.addEventListener('click', () => {
-                    if (typeof switchView === 'function') {
-                        switchView('overview');
-                    }
-                    // Scroll to attributes panel after a brief delay
-                    setTimeout(() => {
-                        const panel = document.querySelector('.panel-attributes');
-                        if (panel) {
-                            panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            panel.classList.add('highlight-pulse');
-                            setTimeout(() => panel.classList.remove('highlight-pulse'), 2000);
-                        }
-                    }, 100);
-                });
-
-                // Insert at top of main content area
-                const mainContent = document.querySelector('.main-content') || document.body;
-                mainContent.insertBefore(banner, mainContent.firstChild);
-            } else {
-                // Update existing banner text
-                const textEl = banner.querySelector('.banner-text');
-                if (textEl) {
-                    textEl.innerHTML = `<strong>${points}</strong> Attribute Point${points !== 1 ? 's' : ''} Available!`;
-                }
-                banner.classList.remove('hidden');
-            }
-        } else {
-            // Hide banner if no points
-            if (banner) {
-                banner.classList.add('hidden');
-            }
+        const levelbar = document.querySelector('.levelbar');
+        if (levelbar) {
+            levelbar.classList.toggle('has-points', points > 0);
         }
+    },
+
+    /**
+     * Transient "Level N!" toast that rises and fades above the level bar.
+     * Not a persistent fixture — it self-removes after the animation.
+     * @param {number} level - The new character level
+     */
+    showLevelUpToast(level) {
+        const anchor = document.querySelector('.levelbar');
+        const toast = document.createElement('div');
+        toast.className = 'levelup-toast';
+        toast.textContent = `Level ${level}!`;
+        document.body.appendChild(toast);
+
+        if (anchor) {
+            const r = anchor.getBoundingClientRect();
+            toast.style.left = `${Math.round(r.left + r.width / 2)}px`;
+            toast.style.bottom = `${Math.round(window.innerHeight - r.top + 8)}px`;
+        }
+
+        // Remove once the rise/fade animation completes.
+        toast.addEventListener('animationend', () => toast.remove());
+        setTimeout(() => { if (toast.isConnected) toast.remove(); }, 2500);
     }
 };

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Idle RPG Prototype</title>
 
     <!-- Google Fonts -->
@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="styles/tour.css">
     <link rel="stylesheet" href="styles/tutorial-spotlight.css">
     <link rel="stylesheet" href="styles/developer.css">
+    <link rel="stylesheet" href="styles/mobile-shell.css">
 </head>
 <body>
     <!-- Dynamic Background Layers -->
@@ -41,115 +42,81 @@
         <div class="dark-overlay"></div>
     </div>
 
-    <!-- Header - Ultra Compact Single Row -->
-    <div class="header">
-        <!-- Left: Title -->
-        <div class="header-title">
-            <span class="title-text">⚔️ IDLE RPG</span>
+    <!-- ============ MOBILE APP SHELL ============ -->
+
+    <!-- Top ribbon: HP + currencies + menu (notch-safe) -->
+    <div class="topbar">
+        <div class="topbar-hp" title="Health">
+            <span class="hp-icon">❤️</span>
+            <span class="hp-text" id="hudHP">--/--</span>
         </div>
 
-        <!-- Center: Character & Activity -->
-        <div class="header-center">
-            <!-- Level -->
-            <div class="header-level">
-                <span class="level-num" id="charLevel">1</span>
-                <span class="level-label">LVL</span>
-            </div>
-
-            <!-- XP Bar -->
-            <div class="header-xp">
-                <div class="xp-bar">
-                    <div class="xp-fill" id="charExpBar"></div>
-                    <div class="xp-shimmer"></div>
-                </div>
-                <span class="xp-text" id="charExpText">0 / 1K XP</span>
-            </div>
-
-            <!-- Points Badge -->
-            <div id="charPointsDisplay" class="points-badge" style="display: none;">
-                +<span id="charPoints">0</span>
-            </div>
-
-            <!-- Activity Status -->
-            <div class="header-activity">
-                <span class="activity-icon">📍</span>
-                <span class="activity-region" id="currentRegionText">Plains</span>
-                <span class="activity-sep">•</span>
-                <span class="activity-text" id="activityText">Idle</span>
-            </div>
-
-            <!-- Activity Progress -->
-            <div class="activity-bar">
-                <div class="activity-fill" id="activityBar"></div>
-            </div>
-            <span class="activity-time" id="activityProgress">--</span>
-        </div>
-
-        <!-- Right: Currencies & Controls -->
-        <div class="header-right">
+        <div class="topbar-right">
             <div class="currencies">
                 <div class="curr" title="Gold"><span>💰</span><span id="goldAmount">0</span></div>
                 <div class="curr" title="Medals"><span>🏅</span><span id="medalsAmount">0</span></div>
                 <div class="curr" title="Tomes"><span>📚</span><span id="tomesAmount">0</span></div>
                 <div class="curr" title="Gems"><span>💎</span><span id="gemsAmount">0</span></div>
             </div>
-            <button data-action="save-game" class="header-btn" title="Save">💾</button>
-            <button data-action="reset-game" class="header-btn" title="Reset">🔄</button>
-            <button data-action="toggle-dev-modal" class="header-btn" title="Developer Tools" style="background: #4a1a8a; border: 1px solid #7a3aba;">⚙️ Dev</button>
+            <button class="topbar-menu-btn" data-action="toggle-hud-menu" title="Menu" aria-label="Menu">⋮</button>
+        </div>
+
+        <!-- Menu dropdown: save / reset / dev / settings -->
+        <div id="hudMenu" class="hud-menu" hidden>
+            <button class="hud-menu-item" data-action="switch-view" data-view="settings" onclick="var m=document.getElementById('hudMenu'); if(m) m.hidden=true;">⚙️ Settings</button>
+            <button class="hud-menu-item" data-action="save-game" onclick="var m=document.getElementById('hudMenu'); if(m) m.hidden=true;">💾 Save</button>
+            <button class="hud-menu-item" data-action="reset-game" onclick="var m=document.getElementById('hudMenu'); if(m) m.hidden=true;">🔄 Reset</button>
+            <button class="hud-menu-item" data-action="toggle-dev-modal" onclick="var m=document.getElementById('hudMenu'); if(m) m.hidden=true;">🧪 Dev Tools</button>
+        </div>
+
+        <!-- Legacy activity/region elements kept for the HUD updater (surfaced per-view later) -->
+        <div class="legacy-activity" aria-hidden="true" style="display:none;">
+            <span id="currentRegionText"></span>
+            <span id="activityText"></span>
+            <div id="activityBar"></div>
+            <span id="activityProgress"></span>
         </div>
     </div>
 
-    <!-- Vertical Sidebar Navigation -->
-    <nav class="sidebar-nav">
-        <!-- Navigation Order: Overview, Items, Loadout, Combat, Explore, Gather, Craft, Missions, Perks -->
-        <button class="sidebar-item active" data-action="switch-view" data-view="overview" title="Dashboard">
-            <span class="sidebar-icon">📊</span>
-            <span class="sidebar-label">OVERVIEW</span>
-        </button>
-        <button class="sidebar-item" data-action="switch-view" data-view="bank" title="Inventory">
-            <span class="sidebar-icon">🎒</span>
-            <span class="sidebar-label">ITEMS</span>
-        </button>
-        <button class="sidebar-item" data-action="switch-view" data-view="equipment" title="Loadout">
-            <span class="sidebar-icon">🛡️</span>
-            <span class="sidebar-label">LOADOUT</span>
-        </button>
-        <button class="sidebar-item" data-action="switch-view" data-view="combat" title="Combat">
-            <span class="sidebar-icon">⚔️</span>
-            <span class="sidebar-label">COMBAT</span>
-        </button>
-        <button class="sidebar-item" data-action="switch-view" data-view="navigation" title="Explore">
-            <span class="sidebar-icon">🧭</span>
-            <span class="sidebar-label">EXPLORE</span>
-        </button>
-        <button class="sidebar-item" data-action="switch-view" data-view="gather" title="Gather Resources">
-            <span class="sidebar-icon">🌿</span>
-            <span class="sidebar-label">GATHER</span>
-        </button>
-        <button class="sidebar-item" data-action="switch-view" data-view="crafting" title="Crafting">
-            <span class="sidebar-icon">🔨</span>
-            <span class="sidebar-label">CRAFT</span>
-        </button>
-        <button class="sidebar-item" data-action="switch-view" data-view="missions" title="Missions">
-            <span class="sidebar-icon">📋</span>
-            <span class="sidebar-label">MISSIONS</span>
-        </button>
-        <button class="sidebar-item" data-action="switch-view" data-view="perks" title="Perk Grid">
-            <span class="sidebar-icon">🌟</span>
-            <span class="sidebar-label">PERKS</span>
-        </button>
+    <!-- Level bar: Lv + XP, tap to open Overview -->
+    <button class="levelbar" data-action="switch-view" data-view="overview" title="Overview">
+        <span class="levelbar-lv"><span class="levelbar-lv-label">LV</span><span id="charLevel">1</span></span>
+        <span class="levelbar-xp">
+            <span class="xp-bar"><span class="xp-fill" id="charExpBar"></span></span>
+        </span>
+        <span class="levelbar-xptext" id="charExpText">0 / 0 XP</span>
+        <span id="charPointsDisplay" class="points-badge" style="display:none;">+<span id="charPoints">0</span></span>
+    </button>
 
-        <!-- Bottom Buttons -->
-        <div class="sidebar-bottom">
-            <button class="sidebar-item" data-action="switch-view" data-view="settings" title="Settings">
-                <span class="sidebar-icon">⚙️</span>
-                <span class="sidebar-label">SETTINGS</span>
-            </button>
-        </div>
+    <!-- Bottom ribbon: Explore · Combat · Character · Gather · Craft -->
+    <nav class="ribbon">
+        <button class="ribbon-item" data-action="switch-view" data-view="navigation" title="Explore">
+            <span class="ribbon-icon">🧭</span><span class="ribbon-label">Explore</span>
+        </button>
+        <button class="ribbon-item" data-action="switch-view" data-view="combat" title="Combat">
+            <span class="ribbon-icon">⚔️</span><span class="ribbon-label">Combat</span>
+        </button>
+        <button class="ribbon-item" id="ribbonCharacter" data-action="switch-view" data-view="bank" title="Character">
+            <span class="ribbon-icon">🎒</span><span class="ribbon-label">Character</span>
+        </button>
+        <button class="ribbon-item" data-action="switch-view" data-view="gather" title="Gather">
+            <span class="ribbon-icon">🌿</span><span class="ribbon-label">Gather</span>
+        </button>
+        <button class="ribbon-item" data-action="switch-view" data-view="crafting" title="Craft">
+            <span class="ribbon-icon">🔨</span><span class="ribbon-label">Craft</span>
+        </button>
     </nav>
 
     <!-- Main Content Area -->
     <div class="main-content">
+
+        <!-- Character hub sub-tabs (shown only while in a Character view) -->
+        <div id="characterSubtabs" class="character-subtabs" style="display:none;">
+            <button class="character-subtab" data-action="switch-view" data-view="bank">🎒 Items</button>
+            <button class="character-subtab" data-action="switch-view" data-view="equipment">🛡️ Loadout</button>
+            <button class="character-subtab" data-action="switch-view" data-view="missions">📋 Missions</button>
+            <button class="character-subtab" data-action="switch-view" data-view="perks">🌟 Perks</button>
+        </div>
 
         <!-- Overview View -->
         <div id="view-overview" class="view active">
@@ -842,6 +809,16 @@
 
     <!-- 8. INITIALIZE DOPAMINE UI COMPONENTS -->
     <script src="src/ui/init.js"></script>
+
+    <!-- Mobile shell: close the top-ribbon menu on outside tap -->
+    <script>
+    document.addEventListener('click', function (e) {
+        var m = document.getElementById('hudMenu');
+        if (!m || m.hidden) return;
+        if (e.target.closest('#hudMenu') || e.target.closest('[data-action="toggle-hud-menu"]')) return;
+        m.hidden = true;
+    });
+    </script>
 
     <!-- DEPRECATED: Developer Statistics Panel (Fixed at bottom) - commented out to allow full UI visibility
     <div id="devStatsPanel"></div>

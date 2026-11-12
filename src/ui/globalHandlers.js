@@ -3373,6 +3373,11 @@ const GlobalEventDelegation = {
             }
         },
 
+        'toggle-hud-menu'() {
+            const menu = document.getElementById('hudMenu');
+            if (menu) menu.hidden = !menu.hidden;
+        },
+
         switchView(target) {
             const viewName = target.dataset.view;
             if (viewName && typeof UICore !== 'undefined') {
