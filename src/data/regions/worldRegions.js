@@ -158,12 +158,14 @@ const WorldRegions = {
     },
 
     /**
-     * PEACEFUL MEADOWS - East of Starting Region
+     * REGION -2,-4 - East of Starting Region
      * Region ID: region_-2_-4
      * Coordinates: q=-2, r=-4
+     * (Canonically "Scoutreach" per MAP_POI.md — first-combat beat — but kept on a
+     *  generic coordinate name until regions are deliberately named from the map.)
      */
     "region_-2_-4": {
-        name: "Peaceful Meadows",
+        name: "Region -2, -4",
         description: "Rolling grasslands stretching eastward from The Cradle. Wild flowers bloom year-round and gentle streams wind through the fields.",
         biome: "plains",
         icon: "🌾",

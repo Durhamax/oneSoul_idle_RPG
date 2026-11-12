@@ -74,6 +74,39 @@ const EQUIPMENT_ITEMS = {
         tags: ['weapon', 'pistol', 'ranged', 'firearm', 'starter', 'mechanics'],
     },
 
+    reclaimedElaranSidearm: {
+        id: 'reclaimedElaranSidearm',
+        weight: 2.5,        // compact salvaged pistol
+        name: 'Reclaimed Elaran Sidearm',
+        description: 'An Elaran surveyor\'s sidearm rebuilt around a copperite frame. Better machined than Unity make — the first spoils of the war turned back on its makers.',
+        icon: '🔫',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'uncommon',
+        stackLimit: 1,
+        value: 55,
+        level: 1,
+        slot: 'weapon',
+        equipSlot: 'weapon',
+        tier: 'starter',
+        weaponType: 'pistol',
+        weaponCategory: 'pistol',
+        requiresAmmo: true,
+        ammoType: 'pistol',
+        baseDamage: 28,
+        attackInterval: 800,
+        combatStats: {
+            damage: 28,
+            attackSpeed: 2.5,
+            accuracy: 520,
+            critChance: 16,
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['weapon', 'pistol', 'ranged', 'firearm', 'salvage', 'mechanics'],
+    },
+
     frontierMarksmanRifle: {
         id: 'frontierMarksmanRifle',
         weight: 4.5,        // heavy two-handed rifle
@@ -296,6 +329,91 @@ const EQUIPMENT_ITEMS = {
             characterLevel: 2,
         },
         tags: ['armor', 'wool', 'leather', 'set', 'harvesting'],
+    },
+
+    platedFieldVest: {
+        id: 'platedFieldVest',
+        weight: 6,          // plating + cloth assembly (heavier than the cloth sets)
+        name: 'Plated Field Vest',
+        description: 'Scavenged Elaran plating lashed over a fiber-and-pelt backing. Heavier than Unity cloth, but it turns a blade — your first taste of modern armor.',
+        icon: '🦺',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'uncommon',
+        stackLimit: 1,
+        value: 85,
+        level: 2,
+        slot: 'armor',
+        equipSlot: 'armor',
+        tier: 'starter',
+        combatStats: {
+            defense: 16,
+            health: 30,
+        },
+        attributes: {
+            constitution: 1,
+        },
+        requirements: {
+            characterLevel: 2,
+        },
+        tags: ['armor', 'plated', 'salvage', 'tailoring'],
+    },
+
+    // Tier 1 Boots & Gloves (Tailoring — crafted from Region 1 materials)
+    scoutTrailBoots: {
+        id: 'scoutTrailBoots',
+        weight: 1.5,        // soft leather boots
+        name: 'Scout Trail Boots',
+        description: 'Supple pelt-leather boots sealed with resin against the Cradle damp. Light and quiet — made for covering ground.',
+        icon: '🥾',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 35,
+        level: 1,
+        slot: 'armor',          // Bank tab categorization
+        equipSlot: 'boots',     // Equipment slot
+        tier: 'starter',
+        combatStats: {
+            defense: 4,
+            evasion: 2,
+        },
+        attributes: {
+            dexterity: 1,
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['armor', 'boots', 'leather', 'light', 'tailoring'],
+    },
+
+    scoutHandwraps: {
+        id: 'scoutHandwraps',
+        weight: 1,          // leather-and-fiber hand wraps
+        name: 'Scout Handwraps',
+        description: 'Pelt-leather wraps bound with plant fiber to guard the hands and steady a grip. Simple protection for a working scout.',
+        icon: '🧤',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 32,
+        level: 1,
+        slot: 'armor',          // Bank tab categorization
+        equipSlot: 'gloves',    // Equipment slot
+        tier: 'starter',
+        combatStats: {
+            defense: 3,
+            health: 8,
+        },
+        attributes: {
+            dexterity: 1,
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['armor', 'gloves', 'leather', 'light', 'tailoring'],
     },
 
     // =================================================================

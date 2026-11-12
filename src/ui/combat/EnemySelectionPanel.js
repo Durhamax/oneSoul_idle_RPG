@@ -72,7 +72,8 @@ const EnemySelectionPanel = {
      * title-cased version of the region id.
      */
     getRegionName(regionId) {
-        const fromDef = (typeof GameEngine !== 'undefined' && GameEngine.definitions?.regions?.[regionId]?.name)
+        const fromDef = (typeof GameEngine !== 'undefined' && GameEngine.definitions?.worldMap?.[regionId]?.name)
+            || (typeof GameEngine !== 'undefined' && GameEngine.definitions?.regions?.[regionId]?.name)
             || (typeof RegionRegistry !== 'undefined' && RegionRegistry.getRegion && RegionRegistry.getRegion(regionId)?.name);
         if (fromDef) return fromDef;
         return regionId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());

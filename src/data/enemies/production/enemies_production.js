@@ -43,7 +43,9 @@ const ProductionEnemies = {
         // Rewards - Entry level drops
         baseXP: 15,
         goldDrop: { min: 3, max: 8 },
-        fragmentDrop: { min: 0, max: 2 },  // Low chance of 1-2 fragments, often 0
+        // Drones no longer drop medals — the Elaran Surveyor is the deliberate
+        // introduction of medals as a combat drop (see below).
+        fragmentDrop: { min: 0, max: 0 },
         loot: [
             // Salvaged sensor is the component that pairs with refined copper wire to
             // assemble the first technology (Scrap Field Scanner).
@@ -53,7 +55,57 @@ const ProductionEnemies = {
 
         // Metadata
         description: 'A small reconnaissance drone used by Elaran forces to map terrain and monitor movement. Lightly armed with a scanning laser that can be weaponized.',
-        region: 'starting_zone'
+        region: 'region_-2_-4'      // Scoutreach — the first-combat beat (MAP_POI hex 2)
+    },
+
+    // The first HUMAN enemy — low-ranking Elaran military techs who operate the survey
+    // drones on the ground. Introduces the BIOLOGICAL armor type and is the deliberate
+    // introduction of MEDALS as a combat drop. Tougher than the drones: more HP, harder
+    // hits, light armor, a basic sidearm.
+    elaran_surveyor: {
+        // Identity
+        id: 'elaran_surveyor',
+        name: 'Elaran Surveyor',
+        icon: '🔭',
+        assetPath: 'assets/enemies/elaran_surveyor.png',
+        tier: 1,
+        level: 5,
+        category: 'humanoid',
+
+        // Health - A clear step up from the drone (20 → 40)
+        maxHP: 40,
+
+        // Offense - Basic sidearm: harder hits than the drone, slower cadence
+        baseDamage: 12,
+        minDamageRatio: 0.8,
+        maxDamageRatio: 1.3,
+        accuracy: 65,
+        critRating: 8,
+        critMultiplier: 1.5,
+        attackInterval: 2600,       // Slower than the drone (sidearm, not a scan laser)
+        damageType: 'pierce',       // Standard-issue ballistic sidearm
+
+        // Defense - Low-grade field armoring, lightly evasive infantry
+        evasion: 2,
+        armorRating: 3,
+        damageReduction: 0.03,      // 3% DR (low-grade armoring)
+        armorType: 'biological',    // Infantry — answered efficiently by Incendiary (T2)
+
+        // Rewards - FIRST medal source + crafting-component salvage
+        baseXP: 30,
+        goldDrop: { min: 8, max: 18 },
+        fragmentDrop: { min: 1, max: 3 },  // Medals — guaranteed at least 1
+        loot: [
+            { itemId: 'elaranSidearmParts', chance: 0.28, quantity: 1 },
+            { itemId: 'scrapPlating',       chance: 0.35, quantity: { min: 1, max: 2 } },
+            { itemId: 'salvagedSensor',     chance: 0.15, quantity: 1 },
+            { itemId: 'surveyDataCore',     chance: 0.08, quantity: 1 }  // Rare clue/tome component
+        ],
+        respawnTime: 1500,
+
+        // Metadata
+        description: 'A low-ranking Elaran military technician sent in behind the survey drones to verify readings on the ground. Lightly armored and armed with a standard sidearm, but a trained soldier — and far more dangerous than the machines.',
+        region: 'region_-2_-4'      // Scoutreach — "immediately after the drones"
     }
 
     // ═══════════════════════════════════════════════════════════════
