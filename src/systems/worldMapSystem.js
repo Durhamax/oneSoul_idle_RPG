@@ -205,33 +205,14 @@ const WorldMapSystem = {
      * Generate region name
      */
     getRegionName(q, r, biome, startQ, startR) {
-        // The Cradle - Starting region
+        // The Cradle - Starting region (the one authored name that stays).
         if (q === startQ && r === startR) return "The Cradle";
 
-        const prefixes = {
-            plains: ["Green", "Sunny", "Peaceful", "Rolling", "Golden"],
-            forest: ["Dark", "Deep", "Ancient", "Verdant", "Misty"],
-            mountains: ["Highland", "Snowy", "Rocky", "Towering", "Peak"],
-            tundra: ["Frozen", "Icy", "Bitter", "Arctic", "Frost"],
-            desert: ["Arid", "Burning", "Dry", "Sandy", "Scorched"],
-            swamp: ["Murky", "Foggy", "Dank", "Mossy", "Fetid"],
-            coast: ["Coastal", "Sandy", "Windy", "Harbor", "Tidal"]
-        };
-
-        const suffixes = {
-            plains: ["Plains", "Meadows", "Fields", "Grassland", "Valley"],
-            forest: ["Woods", "Forest", "Grove", "Thicket", "Woodland"],
-            mountains: ["Ridge", "Peak", "Mountains", "Summit", "Heights"],
-            tundra: ["Tundra", "Wastes", "Expanse", "Barrens", "Flats"],
-            desert: ["Desert", "Wastes", "Dunes", "Sands", "Expanse"],
-            swamp: ["Swamp", "Marsh", "Bog", "Fen", "Mire"],
-            coast: ["Shores", "Coast", "Beach", "Bay", "Cove"]
-        };
-
-        const prefix = prefixes[biome][Math.abs(q + r * 3) % prefixes[biome].length];
-        const suffix = suffixes[biome][Math.abs(q * 2 + r) % suffixes[biome].length];
-
-        return `${prefix} ${suffix}`;
+        // All other regions use a generic coordinate label until they are
+        // deliberately named from the map/MAP_POI canon. The in-game world map
+        // already labels hexes by these (q, r) coordinates, so the names match
+        // what the player sees on the map.
+        return `Region ${q}, ${r}`;
     },
 
     /**

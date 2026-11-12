@@ -267,6 +267,127 @@ const RECIPES = {
         stationTierRequired: 0,
 
         tags: ['ammo', 'arrows', 'mechanics', 'tier1', 'tutorial']
+    },
+
+    reclaimedElaranSidearm: {
+        id: 'reclaimedElaranSidearm',
+        name: 'Reclaimed Elaran Sidearm',
+        skill: 'mechanics',
+        tier: 1,
+        skillLevelRequired: 1,
+        category: 'weapons',
+        icon: '🔫',
+        description: 'Rebuild a salvaged Elaran sidearm around a copperite frame and a pinewood grip — your first crafted firearm.',
+
+        materials: [
+            { itemId: 'elaranSidearmParts', quantity: 1 },
+            { itemId: 'copperiteOre', quantity: 2 },
+            { itemId: 'pinewood', quantity: 1 }
+        ],
+
+        outputs: {
+            itemId: 'reclaimedElaranSidearm',
+            quantity: 1
+        },
+
+        baseTime: 14000,     // 14 seconds
+        experienceGain: 40,
+
+        stationType: 'mechanics',
+        stationTierRequired: 0,
+
+        tags: ['weapon', 'pistol', 'mechanics', 'tier1', 'salvage']
+    },
+
+    // ==========================================
+    // TAILORING RECIPES
+    // ==========================================
+    platedFieldVest: {
+        id: 'platedFieldVest',
+        name: 'Plated Field Vest',
+        skill: 'tailoring',
+        tier: 1,
+        skillLevelRequired: 1,
+        category: 'equipment',
+        icon: '🦺',
+        description: 'Assemble salvaged Elaran plating over a fiber-and-pelt backing — modern armor the Unity way.',
+
+        materials: [
+            { itemId: 'scrapPlating', quantity: 2 },
+            { itemId: 'plantFibers', quantity: 3 },
+            { itemId: 'smallPelts', quantity: 1 }
+        ],
+
+        outputs: {
+            itemId: 'platedFieldVest',
+            quantity: 1
+        },
+
+        baseTime: 13000,     // 13 seconds
+        experienceGain: 38,
+
+        stationType: 'tailoring',
+        stationTierRequired: 0,
+
+        tags: ['armor', 'plated', 'tailoring', 'tier1', 'salvage']
+    },
+    scoutTrailBoots: {
+        id: 'scoutTrailBoots',
+        name: 'Scout Trail Boots',
+        skill: 'tailoring',
+        tier: 1,
+        skillLevelRequired: 1,
+        category: 'equipment',
+        icon: '🥾',
+        description: 'Cut and stitch pelt leather, then seal it with resin against the damp — light boots for covering ground.',
+
+        materials: [
+            { itemId: 'smallPelts', quantity: 2 },
+            { itemId: 'plantFibers', quantity: 2 },
+            { itemId: 'resin', quantity: 1 }
+        ],
+
+        outputs: {
+            itemId: 'scoutTrailBoots',
+            quantity: 1
+        },
+
+        baseTime: 10000,     // 10 seconds
+        experienceGain: 28,
+
+        stationType: 'tailoring',
+        stationTierRequired: 0,
+
+        tags: ['armor', 'boots', 'tailoring', 'tier1']
+    },
+
+    scoutHandwraps: {
+        id: 'scoutHandwraps',
+        name: 'Scout Handwraps',
+        skill: 'tailoring',
+        tier: 1,
+        skillLevelRequired: 1,
+        category: 'equipment',
+        icon: '🧤',
+        description: 'Bind pelt leather with plant fiber into protective wraps that steady the grip.',
+
+        materials: [
+            { itemId: 'smallPelts', quantity: 1 },
+            { itemId: 'plantFibers', quantity: 2 }
+        ],
+
+        outputs: {
+            itemId: 'scoutHandwraps',
+            quantity: 1
+        },
+
+        baseTime: 8000,      // 8 seconds
+        experienceGain: 22,
+
+        stationType: 'tailoring',
+        stationTierRequired: 0,
+
+        tags: ['armor', 'gloves', 'tailoring', 'tier1']
     }
 };
 

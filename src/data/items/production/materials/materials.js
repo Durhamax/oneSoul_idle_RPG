@@ -410,6 +410,61 @@ const MATERIAL_ITEMS = {
         value: 22,
         icon: '📟',
         tags: ['salvage', 'sensor', 'component', 'electronics']
+    },
+
+    // ==========================================
+    // COMBAT SALVAGE - Elaran Surveyor drops (Scoutreach, region_-2_-4)
+    // The first human-enemy loot: components that feed the near-term crafting ladder.
+    // ==========================================
+    elaranSidearmParts: {
+        id: 'elaranSidearmParts',
+        name: 'Elaran Sidearm Parts',
+        description: 'The stripped internals of a standard-issue Elaran sidearm — barrel, spring, and firing group. Salvaged from a fallen surveyor; the basis for your first crafted gun.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'mechanics',
+        tier: 1,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 18,
+        icon: '🔫',
+        tags: ['salvage', 'weapon-part', 'component', 'mechanics']
+    },
+
+    scrapPlating: {
+        id: 'scrapPlating',
+        name: 'Scrap Plating',
+        description: 'Low-grade armor plating cut from Elaran field kit. Dented and thin, but serviceable — assemble it with cloth to build your first modern armor.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'smithing',
+        tier: 1,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 16,
+        icon: '🛡️',
+        tags: ['salvage', 'plating', 'component', 'armor', 'smithing']
+    },
+
+    surveyDataCore: {
+        id: 'surveyDataCore',
+        name: 'Survey Data Core',
+        description: "A ruggedized data core recovered from an Elaran surveyor. Its logs reference signal readings from a distant, corrupted site — meaningless for now. Decoding it yields research tomes.",
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'engineering',
+        tier: 1,
+        rarity: 'rare',
+        stackable: true,
+        stackLimit: 999,
+        value: 40,
+        icon: '💾',
+        tags: ['salvage', 'data', 'component', 'engineering', 'quest']
     }
 };
 
