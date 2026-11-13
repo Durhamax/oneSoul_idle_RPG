@@ -16,6 +16,7 @@ const DevModal = {
         skills: { name: 'Skills', icon: '⭐', enabled: true },
         items: { name: 'Items', icon: '🎒', enabled: true },
         combat: { name: 'Combat', icon: '⚔️', enabled: true },
+        regions: { name: 'Regions', icon: '🗺️', enabled: true },
         time: { name: 'Time', icon: '⏱️', enabled: true },
         scenarios: { name: 'Scenarios', icon: '🎯', enabled: true },
         registry: { name: 'Registry', icon: '📊', enabled: true }
@@ -112,6 +113,7 @@ const DevModal = {
             case 'skills': return this.renderSkillsTab();
             case 'items': return this.renderItemsTab();
             case 'combat': return this.renderCombatTab();
+            case 'regions': return this.renderRegionsTab();
             case 'time': return this.renderTimeTab();
             case 'scenarios': return this.renderScenariosTab();
             case 'registry': return this.renderRegistryTab();
@@ -637,6 +639,273 @@ const DevModal = {
                 </div>
             </div>
         `;
+    },
+
+    /**
+     * Render Regions tab — complete a region's content and stock everything
+     * from that region and all prior regions, to fast-forward to new regions
+     * for testing.
+     */
+    renderRegionsTab() {
+        const wm = GameEngine?.definitions?.worldMap || {};
+        const regions = Object.entries(wm).sort((a, b) =>
+            ((a[1].navigationRequirement || 1) - (b[1].navigationRequirement || 1)) ||
+            (a[1].name || a[0]).localeCompare(b[1].name || b[0])
+        );
+
+        if (regions.length === 0) {
+            return '<div style="padding: 40px; text-align: center; color: #888;">World map not generated yet.</div>';
+        }
+
+        const current = GameEngine?.state?.currentRegion;
+        const selected = document.getElementById('devRegionSelector')?.value || current || regions[0][0];
+
+        return `
+            <div style="display: grid; gap: 20px;">
+                <div style="background: rgba(76, 175, 80, 0.1); padding: 15px; border: 1px solid #4CAF50; border-radius: 8px;">
+                    <p style="margin: 0; color: #4CAF50; font-weight: bold;">🗺️ Region Fast-Forward</p>
+                    <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #aaa;">
+                        Completes the selected region <em>and every region before it</em> (discovered, all nodes/stations/paths
+                        unlocked, navigation raised to reach it), then stocks <strong>999 of every resource</strong> and
+                        <strong>3 of every craftable</strong> up to that region's content tier. Use it to jump straight to new
+                        regions for testing.
+                    </p>
+                </div>
+
+                <div style="background: #2a2a2a; padding: 15px; border-radius: 8px;">
+                    <h3 style="margin: 0 0 10px 0; color: #4CAF50;">Complete &amp; Stock Region</h3>
+                    <label style="display: block; margin-bottom: 5px; color: #aaa;">Target region (sorted by navigation requirement):</label>
+                    <select id="devRegionSelector" onchange="DevModal.render()" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 4px; font-family: monospace;">
+                        ${regions.map(([id, r]) => {
+                            const tierStr = (typeof r.tier === 'number') ? ` · T${r.tier}` : '';
+                            const cur = id === current ? ' (current)' : '';
+                            return `<option value="${id}" ${id === selected ? 'selected' : ''}>${r.name || id} — Nav ${r.navigationRequirement || 1}${tierStr}${cur}</option>`;
+                        }).join('')}
+                    </select>
+                    <button onclick="DevModal.completeAndStockRegion(document.getElementById('devRegionSelector').value)"
+                        style="width: 100%; margin-top: 12px; padding: 14px; background: #4CAF50; border: none; border-radius: 4px; color: white; font-weight: bold; font-size: 1.05em; cursor: pointer;">
+                        ✅ Complete &amp; Stock (this region + prior)
+                    </button>
+                    <p style="margin: 10px 0 0 0; font-size: 0.8em; color: #777;">Console: <code>devStockRegion('${selected}')</code></p>
+                </div>
+
+                <div style="background: #2a2a2a; padding: 15px; border-radius: 8px;">
+                    <h3 style="margin: 0 0 10px 0; color: #4a9eff;">Travel</h3>
+                    <p style="margin: 0 0 10px 0; font-size: 0.85em; color: #aaa;">Jump straight to the selected region (must be discovered first — use the button above).</p>
+                    <button onclick="DevModal.devTravelTo(document.getElementById('devRegionSelector').value)"
+                        style="width: 100%; padding: 12px; background: #3a3a3a; border: 1px solid #4a9eff; border-radius: 4px; color: white; cursor: pointer;">
+                        🧭 Travel to selected region
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Normalize an item's tier to a number (equipment uses 'starter').
+     */
+    normalizeContentTier(tier) {
+        if (typeof tier === 'number') return tier;
+        if (tier === 'starter') return 1;
+        return 1;
+    },
+
+    /**
+     * Complete the selected region + every prior region, and stock the player
+     * with 999 of every resource and 3 of every craftable up to that region's tier.
+     */
+    completeAndStockRegion(regionId) {
+        const wm = GameEngine?.definitions?.worldMap;
+        if (!wm || !wm[regionId]) {
+            console.error(`❌ Region not found: ${regionId}`);
+            return;
+        }
+        const target = wm[regionId];
+        const targetNav = target.navigationRequirement || 1;
+
+        GameEngine.state.regions = GameEngine.state.regions || {};
+
+        // 1) Raise navigation to reach the region
+        const skills = (typeof SkillRegistry !== 'undefined') ? SkillRegistry.getAllActive() : {};
+        GameEngine.state.skills = GameEngine.state.skills || {};
+        const nav = GameEngine.state.skills.navigation || { level: 1, xp: 0, unlocked: true };
+        if ((nav.level || 1) < targetNav) {
+            nav.level = targetNav;
+            nav.xp = this.calculateTotalXP(targetNav, skills.navigation);
+        }
+        nav.unlocked = true;
+        GameEngine.state.skills.navigation = nav;
+
+        const ensureRegion = (id) => {
+            const rs = GameEngine.state.regions[id] || {
+                discovered: false, discoveryProgress: 0, discoveredExitPaths: [],
+                discoveredNodeTypes: [], discoveredCraftingStations: [], availableNodes: {}
+            };
+            rs.discoveredExitPaths = rs.discoveredExitPaths || [];
+            rs.discoveredCraftingStations = rs.discoveredCraftingStations || [];
+            GameEngine.state.regions[id] = rs;
+            return rs;
+        };
+
+        // 2) Complete discovery for this region + all prior (nav requirement <= target)
+        let regionsCompleted = 0;
+        for (const id in wm) {
+            const r = wm[id];
+            if ((r.navigationRequirement || 1) > targetNav) continue;
+
+            const rs = ensureRegion(id);
+            rs.discovered = true;
+            rs.discoveryProgress = 100;
+
+            // Exit paths = every existing neighbor (bidirectional), so travel works
+            const adj = r.adjacent || {};
+            for (const dir in adj) {
+                const nId = adj[dir];
+                if (!wm[nId]) continue;
+                if (!rs.discoveredExitPaths.includes(nId)) rs.discoveredExitPaths.push(nId);
+                const ns = ensureRegion(nId);
+                if (!ns.discoveredExitPaths.includes(id)) ns.discoveredExitPaths.push(id);
+            }
+
+            // Discover all gathering nodes in the region
+            (r.discoverableNodes || []).forEach(nodeId => {
+                if (GameEngine.discoverNodeGlobally) {
+                    try { GameEngine.discoverNodeGlobally(nodeId, id); } catch (e) {}
+                }
+            });
+
+            // Discover crafting stations (from hand-defined WorldRegions, if any)
+            const stations = (typeof WorldRegions !== 'undefined' && WorldRegions[id]?.discoverableCraftingStations) || [];
+            GameEngine.state.crafting = GameEngine.state.crafting || { discoveredStations: [] };
+            GameEngine.state.crafting.discoveredStations = GameEngine.state.crafting.discoveredStations || [];
+            stations.forEach(s => {
+                if (!rs.discoveredCraftingStations.includes(s)) rs.discoveredCraftingStations.push(s);
+                if (!GameEngine.state.crafting.discoveredStations.includes(s)) GameEngine.state.crafting.discoveredStations.push(s);
+            });
+
+            regionsCompleted++;
+        }
+
+        // 3) Stock resources + craftables up to the region's content tier.
+        // Generated regions carry no tier; default those to "everything that exists".
+        const items = ItemRegistry.getAllActive();
+        const maxItemTier = Math.max(1, ...Object.values(items).map(i => this.normalizeContentTier(i.tier)));
+        const targetTier = (typeof target.tier === 'number') ? target.tier : maxItemTier;
+
+        let stackables = 0, instanced = 0;
+        for (const id in items) {
+            const def = items[id];
+            if (this.normalizeContentTier(def.tier) > targetTier) continue;
+
+            if (def.instanced) {
+                // Idempotent: keep at most 3 copies of each craftable in the bank,
+                // so repeated clicks don't balloon the instanced bank.
+                const existing = Object.values(GameEngine.state.bank.instanced || {})
+                    .filter(it => it && it.baseItemId === id).length;
+                for (let i = existing; i < 3; i++) {
+                    const inst = GameEngine.createEquipmentInstance
+                        ? GameEngine.createEquipmentInstance(id, def.rarity, def.combatStats || {})
+                        : null;
+                    if (inst && GameEngine.addEquipmentInstance) { GameEngine.addEquipmentInstance(inst); instanced++; }
+                }
+            } else if (GameEngine.addItemToBank) {
+                // Top up to exactly 999 (idempotent — repeated clicks don't balloon stacks)
+                const have = (GameEngine.state.bank.stackable && GameEngine.state.bank.stackable[id]) || 0;
+                if (have < 999) { GameEngine.addItemToBank(id, 999 - have); }
+                stackables++;
+            }
+        }
+
+        // 3.5) Complete all quests up to this point (same tier gate as stocking).
+        const questsCompleted = this.completeMissionsUpToTier(targetTier);
+
+        // 4) Place the player AT the completed region (its onward exit paths are now
+        // discovered, so testing can continue outward from here).
+        GameEngine.state.currentRegion = regionId;
+
+        if (GameEngine.compilePlayerStats) { try { GameEngine.compilePlayerStats(); } catch (e) {} }
+        if (typeof UICore !== 'undefined') UICore.update();
+        this.render();
+
+        const msg = `✅ Completed & stocked up to "${target.name}" (${regionId})\n\n`
+            + `• ${regionsCompleted} regions discovered (nodes, stations, exit paths)\n`
+            + `• ${questsCompleted} quests completed (tier ≤ ${targetTier})\n`
+            + `• ${stackables} resources granted @ 999\n`
+            + `• ${instanced} equipment instances granted (3 each)\n`
+            + `• Navigation set to Lv.${GameEngine.state.skills.navigation.level} (tier ≤ ${targetTier})`;
+        console.log(msg);
+        alert(msg);
+    },
+
+    /**
+     * Dev helper: force-complete every registered mission whose content tier is
+     * at or below the target, bypassing requirement gates and item turn-ins.
+     * Idempotent — missions already in state.missions.completed are skipped, so
+     * repeated clicks don't re-grant rewards.
+     * @param {number} targetTier - Highest mission tier to complete.
+     * @returns {number} Count of missions newly completed this call.
+     */
+    completeMissionsUpToTier(targetTier) {
+        if (typeof MissionRegistry === 'undefined') return 0;
+
+        // Ensure the mission state containers exist (older saves may lack them).
+        const m = GameEngine.state.missions = GameEngine.state.missions || {};
+        m.active = m.active || [];
+        m.available = m.available || [];
+        m.completed = m.completed || [];
+        m.activeProgress = m.activeProgress || {};
+        m.cooldowns = m.cooldowns || {};
+
+        const all = MissionRegistry.getAllActive() || {};
+        let completed = 0;
+
+        for (const id in all) {
+            const mission = all[id];
+            // Skip repeatable/daily missions — they're recurring tasks, not a point
+            // in story progression, and re-granting them each click isn't idempotent.
+            if (mission.repeatable || mission.metadata?.repeatable) continue;
+            // Skip already-completed missions (keeps this idempotent).
+            if (m.completed.includes(id)) continue;
+            if (this.normalizeContentTier(mission.tier) > targetTier) continue;
+
+            // Drop it from the active/available pools and clear any live progress.
+            const ai = m.active.indexOf(id);
+            if (ai > -1) m.active.splice(ai, 1);
+            const vi = m.available.indexOf(id);
+            if (vi > -1) m.available.splice(vi, 1);
+            delete m.activeProgress[id];
+
+            // Record completion (do NOT consume turn-in items — this is a dev skip).
+            m.completed.push(id);
+
+            // Grant the mission's rewards through the real pipeline when available.
+            if (GameEngine.grantMissionRewards) {
+                try { GameEngine.grantMissionRewards(mission, 0); } catch (e) {}
+            }
+            completed++;
+        }
+
+        // Refresh the available list so chained/unlocked missions surface correctly.
+        if (GameEngine.updateAvailableMissions) {
+            try { GameEngine.updateAvailableMissions(); } catch (e) {}
+        }
+
+        return completed;
+    },
+
+    /**
+     * Dev travel: jump the player to a (discovered) region.
+     */
+    devTravelTo(regionId) {
+        if (!GameEngine?.travelToRegion) { console.error('travelToRegion unavailable'); return; }
+        const res = GameEngine.travelToRegion(regionId);
+        if (res && res.success === false) {
+            // Force it: set current region directly if normal travel is blocked
+            GameEngine.state.currentRegion = regionId;
+            console.warn(`Forced current region to ${regionId} (travel said: ${res.reason})`);
+        }
+        if (typeof UICore !== 'undefined') UICore.update();
+        this.render();
     },
 
     /**
@@ -2160,3 +2429,9 @@ document.addEventListener('keydown', (e) => {
         DevModal.close();
     }
 });
+
+// Console shortcut: complete + stock a region and everything prior to it.
+// Usage: devStockRegion('region_-2_-4')
+if (typeof window !== 'undefined') {
+    window.devStockRegion = (regionId) => DevModal.completeAndStockRegion(regionId);
+}

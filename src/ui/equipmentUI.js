@@ -139,20 +139,16 @@ const EquipmentUI = {
         for (let [tabId, tab] of sortedTabs) {
             const isActive = bank.activeTab === tabId;
 
-            // Special handling for medal tab - count from craftedMedals array
-            let itemCount;
-            if (tabId === 'medal') {
-                itemCount = GameEngine.state.craftedMedals?.length || 0;
-            } else {
-                itemCount = GameEngine.getItemsInTab(tabId).length;
-            }
-
+            // Compact category chip: icon + name only (counts dropped so the
+            // full set fits without horizontal spill). Spans match the shared
+            // tab styling used across the other views.
             html += `
                 <button
                     class="bank-tab ${isActive ? 'active' : ''}"
                     onclick="switchBankTab('${tabId}')"
                 >
-                    ${tab.icon} ${tab.name} (${itemCount})
+                    <span class="tab-icon">${tab.icon}</span>
+                    <span class="tab-label">${tab.name}</span>
                 </button>
             `;
         }

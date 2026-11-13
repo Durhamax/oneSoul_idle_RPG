@@ -81,27 +81,21 @@ const MissionsUI = {
 
         this.container.innerHTML = `
             <div class="missions-layout">
-                <!-- Left 2/3: missions flowchart -->
+                <!-- Linked region rail (compact icon strip) -->
+                <aside class="regions-rail">
+                    <div class="regions-rail-track">
+                        ${this.renderRegionsRail(missionsByRegion, state)}
+                    </div>
+                </aside>
+
+                <!-- Missions flowchart -->
                 <div class="missions-flow">
                     <div class="quest-journey">
-                        <header class="journey-header">
-                            <h1>Journey Through Aurora Vitae</h1>
-                            <p>Follow the path of a Unity ranger</p>
-                        </header>
-
                         <div class="journey-regions">
                             ${this.renderAllRegions(missionsByRegion, state)}
                         </div>
                     </div>
                 </div>
-
-                <!-- Right 1/3: linked region flowchart -->
-                <aside class="regions-rail">
-                    <div class="regions-rail-title">Regions</div>
-                    <div class="regions-rail-track">
-                        ${this.renderRegionsRail(missionsByRegion, state)}
-                    </div>
-                </aside>
             </div>
         `;
 
@@ -140,24 +134,13 @@ const MissionsUI = {
             const hasActive = prog.active > 0;
 
             const statusClass = !isUnlocked ? 'locked' : isComplete ? 'complete' : hasActive ? 'active-region' : '';
+            const displayIcon = isUnlocked ? info.icon : '🔒';
 
             return `
-                <div class="region-node ${statusClass}" data-region-target="${regionId}" role="button" tabindex="0">
-                    <div class="region-node-top">
-                        <span class="region-node-icon">${info.icon}</span>
-                        <span class="region-node-name">${info.name}</span>
-                        ${!isUnlocked ? '<span class="region-node-lock">🔒</span>' : ''}
-                    </div>
-                    ${isUnlocked ? `
-                        <div class="region-node-progress">
-                            <div class="region-node-bar">
-                                <div class="region-node-fill" style="width:${prog.percent}%"></div>
-                            </div>
-                            <span class="region-node-count">${prog.completed}/${prog.total || 0}</span>
-                        </div>
-                    ` : `
-                        <div class="region-node-progress muted">Locked</div>
-                    `}
+                <div class="region-node ${statusClass}" data-region-target="${regionId}" role="button" tabindex="0"
+                     title="${info.name}${isUnlocked ? ` — ${prog.completed}/${prog.total || 0}` : ' (Locked)'}">
+                    <span class="region-node-icon">${displayIcon}</span>
+                    ${isUnlocked && prog.total > 0 ? `<span class="region-node-dot" style="--p:${prog.percent}%"></span>` : ''}
                 </div>
                 ${idx < this.REGION_ORDER.length - 1 ? '<div class="region-node-connector"></div>' : ''}
             `;

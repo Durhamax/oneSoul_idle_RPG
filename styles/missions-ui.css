@@ -773,7 +773,9 @@
         padding: 10px 12px;
     }
 
-    .tab-label {
+    /* Scope to mission tabs only — a bare `.tab-label` hid every view's tab
+       names (gather/craft/combat), which must keep their icon + name. */
+    .mission-tab .tab-label {
         display: none;
     }
 

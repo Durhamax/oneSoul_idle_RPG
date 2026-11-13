@@ -265,6 +265,11 @@ const UnifiedCraftingUI = {
 
     onCraftStarted(data) {
         console.log('[UnifiedCraftingUI] Craft started:', data);
+        // Re-render immediately so the active-crafting panel + recipe cards reflect
+        // the newly started craft the instant it begins (starting a craft also stops
+        // any current activity). Without this the panel only updated on the next full
+        // render — i.e. after the previous craft finished — which felt extremely delayed.
+        this.renderCurrentTab();
         CraftQueue.update();
     },
 

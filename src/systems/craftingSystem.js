@@ -468,14 +468,15 @@ const CraftingSystem = {
         // Attribute bonus (simplified)
         const attributeBonus = this.getAttributeSpeedBonus ? this.getAttributeSpeedBonus(skill) : 1;
 
-        // Overweight penalty — carrying over the threshold slows crafting too.
-        let overweight = 1.0;
-        if (typeof CombatTimers !== 'undefined' && typeof GameEngine !== 'undefined') {
-            overweight = CombatTimers.getStateOverweightPenalty(GameEngine.state);
-        }
+        // NOTE: Carry-weight (overweight) does NOT slow crafting. Crafting happens at a
+        // stationary workstation, so the global overweight penalty — which scales up to
+        // 10x and is shared by the movement/field activities (gathering, navigation,
+        // combat) — must not apply here. Including it turned ordinary crafts into
+        // multi-minute waits for any player carrying a lot of loot (the "huge delay"
+        // reported across every crafting skill).
 
         // Calculate final time (minimum 1 second)
-        return Math.max(1000, Math.floor(baseTime * skillBonus * overweight / speedMultiplier / attributeBonus));
+        return Math.max(1000, Math.floor(baseTime * skillBonus / speedMultiplier / attributeBonus));
     },
 
     /**

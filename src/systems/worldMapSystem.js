@@ -205,6 +205,11 @@ const WorldMapSystem = {
      * Generate region name
      */
     getRegionName(q, r, biome, startQ, startR) {
+        // Canon names first: use hand-authored names from WorldRegions when present
+        const regionId = `region_${q}_${r}`;
+        const canon = typeof WorldRegions !== 'undefined' ? WorldRegions[regionId] : null;
+        if (canon && canon.name) return canon.name;
+
         // The Cradle - Starting region
         if (q === startQ && r === startR) return "The Cradle";
 

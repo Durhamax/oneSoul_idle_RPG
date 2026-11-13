@@ -652,7 +652,9 @@ const RecipesTab = {
      */
     refreshRecipes() {
         const content = document.getElementById('crafting-content');
-        if (content && UnifiedCraftingUI.currentTab === 'recipes') {
+        // currentTab is the selected skill (e.g. 'cooking'), never the literal
+        // 'recipes', so the old guard was always false and this never refreshed.
+        if (content && UnifiedCraftingUI.CRAFT_SKILLS.includes(UnifiedCraftingUI.currentTab)) {
             content.innerHTML = this.render(UnifiedCraftingUI.selectedSkill);
         }
     },

@@ -537,28 +537,28 @@ const NavigationUI = {
                 <div class="nav-col nav-col--controls">
                     <!-- Endurance Bar -->
                     <div class="nav-control-block">
-                        <div id="navigationEnduranceLabel" class="nav-control-title">
-                            ${isRecovering ? '💤 Resting' : '💪 Endurance'}
+                        <div class="interval-bar-header">
+                            <span id="navigationEnduranceLabel" class="interval-bar-text">${isRecovering ? '💤 Resting' : '💪 Endurance'}</span>
+                            <span id="navigationHealthText" class="interval-bar-time">${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}</span>
                         </div>
-                        <div class="health-bar" style="margin-bottom: 5px;">
-                            <div class="health-bar-fill" id="navigationHealthBar" style="width: ${endurancePercent}%; background: linear-gradient(90deg, ${isRecovering ? '#FFC107, #FF9800' : '#4caf50, #8bc34a'}); transition: width 0.3s ease-out;"></div>
-                            <div class="health-bar-text" id="navigationHealthText">${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}</div>
+                        <div class="interval-bar-track">
+                            <div class="interval-bar-fill animated" id="navigationHealthBar" style="width: ${endurancePercent}%; background: linear-gradient(90deg, ${isRecovering ? '#FFC107, #FF9800' : '#4caf50, #8bc34a'});"></div>
                         </div>
-                        <div id="navigationEnduranceDesc" class="nav-control-desc">
+                        <div id="navigationEnduranceDesc" class="nav-control-desc" style="margin-top: 6px;">
                             ${isRecovering ? '💤 Recovering endurance (consuming rest resources)' : isNavigating ? '⚡ Draining while exploring' : '🛑 Paused'}
                         </div>
                     </div>
 
                     <!-- Navigation Action Interval Bar -->
                     <div class="nav-control-block">
-                        <div id="navigationIntervalLabel" class="nav-control-title">
-                            ${isRecovering ? '💤 Recovery Mode' : isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action'}
+                        <div class="interval-bar-header">
+                            <span id="navigationIntervalLabel" class="interval-bar-text">${isRecovering ? '💤 Recovery Mode' : isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action'}</span>
+                            <span id="navigationIntervalText" class="interval-bar-time">${isRecovering ? 'Resting' : isNavigating ? '0.0s' : 'Not Exploring'}</span>
                         </div>
-                        <div class="health-bar" style="margin-bottom: 8px;">
-                            <div class="health-bar-fill" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #2196F3, #64B5F6); transition: width 0.3s ease-out;"></div>
-                            <div class="health-bar-text" id="navigationIntervalText">${isRecovering ? 'Resting' : isNavigating ? '0.0s' : 'Not Exploring'}</div>
+                        <div class="interval-bar-track">
+                            <div class="interval-bar-fill animated" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #2196F3, #64B5F6);"></div>
                         </div>
-                        <div id="navigationIntervalDesc" class="nav-control-desc" style="margin-bottom: 8px;">
+                        <div id="navigationIntervalDesc" class="nav-control-desc" style="margin: 8px 0;">
                         ${isRecovering ? 'Resting to recover endurance - Discovery paused' : isNavigating ? `Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)` : 'Click Start Exploring to discover resources and enemies in this region'}
                         </div>
                         <button onclick="${isNavigating ? 'stopNavigating()' : 'startNavigating()'}"

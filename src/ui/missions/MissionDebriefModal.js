@@ -51,8 +51,7 @@ const MissionDebriefModal = {
         overlay.innerHTML = `
             <div class="debrief-modal">
                 <div class="debrief-header">
-                    <div class="debrief-icon">🏆</div>
-                    <h2>Mission Complete!</h2>
+                    <h2><span class="debrief-icon">🏆</span> Mission Complete!</h2>
                     <div class="debrief-mission-name">${mission.name}</div>
                 </div>
 

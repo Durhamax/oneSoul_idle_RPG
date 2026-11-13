@@ -59,106 +59,75 @@ const RegionModal = {
         const canTravel = GameEngine.canTravelToRegion ? GameEngine.canTravelToRegion(this.currentRegionId) : false;
         const meetsNavReq = GameEngine.state.skills.navigation.level >= hexDef.navigationRequirement;
 
-        let html = `
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div>
-                    <h2 style="margin: 0; color: ${biomeDef.color};">${hexDef.icon} ${hexDef.name}</h2>
-                    <p style="margin: 5px 0 0 0; color: #888; font-size: 0.9em;">${biomeDef.name} Biome</p>
+        // Guard against a missing icon rendering the literal string "undefined".
+        const icon = (hexDef.icon && hexDef.icon !== 'undefined') ? hexDef.icon : '📍';
+        const biomeColor = biomeDef?.color || 'var(--color-primary, #4a9eff)';
+
+        let actionsHtml;
+        if (isCurrentRegion) {
+            actionsHtml = `
+                <div class="rm-here">📍 You are here</div>
+                <button class="rm-btn rm-btn--navigate" onclick="RegionModal.startNavigating()">🧭 Start Navigating</button>
+            `;
+        } else if (canTravel) {
+            actionsHtml = `
+                <button class="rm-btn rm-btn--travel" onclick="RegionModal.travelToRegion('${this.currentRegionId}')">🗺️ Travel Here</button>
+                ${meetsNavReq ? `
+                <button class="rm-btn rm-btn--go" onclick="RegionModal.travelAndNavigate('${this.currentRegionId}')">🧭 Travel & Navigate</button>
+                ` : ''}
+            `;
+        } else if (!meetsNavReq) {
+            actionsHtml = `<div class="rm-locked">🔒 Requires Navigation Level ${hexDef.navigationRequirement}</div>`;
+        } else {
+            actionsHtml = `<div class="rm-locked rm-locked--warn">🔒 Path not discovered yet</div>`;
+        }
+
+        container.innerHTML = `
+            <div class="rm-head" style="--biome-color: ${biomeColor};">
+                <div class="rm-head-main">
+                    <h2 class="rm-title">${icon} ${hexDef.name}</h2>
+                    <p class="rm-biome">${biomeDef?.name || 'Unknown'} Biome</p>
                 </div>
-                <button class="modal-close" onclick="RegionModal.close()" style="background: none; border: none; font-size: 2em; cursor: pointer; color: #888;">&times;</button>
+                <button class="rm-close" onclick="RegionModal.close()" aria-label="Close">&times;</button>
             </div>
 
-            <div style="display: grid; gap: 15px;">
-                <!-- Region Info -->
-                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
-                    <h3 style="margin: 0 0 10px 0; color: #4a9eff;">📍 Region Information</h3>
-                    <div style="display: grid; gap: 8px;">
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #aaa;">Coordinates:</span>
-                            <span style="color: #fff; font-family: monospace;">${this.currentRegionId}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #aaa;">Navigation Req:</span>
-                            <span style="color: ${meetsNavReq ? '#4caf50' : '#f44336'};">Level ${hexDef.navigationRequirement}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #aaa;">Complication:</span>
-                            <span style="color: #ff9800;">${hexDef.complication}x</span>
-                        </div>
-                        ${regionState ? `
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #aaa;">Discovery:</span>
-                            <span style="color: #4caf50;">${regionState.discoveryProgress.toFixed(1)}%</span>
-                        </div>
-                        ` : ''}
+            <div class="rm-body">
+                <section class="rm-section">
+                    <h3 class="rm-section-title">Region Information</h3>
+                    <div class="rm-rows">
+                        <div class="rm-row"><span class="rm-k">Coordinates</span><span class="rm-v rm-mono">${this.currentRegionId}</span></div>
+                        <div class="rm-row"><span class="rm-k">Navigation Req</span><span class="rm-v ${meetsNavReq ? 'is-ok' : 'is-bad'}">Level ${hexDef.navigationRequirement}</span></div>
+                        <div class="rm-row"><span class="rm-k">Complication</span><span class="rm-v is-warn">${hexDef.complication}x</span></div>
+                        ${regionState ? `<div class="rm-row"><span class="rm-k">Discovery</span><span class="rm-v is-ok">${regionState.discoveryProgress.toFixed(1)}%</span></div>` : ''}
                     </div>
-                </div>
+                </section>
 
-                <!-- Region Actions -->
-                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
-                    ${isCurrentRegion ? `
-                        <div style="color: #4caf50; font-size: 1.1em; text-align: center; margin-bottom: 12px;">
-                            📍 You are here
-                        </div>
-                        <button onclick="RegionModal.startNavigating()"
-                                class="action-btn"
-                                style="width: 100%; padding: 12px; background: linear-gradient(135deg, #ff9800, #f57c00); border: none; border-radius: 6px; color: white; font-size: 1em; cursor: pointer; font-weight: bold; margin-bottom: 8px;">
-                            🧭 Start Navigating
-                        </button>
-                    ` : canTravel ? `
-                        <button onclick="RegionModal.travelToRegion('${this.currentRegionId}')"
-                                class="action-btn"
-                                style="width: 100%; padding: 12px; background: linear-gradient(135deg, #4a9eff, #357abd); border: none; border-radius: 6px; color: white; font-size: 1em; cursor: pointer; font-weight: bold; margin-bottom: 8px;">
-                            🗺️ Travel Here
-                        </button>
-                        ${meetsNavReq ? `
-                        <button onclick="RegionModal.travelAndNavigate('${this.currentRegionId}')"
-                                class="action-btn"
-                                style="width: 100%; padding: 12px; background: linear-gradient(135deg, #66bb6a, #43a047); border: none; border-radius: 6px; color: white; font-size: 1em; cursor: pointer; font-weight: bold;">
-                            🧭 Travel & Navigate
-                        </button>
-                        ` : ''}
-                    ` : !meetsNavReq ? `
-                        <div style="color: #f44336; text-align: center;">
-                            🔒 Requires Navigation Level ${hexDef.navigationRequirement}
-                        </div>
-                    ` : `
-                        <div style="color: #ff9800; text-align: center;">
-                            🔒 Path not discovered yet
-                        </div>
-                    `}
-                </div>
+                <section class="rm-section rm-actions">${actionsHtml}</section>
 
-                <!-- Region Content -->
-                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
-                    <h3 style="margin: 0 0 10px 0; color: #4a9eff;">📍 Regional Content</h3>
-                    <div style="display: grid; gap: 15px;">
+                <section class="rm-section">
+                    <h3 class="rm-section-title">Regional Content</h3>
+                    <div class="rm-groups">
                         ${this.renderRegionNodes(hexDef)}
                         ${this.renderRegionEnemies(hexDef)}
                         ${this.renderRegionMissions(hexDef)}
                         ${regionState ? `
-                            <div style="border-top: 1px solid #444; padding-top: 10px;">
-                                <h4 style="margin: 0 0 8px 0; color: #4caf50; font-size: 0.9em;">✨ Your Discoveries Here</h4>
+                            <div class="rm-subgroup">
+                                <h4 class="rm-sub-title is-ok">✨ Your Discoveries Here</h4>
                                 ${this.renderDiscoveredNodes(this.currentRegionId)}
                                 ${this.renderDiscoveredEnemies(this.currentRegionId)}
                             </div>
                         ` : ''}
                     </div>
-                </div>
+                </section>
 
-                <!-- Adjacent Regions -->
                 ${hexDef.adjacent ? `
-                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
-                    <h3 style="margin: 0 0 10px 0; color: #4a9eff;">🧭 Adjacent Regions</h3>
-                    <div style="display: grid; gap: 8px;">
-                        ${this.renderAdjacentRegions(hexDef.adjacent, regionState)}
-                    </div>
-                </div>
+                <section class="rm-section">
+                    <h3 class="rm-section-title">Adjacent Regions</h3>
+                    <div class="rm-rows">${this.renderAdjacentRegions(hexDef.adjacent, regionState)}</div>
+                </section>
                 ` : ''}
             </div>
         `;
-
-        container.innerHTML = html;
     },
 
     /**
@@ -166,21 +135,16 @@ const RegionModal = {
      */
     renderRegionNodes(hexDef) {
         if (!hexDef.discoverableNodes || hexDef.discoverableNodes.length === 0) {
-            return '<div style="color: #666; font-size: 0.85em;">No resource nodes in this region</div>';
+            return '<div class="rm-empty">No resource nodes in this region</div>';
         }
 
-        let html = '<div><h4 style="margin: 0 0 5px 0; color: #4caf50; font-size: 0.9em;">🌿 Resource Nodes (' + hexDef.discoverableNodes.length + ')</h4>';
-        html += '<div style="display: flex; flex-wrap: wrap; gap: 4px;">';
+        let html = '<div class="rm-group"><h4 class="rm-sub-title is-ok">🌿 Resource Nodes (' + hexDef.discoverableNodes.length + ')</h4><div class="rm-tags">';
 
         for (let nodeId of hexDef.discoverableNodes) {
             const nodeDef = GameEngine.definitions.resourceNodes[nodeId];
             if (!nodeDef) continue;
 
-            html += `
-                <span style="background: rgba(76,175,80,0.2); padding: 3px 8px; border-radius: 3px; font-size: 0.75em; border: 1px solid #4caf50;">
-                    ${nodeDef.image} ${nodeDef.name}
-                </span>
-            `;
+            html += `<span class="rm-tag rm-tag--node">${nodeDef.image || ''} ${nodeDef.name}</span>`;
         }
 
         html += '</div></div>';
@@ -192,21 +156,16 @@ const RegionModal = {
      */
     renderRegionEnemies(hexDef) {
         if (!hexDef.discoverableEnemies || hexDef.discoverableEnemies.length === 0) {
-            return '<div style="color: #666; font-size: 0.85em;">No enemies in this region</div>';
+            return '<div class="rm-empty">No enemies in this region</div>';
         }
 
-        let html = '<div><h4 style="margin: 0 0 5px 0; color: #f44336; font-size: 0.9em;">⚔️ Enemies (' + hexDef.discoverableEnemies.length + ')</h4>';
-        html += '<div style="display: flex; flex-wrap: wrap; gap: 4px;">';
+        let html = '<div class="rm-group"><h4 class="rm-sub-title is-bad">⚔️ Enemies (' + hexDef.discoverableEnemies.length + ')</h4><div class="rm-tags">';
 
         for (let enemyId of hexDef.discoverableEnemies) {
             const enemyDef = GameEngine.definitions.enemies[enemyId];
             if (!enemyDef) continue;
 
-            html += `
-                <span style="background: rgba(244,67,54,0.2); padding: 3px 8px; border-radius: 3px; font-size: 0.75em; border: 1px solid #f44336;">
-                    ${enemyDef.image} ${enemyDef.name}
-                </span>
-            `;
+            html += `<span class="rm-tag rm-tag--enemy">${enemyDef.image || ''} ${enemyDef.name}</span>`;
         }
 
         html += '</div></div>';
@@ -218,11 +177,10 @@ const RegionModal = {
      */
     renderRegionMissions(hexDef) {
         if (!hexDef.availableMissions || hexDef.availableMissions.length === 0) {
-            return '<div style="color: #666; font-size: 0.85em;">No missions in this region</div>';
+            return '<div class="rm-empty">No missions in this region</div>';
         }
 
-        let html = '<div><h4 style="margin: 0 0 5px 0; color: #ff9800; font-size: 0.9em;">📜 Missions (' + hexDef.availableMissions.length + ')</h4>';
-        html += '<div style="display: grid; gap: 4px;">';
+        let html = '<div class="rm-group"><h4 class="rm-sub-title is-warn">📜 Missions (' + hexDef.availableMissions.length + ')</h4><div class="rm-mission-list">';
 
         for (let missionId of hexDef.availableMissions) {
             const missionDef = GameEngine.definitions.missions[missionId];
@@ -230,13 +188,12 @@ const RegionModal = {
 
             const isCompleted = GameEngine.state.missions.completed && GameEngine.state.missions.completed.includes(missionId);
             const isActive = GameEngine.state.missions.active && GameEngine.state.missions.active.includes(missionId);
+            const statusCls = isCompleted ? 'is-ok' : isActive ? 'is-active' : 'is-muted';
 
             html += `
-                <div style="background: rgba(255,152,0,0.1); padding: 6px 10px; border-radius: 4px; border: 1px solid #ff9800; font-size: 0.8em; display: flex; justify-content: space-between; align-items: center;">
+                <div class="rm-mission">
                     <span>${missionDef.name}</span>
-                    <span style="color: ${isCompleted ? '#4caf50' : isActive ? '#2196f3' : '#888'};">
-                        ${isCompleted ? '✓ Complete' : isActive ? '⏳ Active' : '○ Available'}
-                    </span>
+                    <span class="rm-mission-status ${statusCls}">${isCompleted ? '✓ Complete' : isActive ? '⏳ Active' : '○ Available'}</span>
                 </div>
             `;
         }
@@ -267,17 +224,16 @@ const RegionModal = {
         }
 
         if (nodesInRegion.length === 0) {
-            return '<div style="color: #666; font-style: italic;">No resource nodes discovered yet</div>';
+            return '<div class="rm-empty">No resource nodes discovered yet</div>';
         }
 
-        let html = '<div style="color: #aaa; font-size: 0.9em; margin-bottom: 5px;">Resource Nodes:</div>';
-        html += '<div style="display: grid; gap: 5px;">';
+        let html = '<div class="rm-disc-label">Resource Nodes</div><div class="rm-disc-list">';
 
         for (let node of nodesInRegion) {
             html += `
-                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
-                    <span style="color: #fff;">${node.def.image} ${node.def.name}</span>
-                    <span style="color: #4caf50; font-size: 0.85em;">+${node.bonus} health</span>
+                <div class="rm-disc-row">
+                    <span>${node.def.image || ''} ${node.def.name}</span>
+                    <span class="is-ok">+${node.bonus} health</span>
                 </div>
             `;
         }
@@ -308,17 +264,16 @@ const RegionModal = {
         }
 
         if (enemiesInRegion.length === 0) {
-            return '<div style="color: #666; font-style: italic; margin-top: 10px;">No enemies discovered yet</div>';
+            return '<div class="rm-empty">No enemies discovered yet</div>';
         }
 
-        let html = '<div style="color: #aaa; font-size: 0.9em; margin: 10px 0 5px 0;">Enemies:</div>';
-        html += '<div style="display: grid; gap: 5px;">';
+        let html = '<div class="rm-disc-label">Enemies</div><div class="rm-disc-list">';
 
         for (let enemy of enemiesInRegion) {
             html += `
-                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
-                    <span style="color: #fff;">${enemy.def.image} ${enemy.def.name}</span>
-                    <span style="color: #4caf50; font-size: 0.85em;">+${enemy.bonus} health</span>
+                <div class="rm-disc-row">
+                    <span>${enemy.def.image || ''} ${enemy.def.name}</span>
+                    <span class="is-ok">+${enemy.bonus} health</span>
                 </div>
             `;
         }
@@ -342,11 +297,9 @@ const RegionModal = {
             const isDiscovered = regionState && regionState.discoveredExitPaths && regionState.discoveredExitPaths.includes(adjacentId);
 
             html += `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
-                    <span style="color: #aaa;">${direction}:</span>
-                    <span style="color: ${isDiscovered ? '#4caf50' : '#666'};">
-                        ${isDiscovered ? '✓' : '🔒'} ${adjacentHex.name}
-                    </span>
+                <div class="rm-row rm-adjacent">
+                    <span class="rm-k">${direction}</span>
+                    <span class="rm-v ${isDiscovered ? 'is-ok' : 'is-muted'}">${isDiscovered ? '✓' : '🔒'} ${adjacentHex.name}</span>
                 </div>
             `;
         }

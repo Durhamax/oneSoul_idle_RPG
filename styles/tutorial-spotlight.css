@@ -617,16 +617,16 @@
 .debrief-modal {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     border: 2px solid #4caf50;
-    border-radius: 16px;
-    padding: 32px;
-    max-width: 560px;
-    width: 90%;
-    max-height: 85vh;
+    border-radius: 14px;
+    padding: 16px 16px 18px;
+    max-width: 400px;
+    width: calc(100% - 28px);
+    max-height: calc(100dvh - var(--topbar-h, 52px) - var(--ribbon-h, 64px) - var(--levelbar-h, 30px) - var(--safe-top, 0px) - var(--safe-bottom, 0px) - 24px);
     overflow-y: auto;
     box-shadow:
-        0 0 60px rgba(76, 175, 80, 0.3),
-        0 20px 60px rgba(0, 0, 0, 0.5);
-    animation: modalSlideIn 0.5s ease;
+        0 0 40px rgba(76, 175, 80, 0.25),
+        0 16px 40px rgba(0, 0, 0, 0.5);
+    animation: modalSlideIn 0.4s ease;
 }
 
 /* Custom scrollbar for debrief modal */
@@ -650,46 +650,48 @@
 
 .debrief-header {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 14px;
 }
 
 .debrief-icon {
-    font-size: 4em;
-    display: block;
-    margin-bottom: 8px;
+    font-size: 1.3em;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 2px;
     animation: bounce 0.6s ease;
 }
 
 @keyframes bounce {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-4px); }
 }
 
 .debrief-header h2 {
     color: #4caf50;
-    font-size: 1.8em;
-    margin: 0 0 8px 0;
-    text-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+    font-size: 1.3em;
+    margin: 0 0 4px 0;
+    text-shadow: 0 0 16px rgba(76, 175, 80, 0.5);
 }
 
 .debrief-mission-name {
     color: #fff;
-    font-size: 1.1em;
+    font-size: 0.95em;
     opacity: 0.9;
 }
 
 .debrief-npc {
     display: flex;
-    gap: 16px;
+    align-items: center;
+    gap: 10px;
     background: rgba(0, 0, 0, 0.3);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 24px;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
     border: 1px solid rgba(76, 175, 80, 0.2);
 }
 
 .debrief-npc .npc-avatar {
-    font-size: 3em;
+    font-size: 1.8em;
     flex-shrink: 0;
 }
 
@@ -700,25 +702,27 @@
 .debrief-npc .npc-name {
     color: #4caf50;
     font-weight: 600;
-    margin-bottom: 6px;
+    font-size: 0.9em;
+    margin-bottom: 3px;
 }
 
 .debrief-npc .npc-dialogue p {
     color: #aaa;
     font-style: italic;
-    line-height: 1.5;
+    font-size: 0.82em;
+    line-height: 1.4;
     margin: 0;
 }
 
 .debrief-rewards {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .debrief-rewards h3 {
     color: #fff;
-    font-size: 1em;
-    margin: 0 0 12px 0;
-    padding-bottom: 8px;
+    font-size: 0.85em;
+    margin: 0 0 8px 0;
+    padding-bottom: 6px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -733,8 +737,8 @@
 .reward-currency {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
+    gap: 6px;
+    padding: 6px 10px;
     background: rgba(76, 175, 80, 0.1);
     border-radius: 8px;
     border: 1px solid rgba(76, 175, 80, 0.2);
@@ -776,7 +780,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 12px 8px;
+    padding: 8px 6px;
     background: rgba(76, 175, 80, 0.1);
     border-radius: 8px;
     border: 1px solid rgba(76, 175, 80, 0.3);
@@ -794,8 +798,8 @@
 .reward-item-card:nth-child(8) { animation-delay: 0.45s; }
 
 .reward-item-card .item-icon {
-    font-size: 2em;
-    margin-bottom: 6px;
+    font-size: 1.5em;
+    margin-bottom: 4px;
 }
 
 .reward-item-card .item-name {
@@ -908,8 +912,8 @@
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-bottom: 20px;
-    padding: 10px;
+    margin-bottom: 14px;
+    padding: 7px 10px;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
 }
@@ -931,9 +935,9 @@
 }
 
 .debrief-btn {
-    padding: 14px 40px;
+    padding: 11px 32px;
     border-radius: 8px;
-    font-size: 1em;
+    font-size: 0.95em;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
@@ -950,19 +954,8 @@
     box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
-/* Responsive */
-@media (max-width: 640px) {
-    .debrief-modal {
-        padding: 24px;
-        margin: 16px;
-    }
-
-    .debrief-header h2 {
-        font-size: 1.4em;
-    }
-
-    .debrief-npc {
-        flex-direction: column;
-        text-align: center;
-    }
+/* Keep item reward icons from blowing out the compact card */
+.reward-item-card .item-icon img {
+    max-width: 32px;
+    max-height: 32px;
 }

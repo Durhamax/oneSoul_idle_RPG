@@ -6,6 +6,7 @@
    ===================================================================== */
 
 :root {
+    --app-width: 430px;   /* the one play-view width; phones fill it, desktop centers it */
     --topbar-h: 52px;
     --levelbar-h: 30px;
     --ribbon-h: 64px;
@@ -116,41 +117,61 @@
 /* dashboard grid was capped to the old sidebar width; free it on mobile */
 .dashboard-grid { max-width: 100% !important; }
 
-/* ---------- Character hub sub-tabs (Items · Loadout · Missions · Perks) ---------- */
+/* game-ui.css reserves 40px at the top of every view for an old desktop header;
+   the fixed top ribbon already handles that, so trim it to a small gap. */
+.view { padding-top: 12px; }
+
+/* ---------- Character hub sub-tabs — LEVEL 2 nav (Items · Loadout · Missions · Perks) ----------
+   A full-width bar flush under the top ribbon, mirroring the bottom ribbon:
+   a 50%-transparent container with flat, borderless icon-over-label buttons
+   that show no box at rest and light up (colour + icon glow) only when active. */
 .character-subtabs {
     position: sticky;
     top: calc(var(--topbar-h) + var(--safe-top));
     display: flex;
-    gap: 4px;
-    padding: 6px 8px;
-    background: var(--color-bg-glass);
-    backdrop-filter: blur(var(--blur-sm));
-    -webkit-backdrop-filter: blur(var(--blur-sm));
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    background: rgba(20, 20, 30, 0.5);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
     border-bottom: 1px solid var(--color-border-accent);
     z-index: 50;
 }
 .character-subtab {
     flex: 1;
     min-width: 0;
-    padding: 8px 2px;
-    background: var(--color-bg-tertiary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 7px 4px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
     color: var(--color-text-tertiary);
-    font-family: var(--font-display);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-    text-transform: uppercase;
-    letter-spacing: 0;
     cursor: pointer;
+    transition: color var(--transition-base), background var(--transition-base);
+}
+.character-subtab:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text-secondary);
+}
+.character-subtab .subtab-icon { font-size: 20px; line-height: 1; }
+.character-subtab .subtab-label {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 .character-subtab.active {
-    background: rgba(52, 152, 219, 0.15);
-    border-color: var(--color-primary);
     color: var(--color-primary);
+}
+.character-subtab.active .subtab-icon {
+    filter: drop-shadow(0 0 8px var(--color-primary-glow));
 }
 
 /* ---------- Level bar (slim; tap to Overview) ---------- */
@@ -306,19 +327,210 @@
 .ribbon-item.active { color: var(--color-primary); }
 .ribbon-item.active .ribbon-icon { filter: drop-shadow(0 0 8px var(--color-primary-glow)); }
 
-/* ---------- Desktop: keep the mobile shell, center it as a canvas ---------- */
-@media (min-width: 768px) {
-    .topbar,
-    .levelbar,
-    .ribbon,
-    .character-subtabs {
-        max-width: 720px;
-        margin-inline: auto;
-    }
-    .main-content {
-        max-width: 720px;
-        margin-inline: auto !important;
-    }
+/* ---------- One column, always ----------
+   This is a mobile game. There is no separate desktop layout: the play view
+   is a single phone-width column (--app-width), full-width on real phones and
+   centered over the background on anything wider. No breakpoint to reason about. */
+.topbar,
+.levelbar,
+.ribbon {
+    max-width: var(--app-width);
+    margin-inline: auto;
+}
+.main-content {
+    max-width: var(--app-width);
+    margin-inline: auto !important;
+}
+
+/* =====================================================================
+   UNIFIED IN-VIEW TABS — one design for every view's top tabs
+   Combat, Items, Gather and Craft each had their own tab bar; they now all use
+   identical compact icon + name chips. The chips WRAP (centered) to a couple of
+   rows rather than scrolling off the right edge, so the full set is always
+   visible without a hidden horizontal scroll.
+   CSS-only: targets each view's existing tab classes so no JS changes needed.
+   (gather's container/tab also carry .crafting-tabs/.crafting-tab.)
+   ===================================================================== */
+.bank-tabs,
+.crafting-tabs,
+.gather-skill-tabs,
+.combat-tab-bar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center;
+    align-items: stretch;
+    gap: 2px;
+    row-gap: 1px;
+    width: 100%;
+    margin: 0 0 4px !important;
+    padding: 3px 8px 4px !important;
+    overflow-x: visible;
+    border-bottom: 1px solid var(--color-border-accent);
+}
+
+/* The chip itself — identical across every view */
+.bank-tab,
+.crafting-tab,
+.gather-skill-tab,
+.combat-tab {
+    flex: 0 0 auto;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+    min-height: 28px;
+    padding: 3px 10px !important;
+    background: rgba(26, 26, 40, 0.5);
+    border: 1px solid var(--color-border) !important;
+    border-radius: var(--radius-sm) !important;
+    color: #a0a0b4;
+    font-family: var(--font-display);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+.bank-tab.active,
+.crafting-tab.active,
+.gather-skill-tab.active,
+.combat-tab.active {
+    background: rgba(52, 152, 219, 0.15);
+    border-color: var(--color-primary) !important;
+    color: var(--color-primary);
+}
+.combat-tab.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* Icon + name + optional small meta inside each chip */
+.crafting-tab .tab-icon,
+.gather-skill-tab .tab-icon,
+.combat-tab .tab-icon { font-size: 17px; line-height: 1; margin: 0 !important; }
+.crafting-tab .tab-label,
+.gather-skill-tab .tab-label,
+.combat-tab .tab-label {
+    display: inline-block !important;   /* some views hid labels at mobile width */
+    font-size: 12px;
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    margin: 0 !important;
+}
+/* Drop the Lv.XX from the chips — keeps them to icon + name so they wrap to a
+   couple of rows instead of 3-4. The active skill's level still shows below. */
+.crafting-tab .tab-level,
+.gather-skill-tab .tab-level {
+    display: none !important;
+}
+/* No badges on these chips. */
+.crafting-tab .tab-badge,
+.gather-skill-tab .tab-badge {
+    display: none !important;
+}
+
+/* Gather & Craft: a clean 3-across grid, tucked up tight to the top ribbon
+   (equal-width icon + name chips in tidy rows). */
+.crafting-tabs,
+.gather-skill-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    row-gap: 1px;
+    padding: 2px 8px 3px !important;
+    margin: 0 0 3px !important;
+}
+/* The old vertical divider would eat a grid cell and offset the tabs. */
+.crafting-tabs-divider { display: none !important; }
+.crafting-tabs .crafting-tab,
+.gather-skill-tabs .gather-skill-tab {
+    display: flex !important;        /* fill the grid cell, centre the content */
+    justify-content: center;
+    width: auto;
+    min-height: 29px;
+    gap: 3px;
+    padding: 4px 5px !important;
+    overflow: hidden;               /* guard long names from spilling the cell */
+}
+/* Smaller text/icon so the longest names (Electronics, Engineering) fit a third-width chip */
+.crafting-tabs .crafting-tab .tab-icon,
+.gather-skill-tabs .gather-skill-tab .tab-icon { font-size: 15px; }
+.crafting-tabs .crafting-tab .tab-label,
+.gather-skill-tabs .gather-skill-tab .tab-label {
+    font-size: 10px;
+    letter-spacing: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#view-gather,
+#view-crafting { padding-top: 4px !important; }
+
+/* ---- Items view (LEVEL 3): category chips are unique — the full set must be
+   reachable, so they wrap to ~2 rows (centered) rather than scrolling off the
+   edge, and they're more compact (icon + short name, counts already dropped). */
+#view-bank .bank-tabs {
+    flex-wrap: wrap !important;
+    justify-content: center;
+    overflow-x: visible;
+    gap: 2px;
+    row-gap: 1px;
+    padding: 3px 6px 4px !important;
+}
+#view-bank .bank-tab {
+    min-height: 24px;
+    gap: 3px;
+    padding: 3px 8px !important;
+}
+#view-bank .bank-tab .tab-icon { font-size: 14px; line-height: 1; }
+#view-bank .bank-tab .tab-label {
+    font-size: 10px;
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0;
+}
+
+/* ---- Items grid: smaller, denser tiles so more items fit the play view.
+   Drops to 4 columns on a phone (~15-20% smaller tiles), icon scales down with
+   them, the name may wrap to two lines, and the quantity is smaller and tucked
+   right under the name instead of being pushed to the tile's bottom. */
+#bankGrid {
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)) !important;
+    gap: 6px !important;
+    padding: 8px 4px 10px 0 !important;
+}
+#bankGrid .item-card {
+    min-height: 0 !important;
+    padding: 6px 4px !important;
+}
+#bankGrid .item-card-content {
+    gap: 1px;
+    justify-content: flex-start;
+}
+#bankGrid .item-card-icon {
+    flex: 0 0 auto !important;
+    min-height: 28px !important;
+    margin-bottom: 1px !important;
+}
+#bankGrid .item-card-icon img {
+    max-width: 28px !important;
+    max-height: 28px !important;
+}
+#bankGrid .item-card-name {
+    font-size: 9px !important;
+    letter-spacing: 0.2px !important;
+    line-height: 1.1;
+    white-space: normal !important;        /* allow wrapping... */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;                 /* ...to at most two lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0 !important;
+}
+#bankGrid .item-card-quantity {
+    font-size: 10px !important;            /* smaller qty */
+    margin-top: 1px !important;            /* close to the name, not bottom-pinned */
 }
 
 /* =====================================================================
@@ -390,3 +602,436 @@
     }
 }
 
+/* ============================================================
+   GATHER + CRAFT — mobile tightening & cross-view consistency
+   One block so both views share the same compact treatment.
+   ============================================================ */
+
+/* Containers: trim the generous desktop padding/gaps */
+.gather-ui-container,
+.crafting-ui-container {
+    padding: 8px !important;
+    gap: 8px !important;
+}
+.gather-content { padding-right: 0 !important; gap: 8px !important; }
+.crafting-content { padding-right: 0 !important; }
+
+/* Session Loot / Session Output side panels add no value on a phone — drop them */
+.gather-sidebar,
+.craft-queue-sidebar { display: none !important; }
+
+/* ---- Empty active-panel states: trim the oversized placeholder ---- */
+.gather-active-empty,
+.craft-active-empty {
+    padding: 14px !important;
+    margin-bottom: 8px !important;
+}
+.gather-active-empty .empty-icon,
+.craft-active-empty .empty-icon { font-size: 1.6rem !important; margin-bottom: 4px !important; }
+.gather-active-empty .empty-text,
+.craft-active-empty .empty-text { font-size: 0.9rem !important; }
+.gather-active-empty .empty-hint,
+.craft-active-empty .empty-hint { font-size: 0.75rem !important; }
+
+/* ---- Active gathering / crafting panel ---- */
+.gather-active-panel,
+.craft-active-panel {
+    padding: 10px 12px !important;
+    border-radius: var(--radius-md) !important;
+}
+.gather-active-header,
+.craft-active-header { margin-bottom: 8px !important; }
+.gather-active-info,
+.craft-active-info { gap: 0.55rem !important; }
+.gather-node-icon,
+.craft-recipe-icon { font-size: 1.6rem !important; }
+.gather-node-name,
+.craft-recipe-name { font-size: 0.95rem !important; }
+.gather-node-meta,
+.craft-recipe-meta { font-size: 0.72rem !important; line-height: 1.25; }
+.btn-stop-gather,
+.btn-stop-craft { padding: 6px 12px !important; font-size: 0.8rem !important; }
+.gather-nodehealth { margin-top: 8px !important; }
+.gather-nodehealth-track { height: 10px !important; }
+#gather-interval-bar,
+#craft-interval-bar { margin-bottom: 8px !important; }
+
+/* ---- Skill header: stacked — title, full-width progress, modifiers beneath ---- */
+.skill-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+    padding: 8px 10px !important;
+    margin-bottom: 8px !important;
+}
+.skill-header-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    width: 100%;
+}
+.skill-header-title { font-size: 0.95rem !important; }
+/* gather XP progress bar now spans the full width */
+.skill-header-xp {
+    margin-left: 0 !important;
+    max-width: none !important;
+    width: 100%;
+    gap: 8px !important;
+}
+.skill-xp-bar { height: 7px !important; }
+/* modifiers drop to their own horizontal row under the bar */
+.skill-header-bonuses,
+.skill-header-benefits {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 5px !important;
+    width: 100%;
+}
+.bonus-tag,
+.benefit-tag { padding: 2px 7px !important; font-size: 0.68rem !important; }
+
+/* ---- Node / recipe grids: single column, tighter gaps ---- */
+.gather-nodes-grid,
+.recipe-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+}
+
+/* ---- Node / recipe selection cards ---- */
+.node-card,
+.recipe-card {
+    padding: 10px !important;
+    border-radius: var(--radius-md) !important;
+}
+.node-card-header,
+.recipe-card-header { gap: 0.5rem !important; margin-bottom: 0.5rem !important; }
+.node-icon,
+.recipe-icon { font-size: 1.5rem !important; }
+.node-name,
+.recipe-name { font-size: 0.9rem !important; }
+.node-desc,
+.recipe-description { font-size: 0.72rem !important; margin-bottom: 0.5rem !important; }
+.node-health,
+.node-resources,
+.node-stats { margin-bottom: 0.5rem !important; }
+.node-resources { padding: 0.4rem !important; min-height: 0 !important; }
+.node-stats { gap: 0.35rem !important; }
+.node-stat { padding: 0.35rem !important; }
+.node-action-btn { padding: 0.5rem !important; }
+.recipe-materials { margin-bottom: 0.5rem !important; padding: 0.4rem !important; }
+.recipe-footer { padding-top: 0.5rem !important; }
+
+/* =========================================================
+   POPUP MODALS — respect the mobile play-column width
+   Any .modal-content popup is capped to the play column (the narrower of
+   --app-width and the viewport, minus side gutters) and centered, so no
+   modal spills past the edges of the mobile game view. Per-modal blocks
+   below (e.g. #regionModal) refine positioning further; this is the floor.
+   ========================================================= */
+.modal-content {
+    max-width: calc(min(var(--app-width, 430px), 100%) - 40px) !important;
+    margin-inline: auto !important;
+    box-sizing: border-box !important;
+}
+
+/* =========================================================
+   NAVIGATION — REGION MODAL
+   Compact, theme-consistent, and bounded to the play column so it
+   never spills over the fixed top bar or bottom ribbon.
+   ========================================================= */
+#regionModal { background-color: rgba(0, 0, 0, 0.72); }
+
+#regionModal .modal-content {
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: calc(var(--topbar-h, 52px) + var(--safe-top, 0px) + 8px) !important;
+    /* Match the actual play-column width: the narrower of the app width and the
+       real viewport, minus the column's own side gutters. On a phone-width pane
+       this resolves to the view width (never the full viewport), so the modal
+       sits inside the mobile game view instead of spilling past its edges. */
+    width: calc(min(var(--app-width, 430px), 100%) - 40px) !important;
+    max-width: none !important;
+    max-height: calc(100dvh - var(--topbar-h, 52px) - var(--safe-top, 0px) - var(--ribbon-h, 64px) - var(--levelbar-h, 30px) - var(--safe-bottom, 0px) - 16px) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-y: auto;
+    background: var(--color-bg-glass, rgba(20, 20, 30, 0.96)) !important;
+    border: 1px solid var(--color-border-accent, rgba(52, 152, 219, 0.3)) !important;
+    border-radius: var(--radius-lg, 12px) !important;
+    backdrop-filter: blur(var(--blur-md, 15px));
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+/* Header — glass bar with a thin biome-coloured accent, title stays readable */
+#regionModal .rm-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 11px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+    border-left: 3px solid var(--biome-color, var(--color-primary, #4a9eff));
+    border-radius: var(--radius-lg, 12px) var(--radius-lg, 12px) 0 0;
+    backdrop-filter: blur(var(--blur-md, 15px));
+}
+#regionModal .rm-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-text-primary, #fff);
+    line-height: 1.2;
+}
+#regionModal .rm-biome {
+    margin: 3px 0 0;
+    font-size: 0.72rem;
+    color: var(--color-text-tertiary, #888);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+#regionModal .rm-biome::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--biome-color, var(--color-primary, #4a9eff));
+    flex: 0 0 auto;
+}
+#regionModal .rm-close {
+    background: none;
+    border: none;
+    color: var(--color-text-tertiary, #888);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    flex: 0 0 auto;
+}
+#regionModal .rm-close:hover { color: var(--color-text-primary, #fff); }
+
+/* Body + sections */
+#regionModal .rm-body {
+    padding: 12px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+#regionModal .rm-section {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.06));
+    border-radius: var(--radius-md, 8px);
+    padding: 10px 12px;
+}
+#regionModal .rm-section-title {
+    margin: 0 0 8px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-primary, #4a9eff);
+    font-weight: 700;
+}
+
+/* Key/value rows */
+#regionModal .rm-rows { display: flex; flex-direction: column; gap: 6px; }
+#regionModal .rm-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+}
+#regionModal .rm-k { color: var(--color-text-tertiary, #888); }
+#regionModal .rm-v { color: var(--color-text-primary, #fff); text-align: right; }
+#regionModal .rm-mono { font-family: var(--font-mono, monospace); font-size: 0.74rem; }
+#regionModal .is-ok { color: #4caf50; }
+#regionModal .is-bad { color: #f44336; }
+#regionModal .is-warn { color: #ff9800; }
+#regionModal .is-active { color: #2196f3; }
+#regionModal .is-muted { color: var(--color-text-muted, #666); }
+
+/* Action buttons */
+#regionModal .rm-actions { display: flex; flex-direction: column; gap: 6px; }
+#regionModal .rm-here {
+    text-align: center;
+    color: #4caf50;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+#regionModal .rm-locked {
+    text-align: center;
+    color: #f44336;
+    font-size: 0.82rem;
+}
+#regionModal .rm-locked--warn { color: #ff9800; }
+#regionModal .rm-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: var(--radius-md, 8px);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s ease, filter 0.15s ease;
+}
+#regionModal .rm-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+#regionModal .rm-btn--travel { background: linear-gradient(135deg, #4a9eff, #357abd); }
+#regionModal .rm-btn--navigate { background: linear-gradient(135deg, #ff9800, #f57c00); }
+#regionModal .rm-btn--go { background: linear-gradient(135deg, #66bb6a, #43a047); }
+
+/* Regional content groups */
+#regionModal .rm-groups { display: flex; flex-direction: column; gap: 10px; }
+#regionModal .rm-sub-title { margin: 0 0 5px; font-size: 0.75rem; font-weight: 600; }
+#regionModal .rm-empty {
+    color: var(--color-text-muted, #666);
+    font-size: 0.72rem;
+    font-style: italic;
+}
+#regionModal .rm-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+#regionModal .rm-tag {
+    font-size: 0.7rem;
+    padding: 3px 7px;
+    border-radius: var(--radius-sm, 4px);
+    border: 1px solid;
+    white-space: nowrap;
+}
+#regionModal .rm-tag--node {
+    background: rgba(76, 175, 80, 0.15);
+    border-color: rgba(76, 175, 80, 0.5);
+    color: #a5d6a7;
+}
+#regionModal .rm-tag--enemy {
+    background: rgba(244, 67, 54, 0.15);
+    border-color: rgba(244, 67, 54, 0.5);
+    color: #ef9a9a;
+}
+#regionModal .rm-mission-list { display: flex; flex-direction: column; gap: 4px; }
+#regionModal .rm-mission {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 152, 0, 0.08);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    border-radius: var(--radius-sm, 4px);
+    padding: 5px 8px;
+    font-size: 0.75rem;
+}
+#regionModal .rm-mission-status { white-space: nowrap; }
+
+/* Discovered content + adjacent */
+#regionModal .rm-subgroup {
+    border-top: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+    padding-top: 8px;
+}
+#regionModal .rm-disc-label {
+    color: var(--color-text-tertiary, #888);
+    font-size: 0.72rem;
+    margin: 6px 0 4px;
+}
+#regionModal .rm-disc-list { display: flex; flex-direction: column; gap: 4px; }
+#regionModal .rm-disc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-sm, 4px);
+    padding: 6px 8px;
+    font-size: 0.75rem;
+}
+
+
+/* =================================================================== */
+/* NAVIGATION VIEW — mobile tightening, width-fit, bigger map          */
+/* Loaded last so these win over styles/developer.css.                 */
+/* =================================================================== */
+
+/* Kill the 2rem page padding so content fills the app column, let the
+   map grow as wide as the column allows. */
+#view-navigation #navigationDisplay {
+    padding: 8px !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+}
+
+/* Map: full column width, no artificial cap -> as big as space allows. */
+#view-navigation #hexMapContainer {
+    max-width: 100% !important;
+    margin: 0 0 8px 0 !important;
+    border-radius: var(--radius-md, 8px) !important;
+}
+
+/* Location banner -> compact glass card, full width */
+#view-navigation .nav-location-banner {
+    max-width: 100% !important;
+    margin: 0 0 8px 0 !important;
+    padding: 8px 10px !important;
+    gap: 10px !important;
+    background: var(--color-bg-glass, rgba(26, 26, 40, 0.6)) !important;
+    border: 1px solid var(--color-border-accent, rgba(52, 152, 219, 0.3)) !important;
+    border-radius: var(--radius-md, 8px) !important;
+    flex-wrap: wrap !important;
+}
+#view-navigation .nav-location-icon { font-size: 26px !important; }
+#view-navigation .nav-location-label { font-size: 0.6rem !important; }
+#view-navigation .nav-location-name { font-size: 1.05rem !important; }
+#view-navigation .nav-location-biome { font-size: 0.72rem !important; }
+#view-navigation .nav-location-progress {
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
+}
+#view-navigation .nav-location-progress-head { font-size: 0.68rem !important; }
+
+/* Map hint row */
+#view-navigation .nav-map-hint {
+    max-width: 100% !important;
+    margin: 0 0 8px 0 !important;
+    gap: 14px !important;
+    font-size: 0.72rem !important;
+}
+
+/* Controls + discoveries -> single column, full width */
+#view-navigation .nav-columns {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+}
+#view-navigation .nav-col { gap: 8px !important; }
+
+/* Control / discovery blocks -> themed glass panels, tightened */
+#view-navigation .nav-control-block {
+    background: var(--color-bg-glass, rgba(26, 26, 40, 0.5)) !important;
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08)) !important;
+    border-radius: var(--radius-md, 8px) !important;
+    padding: 10px 12px !important;
+    backdrop-filter: blur(var(--blur-md, 15px));
+}
+#view-navigation .nav-control-title { font-size: 0.85rem !important; margin-bottom: 6px !important; }
+#view-navigation .nav-control-desc { font-size: 0.7rem !important; }
+
+/* Section titles */
+#view-navigation #navigationDisplay h3 {
+    font-size: 1rem !important;
+    margin: 0 0 8px 0 !important;
+}
+
+/* Buttons -> compact */
+#view-navigation #navigationDisplay button {
+    padding: 8px 12px !important;
+    font-size: 0.8rem !important;
+    border-radius: var(--radius-sm, 4px) !important;
+}
+
+/* Glass card override for legacy inline-styled cards */
+#view-navigation #navigationDisplay > div[style*="background: #2a2a2a"] {
+    padding: 10px 12px !important;
+    border-radius: var(--radius-md, 8px) !important;
+}
