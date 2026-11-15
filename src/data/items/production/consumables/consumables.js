@@ -103,6 +103,49 @@ const CONSUMABLE_ITEMS = {
         },
         tags: ['consumable', 'serum', 'salve', 'utility', 'flower'],
     },
+
+    // =================================================================
+    // TIER 2 FOOD — West Coast
+    // =================================================================
+    shellfishBoil: {
+        id: 'shellfishBoil',
+        weight: 0.7,
+        name: 'Coastal Shellfish Boil',
+        description: 'Moss shrimp, clams and tubers boiled together in salted water — the reward for reaching the coast. Strong healing and a hearty endurance recovery.',
+        icon: '🍲',
+        category: 'consumable',
+        slot: 'consumable',
+        equipSlot: 'food',
+        instanced: false,
+        rarity: 'uncommon',
+        stackLimit: 40,
+        value: 24,
+        effectType: 'heal',
+        effectValue: 150,
+        cooldown: 1000,
+        enduranceRecovery: 28,
+        tags: ['consumable', 'food', 'healing', 'shellfish', 'coast'],
+    },
+
+    saltCuredRations: {
+        id: 'saltCuredRations',
+        weight: 0.4,
+        name: 'Salt-Cured Rations',
+        description: 'Game meat cured with sea salt into keepable field rations. Steady, reliable healing on the march.',
+        icon: '🥓',
+        category: 'consumable',
+        slot: 'consumable',
+        equipSlot: 'food',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 50,
+        value: 14,
+        effectType: 'heal',
+        effectValue: 95,
+        cooldown: 900,
+        enduranceRecovery: 16,
+        tags: ['consumable', 'food', 'healing', 'meat', 'coast'],
+    },
 };
 
 // Export for use in other modules

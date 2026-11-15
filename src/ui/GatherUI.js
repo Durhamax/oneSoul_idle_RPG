@@ -77,7 +77,7 @@ const GatherUI = {
                 <div class="gather-main-layout">
                     <div class="gather-content">
                         ${this.renderActiveGathering()}
-                        ${this.renderSkillHeader()}
+                        ${this.shouldShowSkillHeader() ? this.renderSkillHeader() : ''}
                         <div id="gather-nodes-grid" class="gather-nodes-grid">
                             ${this.renderNodeCards()}
                         </div>
@@ -150,82 +150,99 @@ const GatherUI = {
             return `<div class="gather-active-error">Error: Invalid gathering session</div>`;
         }
 
-        const skillIcon = this.SKILL_ICONS[session.skill];
-        const skillName = this.capitalizeFirst(session.skill);
+        const color = this.SKILL_COLORS[session.skill];
         const isRecovering = session.isRecovering || false;
 
-        // Calculate interval progress
+        // Interval progress
         const now = Date.now();
         const interval = this.calculateActionInterval(nodeDef, toolDef, skill);
         const timeSinceLastAction = now - (session.lastActionTime || now);
-        const progress = isRecovering ? 0 : Math.min(timeSinceLastAction, interval);
+        const progPct = isRecovering ? 0 : Math.min(100, (timeSinceLastAction / interval) * 100);
+
+        // Node health
+        const maxHealth = session.maxNodeHealth !== undefined ? session.maxNodeHealth : 10;
+        const health = session.nodeHealth !== undefined ? session.nodeHealth : maxHealth;
+        const healthPct = maxHealth > 0 ? Math.max(0, Math.min(100, (health / maxHealth) * 100)) : 0;
+        const low = healthPct <= 30;
+
+        const successPct = Math.round(this.calculateSuccessChance(nodeDef, toolDef, skill) * 100);
+        const intervalGradient = isRecovering
+            ? 'linear-gradient(90deg, #FFC107, #FF9800)'
+            : `linear-gradient(90deg, ${color}, ${color}aa)`;
 
         return `
-            <div class="gather-active-panel" data-activity="gathering" data-skill="${session.skill}">
-                <div class="gather-active-header">
-                    <div class="gather-active-info">
-                        <span class="gather-node-icon">${nodeDef.icon || skillIcon}</span>
-                        <div class="gather-active-details">
-                            <div class="gather-node-name">${nodeDef.name}</div>
-                            <div class="gather-node-meta">
-                                ${skillIcon} ${skillName} • Level ${skill?.level || 1}
-                                ${toolDef ? ` • Using ${toolDef.name}` : ''}
-                            </div>
-                        </div>
-                    </div>
-                    <button class="btn-stop-gather" onclick="GatherUI.stopGathering()">
-                        <span>⏹️</span> Stop
-                    </button>
+            <div class="gather-active-panel" data-activity="gathering" data-skill="${session.skill}" style="--skill-color: ${color};">
+                <!-- Merged skill strip: the skill you're training, its level, xp and modifiers -->
+                ${this.renderActiveSkillStrip(session.skill, skill)}
+
+                <!-- Node name replaces the old "GATHERING" label -->
+                <div class="gap-nodename">${nodeDef.name}</div>
+
+                <!-- Interval (gathering) bar -->
+                <div class="gap-bar">
+                    <div class="gap-bar-fill" id="gather-interval-fill"
+                         style="width: ${progPct}%; background: ${intervalGradient};"></div>
                 </div>
 
-                <!-- Interval Bar -->
-                <div id="gather-interval-bar">
-                    ${IntervalBar.render({
-                        id: 'gather-progress',
-                        label: isRecovering ? 'Recovering' : 'Gathering',
-                        icon: isRecovering ? '💤' : skillIcon,
-                        current: progress,
-                        max: interval,
-                        color: isRecovering ? '#FFC107' : this.SKILL_COLORS[session.skill],
-                        gradient: isRecovering
-                            ? 'linear-gradient(90deg, #FFC107, #FF9800)'
-                            : `linear-gradient(90deg, ${this.SKILL_COLORS[session.skill]}, ${this.SKILL_COLORS[session.skill]}aa)`,
-                        animated: true,
-                        showTime: true,
-                        variant: 'default',
-                        stats: {
-                            'Interval': `${(interval / 1000).toFixed(1)}s`,
-                            'Success': `${(this.calculateSuccessChance(nodeDef, toolDef, skill) * 100).toFixed(0)}%`
-                        }
-                    })}
+                <!-- Node health bar — same width, directly under the interval bar -->
+                <div class="gap-bar">
+                    <div class="gap-bar-fill gap-health-fill ${isRecovering ? 'is-recovering' : ''} ${low && !isRecovering ? 'is-low' : ''}"
+                         id="gather-node-health-fill" style="width: ${healthPct}%;"></div>
                 </div>
 
-                <!-- Node Health depleting bar -->
-                ${this.renderNodeHealthBar(session, isRecovering)}
+                <!-- Success + compact Stop -->
+                <div class="gap-controls">
+                    <span class="gap-success">${isRecovering ? 'Node recovering…' : `Success: ${successPct}%`}</span>
+                    <button class="gap-stop" onclick="GatherUI.stopGathering()">Stop</button>
+                </div>
             </div>
         `;
     },
 
     /**
-     * Render the node-health depleting bar for the active gathering panel
+     * Merged skill strip for the active panel: icon + name + level, an xp bar,
+     * and the skill modifiers — the content that used to sit in a separate panel
+     * below the activity bar, now folded into the top of the same panel.
      */
-    renderNodeHealthBar(session, isRecovering) {
-        const health = (session && session.nodeHealth !== undefined) ? session.nodeHealth : 0;
-        const maxHealth = (session && session.maxNodeHealth !== undefined) ? session.maxNodeHealth : 10;
-        const pct = maxHealth > 0 ? Math.max(0, Math.min(100, (health / maxHealth) * 100)) : 0;
-        const low = pct <= 30;
+    renderActiveSkillStrip(skillId, skill) {
+        const icon = this.SKILL_ICONS[skillId];
+        const name = this.capitalizeFirst(skillId);
+        const level = skill?.level || 1;
+        const expRequired = GameEngine.getSkillExpRequired?.(skillId) || 100;
+        const expPct = Math.min(100, ((skill?.exp || 0) / expRequired) * 100);
+        const fmt = (typeof Formatting !== 'undefined') ? Formatting.formatNumber : (n) => n;
 
         return `
-            <div class="gather-nodehealth">
-                <div class="gather-nodehealth-head">
-                    <span class="gather-nodehealth-label">${isRecovering ? '💤 Node Recovering' : '🪨 Node Health'}</span>
+            <div class="gap-skill">
+                <div class="gap-skill-id">
+                    <span class="gap-skill-icon">${icon}</span>
+                    <span class="gap-skill-name">${name}</span>
+                    <span class="gap-skill-level">Lv.${level}</span>
                 </div>
-                <div class="gather-nodehealth-track">
-                    <div class="gather-nodehealth-fill ${isRecovering ? 'is-recovering' : ''} ${low && !isRecovering ? 'is-low' : ''}"
-                         id="gather-node-health-fill" style="width: ${pct}%;"></div>
+                <div class="gap-skill-xp">
+                    <div class="gap-skill-xp-track">
+                        <div class="gap-skill-xp-fill" style="width: ${expPct}%;"></div>
+                    </div>
+                    <span class="gap-skill-xp-text">${fmt(skill?.exp || 0)} / ${fmt(expRequired)} XP</span>
+                </div>
+                <div class="gap-skill-mods">
+                    <span class="bonus-tag speed">+${Math.min(level * 2, 50)}% Speed</span>
+                    <span class="bonus-tag yield">+${Math.min(level, 25)}% Yield</span>
+                    <span class="bonus-tag rare">+${(level * 0.5).toFixed(1)}% Rare</span>
                 </div>
             </div>
         `;
+    },
+
+    /**
+     * The standalone skill header is only needed when it wouldn't duplicate the
+     * merged skill strip inside the active panel — i.e. when you're not gathering,
+     * or you're browsing a different skill than the one you're gathering.
+     */
+    shouldShowSkillHeader() {
+        const session = GameEngine.state.gatheringSession;
+        const isGathering = session && GameEngine.state.currentActivity === 'gathering';
+        return !(isGathering && session.skill === this.selectedSkill);
     },
 
     /**
@@ -427,6 +444,27 @@ const GatherUI = {
             `;
         }
 
+        // Tool gate: gathering needs the right tool equipped (e.g. thieving needs a Lockpick).
+        const equippedTool = (typeof GameEngine !== 'undefined' && typeof GameEngine.getEquippedToolForSkill === 'function')
+            ? GameEngine.getEquippedToolForSkill(node.nodeType)
+            : undefined;
+        if (equippedTool === null) {   // null = check ran and found no tool (undefined = check unavailable)
+            const toolLabels = {
+                mining: 'Pickaxe', logging: 'Axe', fishing: 'Fishing Rod',
+                hunting: 'Hunting Weapon', foraging: 'Sickle', thieving: 'Lockpick'
+            };
+            const toolName = toolLabels[node.nodeType] || 'tool';
+            const craftNote = node.nodeType === 'thieving'
+                ? 'Craft one at a Workbench, then equip it.'
+                : `Equip a ${toolName} to work this node.`;
+            return `
+                <button class="node-action-btn locked" disabled>
+                    <span>🛠️</span> Needs ${toolName}
+                </button>
+                <div class="node-tool-hint" style="margin-top:6px;font-size:0.78em;color:#c9a227;text-align:center;line-height:1.3;">🗝️ ${craftNote}</div>
+            `;
+        }
+
         return `
             <button class="node-action-btn" onclick="GatherUI.startGathering('${node.id}')">
                 <span>${this.SKILL_ICONS[node.nodeType]}</span> Gather
@@ -508,27 +546,9 @@ const GatherUI = {
         console.log(`[GatherUI] Selecting skill: ${skillId}`);
         this.selectedSkill = skillId;
 
-        // Update skill tabs (Craft top-tab style)
-        document.querySelectorAll('.gather-skill-tab').forEach(tab => {
-            tab.classList.remove('active');
-        });
-
-        const activeTab = document.querySelector(`.gather-skill-tab[data-skill="${skillId}"]`);
-        if (activeTab) {
-            activeTab.classList.add('active');
-        }
-
-        // Re-render content
-        const header = document.querySelector('.skill-header');
-        const grid = document.getElementById('gather-nodes-grid');
-
-        if (header) {
-            header.outerHTML = this.renderSkillHeader();
-        }
-
-        if (grid) {
-            grid.innerHTML = this.renderNodeCards();
-        }
+        // Full re-render: the standalone skill header may appear or disappear
+        // depending on whether the newly-selected skill is the one being gathered.
+        this.render();
     },
 
     /**
@@ -621,10 +641,11 @@ const GatherUI = {
         const interval = this.calculateActionInterval(nodeDef, toolDef, skill);
         const now = Date.now();
         const timeSinceLastAction = now - (session.lastActionTime || now);
-        const progress = session.isRecovering ? 0 : Math.min(timeSinceLastAction, interval);
+        const progPct = session.isRecovering ? 0 : Math.min(100, (timeSinceLastAction / interval) * 100);
 
-        // Update interval bar
-        IntervalBar.update('gather-progress', progress, interval);
+        // Update the interval (gathering) bar fill
+        const intervalFill = document.getElementById('gather-interval-fill');
+        if (intervalFill) intervalFill.style.width = `${progPct}%`;
 
         // Keep the node-health depleting bar in sync
         this.updateNodeHealthBar(session);
@@ -669,16 +690,28 @@ const GatherUI = {
      * Get nodes for a skill
      */
     getNodesForSkill(skillId) {
+        let nodes;
         // Use NodeRegistry.getBySkill if available (returns array with id property)
         if (typeof NodeRegistry !== 'undefined' && NodeRegistry.getBySkill) {
-            return NodeRegistry.getBySkill(skillId);
+            nodes = NodeRegistry.getBySkill(skillId);
+        } else {
+            // Fallback to manual filtering
+            const allNodes = GameEngine.definitions?.resourceNodes || {};
+            nodes = Object.entries(allNodes)
+                .filter(([id, node]) => node.nodeType === skillId)
+                .map(([id, node]) => ({ ...node, id })); // Ensure id is on each node
         }
+        return nodes.filter(node => this.isNodeDiscovered(node));
+    },
 
-        // Fallback to manual filtering
-        const allNodes = GameEngine.definitions?.resourceNodes || {};
-        return Object.entries(allNodes)
-            .filter(([id, node]) => node.nodeType === skillId)
-            .map(([id, node]) => ({ ...node, id })); // Ensure id is on each node
+    /**
+     * Region-level discovery gate: a node is available once any region it belongs
+     * to has been discovered. Nodes with no region tag are always available.
+     */
+    isNodeDiscovered(node) {
+        if (!node || !Array.isArray(node.regions) || node.regions.length === 0) return true;
+        const regionsState = (typeof GameEngine !== 'undefined' && GameEngine.state?.regions) || {};
+        return node.regions.some(rid => regionsState[rid]?.discovered);
     },
 
     /**
@@ -692,9 +725,10 @@ const GatherUI = {
      * Calculate harvest time
      */
     calculateHarvestTime(node, playerLevel) {
-        let baseTime = node.harvestTime || 3000;
+        // node.harvestTime is authored in SECONDS (3.0–6.0 across all nodes).
+        const baseTime = node.harvestTime || 3.0;
         const speedBonus = Math.min(playerLevel * 0.02, 0.5);
-        return (baseTime * (1 - speedBonus)) / 1000;
+        return baseTime * (1 - speedBonus);
     },
 
     /**

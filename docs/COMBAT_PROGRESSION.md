@@ -30,6 +30,16 @@
 
 **Rule:** calibrate each region's enemies against a *reference build* kitted *for that tier* — gear + skills + attributes + consumables + tech + a **progress-appropriate perk grid** (unlocked tiles, attainable-rarity medals), **not a maxed one**. Never against a naked character, or the curve breaks. **Endgame:** a 100%-all-creator grid is the near-asymptotic completion grind — tune *optional* super-content against it, never the main path.
 
+### 1.1 Item rarity & the regional baseline
+
+**First-region (Cradle) items are base `common` rarity, at the lowest level requirement (characterLevel 1), with equivalent common-tier combat stats.** No starter item ships above common, and nothing in the entry tier gets a free stat bump from a higher base rarity.
+
+This follows directly from how crafted equipment works: crafting is **deterministic and stackable**, and **rarity *is* the stat multiplier** (common 1.0× → up the 9-tier ladder; see `ENGINEERING_DESIGN.md`). Every craft of a recipe produces the item at its fixed base rarity, so N crafts form one stack of N identical copies. **Higher rarity (and thus higher stats) is earned only through Engineering Perfection** — combine 10 of a stack to roll 1 of the next tier — never from a lucky craft or a starter item that was authored at a higher rarity. Authoring an entry-tier item as `uncommon`+ therefore silently grants an unearned multiplier and breaks this rule; keep R1 combat gear at `common`.
+
+Each later region raises its own base rarity/stat floor as the equivalent baseline for *that* tier. The principle is the same at every tier: items of a region share a common-for-that-tier stat budget, and Perfection is the only lever that lifts an individual copy above it.
+
+**Skilling gear is a separate class and does not follow the combat-stat baseline.** Skilling pieces (the XP/yield gear in `RESOURCE_DESIGN.md` §8.7) carry **no combat stats at all** — only a `weight` and a `skillingBonus`. Skilling gear never crosses over into combat, and combat gear gives no skilling benefit. The cost of wearing a skilling piece is giving up that slot's combat value (sometimes a real sacrifice in dungeon encounters, to raise skilling-action chance) plus its **weight**, which — like all equipment — is measured against the **strength-driven threshold that sets interval speeds in both combat and skilling**.
+
 ---
 
 ## 2. The three build archetypes
@@ -61,6 +71,8 @@ All three must be **fully fleshed** — a complete pipeline of weapons, armor, c
 - **Skill synergy:** Smithing, Mechanics (heavy gear), Engineering (tech).
 
 > **Hybrids** are valid — these are poles, not classes. The attribute/gear systems let players blend (e.g. medium-light skirmisher). Enemies/encounters should reward specialization *and* leave room for hybrids to cope.
+
+> **The fork is first offered at Scoutreach (Region 2, as-built).** The player's first craftable armor splits the lanes: a reverse-engineered **Salvaged Plate Carrier** (scrap Elaran plating + cloth → high defense/HP, negative evasion, heavy weight) seeds **Heavy**, while **Ranger Hood/Coat** (thick furs → evasion/mobility, low weight) seed **Light**. Their first firearm, the **6mm Defender**, fires **Pierce** (Ballistics) — the Explosive damage type that fully arms Heavy stays the T8 Desert reveal (§3). See `REGION_BUILDS.md` Region 2.
 
 ---
 

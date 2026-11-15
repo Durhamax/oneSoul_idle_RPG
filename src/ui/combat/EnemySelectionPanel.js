@@ -261,13 +261,42 @@ const EnemySelectionPanel = {
      */
     getAvailableEnemies() {
         // Get enemies from EnemyRegistry
+        let enemies;
         if (typeof EnemyRegistry !== 'undefined') {
-            const enemies = EnemyRegistry.getAllActive();
-            // Convert to array if it's an object
-            return Array.isArray(enemies) ? enemies : Object.values(enemies);
+            const active = EnemyRegistry.getAllActive();
+            enemies = Array.isArray(active) ? active : Object.values(active);
+        } else {
+            // Fallback to legacy enemies
+            enemies = GameEngine.definitions?.enemies ? Object.values(GameEngine.definitions.enemies) : [];
         }
-        // Fallback to legacy enemies
-        return GameEngine.definitions?.enemies ? Object.values(GameEngine.definitions.enemies) : [];
+        return this.filterByDiscovery(enemies);
+    },
+
+    /**
+     * Gate enemies by region discovery. An enemy is shown if it is listed in NO
+     * region's discoverableEnemies (an ungated/starter enemy) OR if at least one
+     * region that lists it has been discovered. Falls back to showing everything
+     * if the canon region data isn't loaded.
+     */
+    filterByDiscovery(enemies) {
+        if (typeof WorldRegions === 'undefined') return enemies;
+        const regionsState = (typeof GameEngine !== 'undefined' && GameEngine.state?.regions) || {};
+
+        // Build inverse map: enemyId -> [regionIds that list it]
+        const enemyRegions = {};
+        for (const [regionId, def] of Object.entries(WorldRegions)) {
+            const list = def && def.discoverableEnemies;
+            if (!Array.isArray(list)) continue;
+            for (const enemyId of list) {
+                (enemyRegions[enemyId] = enemyRegions[enemyId] || []).push(regionId);
+            }
+        }
+
+        return enemies.filter(enemy => {
+            const owners = enemyRegions[enemy.id];
+            if (!owners || owners.length === 0) return true; // ungated / starter
+            return owners.some(rid => regionsState[rid]?.discovered);
+        });
     },
 
     /**

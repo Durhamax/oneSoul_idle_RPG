@@ -112,6 +112,8 @@ For each region, define, in order:
 - **Mining:** limited — coastal tin, surface ore, salt pans. (Not mining country; that waits for the Highlands.)
 - **Thieving:** little to take from Unity kin — but salvage from wrecks and the Kahelion Platform.
 
+> **Early coastal preview — The West Shoals (`region_-4_-4`, as-built).** A single Cradle-adjacent coastal hex west of the crater gives an *early, modest* taste of the coast register — tidal-shoal **shellfish**, **kelp/saltherb** foraging, **salt-pan** mining (sea salt, saltstone), driftwood — before the player ever reaches the rich Gulf/archipelago sea larder above. It is a wilderness fringe, not the maritime heartland; it exists mainly to unlock the reserved **Coastal Shellfish Boil** and to establish saltwater resources near the start.
+
 **Settlement & infrastructure (→ combat locations):** scattered, self-reliant Unity communities — **Kaluhea (11)**, an island refuge and hub (docks, drying racks, longhouses, relative safety); **Rava (12)**, a smaller community living net-to-hand off the sea. Boatyards, drydocks, fish-smoking houses, net-lofts, timber mills, signal towers. Mostly **Unity-held**, but pressed from the water by Elaran survey vessels and coastal raiders. **Kahelion Platform (13)** is the outlier — a large offshore structure in contested water.
 
 **Crafting outputs (→ recipes that belong here):**

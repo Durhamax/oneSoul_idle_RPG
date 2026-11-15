@@ -27,6 +27,7 @@ const GatheringSystem = {
     engine.stopGathering = this.stopGathering.bind(this);
     engine.processGatheringTick = this.processGatheringTick.bind(this);
     engine.canStartGathering = this.canStartGathering.bind(this);
+    engine.getEquippedToolForSkill = this.getEquippedToolForSkill.bind(this);
 
     console.log('✅ GatheringSystem initialized');
   },
@@ -193,11 +194,11 @@ const GatheringSystem = {
       this.state.crafting.autoRecipe = null;
     }
 
-    // Stop combat
-    if (this.state.currentActivity === 'combat' || this.state.combat?.inCombat) {
+    // Stop combat (fight or pending auto-respawn) via the shared hard-stop
+    if (this.state.combat?.inCombat || this.state.combat?.currentEnemy || this.state.combat?.respawn?.active) {
       console.log('⏹️ Stopping combat to start gathering');
-      if (typeof this.endCombat === 'function') {
-        this.endCombat();
+      if (typeof this.stopCombat === 'function') {
+        this.stopCombat();
       } else if (this.state.combat) {
         this.state.combat.inCombat = false;
         this.state.combat.currentEnemy = null;
@@ -584,6 +585,13 @@ const GatheringSystem = {
       if (perkYieldMultiplier > 1.0) {
         const rawYield = amount * perkYieldMultiplier;
         amount = Math.round(rawYield);  // 1.49 → 1, 1.50 → 2
+      }
+
+      // Skilling-outfit yield bonus — equipped skilling pieces may add extra units of
+      // the gathered resource. This is pure extra loot: it is added AFTER the action's
+      // XP is computed elsewhere, so the bonus resources grant no additional XP.
+      if (typeof SkillingOutfit !== 'undefined') {
+        amount += SkillingOutfit.rollYieldBonus(this.state, playerSkill.id);
       }
 
       resources[resource.itemId] = Math.max(1, amount);

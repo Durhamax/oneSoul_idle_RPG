@@ -187,13 +187,14 @@ const GameEngine = {
         equipment: {
             // === 3-1-3 EQUIPMENT GRID (Provides perks) ===
             weapon: null,      // Main weapon
-            armor: null,       // Full armor set (head/chest/legs combined)
+            head: null,        // Head armor
+            chest: null,       // Chest armor
+            legs: null,        // Leg armor
             back: null,        // Cape/Cloak
             gloves: null,      // Gloves
             neck: null,        // Necklace/Amulet
             boots: null,       // Boots
             ring: null,        // Ring
-            // Note: helmet, chest, legs removed - replaced by unified armor slot
 
             // === CONSUMABLE SLOTS (No perks, show quantity) ===
             ammo: null,        // Ammunition for ranged weapons
@@ -299,6 +300,10 @@ const GameEngine = {
                 cooking: []          // Food
             }
         },
+
+        // Recipe discovery / reverse-engineering unlocks (top-level; read by crafting + engineering)
+        unlockedRecipes: {},         // { recipeId: true } — set by reverseEngineerItem
+        discoveredRecipes: [],       // [recipeId] — gates recipe.discoverable in canCraft
 
         // Workstations (NEW: Tier-based system, engineering-gated)
         workstations: {
@@ -1541,9 +1546,11 @@ const GameEngine = {
     grantStarterKit() {
         console.log('📦 Granting starter kit...');
 
-        // Unity Scout Set (armor)
+        // Unity Scout armor (head / chest / legs pieces)
         if (typeof InventorySystem !== 'undefined' && InventorySystem.addItem) {
-            InventorySystem.addItem.call(this, 'unityScoutSet', 1);
+            InventorySystem.addItem.call(this, 'unityScoutHood', 1);
+            InventorySystem.addItem.call(this, 'unityScoutJacket', 1);
+            InventorySystem.addItem.call(this, 'unityScoutLeggings', 1);
         }
 
         // 6 Gathering Tools
@@ -1713,7 +1720,9 @@ const GameEngine = {
             // Equipment - All slots empty
             equipment: {
                 weapon: null,
-                armor: null,
+                head: null,
+                chest: null,
+                legs: null,
                 back: null,
                 gloves: null,
                 neck: null,
@@ -1798,6 +1807,10 @@ const GameEngine = {
                     cooking: []
                 }
             },
+
+            // Recipe discovery / reverse-engineering unlocks
+            unlockedRecipes: {},
+            discoveredRecipes: [],
 
             // Workstations
             workstations: {

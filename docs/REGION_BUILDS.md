@@ -126,7 +126,7 @@ Two enemies, chosen to **teach the damage-type ↔ armor-type system** (`COMBAT_
 
 > **Design intent:** at the breach you own **only Pierce** — so one enemy is **winnable now** (the low-HP trooper) and one is **resistant** (the drone). The type system is *felt before you own a single counter*; both proper counters are aspirational unlocks east — **Incendiary** for the trooper (Tier 2), **Cryo** for the drone (Icelands, T6). The drone is the hook that makes those unlocks pay off.
 
-**Weapon & armor premise (theme → mechanic).** Unity refused to arm *against people* — but they still **hunt small game**, so the player already owns a **basic Unity hunting weapon** (Pierce — bow/sling/spear, from R1 Hunting). The divergence isn't *getting* a weapon; it's **turning a hunting weapon on a person for the first time.** That's the real line crossed at Scoutreach. From there, upgrades come two ways: **craft** (the Makeshift Carbine, §6) or **plunder** a basic Elaran sidearm.
+**Weapon & armor premise (theme → mechanic).** Unity refused to arm *against people* — but they still **hunt small game**, so the player already owns a **basic Unity hunting weapon** (Pierce — bow/sling/spear, from R1 Hunting). The divergence isn't *getting* a weapon; it's **turning a hunting weapon on a person for the first time.** That's the real line crossed at Scoutreach. From there, upgrades come by **reverse-engineering** Elaran kit into craftable gear — the **6mm Defender** sidearm and its munitions (§6) — or **plundering** their sidearm outright.
 
 **Armor — the player learns to craft equippable defense here.** Unity wears hide/cloth for weather, not war. Scoutreach teaches **Tailoring armor** (`skills_production.js`: Tailoring → chest/back/gloves/boots from R1 leather/fiber) — the player's first crafted **equippable armor pieces.** Canon (`ENGINEERING_DESIGN.md` §6): **modern armor = Tailoring assembling plating + cloth** (plate-carrier style, not metal suits). With no ore yet, R2 teaches **cloth/light armor** only; plated armor arrives once Smithing feeds plating (needs Mining), and shields (Electronics) need tech — so armor, like weapons, visibly deepens as you travel. This closes the "does the player know how to make armor?" gap: **yes — armor crafting is a R2 tutorial.**
 
@@ -147,12 +147,15 @@ Scaled to combat lvl 1–3. **This is the tech-input bridge** — the green-west
 - **★ Perks — tutorial.** First **medals** → roll the first tile on the **7×7 grid** (`saveSystem.js`). Teach: more medals rolled at once = higher quality potential; tougher enemies = more medals/time. First small combat perk slotted.
 - **★ Engineering — introduced (light).** Thieving the data cache / drone core yields the player's **first tomes** (`ENGINEERING_DESIGN.md` §7 — tomes = *stolen Elaran knowledge*). This **unlocks the Engineering skill** and a one-step tutorial: spend **1 tome** to research a **tier-0 concept** (e.g., *Basic Optics* or *Circuit Components*, `definitions.js › engineeringFields`, engLevel 1) → it **unlocks one recipe** → craft the **first tech component** → slot it in **Tech slot 1** (0 INT; `loadoutContainer.js`). One field, one node, one tech item — the build system *demonstrated*, not dumped. The full 16-field tree blooms later as tomes/materials scale east.
 
-### 6. Crafting — first assembly
-Still **no forge/electronics** (no ore, no workstation yet) — but Scoutreach teaches **component-assembly** at a mundane level, as the on-ramp to the mechanic:
-- **★ The Makeshift Carbine *(first assembled item)*** — combine a **Cradle pinewood haft (R1 Logging)** + **plundered drone `wiring`/`parts` (R2 combat/thieving)** → the player's first real **Pierce** weapon. Teaches "signature items are *assembled from parts gathered across encounters/skills*," cheaply, before the grand version (the amulet). Reinforces the theme: *your arsenal is built from the enemy's remains.*
-- **Tailoring armor (the equippable-defense tutorial)** — craft the first **leather/cloth armor pieces** (chest/gloves/boots) from R1 hides/fiber at the tanning rack / sewing kit. The player now knows how to make *both* a weapon and armor.
-- **First tech assembly** — the Engineering tutorial's tier-0 recipe produces the **first tech-slot component** (Engineering → assemble → Tech slot 1). Tiny stat, big concept: *research → recipe → tech → loadout.*
-- Cooking (from R1) continues; looted `med-stims` can be **improved** at the campfire once Chemistry unlocks later.
+### 6. Crafting — reverse-engineering & the first firearms *(as-built)*
+Scoutreach teaches the **reverse-engineering loop** — *find enemy kit → strip it to learn the recipe → manufacture your own.* The dropped sample is consumed; the clean, working item is the craftable (`engineeringSystem.js:reverseEngineerItem` → `unlockedRecipes`/`discoveredRecipes`; triggered from the item modal). This is the on-ramp to the whole build system and the theme *your arsenal is built from the enemy's remains.*
+
+- **★ Firearms — the 6mm Defender *(first player-manufactured gun)*.** Calibers are **standardized in millimeters** on this world. Grunts drop a **Salvaged Elaran Sidearm**; reverse-engineer it to unlock **`craft6mmDefender`** (Mechanics) — a pinewood frame + plundered `droneParts`/`salvagedWiring`/`scrapAlloy` → the **6mm Defender** (Pierce pistol). *(The Explosive damage type stays a far-east T8 reveal — early firearms fire Pierce.)*
+- **★ Munitions — reverse-engineered before the recipe.** Grunts drop **Spent 6mm Rounds**; reverse-engineer them to unlock **`craft6mmRounds`**. **Chemistry makes the propellant** — **`craftGunPropellant`** from **bog niter + bog sulfur** (a new **Scoutreach peat-bog mining node**) + **charcoal** (a kiln recipe). Smith `sixMmCasing` from copperite, then assemble rounds. Small-arms powder, **not** the desert oxidizer that arms the T8 Explosive type (`RESOURCE_DESIGN.md`).
+- **★ Armor branch — light vs heavy (the first build fork).** **Heavy:** reverse-engineer **Battered Elaran Plate** → **`craftElaranPlate`** (Tailoring: scrap plating + cloth → a high-defense, low-mobility **Salvaged Plate Carrier**). **Light:** hunt **ranger pelts** (new node) → **`craftRangerHood`/`craftRangerCoat`** (Tailoring: evasion/mobility ranging gear, no RE needed). The player picks a lane here (`COMBAT_PROGRESSION.md` §2 Light/Heavy archetypes).
+- **Thieving bootstrap** — craft a **Lockpick** (`craftLockpick`, Mechanics) from cheap Cradle mats to open the Elaran supply cache and begin Thieving.
+- **First tech assembly** — the Engineering tutorial's tier-0 recipe still produces the **first tech-slot component** (Engineering → assemble → Tech slot 1). *research → recipe → tech → loadout.*
+- Cooking (from R1) continues; the reserved **shellfish boil** opens once the West Coast shellfish are reachable.
 
 ### 7. Sites (taxonomy — `CAMPAIGN_ARC.md` §2)
 - **The Breach (military/installation):** the drones' incursion line — first combat ground; the downed drone.
@@ -178,8 +181,8 @@ Still **no forge/electronics** (no ore, no workstation yet) — but Scoutreach t
 | Thieving | ✅ **introduced** — plunder/tech-bridge **and** first tome source |
 | Engineering | ✅ **introduced (light)** — unlock skill, research 1 tier-0 concept, unlock 1 recipe |
 | Tech slots | ✅ **introduced** — first tech component assembled → Tech slot 1 (0 INT) |
-| Items/loadout/rarity | ✅ starting Unity hunting weapon → first upgrade (plunder / Makeshift Carbine); **first crafted armor** (Tailoring); first tech item |
-| Crafting | ✅ **armor (Tailoring)** + **component-assembly** (Makeshift Carbine) + **tech assembly**; Cooking continues |
+| Items/loadout/rarity | ✅ starting Unity hunting weapon → first upgrade (plunder / reverse-engineered **6mm Defender**); **first crafted armor** (Tailoring, **light vs heavy fork**); first tech item |
+| Crafting | ✅ **reverse-engineering loop** (6mm Defender + munitions + Elaran plate) + **armor (Tailoring)** + **tech assembly**; Chemistry propellant from bog mats; Cooking continues |
 | Navigation | ✅ continues (reach the Riveria/Verduun exits) |
 | Gathering | ◑ **resource bleed** — R1 green archetypes continue (incl. **Mining/Riverbed**, introduced in R1); no new natural node. Gathering identity here = **Thieving** (§8.2) |
 | Missions | ✅ `tutorial_combat`, `tutorial_thieving` (+ `tutorial_engineering`) |
@@ -187,6 +190,21 @@ Still **no forge/electronics** (no ore, no workstation yet) — but Scoutreach t
 | Assembly/campaign reward | ✅ amulet component #1 (Drone Optic Lens) + first assembled weapon |
 
 **Design note:** Scoutreach is the true "systems opening" — Combat, Medals, Perks, Thieving, plunder-loot, **tomes/Engineering, the first tech slot, the first crafted armor**, the first weapon upgrade, and the assembly mechanic, all at trivial stakes. It carries heavy *first-reveal* load by design; later regions deepen rather than re-introduce. **Pacing watch:** this is a lot — if playtests feel overloaded, the Engineering/tech intro can slide to R3 (Greythorn) without hurting the arc.
+
+---
+
+## Regions 3–6 — Cradle's wilderness ring *(first-pass, as-built)*
+
+The hexes neighboring the Cradle are sparse wilderness — real gathering/combat, light on story for now. **Relics are narrative, never gatherable:** the Unity landmarks below are mission hooks and discovery sites, not resource nodes.
+
+| Region | Hex | Biome | Content (as-built) |
+|---|---|---|---|
+| **Verduun South** | `region_-3_-3` | forest | Old Unity hub. Logging/forage/hunting (Verduun hardwood, fernshoot, ranger pelts); enemies **Verduun Boar / Prowler**. **Landmarks (narrative only):** the **Earthen Amphitheatre** (three-storey earthworks around a 100-yard market floor, tunnel access) and the **Standing Stones** (a circle aligned to Aurora Vitae's constellations). Mission fodder — the stones are *not* touched or mined. |
+| **Verduun West** | `region_-4_-3` | forest | Quiet old-growth; shared Verduun forest nodes; Boar/Prowler. Landmark: the Old-Growth Grove. |
+| **Verduun North** | `region_-3_-2` | forest | Early-war ground. **Overgrown Trenches** mining → war salvage (`corrodedPlating`, `scrapAlloy`) feeding **heavy armor**; enemies **Elaran Surveyor** + **Bunker Sentinel** (first mini-elite, droid, high DR). **Landmark (narrative only):** the trenches/underground passages — a mission to uncover, not a relic to dig. |
+| **The West Shoals** | `region_-4_-4` | coast | The Cradle's ocean edge. Fishing the **tidal shoals** (shellfish), kelp/saltherb foraging, **salt-pan** mining (sea salt, saltstone), driftwood. Enemy **Shoal Raider**. Unlocks the reserved **Coastal Shellfish Boil** (mossShrimp + auroranTuber + shellfish). Landmark: the Dunes. |
+
+*Biome is pinned per-region via `WorldRegions[...].biome` (honored by `worldMapSystem.getBiome`); enemy rosters via `WorldRegions[...].discoverableEnemies` (honored by `getDiscoverableEnemies`).*
 
 ---
 
@@ -220,4 +238,6 @@ Model: Melvor's **Fury of the Elemental Zodiac** — a strong combat neck item *
 Teaching the assembly mechanic at mundane scale, so the amulet reads as the grand version.
 | Item | Region | Components | Result |
 |---|---|---|---|
-| Makeshift Carbine | R2 | Cradle pinewood haft (R1 Logging) + plundered drone wiring/parts (R2 combat/thieving) | First proper **Pierce** weapon — "your arsenal is built from the enemy's remains" |
+| 6mm Defender | R2 | Reverse-engineer a Salvaged Elaran Sidearm → `craft6mmDefender`: pinewood frame + plundered droneParts/wiring/scrapAlloy | First player-manufactured firearm (Pierce pistol) — "your arsenal is built from the enemy's remains" |
+| 6mm Rounds | R2 | Reverse-engineer Spent 6mm Rounds → `craft6mmRounds`: Chemistry gun propellant (bog niter/sulfur + charcoal) + 6mm casing | First self-loaded munitions; mm-caliber standard |
+| Salvaged Plate Carrier | R2 | Reverse-engineer Battered Elaran Plate → `craftElaranPlate` (Tailoring: scrap plating + cloth) | Heavy-armor lane opener (vs. light ranger gear from furs) |

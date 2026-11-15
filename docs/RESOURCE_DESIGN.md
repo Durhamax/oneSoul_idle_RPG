@@ -248,6 +248,10 @@ Each damage type has **one signature supply line** — a single signature materi
 | **Explosive** | oxidizer (niter + sulfur) | Niter Caliche / Nitrate Flat | nitrates survive only in arid soil — scrape/leach the flats |
 | **Exotic/Seed** | Register-C exotic | Seed-Exotic Vein | requires late-tier Engineering containment |
 
+> **Small-arms propellant ≠ the Explosive damage type.** Firearms (6mm Defender and up) fire **Pierce** (Ballistics), so their propellant is introduced *early*, decoupled from the T8 Explosive-type reveal above. At **Scoutreach** a **peat bog** mining node yields **bog niter + bog sulfur** which, with **charcoal** (a kiln recipe), Chemistry mills into **gun propellant** — crude black-powder-grade charge, enough to drive a bullet. This is a *separate, weaker* supply line from the desert **Niter Caliche** that arms the Explosive/Ordnance demolitions at T8. **Calibers are standardized in millimeters** world-wide (6mm first; `6mm casing` + propellant + copperite slug → `6mm rounds`).
+>
+> **New Scoutreach/coast material families (as-built, emoji-iconed):** *Elaran salvage* (`scrapAlloy`, `salvagedWiring`, `droneParts`, `powerCell`, `droneDataCore`) from Thieving/combat — the plunder→tech bridge; *bog chemistry* (`peatMoss`, `bogMyrtle`); *ranging furs* (`rangerPelt` → light armor); *war salvage* (`corrodedPlating` → heavy armor); *coast register* (`seaSalt`, `saltstone`, `kelpFrond`, `saltherb`, `shellfish`, `driftwood`).
+
 **Protective-gear gates** — the harvest permit for a hazardous node. Each set is **craftable from *earlier* harvests**, so the loop self-gates (harvest → craft the gear → reach the next hazard tier):
 
 | Hazard | Node examples | Gear | Made by |
@@ -257,3 +261,30 @@ Each damage type has **one signature supply line** — a single signature materi
 | Toxins / spores | poisonous flora, Mushroom Hollow | respirator + sealed gloves / antitoxin | Tailoring + Chemistry |
 | Heat / fumes | Sulfur Fumarole, Tar Seep | heat-resistant gear + respirator | Tailoring + Chemistry |
 | Volatile oxidizer | Niter Caliche | blast-safe handling / containers | Mechanics / Engineering |
+
+### 8.7 Skilling-aid gear — XP & yield pieces
+Gathering has its own gear line, distinct from the protective gates above: **Tailoring-crafted garments, worn in the normal armour slots, that aid a gathering skill.** They are **not matched sets** — each piece stands alone (a fly-fishing vest, a pair of waders) and stacks with any others.
+
+**Skilling gear is a separate class from combat gear — it carries no combat stats.** A skilling piece has only a `weight` and its `skillingBonus`; it never crosses over into combat, and combat gear gives no skilling benefit. The cost of wearing one is giving up that slot's combat value — sometimes a real sacrifice in dungeon encounters, to raise skilling-action chance — plus its **weight**, which (like all equipment) is measured against the **strength-driven threshold that sets interval speeds in both combat and skilling**. Like all R1 items, skilling pieces are **base `common` rarity** (see `COMBAT_PROGRESSION.md` §1.1 for the regional-baseline rule).
+
+**Two bonus channels, one per piece early-game** (later-tier pieces may scale up or combine):
+- **XP** — adds a flat % to the *action's* skill XP (e.g. +0.5% per piece). Applied once per gather action.
+- **Yield** — a per-resource roll for extra output (e.g. 1% chance → +1). **Bonus yield grants no XP:** XP is per action, not per item, so an extra fish from a yield piece is pure loot. *Gain a moss shrimp → base XP + any XP-piece bonus; gain a **bonus** moss shrimp → no extra XP.*
+
+**Scope** — a piece names the skill(s) it helps (`'all'` or a list), so it can be skill-specific or universal.
+
+**R1 (The Cradle) starter line** *(Tailoring, from plant fibre / small pelts / resin):*
+
+| Piece | Slot | Skill | Bonus |
+|---|---|---|---|
+| Angler's Vest | chest | fishing | +0.5% XP |
+| Angler's Waders | legs | fishing | 1% → +1 catch |
+| Forager's Hood | head | foraging | +0.5% XP |
+| Trapper's Gloves | gloves | hunting | 1% → +1 drop |
+
+**As coded:** pieces carry a `skillingBonus: { skills, xp, yield: { chance, amount } }` block on the item def; `SkillingOutfit` (`src/systems/skillingOutfitSystem.js`) aggregates it across all equipped gear. The XP channel hooks `SkillSystem.gainSkillExp` (gated to `category: 'gathering'` skills); the yield channel hooks the resource rolls in `gatheringSystem.calculateYield` and `miningSystem` (after XP is computed, so it never feeds XP).
+
+#### Deferred — forward hooks `[DEFERRED]`
+> **Convention:** items we *know we want* but are **not designing yet** live here as `[DEFERRED]` notes — **intent + constraints only, no invented numbers, slots, or recipes.** When one gets built, its real spec replaces the note in place. (Same treatment as the reserved ingredients and the One Soul Amulet in `REGION_BUILDS.md`.)
+
+- **G.O.A.T. — "Garments of All Trades"** `[DEFERRED]` — an **end-game capstone skilling outfit**: a single garment that **combines the individual skilling pieces/outfits into one**, granting their bonuses together (ideally across *every* gathering skill at once, freeing the other armour slots). *Intent:* the completionist payoff of the whole skilling-gear line. *Gating (rough, not speced):* a late recipe demanding **extremely rare drops + resources** and **many high skill levels** (a multi-skill mastery wall) — assembled-from-components in spirit, like the One Soul Amulet (`REGION_BUILDS.md` Appendix A). *Open:* exact slot(s), which bonuses carry over (XP, yield, or both), whether it consumes the component outfits, and the real ingredient/level thresholds — all TBD at design time.

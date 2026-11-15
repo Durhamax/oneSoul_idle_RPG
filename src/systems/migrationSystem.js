@@ -53,7 +53,8 @@ const MigrationSystem = {
             this.migrateEquipmentPresets,
             this.migrateAttachmentSystem,
             this.migrateDualBankStructure,  // ✅ Phase 4 complete - re-enabled
-            this.fixNewItemsArray  // Fix corrupted newItems array
+            this.fixNewItemsArray,  // Fix corrupted newItems array
+            this.migrateEquipmentStacking  // Stackable equipment rework (wipe & regrant)
         ];
 
         let totalMigrations = 0;
@@ -69,6 +70,58 @@ const MigrationSystem = {
         } else {
             console.log("✅ Save file is up to date");
         }
+    },
+
+    /**
+     * Equipment-stacking rework (one-time, wipe & regrant).
+     * Crafted weapons/armor used to be unique random-rolled instances (bank spam).
+     * They now stack by (itemId + rarity) and are deterministic; rarity comes from
+     * Engineering Perfection. Existing unique instances can't be cleanly converted,
+     * so we wipe equipment from the save and regrant clean starter gear.
+     */
+    migrateEquipmentStacking() {
+        const state = GameEngine.state;
+        if (!state) return 0;
+        if (!state.migrations) state.migrations = {};
+        if (state.migrations.equipmentStackingV1) return 0;
+
+        let changes = 0;
+
+        // 1. Wipe all instanced equipment (old unique random-rolled items)
+        if (state.bank?.instanced) { state.bank.instanced = {}; changes++; }
+        if (state.bank?.equipmentInstances) { state.bank.equipmentInstances = {}; }
+        if (Array.isArray(state.bank?.newItems)) { state.bank.newItems = []; }
+
+        // 2. Clear equipped weapon + armor slots (they pointed at wiped instances)
+        const gearSlots = ['weapon', 'head', 'chest', 'legs', 'back', 'gloves', 'boots', 'neck', 'ring'];
+        if (state.equipment) {
+            for (const s of gearSlots) { if (state.equipment[s]) state.equipment[s] = null; }
+        }
+        // Clear presets that referenced old instances
+        if (state.equipmentPresets?.presets) {
+            state.equipmentPresets.presets = state.equipmentPresets.presets.map(() => null);
+            state.equipmentPresets.activePreset = null;
+        }
+
+        // 3. Regrant clean starter gear as common stacks (via the new stacking path)
+        const starter = [
+            'unityScoutHood', 'unityScoutJacket', 'unityScoutLeggings',
+            'lightPickaxe', 'utilityHatchet', 'caneRod', 'huntingBlade', 'wovenBasket', 'lockpick'
+        ];
+        if (typeof GameEngine.createEquipmentInstance === 'function' &&
+            typeof GameEngine.addEquipmentInstance === 'function' &&
+            typeof ItemRegistry !== 'undefined') {
+            for (const id of starter) {
+                if (ItemRegistry.getItem(id)) {
+                    GameEngine.addEquipmentInstance(GameEngine.createEquipmentInstance(id, 'common', null, 1));
+                }
+            }
+        }
+
+        state.migrations.equipmentStackingV1 = true;
+        changes++;
+        console.log('🔧 Equipment-stacking migration: wiped old instances, regranted starter gear');
+        return changes;
     },
 
     /**
@@ -421,6 +474,18 @@ const MigrationSystem = {
                     }
                 }
             }
+        }
+
+        // Recipe discovery / reverse-engineering unlocks (top-level fields).
+        // Older saves predate these; ensure they exist so RE and discoverable
+        // recipes work without errors.
+        if (!GameEngine.state.unlockedRecipes || typeof GameEngine.state.unlockedRecipes !== 'object') {
+            GameEngine.state.unlockedRecipes = {};
+            changes++;
+        }
+        if (!Array.isArray(GameEngine.state.discoveredRecipes)) {
+            GameEngine.state.discoveredRecipes = [];
+            changes++;
         }
 
         return changes;
@@ -953,7 +1018,7 @@ const MigrationSystem = {
 
         // Ensure all equipment slots exist with correct structure (3-1-3 Grid)
         const requiredSlots = [
-            'weapon', 'armor', 'back', 'gloves', 'neck', 'boots', 'ring',
+            'weapon', 'head', 'chest', 'legs', 'back', 'gloves', 'neck', 'boots', 'ring',
             'ammo', 'food', 'potion',
             'tech1', 'tech2', 'tech3', 'tech4'
         ];
@@ -965,8 +1030,9 @@ const MigrationSystem = {
             }
         }
 
-        // Legacy: Remove old deprecated slots (replaced by unified armor slot)
-        const deprecatedSlots = ['shield', 'helmet', 'head', 'chest', 'body', 'legs', 'hands', 'feet', 'offhand', 'accessory'];
+        // Legacy: Remove old deprecated slots. 'armor' was the short-lived unified
+        // armor slot, now split back into head/chest/legs (which are real slots again).
+        const deprecatedSlots = ['shield', 'helmet', 'armor', 'body', 'hands', 'feet', 'offhand', 'accessory'];
         for (let oldSlot of deprecatedSlots) {
             if (GameEngine.state.equipment[oldSlot] !== undefined) {
                 delete GameEngine.state.equipment[oldSlot];

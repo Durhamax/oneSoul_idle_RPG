@@ -100,6 +100,14 @@ const EngineeringSystem = {
         if (engine.state.engineering.itemsSalvaged === undefined) {
             engine.state.engineering.itemsSalvaged = 0;
         }
+
+        // Recipe-unlock tracking (reverse-engineering). Patch older saves that predate these.
+        if (!engine.state.unlockedRecipes || typeof engine.state.unlockedRecipes !== 'object') {
+            engine.state.unlockedRecipes = {};
+        }
+        if (!Array.isArray(engine.state.discoveredRecipes)) {
+            engine.state.discoveredRecipes = [];
+        }
     },
 
     // ═══════════════════════════════════════════════════════════════
@@ -107,136 +115,148 @@ const EngineeringSystem = {
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Perfection system - combine 10 items for rarity upgrade
-     * NO ATTRIBUTE BONUSES - purely skill based
-     * @param {array} itemIds - Array of 10 instanced item IDs
-     * @returns {object} - {success: boolean, item?: object, returned?: number, reason?: string}
+     * Perfection system - combine 10 copies from one stack for a rarity upgrade.
+     *
+     * Crafted equipment now STACKS: identical (baseItemId, rarity) copies share a
+     * single deterministic instance (`${baseItemId}_instance_${rarity}`) with a
+     * quantity. Perfection is the rarity lever: consume 10 from a chosen stack and,
+     * on success, mint 1 of the next rarity tier into that item's next-rarity stack.
+     * NO per-attempt attribute bonuses - purely skill based.
+     *
+     * @param {string} stackId - Deterministic instance id of the source stack
+     * @returns {object} - {success, item?, returned?, reason?, targetRarity?}
      */
-    perfectEquipment(itemIds) {
-        if (!Array.isArray(itemIds) || itemIds.length !== 10) {
-            return { success: false, reason: 'Need exactly 10 items' };
+    perfectEquipment(stackId) {
+        // This method is injected onto the engine (engine.perfectEquipment), but the
+        // UI calls EngineeringSystem.perfectEquipment directly. Normalize `this` to the
+        // engine so both call styles work (engine owns state + the injected helpers).
+        const self = (this && this.state) ? this
+            : (typeof GameEngine !== 'undefined' ? GameEngine : this);
+
+        if (typeof stackId !== 'string' || !stackId) {
+            return { success: false, reason: 'No stack selected' };
         }
 
-        // Get all items from bank
-        const items = [];
-        for (const id of itemIds) {
-            // Try instanced bank first
-            let item = null;
-            if (this.state.bank?.instanced?.[id]) {
-                item = this.state.bank.instanced[id];
-            } else if (this.getInstancedItem) {
-                item = this.getInstancedItem(id);
-            }
+        // Resolve the source stack.
+        const stack = (typeof self.getEquipmentInstance === 'function')
+            ? self.getEquipmentInstance(stackId)
+            : self.state.bank?.instanced?.[stackId];
 
-            if (!item) {
-                return { success: false, reason: `Item not found: ${id}` };
-            }
-            items.push(item);
+        if (!stack) {
+            return { success: false, reason: `Stack not found: ${stackId}` };
         }
 
-        // Validate all items are same base type
-        const baseItemId = items[0].baseItemId;
-        if (!items.every(item => item.baseItemId === baseItemId)) {
-            return { success: false, reason: 'All items must be the same type' };
+        const available = stack.quantity || 1;
+        if (available < 10) {
+            return { success: false, reason: 'Need 10 copies in the stack' };
         }
 
-        // Calculate average rarity to determine target
+        // Resolve base id + current rarity (fall back to parsing the deterministic id).
         const rarityOrder = EngineeringSystem.RARITY_ORDER;
-        const avgRarityIndex = Math.floor(
-            items.reduce((sum, item) => {
-                const idx = rarityOrder.indexOf(item.rarity);
-                return sum + (idx >= 0 ? idx : 0);
-            }, 0) / items.length
-        );
+        const baseItemId = stack.baseItemId
+            || (typeof ItemIdUtils !== 'undefined' ? ItemIdUtils.getBaseItemId(stackId) : stackId.split('_instance_')[0]);
+        const rarity = stack.rarity
+            || (stackId.includes('_instance_') ? stackId.split('_instance_')[1] : 'common');
 
-        const targetRarityIndex = Math.min(avgRarityIndex + 1, rarityOrder.length - 1);
+        const currentIndex = rarityOrder.indexOf(rarity);
+        if (currentIndex < 0) {
+            return { success: false, reason: `Unknown rarity: ${rarity}` };
+        }
+        if (currentIndex >= rarityOrder.length - 1) {
+            return { success: false, reason: 'Already at max rarity' };
+        }
+        const targetRarityIndex = currentIndex + 1;
         const targetRarity = rarityOrder[targetRarityIndex];
 
-        // Calculate success chance (only 0.1% bonus per engineering level - reduced from design)
-        const engineeringLevel = this.state.skills?.engineering?.level || 0;
+        // Success chance scales with engineering level.
+        const engineeringLevel = self.state.skills?.engineering?.level || 0;
         const baseChance = EngineeringSystem.PERFECTION_BASE_RATES[targetRarity] || 10;
         const successChance = baseChance + (engineeringLevel * 0.1);
 
-        // Increment attempt counter
-        this.state.engineering.perfectionAttempts++;
+        if (!self.state.engineering) self.state.engineering = {};
+        self.state.engineering.perfectionAttempts = (self.state.engineering.perfectionAttempts || 0) + 1;
 
-        // Remove input items from bank
-        for (const id of itemIds) {
-            if (this.removeInstancedItemFromBank) {
-                this.removeInstancedItemFromBank(id);
-            } else if (this.state.bank?.instanced?.[id]) {
-                delete this.state.bank.instanced[id];
-            }
-        }
+        // Consume 10 from the source stack.
+        EngineeringSystem._consumeFromStack.call(self, stackId, 10);
 
-        // Roll for success
+        const itemDef = EngineeringSystem._getItemDef.call(self, baseItemId);
+
+        // Roll for success.
         if (Math.random() * 100 < successChance) {
-            // Success!
-            const itemDef = EngineeringSystem._getItemDef.call(this, baseItemId);
+            // Mint 1 of the next rarity into its own stack (merges if one exists).
+            const newItem = (typeof self.createEquipmentInstance === 'function')
+                ? self.createEquipmentInstance(baseItemId, targetRarity, null, 1)
+                : {
+                    baseItemId, rarity: targetRarity,
+                    instanceId: `${baseItemId}_instance_${targetRarity}`,
+                    quantity: 1,
+                    name: `${targetRarity.charAt(0).toUpperCase() + targetRarity.slice(1)} ${itemDef?.name || baseItemId}`
+                };
 
-            const newItem = {
-                baseItemId: baseItemId,
-                rarity: targetRarity,
-                instanceId: `${baseItemId}_perfect_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                stats: items[0].stats || {}, // Inherit stats from first item (could be improved)
-                createdAt: Date.now(),
-                perfected: true,
-                name: `${targetRarity.charAt(0).toUpperCase() + targetRarity.slice(1)} ${itemDef?.name || baseItemId}`
-            };
-
-            // Add to bank
-            if (this.addInstancedItemToBank) {
-                this.addInstancedItemToBank(newItem);
-            } else if (this.state.bank?.instanced) {
-                this.state.bank.instanced[newItem.instanceId] = newItem;
+            if (self.addEquipmentInstance) {
+                self.addEquipmentInstance(newItem);
+            } else if (self.state.bank?.instanced) {
+                self.state.bank.instanced[newItem.instanceId] = newItem;
             }
 
-            this.state.engineering.perfectionSuccesses++;
+            self.state.engineering.perfectionSuccesses = (self.state.engineering.perfectionSuccesses || 0) + 1;
 
-            // Gain engineering XP
-            if (this.gainSkillExp) {
-                this.gainSkillExp('engineering', 50 + (targetRarityIndex * 25));
+            if (self.gainSkillExp) {
+                self.gainSkillExp('engineering', 50 + (targetRarityIndex * 25));
             }
-
-            // Emit event
             if (typeof EventBus !== 'undefined') {
                 EventBus.emit('perfection-success', { item: newItem, targetRarity });
             }
 
             console.log(`[EngineeringSystem] Perfection success! Created ${targetRarity} ${itemDef?.name || baseItemId}`);
-            return { success: true, item: newItem };
+            return { success: true, item: newItem, targetRarity };
+        }
 
+        // Failure - return some of the consumed copies based on engineering level.
+        let returnCount = 0;
+        if (engineeringLevel >= 76) returnCount = 5;
+        else if (engineeringLevel >= 51) returnCount = 3;
+        else if (engineeringLevel >= 26) returnCount = 1;
+
+        if (returnCount > 0) {
+            const returned = (typeof self.createEquipmentInstance === 'function')
+                ? self.createEquipmentInstance(baseItemId, rarity, null, returnCount)
+                : null;
+            if (returned && self.addEquipmentInstance) {
+                self.addEquipmentInstance(returned);
+            }
+        }
+
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('perfection-failed', { returned: returnCount });
+        }
+
+        console.log(`[EngineeringSystem] Perfection failed. Returned ${returnCount} copies.`);
+        return { success: false, returned: returnCount };
+    },
+
+    /**
+     * Remove N copies from a deterministic equipment stack, keeping the legacy
+     * equipmentInstances mirror in sync. Removes the stack entirely when it empties.
+     * @param {string} stackId
+     * @param {number} n
+     */
+    _consumeFromStack(stackId, n) {
+        const bank = this.state.bank || {};
+        const inst = bank.instanced?.[stackId];
+        if (!inst) return;
+
+        const remaining = (inst.quantity || 1) - n;
+        if (remaining > 0) {
+            inst.quantity = remaining;
+            if (bank.equipmentInstances?.[stackId]) {
+                bank.equipmentInstances[stackId].quantity = remaining;
+            }
+        } else if (typeof this.removeEquipmentInstance === 'function') {
+            this.removeEquipmentInstance(stackId);
         } else {
-            // Failure - return some items based on engineering level
-            // Level 1-25: 0 items returned
-            // Level 26-50: 1 item returned
-            // Level 51-75: 3 items returned
-            // Level 76-100: 5 items returned
-            let returnCount = 0;
-            if (engineeringLevel >= 76) {
-                returnCount = 5;
-            } else if (engineeringLevel >= 51) {
-                returnCount = 3;
-            } else if (engineeringLevel >= 26) {
-                returnCount = 1;
-            }
-
-            // Return items
-            for (let i = 0; i < returnCount && i < items.length; i++) {
-                if (this.addInstancedItemToBank) {
-                    this.addInstancedItemToBank(items[i]);
-                } else if (this.state.bank?.instanced) {
-                    this.state.bank.instanced[items[i].instanceId] = items[i];
-                }
-            }
-
-            // Emit event
-            if (typeof EventBus !== 'undefined') {
-                EventBus.emit('perfection-failed', { returned: returnCount });
-            }
-
-            console.log(`[EngineeringSystem] Perfection failed. Returned ${returnCount} items.`);
-            return { success: false, returned: returnCount };
+            delete bank.instanced[stackId];
+            if (bank.equipmentInstances) delete bank.equipmentInstances[stackId];
         }
     },
 
@@ -575,23 +595,35 @@ const EngineeringSystem = {
         }
 
         // Check if recipe already unlocked
+        if (!this.state.unlockedRecipes) this.state.unlockedRecipes = {};
+        if (!Array.isArray(this.state.discoveredRecipes)) this.state.discoveredRecipes = [];
         const recipeId = itemDef.recipeId || itemId;
         if (this.state.unlockedRecipes[recipeId]) {
             return { success: false, reason: "Recipe already unlocked" };
         }
 
-        // Cost: tokens + item consumed
-        const tokenCost = itemDef.reverseEngineerCost || 5;
+        // Cost: tokens + item consumed. Use ?? so an explicit 0 (free, find-gated) is honored.
+        const tokenCost = itemDef.reverseEngineerCost ?? 5;
         if (this.state.engineering.tokens < tokenCost) {
             return { success: false, reason: `Need ${tokenCost} Engineering Tokens (have ${this.state.engineering.tokens})` };
         }
 
-        // Deduct costs
+        // Deduct costs (consume one sample). The engine exposes removeItemFromBank;
+        // fall back to removeItem for compatibility.
         this.state.engineering.tokens -= tokenCost;
-        this.removeItem(itemId, 1);
+        if (typeof this.removeItemFromBank === 'function') {
+            this.removeItemFromBank(itemId, 1);
+        } else if (typeof this.removeItem === 'function') {
+            this.removeItem(itemId, 1);
+        }
 
-        // Unlock recipe
+        // Unlock recipe. reverseEngineerItem records the unlock in unlockedRecipes, but
+        // canCraft() gates discoverable recipes on discoveredRecipes — bridge the two so an
+        // RE'd recipe actually becomes craftable.
         this.state.unlockedRecipes[recipeId] = true;
+        if (!this.state.discoveredRecipes.includes(recipeId)) {
+            this.state.discoveredRecipes.push(recipeId);
+        }
 
         console.log(`🔬 Reverse engineered ${itemDef.name}!`);
 

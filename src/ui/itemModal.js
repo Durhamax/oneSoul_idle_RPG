@@ -107,8 +107,8 @@ const ItemModal = {
         document.getElementById('itemModalQuantity').textContent = `Owned: ${quantity}`;
         document.getElementById('itemModalDescription').textContent = itemDef.description || 'No description available.';
 
-        // Stats section
-        this.renderStats(itemDef);
+        // Stats section (pass the bank instance so rarity-scaled stats are shown)
+        this.renderStats(itemDef, bankItem);
 
         // Recipes section
         this.renderRecipes(itemId);
@@ -121,71 +121,145 @@ const ItemModal = {
     },
 
     /**
-     * Render item stats
+     * Render item stats.
+     * @param {object} itemDef - base item definition
+     * @param {object} [bankItem] - the bank entry; for crafted equipment this is the
+     *        instance carrying rarity-scaled `stats`, which we prefer over the base def.
      */
-    renderStats(itemDef) {
+    renderStats(itemDef, bankItem) {
         const container = document.getElementById('itemModalStats');
 
-        if (!itemDef.stats || Object.keys(itemDef.stats).length === 0) {
+        // Equipment defs store their numbers under `combatStats`; crafted instances
+        // carry the rarity-scaled copy under `stats`. Prefer the instance when present.
+        const src = (bankItem && bankItem.stats && Object.keys(bankItem.stats).length)
+            ? bankItem.stats
+            : (itemDef.combatStats || itemDef.stats || {});
+
+        const sections = [];
+
+        // ---- Combat ----
+        const COMBAT = [
+            ['damage', 'Damage', '', ''],
+            ['attackDamage', 'Attack Damage', '', ''],
+            ['attackSpeed', 'Attack Speed', '', '/s'],
+            ['accuracy', 'Accuracy', '', ''],
+            ['defense', 'Defense', '', ''],
+            ['health', 'Health', '+', ''],
+            ['maxHealth', 'Health', '+', ''],
+            ['evasion', 'Evasion', '+', ''],
+            ['critChance', 'Crit Chance', '+', '%'],
+            ['critDamage', 'Crit Damage', '+', '%'],
+            ['damageReduction', 'Damage Reduction', '', '%'],
+            ['flatDamageReduction', 'Flat Damage Reduction', '', ''],
+        ];
+        let combatRows = '';
+        for (const [key, label, pre, suf] of COMBAT) {
+            if (src[key]) combatRows += `<div class="stat-row"><span>${label}:</span><span class="stat-value">${pre}${src[key]}${suf}</span></div>`;
+        }
+        if (combatRows) sections.push('<div class="stat-category"><h4>⚔️ Combat</h4>' + combatRows + '</div>');
+
+        // ---- Gathering ----
+        const GATHER = {
+            miningPower: 'Mining Power', loggingPower: 'Logging Power', fishingPower: 'Fishing Power',
+            huntingPower: 'Hunting Power', foragingPower: 'Foraging Power', thievingPower: 'Thieving Power'
+        };
+        let gatherRows = '';
+        for (const key in GATHER) {
+            if (src[key]) gatherRows += `<div class="stat-row"><span>${GATHER[key]}:</span><span class="stat-value">${src[key]}</span></div>`;
+        }
+        if (gatherRows) sections.push('<div class="stat-category"><h4>⛏️ Gathering</h4>' + gatherRows + '</div>');
+
+        // ---- Tool identity (gathering tools: type, tier, skill requirement) ----
+        if (itemDef.weaponCategory === 'tool' || itemDef.toolType) {
+            let rows = '';
+            if (itemDef.toolType) rows += `<div class="stat-row"><span>Tool Type:</span><span class="stat-value">${this._cap(itemDef.toolType)}</span></div>`;
+            if (itemDef.toolTier) rows += `<div class="stat-row"><span>Tool Tier:</span><span class="stat-value">${itemDef.toolTier}</span></div>`;
+            if (itemDef.requirements) {
+                for (const [skill, lvl] of Object.entries(itemDef.requirements)) {
+                    if (skill === 'characterLevel' && lvl <= 1) continue;
+                    rows += `<div class="stat-row"><span>Requires:</span><span class="stat-value">${this._cap(skill)} Lv.${lvl}</span></div>`;
+                }
+            }
+            if (rows) sections.push('<div class="stat-category"><h4>🛠️ Tool</h4>' + rows + '</div>');
+        }
+
+        // ---- Gathering modifiers (per-skill speed / accuracy / yield from gatheringBonus) ----
+        const gb = (bankItem && bankItem.gatheringBonus && Object.keys(bankItem.gatheringBonus).length)
+            ? bankItem.gatheringBonus
+            : itemDef.gatheringBonus;
+        if (gb && Object.keys(gb).length) {
+            let rows = '';
+            for (const [skill, mods] of Object.entries(gb)) {
+                if (!mods || typeof mods !== 'object') continue;
+                const label = this._cap(skill);
+                if (mods.speed && mods.speed !== 1) {
+                    rows += `<div class="stat-row"><span>${label} Speed:</span><span class="stat-value">+${Math.round((mods.speed - 1) * 100)}%</span></div>`;
+                }
+                if (mods.accuracy) {
+                    rows += `<div class="stat-row"><span>${label} Accuracy:</span><span class="stat-value">+${Math.round(mods.accuracy * 100)}%</span></div>`;
+                }
+                if (mods.yield) {
+                    const yieldTxt = mods.yield > 1
+                        ? `+${Math.round((mods.yield - 1) * 100)}%`
+                        : `+${mods.yield}`;
+                    rows += `<div class="stat-row"><span>${label} Yield:</span><span class="stat-value">${yieldTxt}</span></div>`;
+                }
+            }
+            if (rows) sections.push('<div class="stat-category"><h4>⛏️ Gathering Modifiers</h4>' + rows + '</div>');
+        }
+
+        // ---- Skilling bonus (XP / yield gear; it carries no combat stats) ----
+        if (itemDef.skillingBonus) {
+            const sb = itemDef.skillingBonus;
+            const skillsTxt = Array.isArray(sb.skills)
+                ? sb.skills.map(s => this._cap(s)).join(', ')
+                : (sb.skills === 'all' ? 'All skills' : this._cap(sb.skills || ''));
+            let rows = '';
+            if (skillsTxt) rows += `<div class="stat-row"><span>Skill:</span><span class="stat-value">${skillsTxt}</span></div>`;
+            if (sb.xp) rows += `<div class="stat-row"><span>Bonus XP:</span><span class="stat-value">+${(sb.xp * 100).toFixed(1)}%</span></div>`;
+            if (sb.yield) rows += `<div class="stat-row"><span>Bonus Yield:</span><span class="stat-value">${(sb.yield.chance * 100).toFixed(0)}% → +${sb.yield.amount}</span></div>`;
+            if (rows) sections.push('<div class="stat-category"><h4>🌿 Skilling</h4>' + rows + '</div>');
+        }
+
+        // ---- Attributes ----
+        if (itemDef.attributes && Object.keys(itemDef.attributes).length) {
+            let rows = '';
+            for (const [k, v] of Object.entries(itemDef.attributes)) {
+                if (v) rows += `<div class="stat-row"><span>${this._cap(k)}:</span><span class="stat-value">+${v}</span></div>`;
+            }
+            if (rows) sections.push('<div class="stat-category"><h4>✨ Attributes</h4>' + rows + '</div>');
+        }
+
+        // ---- Properties ----
+        let propRows = '';
+        const weight = itemDef.weight ?? src.weight;
+        if (weight) propRows += `<div class="stat-row"><span>Weight:</span><span class="stat-value">${weight}</span></div>`;
+        const dtype = src.damageType || itemDef.damageType;
+        if (dtype) {
+            const d = GameEngine.definitions.damageTypes?.[dtype];
+            propRows += `<div class="stat-row"><span>Damage Type:</span><span class="stat-value" style="color: ${d?.color || '#fff'}">${d?.name || dtype}</span></div>`;
+        }
+        if (itemDef.equipSlot) propRows += `<div class="stat-row"><span>Slot:</span><span class="stat-value">${this._cap(itemDef.equipSlot)}</span></div>`;
+        if (itemDef.stackLimit && itemDef.stackLimit !== 1) propRows += `<div class="stat-row"><span>Stack Limit:</span><span class="stat-value">${itemDef.stackLimit === Infinity ? '∞' : itemDef.stackLimit}</span></div>`;
+        if (propRows) sections.push('<div class="stat-category"><h4>📦 Properties</h4>' + propRows + '</div>');
+
+        // ---- Consumable ----
+        let consRows = '';
+        if (itemDef.healAmount) consRows += `<div class="stat-row"><span>Heal Amount:</span><span class="stat-value">+${itemDef.healAmount} HP</span></div>`;
+        if (itemDef.foodValue) consRows += `<div class="stat-row"><span>Food Value:</span><span class="stat-value">${itemDef.foodValue}</span></div>`;
+        if (consRows) sections.push('<div class="stat-category"><h4>🧪 Consumable</h4>' + consRows + '</div>');
+
+        if (!sections.length) {
             container.innerHTML = '<p style="color: #888; text-align: center;">No stats available</p>';
             return;
         }
+        container.innerHTML = '<div class="item-stats-grid">' + sections.join('') + '</div>';
+    },
 
-        let html = '<div class="item-stats-grid">';
-
-        // Combat stats
-        const combatStats = ['attackDamage', 'attackSpeed', 'accuracy', 'maxHealth', 'damageReduction', 'critChance', 'critDamage'];
-        const hasCombatStats = combatStats.some(stat => itemDef.stats[stat]);
-
-        if (hasCombatStats) {
-            html += '<div class="stat-category"><h4>⚔️ Combat</h4>';
-            if (itemDef.stats.attackDamage) html += `<div class="stat-row"><span>Attack Damage:</span><span class="stat-value">${itemDef.stats.attackDamage}</span></div>`;
-            if (itemDef.stats.attackSpeed) html += `<div class="stat-row"><span>Attack Speed:</span><span class="stat-value">${itemDef.stats.attackSpeed}/s</span></div>`;
-            if (itemDef.stats.accuracy) html += `<div class="stat-row"><span>Accuracy:</span><span class="stat-value">+${itemDef.stats.accuracy}%</span></div>`;
-            if (itemDef.stats.maxHealth) html += `<div class="stat-row"><span>Health:</span><span class="stat-value">+${itemDef.stats.maxHealth}</span></div>`;
-            if (itemDef.stats.damageReduction) html += `<div class="stat-row"><span>Damage Reduction:</span><span class="stat-value">${itemDef.stats.damageReduction}%</span></div>`;
-            if (itemDef.stats.critChance) html += `<div class="stat-row"><span>Crit Chance:</span><span class="stat-value">+${itemDef.stats.critChance}%</span></div>`;
-            if (itemDef.stats.critDamage) html += `<div class="stat-row"><span>Crit Damage:</span><span class="stat-value">+${itemDef.stats.critDamage}%</span></div>`;
-            html += '</div>';
-        }
-
-        // Gathering stats
-        const gatheringStats = ['miningPower', 'loggingPower', 'fishingPower', 'huntingPower', 'foragingPower', 'thievingPower'];
-        const hasGatheringStats = gatheringStats.some(stat => itemDef.stats[stat]);
-
-        if (hasGatheringStats) {
-            html += '<div class="stat-category"><h4>⛏️ Gathering</h4>';
-            if (itemDef.stats.miningPower) html += `<div class="stat-row"><span>Mining Power:</span><span class="stat-value">${itemDef.stats.miningPower}</span></div>`;
-            if (itemDef.stats.loggingPower) html += `<div class="stat-row"><span>Logging Power:</span><span class="stat-value">${itemDef.stats.loggingPower}</span></div>`;
-            if (itemDef.stats.fishingPower) html += `<div class="stat-row"><span>Fishing Power:</span><span class="stat-value">${itemDef.stats.fishingPower}</span></div>`;
-            if (itemDef.stats.huntingPower) html += `<div class="stat-row"><span>Hunting Power:</span><span class="stat-value">${itemDef.stats.huntingPower}</span></div>`;
-            if (itemDef.stats.foragingPower) html += `<div class="stat-row"><span>Foraging Power:</span><span class="stat-value">${itemDef.stats.foragingPower}</span></div>`;
-            if (itemDef.stats.thievingPower) html += `<div class="stat-row"><span>Thieving Power:</span><span class="stat-value">${itemDef.stats.thievingPower}</span></div>`;
-            html += '</div>';
-        }
-
-        // Other stats
-        if (itemDef.stats.weight) {
-            html += '<div class="stat-category"><h4>📦 Properties</h4>';
-            html += `<div class="stat-row"><span>Weight:</span><span class="stat-value">${itemDef.stats.weight}</span></div>`;
-            if (itemDef.stats.damageType) {
-                const damageTypeDef = GameEngine.definitions.damageTypes[itemDef.stats.damageType];
-                html += `<div class="stat-row"><span>Damage Type:</span><span class="stat-value" style="color: ${damageTypeDef?.color || '#fff'}">${damageTypeDef?.name || itemDef.stats.damageType}</span></div>`;
-            }
-            if (itemDef.stackLimit) html += `<div class="stat-row"><span>Stack Limit:</span><span class="stat-value">${itemDef.stackLimit === Infinity ? '∞' : itemDef.stackLimit}</span></div>`;
-            html += '</div>';
-        }
-
-        // Consumable stats
-        if (itemDef.healAmount || itemDef.foodValue) {
-            html += '<div class="stat-category"><h4>🧪 Consumable</h4>';
-            if (itemDef.healAmount) html += `<div class="stat-row"><span>Heal Amount:</span><span class="stat-value">+${itemDef.healAmount} HP</span></div>`;
-            if (itemDef.foodValue) html += `<div class="stat-row"><span>Food Value:</span><span class="stat-value">${itemDef.foodValue}</span></div>`;
-            html += '</div>';
-        }
-
-        html += '</div>';
-        container.innerHTML = html;
+    /** Capitalize the first letter of a word. */
+    _cap(s) {
+        if (!s) return '';
+        return s.charAt(0).toUpperCase() + s.slice(1);
     },
 
     /**
@@ -356,6 +430,26 @@ const ItemModal = {
 
         // === SECONDARY ACTIONS ===
 
+        // Reverse Engineer button — strip a salvaged item to learn its recipe.
+        if (itemDef.reverseEngineerable) {
+            const recipeId = itemDef.recipeId || itemId;
+            const alreadyKnown = GameEngine.state.unlockedRecipes && GameEngine.state.unlockedRecipes[recipeId];
+            if (alreadyKnown) {
+                html += `<button class="action-btn" disabled style="opacity:0.6;">
+                    🔬 Recipe Learned
+                </button>`;
+            } else {
+                const recipe = (typeof RecipeRegistry !== 'undefined' && RecipeRegistry.get) ? RecipeRegistry.get(recipeId) : null;
+                const unlockName = recipe && recipe.name ? recipe.name : 'its blueprint';
+                html += `<button class="action-btn reverse-engineer-btn" onclick="ItemModal.reverseEngineer('${itemId}')">
+                    🔬 Reverse Engineer
+                </button>`;
+                html += `<div class="reverse-engineer-hint" style="margin-top:6px;font-size:0.78em;color:#5fb0e8;line-height:1.3;">
+                    🔬 Strip this salvaged part to learn <strong>${unlockName}</strong> — consumes the sample and unlocks the recipe for crafting.
+                </div>`;
+            }
+        }
+
         // Sell button
         const sellValue = itemDef.value || 10;
         html += `<button class="action-btn sell-btn" onclick="ItemModal.sellItem('${itemId}')">
@@ -412,6 +506,42 @@ const ItemModal = {
 
         this.close();
         UICore.update();
+    },
+
+    /**
+     * Reverse-engineer a salvaged item into a crafting recipe.
+     */
+    reverseEngineer(itemId) {
+        if (typeof GameEngine === 'undefined' || !GameEngine.reverseEngineerItem) {
+            if (typeof Animations !== 'undefined' && Animations.showNotification) {
+                Animations.showNotification('❌ Reverse engineering unavailable', 'error', 3000);
+            }
+            return;
+        }
+
+        const result = GameEngine.reverseEngineerItem(itemId);
+
+        if (result.success) {
+            const recipe = (typeof RecipeRegistry !== 'undefined' && RecipeRegistry.get)
+                ? RecipeRegistry.get(result.recipeId) : null;
+            const label = recipe?.name || result.recipeId;
+            if (typeof Animations !== 'undefined' && Animations.showNotification) {
+                Animations.showNotification(`🔬 Recipe unlocked: ${label}`, 'success', 3000);
+            }
+        } else {
+            if (typeof Animations !== 'undefined' && Animations.showNotification) {
+                Animations.showNotification(`❌ ${result.reason || 'Cannot reverse engineer'}`, 'error', 3000);
+            }
+        }
+
+        // Refresh bank UI (item consumed) and close.
+        if (typeof EquipmentUI !== 'undefined' && EquipmentUI.updateBank) {
+            EquipmentUI.lastBankState = null;
+            EquipmentUI.updateBank();
+        }
+
+        this.close();
+        if (typeof UICore !== 'undefined' && UICore.update) UICore.update();
     },
 
     /**

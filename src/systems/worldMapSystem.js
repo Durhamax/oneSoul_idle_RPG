@@ -75,7 +75,7 @@ const WorldMapSystem = {
             const discoverableNodes = this.getDiscoverableNodes(regionId, biomeDef);
 
             // Get discoverable enemies
-            const discoverableEnemies = this.getDiscoverableEnemies(distanceFromStart);
+            const discoverableEnemies = this.getDiscoverableEnemies(distanceFromStart, regionId);
 
             // Get available missions
             const availableMissions = this.getAvailableMissions(regionId, isStartingRegion);
@@ -123,6 +123,11 @@ const WorldMapSystem = {
     getBiome(q, r, mapRadius, biomeTypes) {
         const startQ = -3;
         const startR = -4;
+
+        // Canon override: hand-authored regions in WorldRegions may pin their biome
+        // (forest / coast) regardless of the positional rules below.
+        const canon = (typeof WorldRegions !== 'undefined') ? WorldRegions[`region_${q}_${r}`] : null;
+        if (canon && canon.biome) return canon.biome;
 
         // Starting region is plains
         if (q === startQ && r === startR) return 'plains';
@@ -282,7 +287,13 @@ const WorldMapSystem = {
     /**
      * Get discoverable enemies based on region difficulty
      */
-    getDiscoverableEnemies(distanceFromStart) {
+    getDiscoverableEnemies(distanceFromStart, regionId) {
+        // Canon override: hand-authored regions declare their own enemy roster.
+        const canon = (regionId && typeof WorldRegions !== 'undefined') ? WorldRegions[regionId] : null;
+        if (canon && Array.isArray(canon.discoverableEnemies) && canon.discoverableEnemies.length) {
+            return [...canon.discoverableEnemies];
+        }
+
         const discoverableEnemies = [];
 
         if (this.gameEngine.definitions.enemies) {

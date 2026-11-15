@@ -475,11 +475,13 @@ const NavigationUI = {
             return;
         }
 
-        // Create state snapshot - only track things that affect map display or major UI changes
+        // Create state snapshot - only track things that affect map display or major UI changes.
+        // Intentionally NOT tracking isNavigating / currentActivity: toggling exploration
+        // must NOT rebuild the whole page (a rebuild re-inits the hex map and flickers).
+        // The toggle button, bars and labels are updated live in
+        // updateNavigationProgressBars() instead.
         const currentState = {
             regionId: regionId,
-            isNavigating: activeNav.isNavigating,
-            currentActivity: state.currentActivity,
             discoveredPaths: JSON.stringify(regionState.discoveredExitPaths)
             // Removed: isRecovering (progress bar state, doesn't require full rebuild)
             // Removed: discoveredNodes, discoveredStations (shown in Nodes tab, not map)
@@ -503,17 +505,27 @@ const NavigationUI = {
         const fogPercent = Math.min(100, Math.max(0, fogProgress)).toFixed(0);
         const isFullyExplored = fogProgress >= 100;
 
+        // Navigation skill values for the shared skill strip (identical to gather/craft)
+        const navSkill = state.skills.navigation || { level: 1, exp: 0 };
+        const navLevel = navSkill.level || 1;
+        const navExpReq = GameEngine.getSkillExpRequired?.('navigation') || 100;
+        const navExpPct = Math.min(100, ((navSkill.exp || 0) / navExpReq) * 100);
+        const fmt = (typeof Formatting !== 'undefined' && Formatting.formatNumber) ? Formatting.formatNumber : (n) => n;
+
+        const navLabel = isRecovering ? 'Resting' : isNavigating ? 'Discovery Progress' : 'Navigation Action';
+        const navTiming = isRecovering ? 'Resting' : isNavigating ? '0.0s' : 'Not exploring';
+        const navDesc = isRecovering
+            ? 'Resting to recover endurance - discovery paused'
+            : isNavigating
+                ? `Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)`
+                : 'Start exploring to discover resources and enemies in this region';
+
         let html = '';
 
         html += `
-            <!-- Current Location (front & center) -->
+            <!-- Current Location: name (left) + exploration bar/value (right) -->
             <div class="nav-location-banner">
-                <div class="nav-location-icon">${biomeDef.icon || '📍'}</div>
-                <div class="nav-location-main">
-                    <div class="nav-location-label">Current Location</div>
-                    <div class="nav-location-name">${hexDef.name}</div>
-                    <div class="nav-location-biome">${biomeDef.name}</div>
-                </div>
+                <div class="nav-location-name">${hexDef.name}</div>
                 <div class="nav-location-progress">
                     <div class="nav-location-progress-head">
                         <span>Exploration</span>
@@ -527,53 +539,66 @@ const NavigationUI = {
 
             <!-- Integrated Map Container (map + hex grid), un-boxed -->
             <div id="hexMapContainer"></div>
-            <div class="nav-map-hint">
-                <span>📍 Click a hex to view region details</span>
-                <span>🖱️ Scroll to zoom • Drag to pan</span>
-            </div>
 
             <!-- Two columns: exploration controls (left) + discoveries (right) -->
             <div class="nav-columns">
                 <div class="nav-col nav-col--controls">
-                    <!-- Endurance Bar -->
-                    <div class="nav-control-block">
-                        <div class="interval-bar-header">
-                            <span id="navigationEnduranceLabel" class="interval-bar-text">${isRecovering ? '💤 Resting' : '💪 Endurance'}</span>
-                            <span id="navigationHealthText" class="interval-bar-time">${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}</span>
+                    <!-- Navigation: the skill strip + two bars are borrowed identically
+                         from the gather/craft active panel (.gap-skill + .gap-bar). -->
+                    <div class="nav-control-block gather-active-panel nav-active-panel" style="--skill-color: var(--color-primary);">
+                        <!-- Shared skill strip (icon + Navigation + level, xp bar, mods) -->
+                        <div class="gap-skill">
+                            <div class="gap-skill-id">
+                                <span class="gap-skill-icon">🧭</span>
+                                <span class="gap-skill-name">Navigation</span>
+                                <span class="gap-skill-level">Lv.${navLevel}</span>
+                            </div>
+                            <div class="gap-skill-xp">
+                                <div class="gap-skill-xp-track">
+                                    <div class="gap-skill-xp-fill" style="width: ${navExpPct}%;"></div>
+                                </div>
+                                <span class="gap-skill-xp-text">${fmt(navSkill.exp || 0)} / ${fmt(navExpReq)} XP</span>
+                            </div>
+                            <div class="gap-skill-mods">
+                                <span class="bonus-tag speed">+${Math.min(navLevel * 2, 50)}% Speed</span>
+                                <span class="bonus-tag yield">${stats.discoveryChance.toFixed(1)}% Find</span>
+                            </div>
                         </div>
-                        <div class="interval-bar-track">
-                            <div class="interval-bar-fill animated" id="navigationHealthBar" style="width: ${endurancePercent}%; background: linear-gradient(90deg, ${isRecovering ? '#FFC107, #FF9800' : '#4caf50, #8bc34a'});"></div>
+
+                        <!-- Dynamic action label (replaces the node name line) -->
+                        <div class="gap-nodename" id="navigationIntervalLabel">${navLabel}</div>
+
+                        <!-- Interval (discovery) bar -->
+                        <div class="gap-bar">
+                            <div class="gap-bar-fill nav-discovery-fill" id="navigationIntervalBar" style="width: 0%;"></div>
                         </div>
-                        <div id="navigationEnduranceDesc" class="nav-control-desc" style="margin-top: 6px;">
-                            ${isRecovering ? '💤 Recovering endurance (consuming rest resources)' : isNavigating ? '⚡ Draining while exploring' : '🛑 Paused'}
+
+                        <!-- Endurance (health) bar — same format, directly under the interval bar -->
+                        <div class="gap-bar">
+                            <div class="gap-bar-fill gap-health-fill${isRecovering ? ' is-recovering' : ''}" id="navigationHealthBar" style="width: ${endurancePercent}%;"></div>
                         </div>
+
+                        <!-- Live readout + toggle (mirrors .gap-controls success + stop) -->
+                        <div class="gap-controls">
+                            <span class="gap-success">
+                                <span id="navigationIntervalText">${navTiming}</span>
+                                <span class="nav-endurance-readout">💪 <span id="navigationHealthText">${Math.floor(activeNav.endurance)}/${activeNav.maxEndurance}</span></span>
+                            </span>
+                            <button id="navigationToggleBtn" class="gap-stop${isNavigating ? '' : ' is-start'}"
+                                    onclick="${isNavigating ? 'stopNavigating()' : 'startNavigating()'}">
+                                ${isNavigating ? 'Stop' : 'Explore'}
+                            </button>
+                        </div>
+                        <div id="navigationIntervalDesc" class="nav-control-desc" style="margin-top: 8px;">${navDesc}</div>
                     </div>
 
-                    <!-- Navigation Action Interval Bar -->
+                    <!-- Camping Resources -->
                     <div class="nav-control-block">
-                        <div class="interval-bar-header">
-                            <span id="navigationIntervalLabel" class="interval-bar-text">${isRecovering ? '💤 Recovery Mode' : isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action'}</span>
-                            <span id="navigationIntervalText" class="interval-bar-time">${isRecovering ? 'Resting' : isNavigating ? '0.0s' : 'Not Exploring'}</span>
-                        </div>
-                        <div class="interval-bar-track">
-                            <div class="interval-bar-fill animated" id="navigationIntervalBar" style="width: 0%; background: linear-gradient(90deg, #2196F3, #64B5F6);"></div>
-                        </div>
-                        <div id="navigationIntervalDesc" class="nav-control-desc" style="margin: 8px 0;">
-                        ${isRecovering ? 'Resting to recover endurance - Discovery paused' : isNavigating ? `Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)` : 'Click Start Exploring to discover resources and enemies in this region'}
-                        </div>
-                        <button onclick="${isNavigating ? 'stopNavigating()' : 'startNavigating()'}"
-                                style="width: 100%; background: ${isNavigating ? 'var(--color-danger)' : 'var(--color-primary)'}; margin-top: 5px;">
-                            ${isNavigating ? '⏹️ Stop Exploring' : '🧭 Start Exploring'}
-                        </button>
-                    </div>
-
-                    <!-- Rest Resource Equipment -->
-                    <div class="nav-control-block">
-                        <div class="nav-control-title">🔥 Campfire Resources</div>
+                        <div class="nav-panel-title">Camping Resources</div>
                         <div class="nav-control-desc" style="margin-bottom: 10px;">
                             Select fuel and food for campfire recovery. Better fuel = faster recovery.
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="nav-camping-tiles">
                             ${this.renderRestEquipmentSlot('food')}
                             ${this.renderFuelSelector()}
                         </div>
@@ -584,13 +609,13 @@ const NavigationUI = {
                 <div class="nav-col nav-col--discoveries">
                     <!-- Explore new tiles -->
                     <div class="nav-control-block">
-                        <div class="nav-control-title">🧭 Explore New Tiles</div>
+                        <div class="nav-panel-title">Explore New Tiles</div>
                         ${this.renderAdjacentRegions(regionId, regionState, hexDef)}
                     </div>
 
                     <!-- Discovered nodes -->
                     <div class="nav-control-block">
-                        <div class="nav-control-title">🌿 Discovered Here</div>
+                        <div class="nav-panel-title">Discovered Here</div>
                         ${this.renderDiscoveredNodes(regionState, biomeDef)}
                     </div>
                 </div>
@@ -626,46 +651,40 @@ const NavigationUI = {
         // Always update endurance bar (whether navigating or not)
         const healthBar = document.getElementById("navigationHealthBar");
         const healthText = document.getElementById("navigationHealthText");
-        const enduranceLabel = document.getElementById("navigationEnduranceLabel");
-        const enduranceDesc = document.getElementById("navigationEnduranceDesc");
 
         if (healthBar && healthText) {
             const endurancePercent = (activeNav.endurance / activeNav.maxEndurance) * 100;
             healthBar.style.width = `${endurancePercent}%`;
             healthText.textContent = `${Math.max(0, Math.floor(activeNav.endurance))}/${activeNav.maxEndurance}`;
 
-            // Update color based on recovery state
-            healthBar.style.background = isRecovering
-                ? 'linear-gradient(90deg, #FFC107, #FF9800)'
-                : 'linear-gradient(90deg, #4caf50, #8bc34a)';
+            // Recovery state drives the amber fill via the shared gap-health-fill class
+            healthBar.classList.toggle('is-recovering', isRecovering);
         }
 
-        // Update endurance label and description based on recovery state
-        if (enduranceLabel) {
-            enduranceLabel.textContent = isRecovering ? '💤 Resting' : '💪 Endurance';
-        }
-        if (enduranceDesc) {
-            enduranceDesc.textContent = isRecovering
-                ? '💤 Recovering endurance (consuming rest resources)'
-                : isNavigating ? '⚡ Draining while exploring' : '🛑 Paused';
+        // Keep the toggle button in sync without rebuilding the page
+        const toggleBtn = document.getElementById("navigationToggleBtn");
+        if (toggleBtn) {
+            toggleBtn.textContent = isNavigating ? 'Stop' : 'Explore';
+            toggleBtn.classList.toggle('is-start', !isNavigating);
+            toggleBtn.setAttribute('onclick', isNavigating ? 'stopNavigating()' : 'startNavigating()');
         }
 
-        // Update interval label and description
+        // Update the dynamic action label (the gap-nodename line) and description
         const intervalLabel = document.getElementById("navigationIntervalLabel");
         const intervalDesc = document.getElementById("navigationIntervalDesc");
 
         if (intervalLabel) {
             intervalLabel.textContent = isRecovering
-                ? '💤 Recovery Mode'
-                : isNavigating ? '🧭 Discovery Progress' : '🧭 Navigation Action';
+                ? 'Resting'
+                : isNavigating ? 'Discovery Progress' : 'Navigation Action';
         }
         if (intervalDesc) {
             const stats = GameEngine.getNavigationStats();
             intervalDesc.textContent = isRecovering
-                ? 'Resting to recover endurance - Discovery paused'
+                ? 'Resting to recover endurance - discovery paused'
                 : isNavigating
                     ? `Making discoveries every ${(stats.discoveryInterval / 1000).toFixed(1)}s (${stats.discoveryChance.toFixed(1)}% chance)`
-                    : 'Click Start Exploring to discover resources and enemies in this region';
+                    : 'Start exploring to discover resources and enemies in this region';
         }
 
         // Only update interval and rest bars if navigating
@@ -675,7 +694,7 @@ const NavigationUI = {
             const intervalText = document.getElementById("navigationIntervalText");
             if (intervalBar && intervalText) {
                 intervalBar.style.width = "0%";
-                intervalText.textContent = "Not Exploring";
+                intervalText.textContent = "Not exploring";
             }
 
             // Reset rest bar when not navigating
@@ -910,13 +929,13 @@ const NavigationUI = {
      * Render adjacent regions for navigation view
      */
     renderAdjacentRegions(currentRegionId, regionState, hexDef) {
-        const adjacentRegions = hexDef.adjacent;
+        const adjacentRegions = hexDef.adjacent || {};
         const discoveredPaths = regionState.discoveredExitPaths || [];
         const navLevel = GameEngine.state.skills.navigation.level;
 
-        let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">';
-
-        let shownCount = 0;
+        // Only the tiles this tile is TOUCHING that haven't been explored (visited)
+        // yet — the frontier. A hex has at most ~5 such neighbours at any time.
+        const frontier = [];
         for (let direction in adjacentRegions) {
             const targetRegionId = adjacentRegions[direction];
             const targetHexDef = GameEngine.definitions.worldMap[targetRegionId];
@@ -924,49 +943,42 @@ const NavigationUI = {
             const targetRegionState = GameEngine.state.regions[targetRegionId];
 
             if (!targetHexDef || !targetBiomeDef) continue;
+            // Skip tiles already explored (visited) — this panel is "new" tiles only.
+            if (targetRegionState?.discovered) continue;
 
-            const hasLevelRequirement = navLevel >= (targetHexDef.navigationRequirement || 0);
+            frontier.push({ direction, targetRegionId, targetHexDef, targetBiomeDef });
+        }
 
-            // Only list tiles the player has the Navigation level to reach.
-            if (!hasLevelRequirement) continue;
-            shownCount++;
+        if (frontier.length === 0) {
+            return '<div style="color: #888; font-size: 0.9em;">No unexplored tiles touching here — keep exploring to reveal new paths.</div>';
+        }
 
+        let html = '<div class="nav-tile-list">';
+
+        for (const { direction, targetRegionId, targetHexDef } of frontier.slice(0, 6)) {
+            const req = targetHexDef.navigationRequirement || 0;
             const isPathDiscovered = discoveredPaths.includes(targetRegionId);
-            const canTravel = isPathDiscovered && hasLevelRequirement;
+            const canTravel = isPathDiscovered && navLevel >= req;
+
+            // Single compact row: region name (left) + inline action button (right).
+            let actionHTML;
+            if (!isPathDiscovered) {
+                actionHTML = `<button class="nav-tile-btn is-locked" disabled>🔍 Find path</button>`;
+            } else if (!canTravel) {
+                actionHTML = `<button class="nav-tile-btn is-locked" disabled>🔒 Lv.${req}</button>`;
+            } else {
+                actionHTML = `<button class="nav-tile-btn" onclick="travelToRegion('${targetRegionId}')">✈️ Travel ${direction}</button>`;
+            }
 
             html += `
-                <div style="background: #1a1a1a; padding: 12px; border-radius: 5px; border: 1px solid ${isPathDiscovered ? '#4a9eff' : '#333'}; opacity: ${isPathDiscovered ? '1' : '0.5'};">
-                    <div style="font-size: 0.75em; color: #888; margin-bottom: 3px;">${direction}</div>
-                    <div style="font-weight: bold; color: ${targetBiomeDef.color}; margin-bottom: 5px;">
-                        ${targetBiomeDef.icon} ${targetHexDef.name}
-                    </div>
-                    <div style="font-size: 0.8em; color: #aaa; margin-bottom: 8px;">${targetBiomeDef.name}</div>
-
-                    ${isPathDiscovered ? `
-                        <div style="font-size: 0.75em; color: #888; margin-bottom: 5px;">
-                            Required: Navigation Lv.${targetHexDef.navigationRequirement}
-                        </div>
-                        ${targetRegionState?.discovered ?
-                            `<div style="font-size: 0.75em; color: #4caf50; margin-bottom: 5px;">✅ Previously visited</div>` :
-                            `<div style="font-size: 0.75em; color: #ff9800; margin-bottom: 5px;">🆕 Unvisited</div>`
-                        }
-                        <button onclick="travelToRegion('${targetRegionId}')"
-                                ${!canTravel ? 'disabled' : ''}
-                                style="width: 100%; font-size: 0.85em; padding: 5px;">
-                            ${canTravel ? `✈️ Travel ${direction}` : `🔒 Nav Lv.${targetHexDef.navigationRequirement} Required`}
-                        </button>
-                    ` : `
-                        <div style="font-size: 0.75em; color: #ff9800;">🔍 Keep exploring here to find the path</div>
-                    `}
+                <div class="nav-tile">
+                    <span class="nav-tile-name">${targetHexDef.name}</span>
+                    ${actionHTML}
                 </div>
             `;
         }
 
         html += '</div>';
-
-        if (shownCount === 0) {
-            return '<div style="color: #888; font-size: 0.9em;">No tiles within your Navigation level yet. Raise Navigation to reach farther tiles.</div>';
-        }
         return html;
     },
 
@@ -1300,37 +1312,15 @@ const NavigationUI = {
 
         const isEquipped = selectedFuelId !== null && selectedFuel !== null;
 
-        return `
-            <div class="rest-equipment-slot ${isEquipped ? 'equipped' : ''}"
-                 onclick="openFuelModal(event)"
-                 style="background: rgba(0, 0, 0, 0.3);
-                        border: 2px solid ${isEquipped ? 'rgba(255, 152, 0, 0.5)' : '#444'};
-                        border-radius: 8px;
-                        padding: 10px;
-                        cursor: pointer;
-                        transition: all 0.2s ease;">
-                <div style="font-size: 0.75em; color: #888; margin-bottom: 5px; font-weight: 600;">
-                    🔥 Fuel
-                </div>
-                ${isEquipped ? `
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="font-size: 2rem;">${IconHelper.getItemIconHTML(selectedFuel, {size: 32})}</div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.85em; font-weight: 600; color: #fff;">${selectedFuel.name}</div>
-                            <div style="font-size: 0.75em; color: #FF9800;">×${quantity}</div>
-                        </div>
-                    </div>
-                    <div style="margin-top: 6px; font-size: 0.7em; color: #aaa;">
-                        ⚡ ${selectedFuel.fuelStats?.efficiency || 1.0}x efficiency
-                    </div>
-                ` : `
-                    <div style="text-align: center; padding: 20px; color: #666;">
-                        <div style="font-size: 2.5rem; margin-bottom: 5px;">🪵</div>
-                        <div style="font-size: 0.75em;">Empty Slot</div>
-                    </div>
-                `}
-            </div>
-        `;
+        // Use the shared loadout tile so Fuel matches every other consumable slot.
+        return LoadoutSlotRenderer.renderConsumableSlot({
+            slotName: 'fuel',
+            itemData: isEquipped ? selectedFuelId : null,
+            quantity: quantity,
+            showLabel: true,
+            interactive: true,
+            onClick: 'openFuelModal(event)'
+        });
     },
 
     /**
@@ -1408,38 +1398,15 @@ const NavigationUI = {
             isEquipped = itemDef !== null && quantity > 0;
         }
 
-        return `
-            <div class="rest-equipment-slot ${isEquipped ? 'equipped' : ''}"
-                 onclick="openFoodEquipModal(event)"
-                 style="background: rgba(0, 0, 0, 0.3);
-                        border: 2px solid ${isEquipped ? 'rgba(76, 175, 80, 0.5)' : '#444'};
-                        border-radius: 8px;
-                        padding: 10px;
-                        cursor: pointer;
-                        transition: all 0.2s ease;">
-                <div style="font-size: 0.75em; color: #888; margin-bottom: 5px; font-weight: 600;">
-                    🍖 Food
-                </div>
-                ${isEquipped ? `
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="font-size: 2rem;">${IconHelper.getItemIconHTML(itemDef, {size: 32})}</div>
-                        <div style="flex: 1;">
-                            <div style="font-size: 0.85em; font-weight: 600; color: #fff;">${itemDef.name}</div>
-                            <div style="font-size: 0.75em; color: #4caf50;">×${quantity}</div>
-                        </div>
-                    </div>
-                    <div style="margin-top: 6px; font-size: 0.7em; color: #aaa;">
-                        Shared with combat loadout
-                    </div>
-                ` : `
-                    <div style="text-align: center; padding: 20px; color: #666;">
-                        <div style="font-size: 2.5rem; margin-bottom: 5px;">🍖</div>
-                        <div style="font-size: 0.75em;">No Food Equipped</div>
-                        <div style="font-size: 0.65em; color: #555; margin-top: 4px;">Equip via Loadout</div>
-                    </div>
-                `}
-            </div>
-        `;
+        // Use the shared loadout tile so Food matches the combat loadout slot exactly.
+        return LoadoutSlotRenderer.renderConsumableSlot({
+            slotName: 'food',
+            itemData: isEquipped ? equippedItemId : null,
+            quantity: quantity,
+            showLabel: true,
+            interactive: true,
+            onClick: 'openFoodEquipModal(event)'
+        });
     },
 
     /**

@@ -189,7 +189,7 @@ const EQUIPMENT_ITEMS = {
         icon: '📡',
         category: 'equipment',
         instanced: true,
-        rarity: 'uncommon',
+        rarity: 'common',
         stackLimit: 1,
         value: 60,
         level: 1,
@@ -207,95 +207,361 @@ const EQUIPMENT_ITEMS = {
     },
 
     // =================================================================
-    // ARMOR SETS (Full body armor: head + chest + legs combined)
+    // ARMOR PIECES (Separate head / chest / legs slots)
+    // Each former "set" is split into 3 pieces; a full set of 3 pieces
+    // roughly equals the original combined set's stats.
     // =================================================================
 
-    // Tier 1 Armor Sets
-    unityScoutSet: {
-        id: 'unityScoutSet',
-        weight: 4,          // linen armor set
-        name: 'Unity Scout Set',
-        description: 'Standard issue armor for Unity scouts. Lightweight linen construction offers basic protection for field reconnaissance.',
+    // --- Unity Scout (Tier 1 light linen) ---
+    unityScoutHood: {
+        id: 'unityScoutHood',
+        weight: 1,
+        name: 'Unity Scout Hood',
+        description: 'A soft linen hood issued to Unity scouts — light enough to never catch a branch as they slip through the dense Cradle woods on the hunt.',
         icon: 'assets/icons/armor/Unity_scout_set.png',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 15,
+        level: 1,
+        slot: 'head',
+        equipSlot: 'head',
+        tier: 'starter',
+        combatStats: {
+            defense: 2,
+            health: 6,
+            evasion: 1,
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['armor', 'head', 'linen', 'light', 'unity'],
+    },
+
+    unityScoutJacket: {
+        id: 'unityScoutJacket',
+        weight: 2,
+        name: 'Unity Scout Jacket',
+        description: 'An open-front linen jacket worn loose over an undershirt, sleeves cut for free movement. Unity scout issue — made to run nimbly through the Cradle thickets as a mobile hunter.',
+        icon: 'assets/icons/armor/Unity_scout_set.png',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 18,
+        level: 1,
+        slot: 'chest',
+        equipSlot: 'chest',
+        tier: 'starter',
+        combatStats: {
+            defense: 4,
+            health: 13,
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['armor', 'chest', 'jacket', 'linen', 'light', 'unity'],
+    },
+
+    unityScoutLeggings: {
+        id: 'unityScoutLeggings',
+        weight: 1,
+        name: 'Unity Scout Leggings',
+        description: 'Loose, Shaolin-cut linen pants that never bind at the knee — made for sprinting, climbing and vaulting through dense woodland the way a Unity scout must.',
+        icon: 'assets/icons/armor/Unity_scout_set.png',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 12,
+        level: 1,
+        slot: 'legs',
+        equipSlot: 'legs',
+        tier: 'starter',
+        combatStats: {
+            defense: 2,
+            health: 6,
+            evasion: 2,
+        },
+        attributes: {
+            dexterity: 1,
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['armor', 'legs', 'linen', 'light', 'unity'],
+    },
+
+    // --- Waxed Wader (Tier 1 waterproof) ---
+    waxedWaderHood: {
+        id: 'waxedWaderHood',
+        weight: 1,
+        name: 'Waxed Wader Hood',
+        description: 'Waterproof waxed-fabric hood for fishermen and foragers. Keeps the rain off your head.',
+        icon: '🧥',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 18,
+        level: 1,
+        slot: 'head',
+        equipSlot: 'head',
+        tier: 'starter',
+        combatStats: {
+            defense: 3,
+            health: 8,
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['armor', 'head', 'waxed', 'waterproof', 'fishing'],
+    },
+
+    waxedWaderCoat: {
+        id: 'waxedWaderCoat',
+        weight: 1.5,
+        name: 'Waxed Wader Coat',
+        description: 'Waterproof waxed-fabric coat designed for fishermen and foragers. Keeps you dry in wet conditions.',
+        icon: '🧥',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 24,
+        level: 1,
+        slot: 'chest',
+        equipSlot: 'chest',
+        tier: 'starter',
+        combatStats: {
+            defense: 4,
+            health: 14,
+        },
+        attributes: {
+            constitution: 1,
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['armor', 'chest', 'waxed', 'waterproof', 'fishing'],
+    },
+
+    waxedWaderLeggings: {
+        id: 'waxedWaderLeggings',
+        weight: 1,
+        name: 'Waxed Wader Leggings',
+        description: 'Waterproof waxed-fabric leggings for fishermen and foragers. Keeps your legs dry in the shallows.',
+        icon: '🧥',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 18,
+        level: 1,
+        slot: 'legs',
+        equipSlot: 'legs',
+        tier: 'starter',
+        combatStats: {
+            defense: 3,
+            health: 8,
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['armor', 'legs', 'waxed', 'waterproof', 'fishing'],
+    },
+
+    // --- Harvester's (Tier 1 wool & leather work garb) ---
+    harvestersHood: {
+        id: 'harvestersHood',
+        weight: 1,
+        name: "Harvester's Hood",
+        description: 'Durable wool and leather hood for gatherers. Withstands brush and thorns.',
+        icon: '👔',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 22,
+        level: 2,
+        slot: 'head',
+        equipSlot: 'head',
+        tier: 'starter',
+        combatStats: {
+            defense: 4,
+            health: 11,
+            evasion: 1,
+        },
+        requirements: {
+            characterLevel: 2,
+        },
+        tags: ['armor', 'head', 'wool', 'leather', 'harvesting'],
+    },
+
+    harvestersVest: {
+        id: 'harvestersVest',
+        weight: 1,
+        name: "Harvester's Vest",
+        description: 'Practical wool and leather vest for gatherers. Durable construction withstands brush and thorns.',
+        icon: '👔',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 26,
+        level: 2,
+        slot: 'chest',
+        equipSlot: 'chest',
+        tier: 'starter',
+        combatStats: {
+            defense: 4,
+            health: 13,
+        },
+        attributes: {
+            constitution: 1,
+        },
+        requirements: {
+            characterLevel: 2,
+        },
+        tags: ['armor', 'chest', 'wool', 'leather', 'harvesting'],
+    },
+
+    harvestersLeggings: {
+        id: 'harvestersLeggings',
+        weight: 1,
+        name: "Harvester's Leggings",
+        description: 'Practical wool and leather leggings for gatherers. Durable construction withstands brush and thorns.',
+        icon: '👔',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 22,
+        level: 2,
+        slot: 'legs',
+        equipSlot: 'legs',
+        tier: 'starter',
+        combatStats: {
+            defense: 4,
+            health: 11,
+        },
+        attributes: {
+            dexterity: 1,
+        },
+        requirements: {
+            characterLevel: 2,
+        },
+        tags: ['armor', 'legs', 'wool', 'leather', 'harvesting'],
+    },
+
+    // =================================================================
+    // SKILLING PIECES (Region 1 — The Cradle)
+    // Individual gear worn in armor slots that aids a gathering skill.
+    // Each early piece carries EITHER an XP bonus OR a yield bonus (never both),
+    // via `skillingBonus` (see SkillingOutfit system). Minimal combat value — the
+    // point is the skilling perk, at the cost of real armor in that slot. These are
+    // NOT a matched set; each piece stands alone and stacks with others.
+    // =================================================================
+
+    anglersVest: {
+        id: 'anglersVest',
+        weight: 1,
+        name: "Angler's Vest",
+        description: 'A snug tackle vest that keeps a fisher\'s hands free and their focus sharp. Favoured along the Cradle\'s river shallows.',
+        icon: '🦺',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'common',
+        stackLimit: 1,
+        value: 40,
+        level: 1,
+        slot: 'chest',
+        equipSlot: 'chest',
+        tier: 'starter',
+        skillingBonus: {
+            skills: ['fishing'],
+            xp: 0.005,          // +0.5% Fishing XP per gather action
+        },
+        requirements: {
+            characterLevel: 1,
+        },
+        tags: ['skilling', 'chest', 'fishing', 'cloth', 'cradle'],
+    },
+
+    anglersWaders: {
+        id: 'anglersWaders',
+        weight: 1,
+        name: "Angler's Waders",
+        description: 'Waxed leg waders for standing in the shallows. Now and then they help you work an extra catch free of the reeds.',
+        icon: '👖',
         category: 'equipment',
         instanced: true,
         rarity: 'common',
         stackLimit: 1,
         value: 45,
         level: 1,
-        slot: 'armor',
-        equipSlot: 'armor',
+        slot: 'legs',
+        equipSlot: 'legs',
         tier: 'starter',
-        combatStats: {
-            defense: 8,
-            health: 25,
-            evasion: 3,
-        },
-        attributes: {
-            dexterity: 1,
+        skillingBonus: {
+            skills: ['fishing'],
+            yield: { chance: 0.01, amount: 1 },   // 1% chance per catch for +1 fish (no XP)
         },
         requirements: {
             characterLevel: 1,
         },
-        tags: ['armor', 'linen', 'light', 'set', 'unity'],
+        tags: ['skilling', 'legs', 'fishing', 'waxed', 'cradle'],
     },
 
-    waxedWaderSet: {
-        id: 'waxedWaderSet',
-        weight: 3.5,        // waxed-fabric set
-        name: 'Waxed Wader Set',
-        description: 'Waterproof gear designed for fishermen and foragers. Waxed fabric keeps you dry in wet conditions.',
-        icon: '🧥',
+    foragersHood: {
+        id: 'foragersHood',
+        weight: 1,
+        name: "Forager's Hood",
+        description: 'A broad cloth hood that shades the eyes while scanning the brush for herbs, roots and resin.',
+        icon: '🧢',
         category: 'equipment',
         instanced: true,
         rarity: 'common',
         stackLimit: 1,
-        value: 60,
+        value: 40,
         level: 1,
-        slot: 'armor',
-        equipSlot: 'armor',
+        slot: 'head',
+        equipSlot: 'head',
         tier: 'starter',
-        combatStats: {
-            defense: 10,
-            health: 30,
-        },
-        attributes: {
-            constitution: 1,
+        skillingBonus: {
+            skills: ['foraging'],
+            xp: 0.005,          // +0.5% Foraging XP per gather action
         },
         requirements: {
             characterLevel: 1,
         },
-        tags: ['armor', 'waxed', 'waterproof', 'set', 'fishing'],
+        tags: ['skilling', 'head', 'foraging', 'cloth', 'cradle'],
     },
 
-    harvestersGarb: {
-        id: 'harvestersGarb',
-        weight: 3,          // cloth work garb
-        name: "Harvester's Garb",
-        description: 'Practical wool and leather outfit for gatherers. Durable construction withstands brush and thorns.',
-        icon: '👔',
+    trappersGloves: {
+        id: 'trappersGloves',
+        weight: 1,
+        name: "Trapper's Gloves",
+        description: 'Supple leather gloves for setting snares along the game trails. A steadier hand means the occasional extra pelt.',
+        icon: '🧤',
         category: 'equipment',
         instanced: true,
         rarity: 'common',
         stackLimit: 1,
-        value: 70,
-        level: 2,
-        slot: 'armor',
-        equipSlot: 'armor',
+        value: 42,
+        level: 1,
+        slot: 'gloves',
+        equipSlot: 'gloves',
         tier: 'starter',
-        combatStats: {
-            defense: 12,
-            health: 35,
-            evasion: 1,
-        },
-        attributes: {
-            constitution: 1,
-            dexterity: 1,
+        skillingBonus: {
+            skills: ['hunting'],
+            yield: { chance: 0.01, amount: 1 },   // 1% chance per kill for +1 drop (no XP)
         },
         requirements: {
-            characterLevel: 2,
+            characterLevel: 1,
         },
-        tags: ['armor', 'wool', 'leather', 'set', 'harvesting'],
+        tags: ['skilling', 'gloves', 'hunting', 'leather', 'cradle'],
     },
 
     // =================================================================
@@ -445,6 +711,155 @@ const EQUIPMENT_ITEMS = {
             foraging: 1,
         },
         tags: ['tool', 'foraging', 'starter'],
+    },
+
+    // =================================================================
+    // TIER 2 — SCOUTREACH ARMS (reverse-engineered from Elaran kit)
+    // Calibers are standardized in millimeters on this world; the 6mm
+    // Defender is the first player-manufactured firearm.
+    // =================================================================
+    sixMmDefender: {
+        id: 'sixMmDefender',
+        weight: 2.2,
+        name: '6mm Defender',
+        description: 'A compact 6mm sidearm reverse-engineered from a salvaged Elaran pistol — the first firearm you build yourself. Chambered to the 6mm standard, it fires farther and harder than a training bow.',
+        icon: '🔫',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'uncommon',
+        stackLimit: 1,
+        value: 90,
+        level: 3,
+        slot: 'weapon',
+        equipSlot: 'weapon',
+        tier: 'tier2',
+        weaponCategory: 'pistol',
+        requiresAmmo: true,
+        ammoType: '6mm',
+        damageType: 'pierce',
+        combatStats: {
+            damage: 16,
+            attackSpeed: 1.4,
+            accuracy: 82,
+            critChance: 12,
+        },
+        requirements: {
+            characterLevel: 3,
+        },
+        tags: ['weapon', 'pistol', 'ranged', 'firearm', '6mm', 'mechanics'],
+    },
+
+    sixMmRounds: {
+        id: 'sixMmRounds',
+        weight: 1,
+        name: '6mm Rounds',
+        description: 'Self-loaded 6mm cartridges: a brass casing, a charge of propellant, a copperite slug. The standard feed for 6mm firearms.',
+        icon: '🔶',
+        category: 'equipment',
+        instanced: false,
+        rarity: 'common',
+        stackLimit: 100,
+        value: 4,
+        level: 1,
+        slot: 'ammo',
+        equipSlot: 'ammo',
+        tier: 'tier2',
+        ammoType: '6mm',
+        combatStats: {
+            damage: 14,
+            accuracy: 8,
+            critChance: 6,
+        },
+        tags: ['ammo', '6mm', 'ranged', 'firearm', 'munitions'],
+    },
+
+    // =================================================================
+    // TIER 2 — ARMOR BRANCH: heavy (plating) vs light (ranging furs)
+    // =================================================================
+    // HEAVY lane — reverse-engineered Elaran plate: high defense/HP, heavy.
+    elaranPlateChest: {
+        id: 'elaranPlateChest',
+        weight: 7,
+        name: 'Salvaged Plate Carrier',
+        description: 'Scrap Elaran alloy re-set into a plate carrier over cloth. Heavy and slow, but it soaks hits — the first step down the heavy-armor road.',
+        icon: '🦺',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'uncommon',
+        stackLimit: 1,
+        value: 70,
+        level: 3,
+        slot: 'chest',
+        equipSlot: 'chest',
+        tier: 'tier2',
+        combatStats: {
+            defense: 9,
+            health: 24,
+            evasion: -2,
+        },
+        attributes: {
+            constitution: 1,
+        },
+        requirements: {
+            characterLevel: 3,
+        },
+        tags: ['armor', 'chest', 'plated', 'heavy', 'tailoring'],
+    },
+
+    // LIGHT lane — ranging furs: evasion/mobility, low weight.
+    rangerHood: {
+        id: 'rangerHood',
+        weight: 1,
+        name: 'Ranger Hood',
+        description: 'A hooded cowl cut from thick ranger pelt. Light, quiet, and weather-shedding — gear for moving fast and far.',
+        icon: '🧢',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'uncommon',
+        stackLimit: 1,
+        value: 36,
+        level: 2,
+        slot: 'head',
+        equipSlot: 'head',
+        tier: 'tier2',
+        combatStats: {
+            defense: 2,
+            health: 8,
+            evasion: 4,
+        },
+        requirements: {
+            characterLevel: 2,
+        },
+        tags: ['armor', 'head', 'leather', 'light', 'ranging'],
+    },
+
+    rangerCoat: {
+        id: 'rangerCoat',
+        weight: 2,
+        name: 'Ranger Coat',
+        description: 'A supple all-terrain coat of layered ranger pelt and fibre. Barely slows you down — the mobility lane\'s mainstay.',
+        icon: '🧥',
+        category: 'equipment',
+        instanced: true,
+        rarity: 'uncommon',
+        stackLimit: 1,
+        value: 48,
+        level: 2,
+        slot: 'chest',
+        equipSlot: 'chest',
+        tier: 'tier2',
+        combatStats: {
+            defense: 4,
+            health: 12,
+            evasion: 5,
+        },
+        attributes: {
+            dexterity: 1,
+        },
+        requirements: {
+            characterLevel: 2,
+        },
+        tags: ['armor', 'chest', 'leather', 'light', 'ranging'],
     },
 };
 

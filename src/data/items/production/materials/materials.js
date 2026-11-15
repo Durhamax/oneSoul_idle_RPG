@@ -72,7 +72,7 @@ const MATERIAL_ITEMS = {
         stackable: true,
         stackLimit: 999,
         value: 15,
-        icon: '🦐',
+        icon: 'assets/icons/materials/moss_shrimp.png',
         tags: ['fish', 'food-ingredient', 'cooking', 'rare']
     },
 
@@ -92,7 +92,7 @@ const MATERIAL_ITEMS = {
         stackable: true,
         stackLimit: 999,
         value: 3,
-        icon: '🍖',
+        icon: 'assets/icons/materials/small_game_meat.png',
         tags: ['meat', 'food-ingredient', 'cooking']
     },
 
@@ -109,7 +109,7 @@ const MATERIAL_ITEMS = {
         stackable: true,
         stackLimit: 999,
         value: 5,
-        icon: 'assets/icons/materials/small_pelt.png',
+        icon: 'assets/icons/materials/small_pelts.png',
         tags: ['hide', 'leather', 'tailoring', 'crafting']
     },
 
@@ -163,7 +163,7 @@ const MATERIAL_ITEMS = {
         stackable: true,
         stackLimit: 999,
         value: 3,
-        icon: 'assets/icons/materials/common mushroom.png',
+        icon: 'assets/icons/materials/common_mushrooms.png',
         tags: ['fungus', 'food-ingredient', 'cooking']
     },
 
@@ -180,7 +180,7 @@ const MATERIAL_ITEMS = {
         stackable: true,
         stackLimit: 999,
         value: 6,
-        icon: '🧵',
+        icon: 'assets/icons/materials/plant_fibers.png',
         tags: ['fiber', 'crafting', 'mechanics', 'tailoring']
     },
 
@@ -197,7 +197,7 @@ const MATERIAL_ITEMS = {
         stackable: true,
         stackLimit: 999,
         value: 25,
-        icon: '🫚',
+        icon: 'assets/icons/materials/auroran_tuber.png',
         tags: ['herb', 'alchemy', 'chemistry', 'cooking', 'rare']
     },
 
@@ -334,7 +334,7 @@ const MATERIAL_ITEMS = {
         stackable: true,
         stackLimit: 999,
         value: 50,
-        icon: 'assets/icons/materials/gold-flakes.png',
+        icon: 'assets/icons/materials/gold_flakes.png',
         tags: ['precious', 'currency', 'rare', 'smithing']
     },
 
@@ -410,6 +410,457 @@ const MATERIAL_ITEMS = {
         value: 22,
         icon: '📟',
         tags: ['salvage', 'sensor', 'component', 'electronics']
+    },
+
+    // ==========================================
+    // TIER 2 — SCOUTREACH: propellant stock (bog), chemistry reagents, ranging furs
+    // ==========================================
+    bogNiter: {
+        id: 'bogNiter',
+        name: 'Bog Niter',
+        description: 'Crusted saltpeter leached from a peat bog, where centuries of decay concentrate the nitrates. The oxidizer in crude small-arms propellant — enough to drive a bullet, not to level a wall.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'mineral',
+        skill: 'mining',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 6,
+        icon: '🧂',
+        tags: ['mineral', 'oxidizer', 'propellant', 'chemistry']
+    },
+
+    bogSulfur: {
+        id: 'bogSulfur',
+        name: 'Bog Sulfur',
+        description: 'Yellow sulfur scraped from the sour seeps at a bog\'s edge. Burns hot and fast — the fuel half of black-powder-grade propellant.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'mineral',
+        skill: 'mining',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 6,
+        icon: '🟡',
+        tags: ['mineral', 'fuel', 'propellant', 'chemistry']
+    },
+
+    charcoal: {
+        id: 'charcoal',
+        name: 'Charcoal',
+        description: 'Wood charred slow in a sealed kiln. The third leg of propellant and a clean-burning fuel.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'logging',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 4,
+        icon: '⚫',
+        tags: ['fuel', 'propellant', 'chemistry', 'refined']
+    },
+
+    peatMoss: {
+        id: 'peatMoss',
+        name: 'Peat Moss',
+        description: 'Spongy moss pulled from the bog surface. A reagent base and binder for tinctures and compounds.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'herb',
+        skill: 'foraging',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 3,
+        icon: '🌿',
+        tags: ['herb', 'reagent', 'chemistry']
+    },
+
+    bogMyrtle: {
+        id: 'bogMyrtle',
+        name: 'Bog Myrtle',
+        description: 'A resinous wetland shrub. Its aromatic oils are prized in chemistry for stabilizing volatile mixes.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'herb',
+        skill: 'foraging',
+        tier: 2,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 7,
+        icon: '🍃',
+        tags: ['herb', 'reagent', 'chemistry', 'stabilizer']
+    },
+
+    rangerPelt: {
+        id: 'rangerPelt',
+        name: 'Ranger Pelt',
+        description: 'A thick, weather-shedding hide from Scoutreach\'s larger game. Supple enough to move in, tough enough for all-terrain ranging gear.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'hide',
+        skill: 'hunting',
+        tier: 2,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 9,
+        icon: '🦫',
+        tags: ['hide', 'leather', 'tailoring', 'light-armor']
+    },
+
+    // ==========================================
+    // TIER 2 — ELARAN SALVAGE (plunder: thieving + combat loot)
+    // ==========================================
+    scrapAlloy: {
+        id: 'scrapAlloy',
+        name: 'Scrap Alloy',
+        description: 'Light structural alloy stripped from Elaran kit. Reworks easily into plating and casings.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'thieving',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 8,
+        icon: '🔩',
+        tags: ['salvage', 'metal', 'component', 'smithing', 'tailoring']
+    },
+
+    salvagedWiring: {
+        id: 'salvagedWiring',
+        name: 'Salvaged Wiring',
+        description: 'Spools of fine insulated wire pulled from Elaran hardware. Feeds mechanisms and triggers alike.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'thieving',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 9,
+        icon: '🧷',
+        tags: ['salvage', 'wire', 'component', 'mechanics', 'electronics']
+    },
+
+    droneParts: {
+        id: 'droneParts',
+        name: 'Drone Parts',
+        description: 'Servos, linkages and a ruined rotor hub from a downed survey drone. The guts of any home-built mechanism.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'thieving',
+        tier: 2,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 12,
+        icon: '⚙️',
+        tags: ['salvage', 'parts', 'component', 'mechanics']
+    },
+
+    powerCell: {
+        id: 'powerCell',
+        name: 'Power Cell',
+        description: 'A still-charged Elaran cell. Dangerous to crack open, invaluable to anyone building tech.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'thieving',
+        tier: 2,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 16,
+        icon: '🔋',
+        tags: ['salvage', 'power', 'component', 'electronics']
+    },
+
+    droneDataCore: {
+        id: 'droneDataCore',
+        name: 'Drone Data Core',
+        description: 'A sealed memory core prised from a survey drone. Decoded, it gives up Elaran schematics — the knowledge Unity was never allowed.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'knowledge',
+        skill: 'thieving',
+        tier: 2,
+        rarity: 'rare',
+        stackable: true,
+        stackLimit: 999,
+        value: 40,
+        icon: '💾',
+        tags: ['salvage', 'knowledge', 'data', 'engineering']
+    },
+
+    sixMmCasing: {
+        id: 'sixMmCasing',
+        name: '6mm Casing',
+        description: 'A drawn-brass case sized to the 6mm standard. Prime it, charge it with propellant, seat a slug — a round.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'smithing',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 3,
+        icon: '🔶',
+        tags: ['component', 'ammo', 'casing', 'mechanics', 'smithing']
+    },
+
+    gunPropellant: {
+        id: 'gunPropellant',
+        name: 'Gun Propellant',
+        description: 'Milled, corned small-arms powder — niter, sulfur and charcoal in balance. The charge behind every round you load.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'chemistry',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 10,
+        icon: '💥',
+        tags: ['propellant', 'component', 'chemistry', 'ammo']
+    },
+
+    // ==========================================
+    // TIER 2 — VERDUUN FOREST + VERDUUN NORTH (war salvage)
+    // ==========================================
+    verduunHardwood: {
+        id: 'verduunHardwood',
+        name: 'Verduun Hardwood',
+        description: 'Dense, slow-grown timber from the old Unity woods. Harder and heavier than pinewood — good stocks and hafts.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'wood',
+        skill: 'logging',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 5,
+        icon: '🪵',
+        tags: ['wood', 'logging', 'crafting']
+    },
+
+    verduunFernshoot: {
+        id: 'verduunFernshoot',
+        name: 'Verduun Fernshoot',
+        description: 'A tender forest fern shoot, faintly sweet. A forage staple of the old Unity woods.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'vegetable',
+        skill: 'foraging',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 2,
+        icon: '🌱',
+        tags: ['vegetable', 'food-ingredient', 'cooking']
+    },
+
+    corrodedPlating: {
+        id: 'corrodedPlating',
+        name: 'Corroded Plating',
+        description: 'Armor plate dug from the Verduun trenches, five centuries under dirt. Scoured and re-set, it still turns a blade — the raw stock of heavy armor.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'component',
+        skill: 'mining',
+        tier: 2,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 11,
+        icon: '🛡️',
+        tags: ['salvage', 'metal', 'plating', 'smithing', 'tailoring', 'heavy-armor']
+    },
+
+    // ==========================================
+    // TIER 2 — WEST COAST (saltwater, shoals, dunes)
+    // ==========================================
+    seaSalt: {
+        id: 'seaSalt',
+        name: 'Sea Salt',
+        description: 'Coarse salt raked from the tidal pans. Cures meat, seasons food, and feeds a dozen chemistries.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'mineral',
+        skill: 'mining',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 3,
+        icon: '🧊',
+        tags: ['mineral', 'food-ingredient', 'cooking', 'chemistry']
+    },
+
+    saltstone: {
+        id: 'saltstone',
+        name: 'Saltstone',
+        description: 'A hard evaporite block from the dune flats. Ground down, it serves as flux, abrasive and whetstone stock.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'mineral',
+        skill: 'mining',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 4,
+        icon: '🪨',
+        tags: ['mineral', 'smithing', 'abrasive']
+    },
+
+    kelpFrond: {
+        id: 'kelpFrond',
+        name: 'Kelp Frond',
+        description: 'A broad ribbon of coastal kelp. Edible, and a useful chemistry base once dried.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'herb',
+        skill: 'foraging',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 3,
+        icon: '🌊',
+        tags: ['herb', 'food-ingredient', 'cooking', 'chemistry']
+    },
+
+    saltherb: {
+        id: 'saltherb',
+        name: 'Saltherb',
+        description: 'A hardy, salt-tolerant shore herb with a briny bite. A coastal seasoning and poultice green.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'herb',
+        skill: 'foraging',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 3,
+        icon: '🌾',
+        tags: ['herb', 'food-ingredient', 'cooking', 'medicine']
+    },
+
+    shellfish: {
+        id: 'shellfish',
+        name: 'Shellfish',
+        description: 'Mussels and clams prised from the tidal shoals. The missing ingredient for a proper coastal boil.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'fish',
+        skill: 'fishing',
+        tier: 2,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 6,
+        icon: '🦪',
+        tags: ['shellfish', 'food-ingredient', 'cooking']
+    },
+
+    driftwood: {
+        id: 'driftwood',
+        name: 'Driftwood',
+        description: 'Sun-bleached wood washed up along the dunes. Dry and light — quick fuel and rough stock.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'wood',
+        skill: 'logging',
+        tier: 2,
+        rarity: 'common',
+        stackable: true,
+        stackLimit: 999,
+        value: 2,
+        icon: '🪵',
+        tags: ['wood', 'fuel', 'logging']
+    },
+
+    // ==========================================
+    // TIER 2 — REVERSE-ENGINEERING SAMPLES (dropped by Elaran grunts)
+    // Strip one down (consumed, free) to learn its recipe. Non-instanced so the
+    // reverse-engineering flow's item count/consume works by id.
+    // ==========================================
+    elaranIssuePlate: {
+        id: 'elaranIssuePlate',
+        name: 'Battered Elaran Plate',
+        description: 'A dented chest plate pulled off a downed Elaran grunt. Too damaged to wear, but strip it down and you can learn how it was made.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'salvage',
+        skill: 'thieving',
+        tier: 2,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 25,
+        icon: '🦺',
+        reverseEngineerable: true,
+        recipeId: 'craftElaranPlate',
+        reverseEngineerCost: 0,
+        tags: ['salvage', 'reverse-engineer', 'armor', 'heavy-armor']
+    },
+
+    elaran6mmDefender: {
+        id: 'elaran6mmDefender',
+        name: 'Salvaged Elaran Sidearm',
+        description: 'A jammed, half-wrecked Elaran pistol chambered in 6mm. It will never fire again — but its workings are a blueprint waiting to be read.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'salvage',
+        skill: 'thieving',
+        tier: 2,
+        rarity: 'rare',
+        stackable: true,
+        stackLimit: 999,
+        value: 35,
+        icon: '🔫',
+        reverseEngineerable: true,
+        recipeId: 'craft6mmDefender',
+        reverseEngineerCost: 0,
+        tags: ['salvage', 'reverse-engineer', 'weapon', 'firearm']
+    },
+
+    elaran6mmRounds: {
+        id: 'elaran6mmRounds',
+        name: 'Spent 6mm Rounds',
+        description: 'A handful of fired and live 6mm cartridges scavenged from a firefight. Pull one apart and you can work out how to load your own.',
+        type: 'material',
+        category: 'material',
+        subcategory: 'salvage',
+        skill: 'thieving',
+        tier: 2,
+        rarity: 'uncommon',
+        stackable: true,
+        stackLimit: 999,
+        value: 15,
+        icon: '🧨',
+        reverseEngineerable: true,
+        recipeId: 'craft6mmRounds',
+        reverseEngineerCost: 0,
+        tags: ['salvage', 'reverse-engineer', 'ammo', 'munitions']
     }
 };
 
