@@ -457,34 +457,33 @@ const EngineeringTab = {
      */
     getPerfectableItemGroups() {
         const groups = {};
-        const bank = GameEngine.state.bank?.items || {};
+        // Crafted equipment stacks live in the instanced bank, keyed by the
+        // deterministic id `${baseItemId}_instance_${rarity}` with a quantity.
+        // Each stack is already one perfectable group.
+        const instanced = GameEngine.state.bank?.instanced || {};
 
-        for (const [itemId, itemData] of Object.entries(bank)) {
-            if (!itemData || itemData.quantity < 1) continue;
+        for (const [stackId, inst] of Object.entries(instanced)) {
+            if (!inst) continue;
+            const qty = inst.quantity || 1;
+            if (qty < 1) continue;
 
-            const def = itemData.definition;
-            if (!def || !def.equipSlot) continue; // Only equipment
-
-            const rarity = def.rarity || 'common';
+            const rarity = inst.rarity
+                || (stackId.includes('_instance_') ? stackId.split('_instance_')[1] : 'common');
             if (rarity === 'creator') continue; // Can't perfect max rarity
 
-            // Group by base item type and rarity
-            const baseId = itemId.replace(/_\d+$/, ''); // Remove instance suffix
-            const key = `${baseId}_${rarity}`;
+            const baseId = inst.baseItemId
+                || (stackId.includes('_instance_') ? stackId.split('_instance_')[0] : stackId);
+            const def = (typeof ItemAccessHelper !== 'undefined') ? ItemAccessHelper.getItem(baseId) : null;
 
-            if (!groups[key]) {
-                groups[key] = {
-                    baseId: baseId,
-                    name: def.name,
-                    icon: def.image || '📦',
-                    rarity: rarity,
-                    count: 0,
-                    items: []
-                };
-            }
-
-            groups[key].count += itemData.quantity;
-            groups[key].items.push(itemId);
+            groups[stackId] = {
+                stackId: stackId,
+                baseId: baseId,
+                name: inst.name || def?.name || baseId,
+                icon: def?.image || '📦',
+                rarity: rarity,
+                count: qty,
+                items: [stackId]
+            };
         }
 
         return groups;
@@ -593,9 +592,8 @@ const EngineeringTab = {
             const group = groups[groupKey];
 
             if (group && group.count >= 10) {
-                // Get 10 item IDs to perfect
-                const itemIds = group.items.slice(0, 10);
-                const result = EngineeringSystem.perfectEquipment(itemIds);
+                // Consume 10 from this stack → mint 1 of the next rarity.
+                const result = EngineeringSystem.perfectEquipment(group.stackId || groupKey);
 
                 if (result && result.success) {
                     console.log('[EngineeringTab] Perfection successful!');

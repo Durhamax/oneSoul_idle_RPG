@@ -168,7 +168,7 @@ const DualBankSystem = {
         }
 
         // Add weapon/armor-specific properties (3-1-3 Grid)
-        if (def.slot === 'weapon' || ['armor', 'back', 'gloves', 'neck', 'boots', 'ring'].includes(def.slot)) {
+        if (def.slot === 'weapon' || ['head', 'chest', 'legs', 'back', 'gloves', 'neck', 'boots', 'ring'].includes(def.slot)) {
             instance.attachments = properties.attachments || {};
         }
 
@@ -212,6 +212,7 @@ const DualBankSystem = {
         // Ensure instance has both properties for compatibility
         instance.uniqueId = id;
         instance.instanceId = id;
+        if (instance.quantity === undefined) instance.quantity = 1;
 
         // Ensure bank.instanced exists (defensive)
         if (!GameEngine.state.bank) {
@@ -221,10 +222,20 @@ const DualBankSystem = {
             GameEngine.state.bank.instanced = {};
         }
 
+        // STACKABLE EQUIPMENT: identical gear uses a deterministic id
+        // (`<baseItemId>_instance_<rarity>`), so adding more of the same (item, rarity)
+        // merges into one stack by quantity instead of spamming unique tiles.
+        const existing = GameEngine.state.bank.instanced[id];
+        if (existing) {
+            existing.quantity = (existing.quantity || 1) + (instance.quantity || 1);
+            console.log(`✅ Stacked instance: ${id} → x${existing.quantity}`);
+            return true;
+        }
+
         // Add to instanced storage
         GameEngine.state.bank.instanced[id] = instance;
 
-        console.log(`✅ Added instance: ${id} (${instance.baseItemId})`);
+        console.log(`✅ Added instance: ${id} (${instance.baseItemId}) x${instance.quantity}`);
         return true;
     },
 

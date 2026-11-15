@@ -269,7 +269,7 @@ const WorldRegions = {
         description: "The far edge of the old Unity scout range. A forward outpost stands here, now occupied by an Elaran survey detail and their drones. Past the camp, sour peat bogs give up the makings of powder — and a downed drone or a picked supply crate gives up the knowledge Unity was never allowed.",
         biome: "plains",
         icon: "🏕️",
-        backgroundImage: null,
+        backgroundImage: "assets/backgrounds/regions/region_scoutreach_01.jpg",
 
         hexCoords: { q: -2, r: -3 },
         navigationRequirement: 2,

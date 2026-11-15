@@ -268,7 +268,15 @@ const UICore = {
         if (!GameEngine.state?.compiledStats && typeof GameEngine.compilePlayerStats === 'function') {
             try { GameEngine.compilePlayerStats(); } catch (e) {}
         }
-        const maxHealth = Math.floor(GameEngine.state?.compiledStats?.maxHealth || 0);
+        // Canonical max HP lives on state.maxHP; compiledStats.maxHealth is only
+        // set transiently by combat and is absent/0 the rest of the time (which
+        // made the ribbon flicker to "110/0" after a fight). Prefer the persistent
+        // field and fall back to the combat snapshot.
+        const maxHealth = Math.floor(
+            GameEngine.state?.maxHP
+            || GameEngine.state?.compiledStats?.maxHealth
+            || 0
+        );
         const currentHP = Math.floor(GameEngine.state?.currentHP ?? maxHealth);
         el.textContent = `${currentHP}/${maxHealth}`;
     },
@@ -495,6 +503,11 @@ const UICore = {
         // Update developer stats panel for the new view
         if (typeof DevStatsPanel !== 'undefined') {
             DevStatsPanel.update(viewName);
+        }
+
+        // Keep the global active-action ribbon in sync (hides on the active action's own view)
+        if (typeof ActiveActionRibbon !== 'undefined' && ActiveActionRibbon.refresh) {
+            ActiveActionRibbon.refresh();
         }
 
         // Emit tab-visited event for mission objective tracking

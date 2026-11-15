@@ -430,8 +430,8 @@ const NodeCollectionSystem = {
         if (this.state.currentActivity === 'navigation') {
             this.stopNavigation();
         }
-        if (this.state.currentActivity === 'combat') {
-            this.endCombat();
+        if (this.state.combat?.inCombat || this.state.combat?.currentEnemy || this.state.combat?.respawn?.active) {
+            if (typeof this.stopCombat === 'function') this.stopCombat();
         }
         if (this.state.currentActivity === 'crafting') {
             // Crafting can continue in background

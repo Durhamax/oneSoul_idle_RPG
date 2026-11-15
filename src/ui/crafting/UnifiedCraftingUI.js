@@ -205,12 +205,11 @@ const UnifiedCraftingUI = {
         const now = Date.now();
         const elapsed = now - activeCraft.startTime;
         const totalTime = activeCraft.completionTime - activeCraft.startTime;
-        const progress = Math.min(elapsed, totalTime);
+        const progPct = totalTime > 0 ? Math.min(100, (elapsed / totalTime) * 100) : 0;
 
-        // Update interval bar
-        if (typeof IntervalBar !== 'undefined') {
-            IntervalBar.update('craft-progress', progress, totalTime);
-        }
+        // Update the interval (crafting) bar fill
+        const craftFill = document.getElementById('craft-interval-fill');
+        if (craftFill) craftFill.style.width = `${progPct}%`;
 
         // Update duration stat
         const durationEl = document.querySelector('.craft-session-stats .stat-box:nth-child(3) .stat-box-value');

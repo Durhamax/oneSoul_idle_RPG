@@ -4,8 +4,20 @@
     {
       "name": "onesoul-dev",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["server.js", "8080"],
+      "runtimeArgs": [
+        "server.js",
+        "8080"
+      ],
       "port": 8080
+    },
+    {
+      "name": "onesoul-review",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "server.js",
+        "8091"
+      ],
+      "port": 8091
     }
   ]
 }

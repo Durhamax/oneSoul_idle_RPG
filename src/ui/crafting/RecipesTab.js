@@ -97,46 +97,46 @@ const RecipesTab = {
         const now = Date.now();
         const elapsed = now - activeCraft.startTime;
         const totalTime = activeCraft.completionTime - activeCraft.startTime;
-        const progress = Math.min(elapsed, totalTime);
+        const progPct = totalTime > 0 ? Math.min(100, (elapsed / totalTime) * 100) : 0;
 
-        // Get skill level
+        // Get skill level + xp (folded into the panel top, same as the Gather panel)
         const skill = GameEngine.state.skills[activeSkill];
+        const level = skill?.level || 1;
+        const expRequired = GameEngine.getSkillExpRequired?.(activeSkill) || 100;
+        const xpPct = Math.min(100, ((skill?.exp || 0) / expRequired) * 100);
+        const fmt = (typeof Formatting !== 'undefined') ? Formatting.formatNumber : (n) => n;
+        const qtyLabel = activeCraft.quantity > 1 ? ` ×${activeCraft.quantity}` : '';
 
         return `
-            <div class="craft-active-panel" data-activity="crafting" data-skill="${activeSkill}">
-                <div class="craft-active-header">
-                    <div class="craft-active-info">
-                        <span class="craft-recipe-icon">${recipe.icon || skillIcon}</span>
-                        <div class="craft-active-details">
-                            <div class="craft-recipe-name">${recipe.name}</div>
-                            <div class="craft-recipe-meta">
-                                ${skillIcon} ${skillName} • Level ${skill?.level || 1}
-                            </div>
-                        </div>
+            <div class="craft-active-panel" data-activity="crafting" data-skill="${activeSkill}" style="--skill-color: ${skillColor};">
+                <!-- Merged skill strip -->
+                <div class="gap-skill">
+                    <div class="gap-skill-id">
+                        <span class="gap-skill-icon">${skillIcon}</span>
+                        <span class="gap-skill-name">${skillName}</span>
+                        <span class="gap-skill-level">Lv.${level}</span>
                     </div>
-                    <button class="btn-stop-craft" onclick="RecipesTab.stopCraftingForSkill('${activeSkill}')">
-                        <span>⏹️</span> Stop
-                    </button>
+                    <div class="gap-skill-xp">
+                        <div class="gap-skill-xp-track">
+                            <div class="gap-skill-xp-fill" style="width: ${xpPct}%;"></div>
+                        </div>
+                        <span class="gap-skill-xp-text">${fmt(skill?.exp || 0)} / ${fmt(expRequired)} XP</span>
+                    </div>
                 </div>
 
-                <!-- Interval Bar -->
-                <div id="craft-interval-bar">
-                    ${IntervalBar.render({
-                        id: 'craft-progress',
-                        label: this.getSkillActionVerb(activeSkill) + 'ing',
-                        icon: skillIcon,
-                        current: progress,
-                        max: totalTime,
-                        color: skillColor,
-                        gradient: 'linear-gradient(90deg, ' + skillColor + ', ' + skillColor + 'aa)',
-                        animated: true,
-                        showTime: true,
-                        variant: 'default',
-                        stats: {
-                            'Duration': (totalTime / 1000).toFixed(1) + 's',
-                            'XP': '+' + (recipe.experienceGain || 0)
-                        }
-                    })}
+                <!-- Recipe name replaces the old action label -->
+                <div class="gap-nodename">${recipe.name}${qtyLabel}</div>
+
+                <!-- Interval (crafting) bar -->
+                <div class="gap-bar">
+                    <div class="gap-bar-fill" id="craft-interval-fill"
+                         style="width: ${progPct}%; background: linear-gradient(90deg, ${skillColor}, ${skillColor}aa);"></div>
+                </div>
+
+                <!-- Duration/XP + compact Stop -->
+                <div class="gap-controls">
+                    <span class="gap-success">${(totalTime / 1000).toFixed(1)}s · +${recipe.experienceGain || 0} XP</span>
+                    <button class="gap-stop" onclick="RecipesTab.stopCraftingForSkill('${activeSkill}')">Stop</button>
                 </div>
 
                 <!-- Session Stats -->

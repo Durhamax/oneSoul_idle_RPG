@@ -243,7 +243,12 @@ const DevModal = {
                     <!-- Item selector and add controls -->
                     <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 10px;">
                         <select id="devItemSelector" size="8" style="padding: 8px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 4px; font-family: monospace;">
-                            ${itemIds.map(id => `<option value="${id}">${items[id].icon || '📦'} ${items[id].name || id}</option>`).join('')}
+                            ${itemIds.map(id => {
+                                // icon is an asset PATH for most items; an <option> can't render it,
+                                // so only keep a short emoji glyph, never a path, in the label.
+                                const ic = items[id].icon && !items[id].icon.includes('/') ? items[id].icon + ' ' : '';
+                                return `<option value="${id}">${ic}${items[id].name || id}</option>`;
+                            }).join('')}
                         </select>
                         <div style="display: flex; flex-direction: column; gap: 10px;">
                             <input type="number" id="devItemQuantity" min="1" max="9999" value="1" style="padding: 8px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 4px; width: 80px;">
@@ -1364,7 +1369,7 @@ const DevModal = {
         // Define loadout items
         const loadout = {
             weapon: 'roughBlade',           // Tier 1 melee weapon
-            armor: 'unityScoutSet',         // Tier 1 light armor
+            armor: 'unityScoutJacket',      // Tier 1 light armor (chest piece)
             ammo: 'copperiteRounds',        // Tier 1 ammo (stackable)
             food: 'solfishBake',            // Tier 1 food (stackable)
         };
@@ -1402,7 +1407,7 @@ const DevModal = {
                 const instance = GameEngine.createEquipmentInstance(loadout.armor, armorDef.rarity, {});
                 if (instance) {
                     GameEngine.addEquipmentInstance(instance);
-                    const result = GameEngine.equipItem(instance.instanceId, 'armor');
+                    const result = GameEngine.equipItem(instance.instanceId, armorDef.equipSlot || 'chest');
                     if (result?.success) {
                         equipped.push(`🛡️ ${armorDef.name} (armor)`);
                         console.log(`✅ Equipped: ${armorDef.name} in armor slot`);
@@ -1568,8 +1573,10 @@ const DevModal = {
             // Tier 1 Ammo
             'flintheadArrows', 'copperiteRounds',
 
-            // Tier 1 Armor (only these 3 sets exist now)
-            'unityScoutSet', 'waxedWaderSet', 'harvestersGarb',
+            // Tier 1 Armor (head / chest / legs pieces)
+            'unityScoutHood', 'unityScoutJacket', 'unityScoutLeggings',
+            'waxedWaderHood', 'waxedWaderCoat', 'waxedWaderLeggings',
+            'harvestersHood', 'harvestersVest', 'harvestersLeggings',
 
             // Tier 1 Food/Consumables
             'solfishBake', 'smallGameStew', 'fishOilTonic',

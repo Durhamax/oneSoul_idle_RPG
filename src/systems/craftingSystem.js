@@ -317,7 +317,6 @@ const CraftingSystem = {
         return {
             type: 'equipment',
             tier: tier,
-            rarityBonus: tier * 7.5,
             materialSavingsChance: tier * 0.05,
             craftSpeedMultiplier: 1 + (tier * 0.1),
             queueSlots: Math.min(5, 1 + Math.floor(tier / 2))
@@ -592,26 +591,24 @@ const CraftingSystem = {
                               (itemDef?.category === 'equipment' && itemDef?.instanced !== false);
 
             if (isEquipment) {
-                // Equipment crafting: roll rarity (use rarityWeights if provided, else default)
-                const rarityBonus = (benefits?.rarityBonus || 0) + ((this.state.skills?.[skill]?.level || 0) * 0.5);
-                const defaultWeights = { common: 70, uncommon: 20, rare: 8, epic: 2 };
-                const rarity = this.rollRarityFromWeights(output.rarityWeights || defaultWeights, rarityBonus);
+                // Equipment crafting is DETERMINISTIC and STACKABLE: every craft of a
+                // recipe produces the item at a fixed base rarity (no random roll, no
+                // per-item stat roll), so N crafts form ONE stack of N identical items.
+                // Higher rarity comes only from Engineering Perfection, never the craft.
+                const rarity = output.baseRarity || 'common';
                 const quantity = (output.quantity || 1) * craft.quantity;
 
-                for (let i = 0; i < quantity; i++) {
-                    const stats = this.rollItemStats(itemDef, rarity);
-                    const instance = this.createEquipmentInstance(output.itemId, rarity, stats);
+                const instance = this.createEquipmentInstance(output.itemId, rarity, null, quantity);
 
-                    // Add instance to bank
-                    if (this.addEquipmentInstance) {
-                        this.addEquipmentInstance(instance);
-                    } else if (this.addInstancedItemToBank) {
-                        this.addInstancedItemToBank(instance);
-                    }
-
-                    outputs.push({ itemId: output.itemId, rarity, quantity: 1 });
-                    console.log(`[CraftingSystem] Crafted ${rarity} ${itemDef?.name || output.itemId}!`);
+                // Add the whole batch as one stacked entry (addInstance merges by id).
+                if (this.addEquipmentInstance) {
+                    this.addEquipmentInstance(instance);
+                } else if (this.addInstancedItemToBank) {
+                    this.addInstancedItemToBank(instance);
                 }
+
+                outputs.push({ itemId: output.itemId, rarity, quantity });
+                console.log(`[CraftingSystem] Crafted ${quantity}x ${rarity} ${itemDef?.name || output.itemId} (stacked)`);
             } else if (output.baseQuantity) {
                 // Consumable crafting: calculate quantity with multipliers
                 const outputMult = benefits?.outputMultiplier || 1;
@@ -1103,28 +1100,41 @@ const CraftingSystem = {
      * @param {object} stats - Rolled stats
      * @returns {string} - Unique instance ID
      */
-    createEquipmentInstance(itemId, rarity, stats) {
-        // Generate unique instance ID
-        const instanceId = `${itemId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
+    createEquipmentInstance(itemId, rarity = 'common', stats = null, quantity = 1) {
         const itemDef = CraftingSystem._getItemDef(itemId, this);
-        const rarityData = this.definitions.EQUIPMENT_RARITY_CHANCES[rarity];
 
-        // Create equipment instance data
-        const instance = {
+        // DETERMINISTIC, STACKABLE id: identical (item, rarity) share one stack.
+        // The `_instance_` form still resolves to the base id via ItemIdUtils.
+        const instanceId = `${itemId}_instance_${rarity}`;
+
+        // Deterministic stats = base combat stats × the rarity's stat multiplier.
+        // No per-craft random roll — every copy of a given rarity is identical, so
+        // they stack. Rarity (and thus better stats) is earned via Engineering
+        // Perfection, not a lucky craft.
+        const mult = this.definitions.RARITY_TIERS?.[rarity]?.statMultiplier || 1.0;
+        const base = (itemDef && (itemDef.combatStats || itemDef.stats)) || {};
+        const scaledStats = {};
+        for (const k in base) {
+            const v = base[k];
+            scaledStats[k] = (typeof v === 'number') ? Math.round(v * mult) : v;
+        }
+
+        const rarityData = this.definitions.EQUIPMENT_RARITY_CHANCES?.[rarity];
+        const displayName = (rarity === 'common')
+            ? (itemDef?.name || itemId)
+            : `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} ${itemDef?.name || itemId}`;
+
+        return {
             baseItemId: itemId,
             instanceId: instanceId,
             rarity: rarity,
-            stats: stats,
-            enhancementSlots: rarityData.enhancementSlots,
+            stats: scaledStats,
+            quantity: quantity,
+            enhancementSlots: rarityData?.enhancementSlots || 0,
             enhancements: [],
             potential: 0,
             createdAt: Date.now(),
-            name: `${rarity.charAt(0).toUpperCase() + rarity.slice(1)} ${itemDef.name}`
+            name: displayName
         };
-
-        // Store instance in bank (will be added in Phase 4)
-        // For now, just return the instance data
-        return instance;
     }
 };

@@ -86,13 +86,24 @@ const SkillSystem = {
         }
 
         const skill = this.state.skills[skillId];
-        skill.exp += amount;
+
+        // Skilling-outfit XP bonus — equipped skilling pieces add a % to the ACTION's XP
+        // for gathering skills. Applied here (per action) so bonus YIELD, which is added
+        // to the resource roll instead, never grants extra XP.
+        let gainedAmount = amount;
+        const skillDef = this.definitions.skills[skillId];
+        if (skillDef && skillDef.category === 'gathering' && typeof SkillingOutfit !== 'undefined') {
+            const xpBonus = SkillingOutfit.getXpBonus(this.state, skillId);
+            if (xpBonus > 0) gainedAmount = amount * (1 + xpBonus);
+        }
+
+        skill.exp += gainedAmount;
 
         // Emit event for UI update (SkillCard component)
         if (typeof EventBus !== 'undefined') {
             EventBus.emit('skill-xp-gained', {
                 skillId: skillId,
-                amount: amount,
+                amount: gainedAmount,
                 currentExp: skill.exp,
                 level: skill.level
             });
@@ -115,9 +126,9 @@ const SkillSystem = {
             }
         }
 
-        // Also grant character XP at reduced rate
+        // Also grant character XP at reduced rate (includes the skilling-outfit bonus)
         const generalExpRate = this.definitions.characterLevel.generalExpRate;
-        const characterExp = amount * generalExpRate;
+        const characterExp = gainedAmount * generalExpRate;
         this.gainCharacterExp(characterExp);
     },
 

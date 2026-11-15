@@ -64,9 +64,13 @@ const WorldMapSystem = {
 
             // Generate region metadata
             const isStartingRegion = (q === startQ && r === startR);
-            const description = isStartingRegion
-                ? "A massive crater, home to the Unity members long banished to this corner of the new planet. The Cradle is heavily wooded and features a large lake of trapped freshwater. This is where your journey begins."
-                : `A ${biome} region in the ${q > 0 ? 'eastern' : q < 0 ? 'western' : 'central'} ${r > 0 ? 'south' : r < 0 ? 'north' : 'lands'}`;
+            // Prefer a hand-authored description from WorldRegions (canon), like name/biome.
+            const canonRegion = (typeof WorldRegions !== 'undefined') ? WorldRegions[regionId] : null;
+            const description = (canonRegion && canonRegion.description)
+                ? canonRegion.description
+                : isStartingRegion
+                    ? "A massive crater, home to the Unity members long banished to this corner of the new planet. The Cradle is heavily wooded and features a large lake of trapped freshwater. This is where your journey begins."
+                    : `A ${biome} region in the ${q > 0 ? 'eastern' : q < 0 ? 'western' : 'central'} ${r > 0 ? 'south' : r < 0 ? 'north' : 'lands'}`;
 
             const regionName = this.getRegionName(q, r, biome, startQ, startR);
             const biomeDef = this.gameEngine.definitions.biomes[biome];

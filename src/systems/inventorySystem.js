@@ -400,7 +400,7 @@ const InventorySystem = {
         if (slot === 'tool') return 'tool';
         if (slot === 'weapon') return 'weapon';
         if (slot === 'ammo') return 'ammo';
-        if (['armor', 'back', 'gloves', 'neck', 'boots', 'ring'].includes(slot)) return 'armor';
+        if (['head', 'chest', 'legs', 'back', 'gloves', 'neck', 'boots', 'ring'].includes(slot)) return 'armor';
 
         // Consumable tabs
         if (category === 'consumable') {
@@ -483,8 +483,11 @@ const InventorySystem = {
             return { success: false, reason: "Failed to add to dual-bank storage" };
         }
 
-        // Also store in old equipmentInstances for backward compatibility
-        this.state.bank.equipmentInstances[instance.instanceId] = instance;
+        // Also store in old equipmentInstances for backward compatibility.
+        // Mirror the MERGED stored entry (addInstance may have merged quantities),
+        // not the just-added batch, so the mirror's quantity stays correct.
+        this.state.bank.equipmentInstances[instance.instanceId] =
+            this.state.bank.instanced[instance.instanceId] || instance;
 
         console.log(`✨ Added equipment instance: ${instance.name} (${instance.instanceId})`);
 

@@ -15,6 +15,7 @@ const CombatSystem = {
         // Attach combat functions to engine
         engine.startCombat = this.startCombat.bind(this);
         engine.endCombat = this.endCombat.bind(this);
+        engine.stopCombat = this.stopCombat.bind(this);
         engine.updateCombat = this.update.bind(this);
 
         // NEW: Auto-respawn bindings
@@ -347,6 +348,41 @@ const CombatSystem = {
         combat.currentEnemy = null;
 
         return combat.session;
+    },
+
+    /**
+     * Hard-stop combat so another activity can take over (the single-active-activity
+     * rule). Unlike endCombat(), this awards nothing and does NOT depend on
+     * `currentActivity` — the active combat system tracks combat via
+     * `state.combat.inCombat` and the auto-respawn timer, so both must be torn down:
+     * cancel the pending respawn (or it restarts combat) AND clear the live fight.
+     * @returns {boolean} true if combat (fight or pending respawn) was actually running
+     */
+    stopCombat() {
+        const state = (typeof GameEngine !== 'undefined') ? GameEngine.state : null;
+        if (!state || !state.combat) return false;
+
+        const combat = state.combat;
+        const wasRunning = !!(combat.inCombat || combat.currentEnemy || combat.respawn?.active);
+        if (!wasRunning) return false;
+
+        // Cancel any queued auto-respawn so a fresh fight doesn't spawn right back
+        if (typeof this.cancelRespawnTimer === 'function') {
+            this.cancelRespawnTimer();
+        } else if (combat.respawn?.timerId) {
+            clearTimeout(combat.respawn.timerId);
+            combat.respawn = { active: false, enemyId: null, startTime: null, duration: null, timerId: null };
+        }
+
+        // Tear down the live fight (no victory/defeat resolution)
+        combat.inCombat = false;
+        combat.currentEnemy = null;
+
+        if (typeof EventBus !== 'undefined') {
+            EventBus.emit('combat-ended', { result: 'stopped', reason: 'activity-switch' });
+        }
+        console.log('⏹️ [COMBAT] Stopped for activity switch');
+        return true;
     },
 
     /**
@@ -820,7 +856,7 @@ const CombatSystem = {
      * Compile equipment stats (fallback if EquipmentSystem not available)
      */
     compileEquipmentStats(player) {
-        const slots = ['weapon', 'armor', 'back', 'neck', 'ring', 'gloves', 'boots'];
+        const slots = ['weapon', 'head', 'chest', 'legs', 'back', 'neck', 'ring', 'gloves', 'boots'];
         const mult = player.perkMultipliers || {};
 
         const defenseRatings = { insulated: 0, plated: 0, airborne: 0, droid: 0, biological: 0 };

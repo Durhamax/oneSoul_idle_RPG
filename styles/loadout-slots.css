@@ -371,6 +371,26 @@
     align-items: center;
 }
 
+/* Slot cell: slot-name caption ABOVE the tile (keeps the tile itself uncluttered).
+   Applies to equipment, consumable and technology tiles in every loadout panel. */
+.unified-slot-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.unified-slot-caption {
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-muted, #8b93a7);
+    text-align: center;
+    white-space: nowrap;
+}
+
 /* Left cell: narrow vertical carry-weight bar + weapon/gloves/boots column */
 .unified-loadout-leftcell {
     display: flex;

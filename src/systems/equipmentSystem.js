@@ -85,7 +85,7 @@ const EquipmentSystem = {
      * Determine the slot type (equipment, consumable, or technology)
      */
     getEquipmentSlotType(slot) {
-        const equipmentSlots = ['weapon', 'armor', 'back', 'gloves', 'neck', 'boots', 'ring'];
+        const equipmentSlots = ['weapon', 'head', 'chest', 'legs', 'back', 'gloves', 'neck', 'boots', 'ring'];
         const consumableSlots = ['ammo', 'food', 'potion'];
         const techSlots = ['tech1', 'tech2', 'tech3', 'tech4'];
 
@@ -260,10 +260,28 @@ const EquipmentSystem = {
             this.state.equipment[slot] = itemId;
             console.log(`📊 Equipment state after setting:`, this.state.equipment[slot]);
 
-            // DUAL-BANK: Remove from bank using appropriate method
+            // DUAL-BANK: take ONE from the stack, leave the rest in the bank
             if (instancedItem) {
-                console.log(`📦 Removing instanced item from bank: ${itemId}`);
-                this.removeEquipmentInstance(itemId);
+                const stack = this.state.bank.instanced?.[itemId];
+                if (stack && (stack.quantity || 1) > 1) {
+                    // More than one in the stack — just decrement; the equipped slot
+                    // shares the (fungible) id, so stats still resolve from the stack.
+                    stack.quantity -= 1;
+                    if (this.state.bank.equipmentInstances?.[itemId]) {
+                        this.state.bank.equipmentInstances[itemId].quantity = stack.quantity;
+                    }
+                    console.log(`📦 Took 1 from stack ${itemId} → x${stack.quantity} left`);
+                } else {
+                    // Last one — remove from the available bank, but keep a 1-qty copy in
+                    // the equipmentInstances mirror so the WORN item still resolves.
+                    const snapshot = stack ? { ...stack, quantity: 1 } : null;
+                    this.removeEquipmentInstance(itemId);
+                    if (snapshot) {
+                        if (!this.state.bank.equipmentInstances) this.state.bank.equipmentInstances = {};
+                        this.state.bank.equipmentInstances[itemId] = snapshot;
+                    }
+                    console.log(`📦 Equipped the last ${itemId} (stack emptied, mirror kept)`);
+                }
             } else if (stackableItem) {
                 // Non-consumable stackables (like materials used as equipment?)
                 console.log(`📦 Removing stackable item from bank: ${itemId}`);
@@ -362,15 +380,22 @@ const EquipmentSystem = {
             // For instanced items, we need to recreate the instance in the bank
             console.log(`🔄 Returning instanced item to bank: ${itemId}`);
 
-            // Get the instance data if it exists in equipped items tracking
-            // Otherwise, recreate it from the base item
-            const instanceData = {
-                baseItemId: lookupId,
-                instanceId: itemId,
-                uniqueId: itemId,
-                rarity: itemDef?.rarity || 'common',
-                quantity: 1
-            };
+            // Resolve the WORN item's real rarity (from the mirror/stack, or the
+            // deterministic `_instance_<rarity>` id) — never assume the base rarity,
+            // or a perfected item would downgrade on unequip.
+            const existing = (typeof this.getEquipmentInstance === 'function')
+                ? this.getEquipmentInstance(itemId) : null;
+            let rarity = existing?.rarity;
+            if (!rarity && typeof itemId === 'string' && itemId.includes('_instance_')) {
+                rarity = itemId.split('_instance_')[1];
+            }
+            rarity = rarity || itemDef?.rarity || 'common';
+
+            // Return ONE to the stack. createEquipmentInstance rebuilds the same
+            // deterministic id + scaled stats, so addEquipmentInstance merges it back.
+            const instanceData = (typeof this.createEquipmentInstance === 'function')
+                ? this.createEquipmentInstance(lookupId, rarity, null, 1)
+                : { baseItemId: lookupId, instanceId: itemId, uniqueId: itemId, rarity, quantity: 1 };
 
             // Add the instance back to bank
             this.addEquipmentInstance(instanceData);
@@ -414,13 +439,42 @@ const EquipmentSystem = {
         };
 
         // Use StatCalculator if available
+        let stats;
         if (typeof StatCalculator !== 'undefined') {
-            return this.getPlayerCombatStatsUsingCalculator(context);
+            stats = this.getPlayerCombatStatsUsingCalculator(context);
+        } else {
+            // Fallback to legacy calculation if StatCalculator not loaded
+            console.warn('[EquipmentSystem] StatCalculator not found, using legacy calculation');
+            stats = this.getPlayerCombatStatsLegacy();
         }
 
-        // Fallback to legacy calculation if StatCalculator not loaded
-        console.warn('[EquipmentSystem] StatCalculator not found, using legacy calculation');
-        return this.getPlayerCombatStatsLegacy();
+        // Reconcile the DISPLAYED attack interval with the interval real combat
+        // actually uses. Combat runs CombatTimers.calculateAttackInterval (which
+        // applies the mobility factor + overweight penalty); the stat pipeline above
+        // does not, so the character sheet used to show a much faster interval than
+        // the fight delivered. Recompute the shown value through the same function.
+        if (stats && typeof CombatTimers !== 'undefined') {
+            let baseInterval = 2000;
+            const weaponId = this.state.equipment?.weapon;
+            if (weaponId) {
+                const baseId = weaponId.includes('_instance_') ? weaponId.split('_instance_')[0] : weaponId;
+                const weaponDef = (typeof ItemRegistry !== 'undefined') ? ItemRegistry.getItem(baseId) : null;
+                if (weaponDef && weaponDef.attackInterval) baseInterval = weaponDef.attackInterval;
+            }
+            const playerLike = {
+                attributes: this.state.combatAttributes,
+                perkMultipliers: this.state.perkMultipliers || this.state.compiledStats?.perkMultipliers || {},
+                compiledStats: this.state.compiledStats || { weight: 0 }
+            };
+            const real = CombatTimers.calculateAttackInterval(playerLike, baseInterval);
+            if (real && real.interval > 0) {
+                stats.characterAttackInterval = Math.round(real.interval);
+                stats.effectiveAttackInterval = Math.round(real.interval);
+                stats.attackSpeed = 1000 / real.interval;
+            }
+        }
+
+        return stats;
     },
 
     /**

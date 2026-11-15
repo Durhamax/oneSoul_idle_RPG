@@ -95,11 +95,12 @@ const WorkstationRegistry = {
         const station = this.stations[skill];
 
         if (station.type === 'equipment') {
-            // Equipment workstations affect rarity
+            // Equipment crafting is deterministic + stackable now: the station no
+            // longer rolls rarity (rarity comes only from Engineering Perfection).
+            // Benefits are speed, material savings and queue slots.
             return {
                 type: 'equipment',
                 tier: tier,
-                rarityBonus: tier * 7.5,                    // +7.5% rarity per tier (up to +75%)
                 materialSavingsChance: tier * 0.05,         // +5% per tier (up to 50%)
                 craftSpeedMultiplier: 1 + (tier * 0.1),     // +10% speed per tier (up to 2.0x)
                 queueSlots: Math.min(5, 1 + Math.floor(tier / 2)) // 1/1/2/2/3/3/4/4/5/5

@@ -3507,3 +3507,127 @@
     color: #555;
     font-style: italic;
 }
+
+/* =================================================================== */
+/* ENEMY-HERO COMBAT LAYOUT                                             */
+/* Enemy art is the centrepiece on top, player is a slim HUD beneath,   */
+/* and the loadout follows so it peeks just below the fold. Sized to    */
+/* keep both combatants above the fold on a phone-width column.         */
+/* =================================================================== */
+.combat-active--hero {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.combat-active--hero .combat-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* --- Hero enemy card --- */
+.combatant-card--hero {
+    padding: 10px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+.enemy-hero-art {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 148px;
+    margin-bottom: 2px;
+}
+.enemy-hero-art .enemy-art-img {
+    max-height: 148px;
+    max-width: 60%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+    animation: hero-float 3.2s ease-in-out infinite;
+}
+.enemy-hero-art .enemy-art-fallback {
+    font-size: 96px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+    animation: hero-float 3.2s ease-in-out infinite;
+}
+@keyframes hero-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+.combatant-card--hero .combatant-header-row { margin-bottom: 0; }
+.combatant-card--hero .combatant-label--name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.3px;
+    text-transform: none;
+    margin-bottom: 0;
+}
+.combatant-card--hero .combatant-level { font-size: 12px; }
+.combatant-card--hero .combatant-bars { margin-bottom: 0; }
+.combatant-card--hero .combatant-stats { margin-bottom: 0; }
+
+/* Taller HP bar so the duel reads clearly on both cards */
+.bar-track--hp { height: 18px; border-radius: 9px; }
+
+/* Hit flash punches the hero art for feedback */
+.combatant-card--enemy.hit .enemy-hero-art .enemy-art-img,
+.combatant-card--enemy.hit .enemy-hero-art .enemy-art-fallback {
+    animation: hero-hit 0.22s ease-out;
+}
+@keyframes hero-hit {
+    0%, 100% { transform: none; filter: none; }
+    30% { transform: scale(1.07); filter: brightness(1.6); }
+}
+
+/* --- Slim player HUD --- */
+.combatant-card--slim {
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.combatant-card--slim .player-hud-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.combatant-card--slim .player-hud-row .combatant-label { margin-bottom: 0; }
+.combatant-stats--inline {
+    margin-bottom: 0 !important;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+}
+.combatant-card--slim .combatant-bars { margin-bottom: 0; }
+.combatant-card--slim .player-hud-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.auto-eat-hint--inline {
+    margin-bottom: 0 !important;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+.consumable-row--inline { flex: 1 1 auto; gap: 6px; max-width: 62%; }
+/* Force the consumable tiles into slim horizontal pills (a base rule otherwise
+   stacks them into tall vertical tiles that balloon the player HUD height). */
+.consumable-row--inline .consumable-slot {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center;
+    gap: 6px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 6px 8px !important;
+}
+.consumable-row--inline .consumable-icon { font-size: 15px; }
+.consumable-row--inline .consumable-info { flex-direction: row !important; align-items: baseline; gap: 4px; }
+.consumable-row--inline .consumable-label { display: none; }
+.consumable-row--inline .consumable-qty { font-size: 12px; }
+
+/* Loadout peeks just below the fold */
+.combat-active--hero .panel-loadout { margin-top: 2px; }

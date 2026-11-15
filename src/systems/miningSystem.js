@@ -464,6 +464,12 @@ const MiningSystem = {
                     yield_ = Math.floor(yield_ * tool.gatheringBonus.mining.yield);
                 }
 
+                // Skilling-outfit yield bonus — extra ore from equipped skilling pieces.
+                // Added after XP is computed elsewhere, so bonus ore grants no extra XP.
+                if (typeof SkillingOutfit !== 'undefined') {
+                    yield_ += SkillingOutfit.rollYieldBonus(this.state, 'mining');
+                }
+
                 resources[entry.itemId] = (resources[entry.itemId] || 0) + yield_;
             }
         }

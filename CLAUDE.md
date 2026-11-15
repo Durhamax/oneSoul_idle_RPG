@@ -13,7 +13,7 @@ Before creating a new `.md` to change or add spec/design/architecture informatio
 4. **Never write dated status snapshots / changelogs into living docs** (they rot). That belongs in commits or `docs/archive/`.
 5. When the vision changes, **edit in place and let the old wording go** — deprecate, don't accumulate.
 
-Topic → home: narrative/cosmology → `WORLD_BIBLE.md`; campaign structure/themes → `CAMPAIGN_ARC.md`; map beats → `MAP_POI.md`; geography/economy → `REGIONS_GEOGRAPHY.md`; resources/naming/loot → `RESOURCE_DESIGN.md`; combat curve/builds → `COMBAT_PROGRESSION.md`; system interconnections → `SYSTEMS_OVERVIEW.md`; engineering/tech/build system → `ENGINEERING_DESIGN.md`; a specific hex → `REGION_BUILDS.md`; **how it's coded** → `ARCHITECTURE.md`. Superseded/historical docs are in `docs/archive/` (reference only).
+Topic → home: narrative/cosmology → `WORLD_BIBLE.md`; campaign structure/themes → `CAMPAIGN_ARC.md`; map beats → `MAP_POI.md`; geography/economy → `REGIONS_GEOGRAPHY.md`; resources/naming/loot → `RESOURCE_DESIGN.md`; combat curve/builds → `COMBAT_PROGRESSION.md`; system interconnections → `SYSTEMS_OVERVIEW.md`; engineering/tech/build system → `ENGINEERING_DESIGN.md`; a specific hex → `REGION_BUILDS.md`; **how it's coded** → `ARCHITECTURE.md`. **Which art is approved / in progress / not started** → `ASSET_STATUS.md` (generated — read it before adding, replacing or referencing any image; never hand-edit). Superseded/historical docs are in `docs/archive/` (reference only).
 
 ## Canon quick-reference (don't contradict)
 

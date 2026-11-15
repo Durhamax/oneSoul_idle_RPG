@@ -1166,10 +1166,16 @@ const DevItemTools = {
             { id: 'flintheadArrows', quantity: 100 },
             { id: 'copperiteRounds', quantity: 100 },
 
-            // Armor
-            { id: 'unityScoutSet', quantity: 1 },
-            { id: 'waxedWaderSet', quantity: 1 },
-            { id: 'harvestersGarb', quantity: 1 },
+            // Armor (head / chest / legs pieces)
+            { id: 'unityScoutHood', quantity: 1 },
+            { id: 'unityScoutJacket', quantity: 1 },
+            { id: 'unityScoutLeggings', quantity: 1 },
+            { id: 'waxedWaderHood', quantity: 1 },
+            { id: 'waxedWaderCoat', quantity: 1 },
+            { id: 'waxedWaderLeggings', quantity: 1 },
+            { id: 'harvestersHood', quantity: 1 },
+            { id: 'harvestersVest', quantity: 1 },
+            { id: 'harvestersLeggings', quantity: 1 },
 
             // Food
             { id: 'solfishBake', quantity: 20 },
@@ -1308,8 +1314,8 @@ const TestEquip = {
         // 1. Create and equip weapon (Sidekick 22 pistol)
         results.weapon = this._equipInstancedItem('sidekick22', 'weapon');
 
-        // 2. Create and equip armor (Unity Scout Set)
-        results.armor = this._equipInstancedItem('unityScoutSet', 'armor');
+        // 2. Create and equip armor (Unity Scout Jacket - chest piece)
+        results.armor = this._equipInstancedItem('unityScoutJacket', 'chest');
 
         // 3. Add and equip food (Solfish Bake - 50 units)
         results.food = this._equipStackableItem('solfishBake', 50, 'food');
@@ -1342,7 +1348,7 @@ const TestEquip = {
         };
 
         results.weapon = this._equipInstancedItem('unityBlade', 'weapon');
-        results.armor = this._equipInstancedItem('unityScoutSet', 'armor');
+        results.armor = this._equipInstancedItem('unityScoutJacket', 'chest');
         results.food = this._equipStackableItem('smallGameStew', 30, 'food');
 
         console.log('\n📊 MELEE KIT SUMMARY');
@@ -1369,7 +1375,7 @@ const TestEquip = {
         };
 
         results.weapon = this._equipInstancedItem('greensmanTrainingBow', 'weapon');
-        results.armor = this._equipInstancedItem('unityScoutSet', 'armor');
+        results.armor = this._equipInstancedItem('unityScoutJacket', 'chest');
         results.food = this._equipStackableItem('solfishBake', 50, 'food');
         results.ammo = this._equipStackableItem('flintheadArrows', 100, 'ammo');
 

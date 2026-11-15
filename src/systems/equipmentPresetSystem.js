@@ -8,7 +8,7 @@
 const EquipmentPresetSystem = {
     // The real equipment slots in the current model (3-1-3 gear + consumables + tech).
     ALL_SLOTS: [
-        'weapon', 'armor', 'back', 'gloves', 'neck', 'boots', 'ring',
+        'weapon', 'head', 'chest', 'legs', 'back', 'gloves', 'neck', 'boots', 'ring',
         'ammo', 'food', 'potion',
         'tech1', 'tech2', 'tech3', 'tech4'
     ],

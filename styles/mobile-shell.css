@@ -10,9 +10,13 @@
     --topbar-h: 52px;
     --levelbar-h: 30px;
     --ribbon-h: 64px;
+    --action-ribbon-h: 0px;   /* 0 when idle; set by .has-action-ribbon when an action is running */
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* While an action runs off-screen, reserve room for the ribbon above the level bar */
+body.has-action-ribbon { --action-ribbon-h: 42px; }
 
 /* ---------- Top ribbon: HP + currencies + menu (notch-safe) ---------- */
 .topbar {
@@ -109,7 +113,7 @@
 .main-content {
     margin: 0 !important;
     padding-top: calc(var(--topbar-h) + var(--safe-top)) !important;
-    padding-bottom: calc(var(--ribbon-h) + var(--levelbar-h) + var(--safe-bottom)) !important;
+    padding-bottom: calc(var(--ribbon-h) + var(--levelbar-h) + var(--action-ribbon-h) + var(--safe-bottom)) !important;
     min-height: 100vh;
     overflow-x: hidden;
 }
@@ -175,6 +179,66 @@
 }
 
 /* ---------- Level bar (slim; tap to Overview) ---------- */
+/* ---------- Active-action ribbon (docked just above the level bar) ---------- */
+.action-ribbon {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: calc(var(--ribbon-h) + var(--levelbar-h) + var(--safe-bottom));
+    height: var(--action-ribbon-h);
+    width: 100%;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 0 var(--space-md);
+    background: var(--color-bg-glass);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+    border-top: 1px solid var(--color-border-accent);
+    cursor: pointer;
+    text-align: left;
+    color: var(--color-text-secondary);
+    font-family: var(--font-display);
+    overflow: hidden;
+    z-index: 100;
+}
+.action-ribbon.is-active { display: flex; }
+.action-ribbon:active { background: var(--color-bg-glass-light); }
+.action-ribbon .ar-icon { flex-shrink: 0; font-size: 18px; line-height: 1; }
+.action-ribbon .ar-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.action-ribbon .ar-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 8px; line-height: 1;
+}
+.action-ribbon .ar-label {
+    font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.action-ribbon .ar-sub {
+    flex-shrink: 0; font-family: var(--font-mono); font-size: 10px;
+    color: var(--color-text-tertiary); white-space: nowrap;
+}
+.action-ribbon .ar-track {
+    position: relative; width: 100%; height: 5px;
+    background: var(--color-bg-tertiary); border-radius: var(--radius-sm);
+    overflow: hidden; border: 1px solid var(--color-border-accent);
+}
+.action-ribbon .ar-track-thin { height: 3px; border: none; }
+.action-ribbon .ar-fill {
+    height: 100%; width: 0;
+    background: linear-gradient(90deg, var(--color-primary-dark), var(--color-primary), var(--color-primary-light));
+    transition: width 0.12s linear;
+}
+.action-ribbon .ar-fill2 {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, var(--color-success), #8bc34a);
+    transition: width 0.25s ease-out;
+}
+.action-ribbon .ar-go { flex-shrink: 0; font-size: 18px; color: var(--color-text-tertiary); }
+/* Combat: the main fill is the player's HP (green, flips to red when low) */
+.action-ribbon.ar-type-combat .ar-fill { background: linear-gradient(90deg, var(--color-success), #8bc34a); }
+.action-ribbon.is-danger .ar-fill { background: linear-gradient(90deg, var(--color-danger), #ff7043); }
+
 .levelbar {
     position: fixed;
     left: 0; right: 0;
@@ -332,6 +396,7 @@
    is a single phone-width column (--app-width), full-width on real phones and
    centered over the background on anything wider. No breakpoint to reason about. */
 .topbar,
+.action-ribbon,
 .levelbar,
 .ribbon {
     max-width: var(--app-width);
@@ -968,33 +1033,40 @@
     border-radius: var(--radius-md, 8px) !important;
 }
 
-/* Location banner -> compact glass card, full width */
+/* Location banner -> overview-panel theme, compressed to a single row:
+   location name (left, all-caps) + exploration bar & value (right). */
 #view-navigation .nav-location-banner {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
     max-width: 100% !important;
     margin: 0 0 8px 0 !important;
-    padding: 8px 10px !important;
-    gap: 10px !important;
-    background: var(--color-bg-glass, rgba(26, 26, 40, 0.6)) !important;
-    border: 1px solid var(--color-border-accent, rgba(52, 152, 219, 0.3)) !important;
-    border-radius: var(--radius-md, 8px) !important;
-    flex-wrap: wrap !important;
+    padding: 10px 12px !important;
+    gap: 12px !important;
+    background: linear-gradient(135deg, rgba(30, 30, 50, 0.9), rgba(20, 20, 40, 0.95)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 8px !important;
+    flex-wrap: nowrap !important;
 }
-#view-navigation .nav-location-icon { font-size: 26px !important; }
-#view-navigation .nav-location-label { font-size: 0.6rem !important; }
-#view-navigation .nav-location-name { font-size: 1.05rem !important; }
-#view-navigation .nav-location-biome { font-size: 0.72rem !important; }
+/* Region name uses the same all-caps panel-title treatment as other headers */
+#view-navigation .nav-location-name {
+    flex: 1 1 auto !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    color: #fff !important;
+    min-width: 0 !important;
+}
 #view-navigation .nav-location-progress {
-    flex: 1 1 100% !important;
-    max-width: 100% !important;
+    flex: 0 0 150px !important;
+    max-width: 55% !important;
 }
-#view-navigation .nav-location-progress-head { font-size: 0.68rem !important; }
-
-/* Map hint row */
-#view-navigation .nav-map-hint {
-    max-width: 100% !important;
-    margin: 0 0 8px 0 !important;
-    gap: 14px !important;
-    font-size: 0.72rem !important;
+#view-navigation .nav-location-progress-head {
+    display: flex !important;
+    justify-content: space-between !important;
+    font-size: 0.68rem !important;
+    margin-bottom: 3px !important;
 }
 
 /* Controls + discoveries -> single column, full width */
@@ -1006,16 +1078,94 @@
 }
 #view-navigation .nav-col { gap: 8px !important; }
 
-/* Control / discovery blocks -> themed glass panels, tightened */
+/* Control / discovery blocks -> overview-panel theme (same gradient/border
+   as the Overview tab panels) */
 #view-navigation .nav-control-block {
-    background: var(--color-bg-glass, rgba(26, 26, 40, 0.5)) !important;
-    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08)) !important;
-    border-radius: var(--radius-md, 8px) !important;
+    background: linear-gradient(135deg, rgba(30, 30, 50, 0.9), rgba(20, 20, 40, 0.95)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 8px !important;
     padding: 10px 12px !important;
-    backdrop-filter: blur(var(--blur-md, 15px));
 }
 #view-navigation .nav-control-title { font-size: 0.85rem !important; margin-bottom: 6px !important; }
-#view-navigation .nav-control-desc { font-size: 0.7rem !important; }
+#view-navigation .nav-control-desc { font-size: 0.7rem !important; color: #aaa !important; }
+
+/* Panel title -> matches the overview .panel-title treatment */
+#view-navigation .nav-panel-title {
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    color: #fff !important;
+    margin-bottom: 10px !important;
+}
+
+/* Navigation active panel: the gather skill-strip + two bars rendered inside
+   the overview-themed block. Keep the left accent the gather panel uses. */
+#view-navigation .nav-active-panel {
+    border-left: 4px solid var(--color-primary, #3498db) !important;
+}
+/* Discovery (interval) bar fill -> blue, to read distinctly from endurance */
+#view-navigation .nav-discovery-fill {
+    background: linear-gradient(90deg, #2196F3, #64B5F6) !important;
+}
+/* Live readout row (endurance + timing) */
+#view-navigation .gap-success { font-size: 0.72rem !important; }
+#view-navigation .nav-endurance-readout { margin-left: 8px; color: #8bc34a; }
+/* Toggle reuses .gap-stop (red); the idle state flips it to primary */
+#view-navigation .gap-stop.is-start {
+    background: var(--color-primary, #3498db) !important;
+}
+
+/* Camping tiles row -> loadout consumable tiles, centered */
+#view-navigation .nav-camping-tiles {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 18px !important;
+    flex-wrap: wrap !important;
+}
+
+/* Explore New Tiles -> compact single-row tiles consistent with game surfaces */
+#view-navigation .nav-tile-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+}
+#view-navigation .nav-tile {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 6px 10px !important;
+    background: rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08)) !important;
+    border-radius: 6px !important;
+}
+#view-navigation .nav-tile-name {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+#view-navigation .nav-tile-btn {
+    flex: 0 0 auto !important;
+    padding: 4px 10px !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    background: var(--color-success, #4caf50) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+}
+#view-navigation .nav-tile-btn.is-locked {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #888 !important;
+    cursor: not-allowed !important;
+}
 
 /* Section titles */
 #view-navigation #navigationDisplay h3 {
@@ -1035,3 +1185,144 @@
     padding: 10px 12px !important;
     border-radius: var(--radius-md, 8px) !important;
 }
+
+/* =================================================================== */
+/* POPUP MODALS — item popup, enemy popup, equip/ammo picker           */
+/* Same play-column bounding as the region modal: never overlap the    */
+/* top bar or bottom ribbon, and never exceed the mobile column width. */
+/* =================================================================== */
+
+/* Equip / ammo picker (#equipModal is a .modal > .modal-content).
+   Anchor the content below the top bar, bound its height to the play
+   area and cap its width to the column — so the "Select Ammo" picker
+   lands squarely inside the game view instead of under the top bar. */
+#equipModal .modal-content {
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: calc(var(--topbar-h, 52px) + var(--safe-top, 0px) + 8px) !important;
+    width: calc(min(var(--app-width, 430px), 100%) - 40px) !important;
+    max-width: none !important;
+    max-height: calc(100dvh - var(--topbar-h, 52px) - var(--safe-top, 0px) - var(--ribbon-h, 64px) - var(--levelbar-h, 30px) - var(--safe-bottom, 0px) - 16px) !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+}
+
+/* Item popup (.item-modal-overlay > .item-modal) and enemy popup
+   (#combat-modal-container .modal-overlay > .enemy-modal): center the
+   dialog INSIDE the play area (between the top bar and the ribbon/level
+   bar), not the whole viewport, and match the column width. */
+#itemModalOverlay.item-modal-overlay.active,
+#combat-modal-container .modal-overlay {
+    top: calc(var(--topbar-h, 52px) + var(--safe-top, 0px)) !important;
+    bottom: calc(var(--ribbon-h, 64px) + var(--levelbar-h, 30px) + var(--safe-bottom, 0px)) !important;
+    left: 0 !important;
+    right: 0 !important;
+    /* height must be auto so top+bottom define the box; a base height:100vh
+       would otherwise override bottom and let the dialog grow past the ribbon. */
+    height: auto !important;
+    padding: 8px !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+.item-modal,
+.enemy-modal {
+    width: calc(min(var(--app-width, 430px), 100%) - 40px) !important;
+    max-width: none !important;
+    max-height: 100% !important;
+}
+
+/* Tighten item popup chrome */
+.item-modal-header { padding: 12px 14px !important; }
+.item-modal-icon { font-size: 2em !important; }
+.item-modal-name { font-size: 1.15em !important; }
+.item-modal-body { padding: 12px 14px !important; }
+.item-modal-section { margin-bottom: 14px !important; }
+
+/* Tighten enemy popup chrome */
+.enemy-modal .modal-header { padding: 12px 14px !important; }
+.enemy-modal .enemy-modal-icon { font-size: 2.4rem !important; margin-bottom: 4px !important; }
+.enemy-modal .enemy-modal-title { font-size: 1.15rem !important; margin-bottom: 2px !important; }
+.enemy-modal .enemy-modal-level { font-size: 0.85rem !important; }
+.enemy-modal .modal-body { padding: 12px 14px !important; }
+.enemy-modal .stat-section { padding: 10px !important; margin-bottom: 8px !important; }
+
+/* =================================================================== */
+/* DEVELOPER TOOLS MODAL (#devModal) — fit the mobile play column       */
+/* The entire modal body is built from inline styles (an 800px frame, a */
+/* non-wrapping 7-tab row, and multi-column button grids with fixed     */
+/* paddings) that spill a phone. Bound the dialog to the play area and   */
+/* force its inline-styled innards to wrap and shrink.                  */
+/* =================================================================== */
+
+/* Dialog frame: anchor below the top bar, cap to the play column + height */
+#devModal .modal-content {
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: calc(var(--topbar-h, 52px) + var(--safe-top, 0px) + 8px) !important;
+    width: calc(min(var(--app-width, 430px), 100%) - 40px) !important;
+    max-width: none !important;
+    max-height: calc(100dvh - var(--topbar-h, 52px) - var(--safe-top, 0px) - var(--ribbon-h, 64px) - var(--levelbar-h, 30px) - var(--safe-bottom, 0px) - 16px) !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+/* Compact header: one-line title instead of the big wrapping display size */
+#devModal .modal-header { padding: 10px 14px !important; }
+#devModal .modal-header h2 { font-size: 1.1rem !important; line-height: 1.2 !important; }
+#devModalContent { padding: 10px !important; overflow-x: hidden !important; }
+
+/* Nothing inside may force the column wider than the frame */
+#devModalContent,
+#devModalContent * { min-width: 0 !important; }
+#devModalContent [style*="max-width"] { max-width: 100% !important; }
+
+/* Tab row (first child div): wrap the 7 tabs into tidy rows of compact chips */
+#devModalContent > div:first-child {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    margin-bottom: 12px !important;
+}
+#devModalContent > div:first-child > button {
+    padding: 6px 9px !important;
+    font-size: 0.72rem !important;
+    border-radius: 6px !important;
+}
+
+/* Overall spacing: tighten the generous desktop gaps + section paddings */
+#devModalContent [style*="gap: 20px"] { gap: 12px !important; }
+#devModalContent [style*="padding: 15px"] { padding: 10px !important; }
+#devModalContent h3 { margin-bottom: 8px !important; font-size: 0.95rem !important; }
+
+/* Any inline grid flows responsively instead of holding fixed columns */
+#devModalContent [style*="grid-template-columns"] {
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)) !important;
+    gap: 8px !important;
+}
+
+/* Action buttons: readable, comfortably tappable, never overflow */
+#devModalContent button,
+#devModalContent input,
+#devModalContent select {
+    font-size: 0.76rem !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+}
+#devModalContent button {
+    padding: 9px 10px !important;
+    min-height: 40px !important;
+    line-height: 1.15 !important;
+}
+
+/* Item Adder: the item list spans the full width and stands tall, with the
+   quantity + Add button flowing to the row beneath it (instead of a cramped
+   three-across row where the list was squeezed to ~110px). */
+#devItemSelector {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-height: 168px !important;
+    font-size: 0.8rem !important;
+}
+#devItemQuantity { width: 100% !important; }

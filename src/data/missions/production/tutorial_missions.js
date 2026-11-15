@@ -161,7 +161,9 @@ const TUTORIAL_MISSIONS = {
         rewards: {
             characterXP: 50,
             items: [
-                { itemId: 'unityScoutSet', quantity: 1 }
+                { itemId: 'unityScoutHood', quantity: 1 },
+                { itemId: 'unityScoutJacket', quantity: 1 },
+                { itemId: 'unityScoutLeggings', quantity: 1 }
             ]
         },
 
@@ -197,7 +199,7 @@ const TUTORIAL_MISSIONS = {
             npc: 'Elder Maren',
             npcIcon: '👴',
             intro: "That armor will protect you, but you need to wear it first. Let me show you how equipment works.",
-            body: "Go to your Loadout and equip the Unity Scout Set. Once you've done that, I'll give you the tools every ranger needs.",
+            body: "Go to your Loadout and equip your Unity Scout armor — start with the Jacket. Once you've done that, I'll give you the tools every ranger needs.",
             completion: "Well done! A true Unity ranger now. These tools will let you gather resources from the land. Treat them well."
         },
 
@@ -205,15 +207,15 @@ const TUTORIAL_MISSIONS = {
             {
                 id: 'equip_armor',
                 type: 'equip',
-                slot: 'armor',
-                target: 'unityScoutSet',
-                description: 'Equip the Unity Scout Set',
+                slot: 'chest',
+                target: 'unityScoutJacket',
+                description: 'Equip the Unity Scout Jacket',
                 required: 1,
                 useSpotlight: true,
                 tourContent: {
                     title: 'Equip Your Armor',
-                    body: 'Open your Items, find the Unity Scout Set, and equip it. Or click the armor slot here to see available armor.',
-                    hint: 'Equip the Unity Scout Set to your armor slot'
+                    body: 'Open your Items, find the Unity Scout Jacket, and equip it. Or click the chest slot here to see available armor.',
+                    hint: 'Equip the Unity Scout Jacket to your chest slot'
                 }
             },
             {
@@ -541,7 +543,7 @@ const TUTORIAL_MISSIONS = {
         metadata: {
             chain: 'tutorial',
             chainOrder: 6,
-            unlocks: [],  // Tutorial complete - opens to main story
+            unlocks: ['mission_107'],  // Tutorial complete - hands off to main story (first combat)
             requiresTurnIn: true,
             flags: {
                 isTutorial: true,

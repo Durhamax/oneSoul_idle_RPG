@@ -116,33 +116,16 @@ const Animations = {
     },
 
     /**
-     * Parallax scroll effect for background
+     * Background is a LOCKED view — it must not move when the page scrolls.
+     * (Previously this attached a scroll-driven parallax that translated the
+     * background layer, which read as the background "scrolling with the page".)
+     * We now just ensure the layer carries no scroll transform.
      */
     initParallax() {
-        let ticking = false;
-        let lastScrollY = 0;
-
-        const updateParallax = () => {
-            const scrollY = window.scrollY || window.pageYOffset;
-            const backgroundLayer = document.getElementById('backgroundLayer');
-
-            if (backgroundLayer) {
-                // Very subtle parallax - move 20% of scroll speed
-                const offset = scrollY * 0.2;
-                backgroundLayer.style.transform = `translateY(${offset}px)`;
-            }
-
-            ticking = false;
-        };
-
-        window.addEventListener('scroll', () => {
-            lastScrollY = window.scrollY;
-
-            if (!ticking) {
-                window.requestAnimationFrame(updateParallax);
-                ticking = true;
-            }
-        });
+        const backgroundLayer = document.getElementById('backgroundLayer');
+        if (backgroundLayer) {
+            backgroundLayer.style.transform = 'none';
+        }
     },
 
     /**

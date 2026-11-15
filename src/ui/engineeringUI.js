@@ -146,10 +146,9 @@ const EngineeringUI = {
                     <div style="background: rgba(76, 175, 80, 0.1); padding: 8px; border-radius: 4px; margin-bottom: 12px; border: 1px solid rgba(76, 175, 80, 0.3);">
                         <div style="font-size: 0.75em; color: #4caf50; font-weight: bold; margin-bottom: 4px;">CURRENT BONUSES</div>
                         <div style="font-size: 0.7em; color: #aaa;">
-                            <div>⭐ ${(currentTierData.bonuses.rarityChance * 100).toFixed(0)}% Rarity Chance</div>
+                            <div>💰 ${(currentTier * 5)}% Material Savings</div>
                             <div>⚡ ${(currentTierData.bonuses.craftSpeed * 100).toFixed(0)}% Craft Speed</div>
                             <div>📦 ${currentTierData.bonuses.parallelSlots} Parallel Slot${currentTierData.bonuses.parallelSlots > 1 ? 's' : ''}</div>
-                            <div>🎯 Max: ${currentTierData.bonuses.maxRarity.charAt(0).toUpperCase() + currentTierData.bonuses.maxRarity.slice(1)}</div>
                         </div>
                     </div>
                 ` : ''}
@@ -164,7 +163,7 @@ const EngineeringUI = {
                         <div style="font-size: 0.75em; color: #888; margin-bottom: 8px;">UPGRADE TO TIER ${nextTier}</div>
                         <div style="font-weight: bold; font-size: 0.9em; margin-bottom: 8px;">${nextTierData.name}</div>
                         <div style="font-size: 0.7em; color: #aaa; margin-bottom: 8px;">
-                            <div>⭐ ${(nextTierData.bonuses.rarityChance * 100).toFixed(0)}% Rarity (+${((nextTierData.bonuses.rarityChance - (currentTierData?.bonuses.rarityChance || 1)) * 100).toFixed(0)}%)</div>
+                            <div>💰 ${(nextTier * 5)}% Material Savings (+5%)</div>
                             <div>⚡ ${(nextTierData.bonuses.craftSpeed * 100).toFixed(0)}% Speed (+${((nextTierData.bonuses.craftSpeed - (currentTierData?.bonuses.craftSpeed || 1)) * 100).toFixed(0)}%)</div>
                             <div>📦 ${nextTierData.bonuses.parallelSlots} Slots (+${nextTierData.bonuses.parallelSlots - (currentTierData?.bonuses.parallelSlots || 1)})</div>
                         </div>

@@ -81,15 +81,24 @@ const CombatTimers = {
     },
 
     /**
-     * Calculate mobility factor (attack speed modifier)
+     * Calculate mobility factor (attack speed modifier).
+     *
+     * Mobility is a SPEED BONUS measured from a 1.0× baseline, never a penalty:
+     * a brand-new character (mobility ~1) attacks at roughly the weapon's base
+     * interval, and investing in mobility makes attacks faster down to a floor.
+     * (The old curve started at 3.0× — i.e. every low-mobility character attacked
+     * ~3× slower than their weapon's base, which made early combat unwinnable and
+     * disagreed with the character sheet.)
+     *
+     * factor = clamp(1.0 - mobility * 0.01, floor 0.4, ceil 1.0)
+     *   mobility   0 → 1.00×   (weapon base)
+     *   mobility   1 → 0.99×
+     *   mobility  30 → 0.70×
+     *   mobility ≥60 → 0.40×   (floor: 2.5× faster than base)
      */
     calculateMobilityFactor(player) {
-        const mult = player.perkMultipliers || {};
         const mobility = player.attributes?.mobility || 0;
-
-        // Mobility reduces the factor from 3.0× (at 0) to 0.1× (at max)
-        const mobilityFactor = Math.max(0.1, 3.0 - (mobility * 0.029));
-
+        const mobilityFactor = Math.min(1.0, Math.max(0.4, 1.0 - (mobility * 0.01)));
         return mobilityFactor;
     },
 

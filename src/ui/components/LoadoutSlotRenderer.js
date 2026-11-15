@@ -26,6 +26,7 @@ const LoadoutSlotRenderer = {
         boots: '👢',
         neck: '📿',
         ring: '💍',
+        head: '🪖',
         helmet: '🪖',
         chest: '👕',
         legs: '👖',
@@ -33,6 +34,7 @@ const LoadoutSlotRenderer = {
         food: '🍖',
         potion: '🧪',
         ammo: '🎯',
+        fuel: '🪵',
         // Tech
         tech1: '⚡',
         tech2: '⚡',
@@ -49,16 +51,38 @@ const LoadoutSlotRenderer = {
         boots: 'Boots',
         neck: 'Neck',
         ring: 'Ring',
+        head: 'Head',
         helmet: 'Helmet',
         chest: 'Chest',
         legs: 'Legs',
         food: 'Food',
         potion: 'Potion',
         ammo: 'Ammo',
+        fuel: 'Fuel',
         tech1: 'Tech 1',
         tech2: 'Tech 2',
         tech3: 'Tech 3',
         tech4: 'Tech 4'
+    },
+
+    /**
+     * Wrap a rendered slot tile in a cell with the slot-name caption ABOVE the
+     * tile (instead of crowding it inside). Used for every loadout slot type so
+     * equipment, consumable and technology tiles stay uniform and uncluttered.
+     * @param {string} slotName - Slot key (weapon, head, food, tech1, …)
+     * @param {string} slotHTML - The rendered `.unified-slot` tile HTML
+     * @param {boolean} showLabel - Whether to render the caption
+     * @returns {string} HTML string
+     */
+    _withCaption(slotName, slotHTML, showLabel) {
+        if (!showLabel) return slotHTML;
+        const label = this.SLOT_NAMES[slotName] || slotName;
+        return `
+            <div class="unified-slot-cell">
+                <div class="unified-slot-caption">${label}</div>
+                ${slotHTML}
+            </div>
+        `;
     },
 
     /**
@@ -111,10 +135,7 @@ const LoadoutSlotRenderer = {
             ? this._getIconHTML(itemDef, this._getIconSize(size))
             : `<span class="unified-slot__empty-icon">${this.SLOT_ICONS[slotName] || '📦'}</span>`;
 
-        // Build label (slot type label)
-        const labelHTML = showLabel
-            ? `<div class="unified-slot__label">${this.SLOT_NAMES[slotName] || slotName}</div>`
-            : '';
+        // Slot-name label now renders OUTSIDE the tile (caption above) via _withCaption.
 
         // Build item name (always show when filled, with truncation)
         let nameHTML = '';
@@ -126,7 +147,7 @@ const LoadoutSlotRenderer = {
             nameHTML = `<span class="slot-item-name">${truncatedName}</span>`;
         }
 
-        return `
+        const slotHTML = `
             <div class="${classes}"
                  style="--rarity-color: ${rarityColor};"
                  data-slot="${slotName}"
@@ -135,9 +156,9 @@ const LoadoutSlotRenderer = {
                  ${clickHandler}>
                 <div class="unified-slot__icon">${iconHTML}</div>
                 ${nameHTML}
-                ${labelHTML}
             </div>
         `;
+        return this._withCaption(slotName, slotHTML, showLabel);
     },
 
     /**
@@ -258,26 +279,21 @@ const LoadoutSlotRenderer = {
             ? this._getIconHTML(itemDef, this._getIconSize(size))
             : `<span class="unified-slot__empty-icon">${this.SLOT_ICONS[slotName] || '📦'}</span>`;
 
-        // Build label
-        const labelHTML = showLabel
-            ? `<div class="unified-slot__label">${this.SLOT_NAMES[slotName] || slotName}</div>`
-            : '';
-
-        // Build quantity badge
+        // Build quantity badge (slot name renders as a caption above the tile)
         const hasQuantity = itemDef && displayQuantity > 0;
         const quantityHTML = `<div class="unified-slot__quantity" data-visible="${hasQuantity}">${hasQuantity ? displayQuantity : ''}</div>`;
 
-        return `
+        const slotHTML = `
             <div class="${classes}"
                  data-slot="${slotName}"
                  data-item-id="${itemId || ''}"
                  title="${itemDef ? `${itemDef.name} (x${displayQuantity})` : this.SLOT_NAMES[slotName] || slotName}"
                  ${clickHandler}>
                 <div class="unified-slot__icon">${iconHTML}</div>
-                ${labelHTML}
                 ${quantityHTML}
             </div>
         `;
+        return this._withCaption(slotName, slotHTML, showLabel);
     },
 
     /**
@@ -316,7 +332,7 @@ const LoadoutSlotRenderer = {
                 size !== 'auto' ? `unified-slot--${size}` : ''
             ].filter(Boolean).join(' ');
 
-            return `
+            const lockedHTML = `
                 <div class="${classes}"
                      data-slot="${slotName}"
                      title="Requires ${requiredIntellect} Intellect">
@@ -324,6 +340,7 @@ const LoadoutSlotRenderer = {
                     <div class="unified-slot__requirement">${requiredIntellect} INT</div>
                 </div>
             `;
+            return this._withCaption(slotName, lockedHTML, showLabel);
         }
 
         // Parse item data
@@ -352,12 +369,7 @@ const LoadoutSlotRenderer = {
             ? this._getIconHTML(itemDef, this._getIconSize(size))
             : `<span class="unified-slot__empty-icon">${this.SLOT_ICONS[slotName] || '⚡'}</span>`;
 
-        // Build label
-        const labelHTML = showLabel
-            ? `<div class="unified-slot__label">${this.SLOT_NAMES[slotName] || slotName}</div>`
-            : '';
-
-        return `
+        const slotHTML = `
             <div class="${classes}"
                  style="--rarity-color: ${rarityColor};"
                  data-slot="${slotName}"
@@ -365,9 +377,9 @@ const LoadoutSlotRenderer = {
                  title="${itemDef ? `${itemDef.name} (${rarity})` : this.SLOT_NAMES[slotName] || slotName}"
                  ${clickHandler}>
                 <div class="unified-slot__icon">${iconHTML}</div>
-                ${labelHTML}
             </div>
         `;
+        return this._withCaption(slotName, slotHTML, showLabel);
     },
 
     /**
@@ -413,10 +425,12 @@ const LoadoutSlotRenderer = {
             </div>
         `;
 
-        // Middle column: Armor (tall)
+        // Middle column: Head, Chest, Legs (uniform tiles — 3x3 grid)
         const middleColumn = `
-            <div class="unified-loadout-column unified-loadout-column--armor">
-                ${this.renderArmorSlot({ itemData: equipment.armor, showLabel: showLabels, showName: showNames, interactive, onClick: getClickHandler('armor') })}
+            <div class="unified-loadout-column">
+                ${this.renderSlot({ slotName: 'head', itemData: equipment.head, size, showLabel: showLabels, showName: showNames, interactive, onClick: getClickHandler('head') })}
+                ${this.renderSlot({ slotName: 'chest', itemData: equipment.chest, size, showLabel: showLabels, showName: showNames, interactive, onClick: getClickHandler('chest') })}
+                ${this.renderSlot({ slotName: 'legs', itemData: equipment.legs, size, showLabel: showLabels, showName: showNames, interactive, onClick: getClickHandler('legs') })}
             </div>
         `;
 

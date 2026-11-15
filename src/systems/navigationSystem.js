@@ -294,9 +294,13 @@ const NavigationSystem = {
             return { success: false, reason: "Already navigating" };
         }
 
-        // Stop ALL other activities including crafting
-        if (this.state.currentActivity === 'combat') {
-            this.endCombat();
+        // Stop ALL other activities including crafting.
+        // Combat is tracked by state.combat (inCombat / currentEnemy / pending respawn),
+        // NOT by currentActivity, so check the real flags and hard-stop it.
+        if (this.state.combat?.inCombat || this.state.combat?.currentEnemy || this.state.combat?.respawn?.active) {
+            if (typeof this.stopCombat === 'function') {
+                this.stopCombat();
+            }
         }
         if (this.state.currentActivity === 'nodeCollection') {
             this.stopNodeHarvesting();
@@ -551,6 +555,20 @@ const NavigationSystem = {
 
         // Gain navigation exp
         this.gainSkillExp('navigation', 5);
+
+        // At full exploration, guarantee every adjacent exit path is revealed.
+        // Exit paths are otherwise only rolled ~15% of the time and pick a random
+        // undiscovered neighbor, so a region can reach 100% with some direct
+        // routes still hidden (and discovery then stops). Backfill them here.
+        if (regionState.discoveryProgress >= 100 && hexDef && hexDef.adjacent) {
+            for (const neighborId of Object.values(hexDef.adjacent)) {
+                if (!regionState.discoveredExitPaths.includes(neighborId)) {
+                    this.discoverBidirectionalPath(currentRegionId, neighborId);
+                    const nHex = this.definitions.worldMap[neighborId];
+                    console.log(`🗺️ Region fully explored — revealed remaining path to ${nHex?.name || neighborId}`);
+                }
+            }
+        }
 
         // Determine what was discovered (weighted random)
         const rand = Math.random();

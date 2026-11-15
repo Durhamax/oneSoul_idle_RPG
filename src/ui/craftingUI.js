@@ -325,13 +325,17 @@ const CraftingUI = {
             : null;
         const outputName = outputItem?.name || recipe.outputs.itemId;
 
-        // Rarity display
+        // Rarity display. Equipment crafting is deterministic now: every craft
+        // produces the item at a fixed base rarity (higher rarity comes from
+        // Engineering Perfection, not the craft), so show that fixed quality
+        // instead of a misleading random distribution.
         let rarityDisplay = '';
-        if (recipe.outputs.rarityWeights) {
-            const weights = recipe.outputs.rarityWeights;
+        if (recipe.outputs.rarityWeights || recipe.outputs.baseRarity) {
+            const baseRarity = recipe.outputs.baseRarity || 'common';
             rarityDisplay = `
                 <div style="font-size: 0.7em; color: #888; margin-top: 3px;">
-                    Rarity: ${Object.keys(weights).map(r => `<span style="color: ${this.getRarityColor(r)};">${r.charAt(0).toUpperCase()}</span>`).join(' ')}
+                    Quality: <span style="color: ${this.getRarityColor(baseRarity)};">${baseRarity.charAt(0).toUpperCase() + baseRarity.slice(1)}</span>
+                    <span style="color: #666;">· perfect via Engineering</span>
                 </div>
             `;
         }

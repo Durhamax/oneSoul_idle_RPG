@@ -325,8 +325,14 @@ const LoadoutContainer = {
         const slotName = this.capitalizeFirst(slotId);
 
         if (!item) {
+            // An empty consumable slot must still open the equip picker so the
+            // player can select ammo/food/potion from the bank. Food has its own
+            // picker; ammo and potion use the shared openEquipModal.
+            const emptyClick = slotId === 'food'
+                ? 'openFoodEquipModal(event)'
+                : `openEquipModal('${slotId}', event)`;
             return `
-                <div class="loadout-slot consumable empty" data-slot="${slotId}">
+                <div class="loadout-slot consumable empty" data-slot="${slotId}" onclick="${emptyClick}">
                     <div class="slot-icon-container">
                         <span class="slot-icon">${defaultIcon}</span>
                     </div>
@@ -663,7 +669,7 @@ const LoadoutContainer = {
         };
 
         // Equipment slots (3-1-3 Grid)
-        const equipmentSlots = ['weapon', 'armor', 'back', 'gloves', 'neck', 'boots', 'ring'];
+        const equipmentSlots = ['weapon', 'head', 'chest', 'legs', 'back', 'gloves', 'neck', 'boots', 'ring'];
         for (const slot of equipmentSlots) {
             if (equipment[slot]) {
                 const itemDef = getItemDefFromSlot(equipment[slot]);

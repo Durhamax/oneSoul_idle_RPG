@@ -40,7 +40,7 @@ const CombatContainer = {
         const autoCombat = GameEngine?.state?.combat?.autoCombat ?? true;
 
         return `
-            <div class="combat-active">
+            <div class="combat-active combat-active--hero">
                 <!-- Header (title removed; controls only) -->
                 <div class="combat-header combat-header--controls-only">
                     <div class="combat-header-actions">
@@ -54,14 +54,16 @@ const CombatContainer = {
                     </div>
                 </div>
 
-                <!-- Combatants Grid (side-by-side on desktop, stacked on mobile) -->
-                <div class="combatants-grid">
-                    <div class="combat-col combat-col--player">
-                        ${this.renderPlayerCard(player, combat)}
-                        ${(typeof OverviewUI !== 'undefined' && OverviewUI.renderLoadoutPanel) ? OverviewUI.renderLoadoutPanel() : ''}
-                    </div>
+                <!-- Enemy-hero stage: enemy (hero) on top, player HUD below, both
+                     sized to sit above the fold; the loadout follows so it peeks
+                     just out of view and is scrolled/pulled up for gear swaps. -->
+                <div class="combat-stage">
                     ${this.renderEnemyCard(enemy, combat)}
+                    ${this.renderPlayerCard(player, combat)}
                 </div>
+
+                <!-- Loadout (below the fold) -->
+                ${(typeof OverviewUI !== 'undefined' && OverviewUI.renderLoadoutPanel) ? OverviewUI.renderLoadoutPanel() : ''}
 
                 <!-- Drops Section -->
                 ${this.renderDropsSection()}
@@ -98,15 +100,22 @@ const CombatContainer = {
         const ammoSlot = player.equipment?.ammo;
 
         return `
-            <div class="combatant-card combatant-card--player">
+            <div class="combatant-card combatant-card--player combatant-card--slim">
                 <div class="damage-anchor" id="playerDamageAnchor"></div>
 
-                <div class="combatant-label">YOU</div>
+                <div class="player-hud-row">
+                    <span class="combatant-label">YOU</span>
+                    <div class="combatant-stats combatant-stats--inline">
+                        <span class="stat-pill">⚔️ ${minDmg}-${maxDmg}</span>
+                        <span class="stat-pill stat-pill--${damageType}">${this.getTypeIcon(damageType)} ${this.capitalize(damageType)}</span>
+                        <span class="stat-pill">🛡️ ${this.capitalize(armorType)}</span>
+                    </div>
+                </div>
 
                 <div class="combatant-bars">
                     <div class="stat-bar">
                         <span class="bar-icon">❤️</span>
-                        <div class="bar-track">
+                        <div class="bar-track bar-track--hp">
                             <div class="bar-fill bar-fill--player-hp" style="width: ${hpPercent}%"></div>
                         </div>
                         <span class="bar-value">${Math.floor(player.currentHP)}/${player.maxHP}</span>
@@ -120,17 +129,12 @@ const CombatContainer = {
                     </div>
                 </div>
 
-                <div class="combatant-stats">
-                    <span class="stat-pill">⚔️ ${minDmg}-${maxDmg}</span>
-                    <span class="stat-pill stat-pill--${damageType}">${this.getTypeIcon(damageType)} ${this.capitalize(damageType)}</span>
-                    <span class="stat-pill">🛡️ ${this.capitalize(armorType)}</span>
-                </div>
-
-                <div class="auto-eat-hint">🍖 Auto-eat: ${threshold} HP</div>
-
-                <div class="consumable-row">
-                    ${this.renderConsumableSlot('food', foodSlot, player)}
-                    ${this.renderConsumableSlot('ammo', ammoSlot, player)}
+                <div class="player-hud-footer">
+                    <span class="auto-eat-hint auto-eat-hint--inline">🍖 Auto-eat ${threshold}</span>
+                    <div class="consumable-row consumable-row--inline">
+                        ${this.renderConsumableSlot('food', foodSlot, player)}
+                        ${this.renderConsumableSlot('ammo', ammoSlot, player)}
+                    </div>
                 </div>
             </div>
         `;
@@ -166,18 +170,22 @@ const CombatContainer = {
         const drPct = Math.round((enemy.damageReduction || 0) * 100);
 
         return `
-            <div class="combatant-card combatant-card--enemy combatant-card--enemy-expanded">
+            <div class="combatant-card combatant-card--enemy combatant-card--hero">
                 <div class="damage-anchor" id="enemyDamageAnchor"></div>
 
+                <!-- Hero art is the centrepiece; detailed enemy stats live in the
+                     Enemies-tab detail modal so the fight view stays clean. -->
+                <div class="enemy-hero-art">${artwork}</div>
+
                 <div class="combatant-header-row">
-                    <span class="combatant-label">${enemy.name}</span>
+                    <span class="combatant-label combatant-label--name">${enemy.name}</span>
                     <span class="combatant-level">Lv.${enemy.level}</span>
                 </div>
 
                 <div class="combatant-bars">
                     <div class="stat-bar">
                         <span class="bar-icon">❤️</span>
-                        <div class="bar-track">
+                        <div class="bar-track bar-track--hp">
                             <div class="bar-fill bar-fill--enemy-hp" style="width: ${hpPercent}%"></div>
                         </div>
                         <span class="bar-value">${Math.floor(enemy.currentHP)}/${enemy.maxHP}</span>
@@ -196,17 +204,6 @@ const CombatContainer = {
                     <span class="stat-pill stat-pill--${damageType}">${this.getTypeIcon(damageType)} ${this.capitalize(damageType)}</span>
                     <span class="stat-pill">🛡️ ${this.capitalize(armorType)}</span>
                 </div>
-
-                <div class="enemy-info-stats">
-                    <div class="enemy-info-stat"><span>Accuracy</span><span>${enemy.accuracy ?? '—'}</span></div>
-                    <div class="enemy-info-stat"><span>Evasion</span><span>${enemy.evasion ?? 0}</span></div>
-                    <div class="enemy-info-stat"><span>Armor</span><span>${enemy.armorRating ?? 0}</span></div>
-                    <div class="enemy-info-stat"><span>Damage Red.</span><span>${drPct}%</span></div>
-                </div>
-
-                ${def.description ? `<div class="enemy-description">${def.description}</div>` : ''}
-
-                <div class="enemy-art">${artwork}</div>
             </div>
         `;
     },

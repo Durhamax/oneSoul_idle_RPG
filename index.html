@@ -78,6 +78,9 @@
         </div>
     </div>
 
+    <!-- Active-action ribbon: the one running action (gather/craft/combat) when off its screen -->
+    <button id="activeActionRibbon" class="action-ribbon" title="Jump to current activity" aria-label="Current activity"></button>
+
     <!-- Level bar: Lv + XP, tap to open Overview -->
     <button class="levelbar" data-action="switch-view" data-view="overview" title="Overview">
         <span class="levelbar-lv"><span class="levelbar-lv-label">LV</span><span id="charLevel">1</span></span>
@@ -522,6 +525,7 @@
     <script src="src/systems/migrationSystem.js?v=2"></script>
     <script src="src/systems/dualBankSystem.js"></script>
     <script src="src/systems/inventorySystem.js"></script>
+    <script src="src/systems/skillingOutfitSystem.js"></script>
     <script src="src/systems/skillSystem.js"></script>
     <script src="src/systems/equipmentSystem.js?v=2"></script>
     <script src="src/systems/equipmentPresetSystem.js"></script>
@@ -744,6 +748,7 @@
     <!-- ItemCard.js loaded below (line 8061) - object-based version with .create() method -->
     <script src="src/ui/components/IntervalBar.js"></script>
     <script src="src/ui/components/PersistentActionBar.js"></script>
+    <script src="src/ui/components/ActiveActionRibbon.js"></script>
     <script src="src/ui/components/SkillCard.js"></script>
     <script src="src/ui/components/NodePanel.js"></script>
     <script src="src/ui/resourcesUI.js"></script>
