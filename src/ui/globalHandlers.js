@@ -222,16 +222,24 @@ function explore() {
  * Travel to a different region (called from region selection)
  */
 function travelToRegion(regionId) {
+    // Always route through the system method: it validates the discovered path + nav
+    // level, records the (two-way) return path, recalculates endurance, and swaps the
+    // region background. Bypassing it (as an older duplicate of this function did) is
+    // what let discovered paths appear to "switch off."
     const result = GameEngine.travelToRegion(regionId);
 
-    if (!result.success) {
-        console.log(`❌ Cannot travel: ${result.reason}`);
-    } else {
-        console.log(`✈️ Traveled to ${result.region.name}`);
+    if (!result || !result.success) {
+        console.log(`❌ Cannot travel: ${result?.reason || 'unknown reason'}`);
+        if (result?.reason) alert(result.reason);
+        return;
     }
 
+    console.log(`✈️ Traveled to ${result.region?.name || regionId}`);
     closeRegionPopup();
     UICore.update();
+    if (typeof MapRenderer !== 'undefined' && MapRenderer.render) {
+        MapRenderer.render();
+    }
 }
 
 // =============================================================================
@@ -2719,41 +2727,6 @@ function closeRegionModal(event) {
  * Travel to a specific region
  * Accepts either (x, y) coordinates or a regionId string
  */
-function travelToRegion(xOrRegionId, y) {
-    let regionId;
-
-    // Handle both (x, y) and regionId formats
-    if (typeof y === 'undefined') {
-        // Called with regionId string
-        regionId = xOrRegionId;
-    } else {
-        // Called with x, y coordinates
-        regionId = `region_${xOrRegionId}_${y}`;
-    }
-
-    // Check if region exists and is accessible
-    const regionState = GameEngine.state.regions[regionId];
-
-    if (!regionState || !regionState.discovered) {
-        alert('You must discover this region before you can travel to it!');
-        return;
-    }
-
-    // Check if region is adjacent to current region (optional pathfinding later)
-    // For now, allow direct travel to any discovered region
-    GameEngine.state.currentRegion = regionId;
-
-    console.log(`🧭 Traveled to region ${regionId}`);
-
-    // Update UI
-    UICore.update();
-
-    // Refresh map to show new location
-    if (typeof MapRenderer !== 'undefined' && MapRenderer.render) {
-        MapRenderer.render();
-    }
-}
-
 /**
  * Compare old vs new stat calculation systems
  */

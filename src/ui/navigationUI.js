@@ -609,7 +609,7 @@ const NavigationUI = {
                 <div class="nav-col nav-col--discoveries">
                     <!-- Explore new tiles -->
                     <div class="nav-control-block">
-                        <div class="nav-panel-title">Explore New Tiles</div>
+                        <div class="nav-panel-title">Nearby Regions</div>
                         ${this.renderAdjacentRegions(regionId, regionState, hexDef)}
                     </div>
 
@@ -933,49 +933,67 @@ const NavigationUI = {
         const discoveredPaths = regionState.discoveredExitPaths || [];
         const navLevel = GameEngine.state.skills.navigation.level;
 
-        // Only the tiles this tile is TOUCHING that haven't been explored (visited)
-        // yet — the frontier. A hex has at most ~5 such neighbours at any time.
+        // Split the touching tiles into two groups:
+        //  - connected: a path has been found to this neighbour. A discovered path is
+        //    permanent and two-way, so these ALWAYS stay travellable — the button must
+        //    never disappear just because the tile has since been visited.
+        //  - frontier:  no path yet. Explore the current region to reveal it.
+        const connected = [];
         const frontier = [];
         for (let direction in adjacentRegions) {
             const targetRegionId = adjacentRegions[direction];
             const targetHexDef = GameEngine.definitions.worldMap[targetRegionId];
             const targetBiomeDef = GameEngine.definitions.biomes[targetHexDef?.biome];
-            const targetRegionState = GameEngine.state.regions[targetRegionId];
 
             if (!targetHexDef || !targetBiomeDef) continue;
-            // Skip tiles already explored (visited) — this panel is "new" tiles only.
-            if (targetRegionState?.discovered) continue;
+            if (targetRegionId === currentRegionId) continue;
 
-            frontier.push({ direction, targetRegionId, targetHexDef, targetBiomeDef });
+            const entry = { direction, targetRegionId, targetHexDef };
+            if (discoveredPaths.includes(targetRegionId)) {
+                connected.push(entry);
+            } else {
+                frontier.push(entry);
+            }
         }
 
-        if (frontier.length === 0) {
-            return '<div style="color: #888; font-size: 0.9em;">No unexplored tiles touching here — keep exploring to reveal new paths.</div>';
+        if (connected.length === 0 && frontier.length === 0) {
+            return '<div style="color: #888; font-size: 0.9em;">No regions border this tile.</div>';
         }
+
+        const groupLabel = (text) =>
+            `<div style="font-size: 0.72em; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin: 8px 0 4px;">${text}</div>`;
 
         let html = '<div class="nav-tile-list">';
 
-        for (const { direction, targetRegionId, targetHexDef } of frontier.slice(0, 6)) {
-            const req = targetHexDef.navigationRequirement || 0;
-            const isPathDiscovered = discoveredPaths.includes(targetRegionId);
-            const canTravel = isPathDiscovered && navLevel >= req;
-
-            // Single compact row: region name (left) + inline action button (right).
-            let actionHTML;
-            if (!isPathDiscovered) {
-                actionHTML = `<button class="nav-tile-btn is-locked" disabled>🔍 Find path</button>`;
-            } else if (!canTravel) {
-                actionHTML = `<button class="nav-tile-btn is-locked" disabled>🔒 Lv.${req}</button>`;
-            } else {
-                actionHTML = `<button class="nav-tile-btn" onclick="travelToRegion('${targetRegionId}')">✈️ Travel ${direction}</button>`;
+        // Connected neighbours — a known path you can always travel back along.
+        if (connected.length > 0) {
+            html += groupLabel('Connected');
+            for (const { direction, targetRegionId, targetHexDef } of connected) {
+                const req = targetHexDef.navigationRequirement || 0;
+                const canTravel = navLevel >= req;
+                const actionHTML = canTravel
+                    ? `<button class="nav-tile-btn" onclick="travelToRegion('${targetRegionId}')">✈️ Travel ${direction}</button>`
+                    : `<button class="nav-tile-btn is-locked" disabled>🔒 Lv.${req}</button>`;
+                html += `
+                    <div class="nav-tile">
+                        <span class="nav-tile-name">${targetHexDef.name}</span>
+                        ${actionHTML}
+                    </div>
+                `;
             }
+        }
 
-            html += `
-                <div class="nav-tile">
-                    <span class="nav-tile-name">${targetHexDef.name}</span>
-                    ${actionHTML}
-                </div>
-            `;
+        // Unexplored frontier — explore the current region to find these paths.
+        if (frontier.length > 0) {
+            if (connected.length > 0) html += groupLabel('Unexplored');
+            for (const { targetHexDef } of frontier.slice(0, 6)) {
+                html += `
+                    <div class="nav-tile">
+                        <span class="nav-tile-name">${targetHexDef.name}</span>
+                        <button class="nav-tile-btn is-locked" disabled>🔍 Find path</button>
+                    </div>
+                `;
+            }
         }
 
         html += '</div>';
