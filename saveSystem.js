@@ -167,6 +167,18 @@ const SaveSystem = {
                 console.log('✅ Player stats recompiled after save load');
             }
 
+            // Refresh the background for the loaded region. BackgroundSystem.init() ran
+            // earlier against the default starting region (the Cradle); the save then
+            // replaced currentRegion here, so without this the background stayed on the
+            // Cradle's art until the player next traveled.
+            if (typeof BackgroundSystem !== 'undefined') {
+                const loadedRegion = GameEngine.state.currentRegion;
+                const hexDef = GameEngine.definitions?.worldMap?.[loadedRegion];
+                if (hexDef) {
+                    BackgroundSystem.updateBackgroundFromRegion(hexDef.biome, hexDef.name, loadedRegion);
+                }
+            }
+
             return true;
         } catch (error) {
             console.error("❌ Load failed:", error);

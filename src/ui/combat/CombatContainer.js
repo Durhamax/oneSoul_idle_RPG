@@ -78,7 +78,7 @@ const CombatContainer = {
         const hpPercent = Math.max(0, (player.currentHP / player.maxHP) * 100);
         const threshold = typeof AutoConsumption !== 'undefined'
             ? AutoConsumption.calculateAutoEatThreshold(player)
-            : Math.floor(player.maxHP * 0.3);
+            : Math.round(player.maxHP * 0.15); // matches AutoConsumption BASE_AUTO_EAT_THRESHOLD_PCT
 
         // Get attack interval from compiled weapon
         const baseInterval = combat.compiledWeapon?.attackInterval || 2000;
@@ -98,6 +98,14 @@ const CombatContainer = {
         // Get consumables
         const foodSlot = player.equipment?.food;
         const ammoSlot = player.equipment?.ammo;
+
+        // Auto-eat only works while there is food in the slot. Showing "Auto-eat 29"
+        // with an empty slot implied healing that could not happen (and let HP reach 0
+        // under Auto). Reflect the real state so the gap is visible at a glance.
+        const foodQty = (foodSlot && typeof foodSlot === 'object') ? (foodSlot.quantity || 0) : 0;
+        const autoEatHint = foodQty > 0
+            ? `<span class="auto-eat-hint auto-eat-hint--inline">🍖 Auto-eat ${threshold}</span>`
+            : `<span class="auto-eat-hint auto-eat-hint--inline auto-eat-hint--empty">⚠️ No food — no auto-heal</span>`;
 
         return `
             <div class="combatant-card combatant-card--player combatant-card--slim">
@@ -130,7 +138,7 @@ const CombatContainer = {
                 </div>
 
                 <div class="player-hud-footer">
-                    <span class="auto-eat-hint auto-eat-hint--inline">🍖 Auto-eat ${threshold}</span>
+                    ${autoEatHint}
                     <div class="consumable-row consumable-row--inline">
                         ${this.renderConsumableSlot('food', foodSlot, player)}
                         ${this.renderConsumableSlot('ammo', ammoSlot, player)}
@@ -272,13 +280,15 @@ const CombatContainer = {
     renderDropsSection() {
         const hasLoot = this.recentLoot && this.recentLoot.length > 0;
 
+        // Rewards now auto-apply on each kill (gold/medals/items/XP), so this is an
+        // informational feed of what was just collected — the button only clears it.
         return `
             <div class="drops-section">
                 <div class="drops-header">
                     <span class="drops-icon">📦</span>
-                    <span class="drops-title">DROPS</span>
+                    <span class="drops-title">RECENT DROPS</span>
                     <span class="drops-count">${this.recentLoot?.length || 0}</span>
-                    ${hasLoot ? `<button class="btn-loot-all" onclick="CombatContainer.collectAllLoot()">Loot All</button>` : ''}
+                    ${hasLoot ? `<button class="btn-loot-all" onclick="CombatContainer.collectAllLoot()">Clear</button>` : ''}
                 </div>
                 <div class="drops-grid">
                     ${this.renderDrops()}
@@ -570,48 +580,18 @@ const CombatContainer = {
     },
 
     /**
-     * Collect all pending loot - adds currencies and items to player
+     * Clear the recent-drops feed. Rewards (gold/medals/items/XP) are now applied the
+     * moment an enemy dies (CombatSystem.awardLoot → depositKillRewards), so this list
+     * is informational only — the button must NOT re-deposit, or every drop would be
+     * granted twice.
      */
     collectAllLoot() {
         if (!this.recentLoot || this.recentLoot.length === 0) {
-            console.log('📦 No loot to collect');
             return;
         }
 
-        const player = GameEngine.state;
-        const collected = { currencies: {}, items: {} };
-
-        for (const loot of this.recentLoot) {
-            if (loot.isCurrency) {
-                // Add currency to player
-                if (player.currencies) {
-                    if (loot.itemId === 'gold') {
-                        player.currencies.gold = (player.currencies.gold || 0) + loot.quantity;
-                        collected.currencies.gold = (collected.currencies.gold || 0) + loot.quantity;
-                    } else if (loot.itemId === 'medalFragments' || loot.itemId === 'medals') {
-                        // Medals are the single perk-grid currency (canon: war trophies → perk rolls).
-                        // Route legacy "medalFragments" drops into currencies.medals so combat
-                        // rewards feed the Perks tab forge.
-                        player.currencies.medals = (player.currencies.medals || 0) + loot.quantity;
-                        collected.currencies.medals = (collected.currencies.medals || 0) + loot.quantity;
-                    }
-                }
-            } else if (loot.isItem || loot.itemId) {
-                // Add item to bank
-                if (typeof GameEngine !== 'undefined' && GameEngine.addItemToBank) {
-                    GameEngine.addItemToBank(loot.itemId, loot.quantity);
-                } else if (typeof DualBankSystem !== 'undefined' && DualBankSystem.addStackable) {
-                    DualBankSystem.addStackable(player, loot.itemId, loot.quantity);
-                }
-                collected.items[loot.itemId] = (collected.items[loot.itemId] || 0) + loot.quantity;
-            }
-        }
-
-        // Clear loot
+        // Rewards are already in the player's currencies/bank/XP — just clear the feed.
         this.recentLoot = [];
-
-        // Log collection
-        console.log('📦 Collected all loot:', collected);
 
         // Re-render drops section
         const dropsSection = document.querySelector('.drops-section');
@@ -623,8 +603,6 @@ const CombatContainer = {
         if (typeof UICore !== 'undefined' && UICore.updateCurrencyDisplay) {
             UICore.updateCurrencyDisplay();
         }
-
-        return collected;
     }
 };
 

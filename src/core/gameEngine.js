@@ -1601,6 +1601,11 @@ const GameEngine = {
                 gems: 0
             },
 
+            // Auto-eat threshold as a fraction of max HP. Starts at 15%; upgrades can
+            // raise it up to 50% (AutoConsumption clamps to [BASE, MAX]). Static until
+            // an upgrade bumps this value.
+            autoEatThresholdPct: 0.15,
+
             // Legacy resources (kept for backwards compatibility)
             resources: {
                 ore: 0,

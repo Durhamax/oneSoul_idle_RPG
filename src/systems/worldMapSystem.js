@@ -253,12 +253,21 @@ const WorldMapSystem = {
      * Returns region-specific image path or null to use biome default
      */
     getBackgroundImage(q, r, startQ, startR) {
+        // Honor hand-authored region art first (same pattern as getDiscoverableNodes).
+        // Without this, every authored region's backgroundImage was dropped and the
+        // generated worldMap only carried the Cradle's, so travel fell back to the
+        // biome default gradient for Scoutreach, the Verduun hexes, West Shoals, etc.
+        const regionId = `region_${q}_${r}`;
+        const worldRegionDef = typeof WorldRegions !== 'undefined' ? WorldRegions[regionId] : null;
+        if (worldRegionDef && worldRegionDef.backgroundImage) {
+            return worldRegionDef.backgroundImage;
+        }
+
         // The Cradle - Starting region has a specific background
         if (q === startQ && r === startR) {
             return 'assets/backgrounds/regions/region_the_scar_01.png';
         }
 
-        // Future regions can have their own backgrounds added here
         return null;
     },
 

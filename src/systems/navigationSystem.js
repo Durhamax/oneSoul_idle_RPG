@@ -891,6 +891,15 @@ const NavigationSystem = {
         // Travel
         this.state.currentRegion = targetRegionId;
 
+        // Swap the background to the destination region's art. This is the path the
+        // UI "Travel"/"Explore" buttons use (changeRegion is a separate, unused-by-UI
+        // path), so without this the background stayed on whatever region the page
+        // loaded in. The new background persists until the next travel.
+        const targetHexForBg = this.definitions.worldMap?.[targetRegionId];
+        if (targetHexForBg && typeof BackgroundSystem !== 'undefined') {
+            BackgroundSystem.updateBackgroundFromRegion(targetHexForBg.biome, targetHexForBg.name, targetRegionId);
+        }
+
         console.log(`🗺️ Traveled to ${targetHexDef.name}`);
         return { success: true, region: targetHexDef };
     },

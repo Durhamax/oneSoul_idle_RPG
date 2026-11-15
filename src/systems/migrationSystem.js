@@ -311,6 +311,11 @@ const MigrationSystem = {
             GameEngine.state.currencies.gems = 0;
             changes++;
         }
+        // Auto-eat threshold as a fraction of max HP (starts 15%, upgradeable to 50%).
+        if (typeof GameEngine.state.autoEatThresholdPct !== 'number') {
+            GameEngine.state.autoEatThresholdPct = 0.15;
+            changes++;
+        }
 
         return changes;
     },

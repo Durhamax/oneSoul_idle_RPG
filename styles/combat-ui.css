@@ -3612,6 +3612,11 @@
     white-space: nowrap;
     flex: 0 0 auto;
 }
+/* Empty food slot: auto-eat can't fire, so warn instead of implying healing. */
+.auto-eat-hint--empty {
+    color: #ffb454;
+    font-weight: 600;
+}
 .consumable-row--inline { flex: 1 1 auto; gap: 6px; max-width: 62%; }
 /* Force the consumable tiles into slim horizontal pills (a base rule otherwise
    stacks them into tall vertical tiles that balloon the player HUD height). */

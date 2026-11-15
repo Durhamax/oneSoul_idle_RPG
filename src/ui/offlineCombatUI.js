@@ -114,7 +114,7 @@ const OfflineCombatUI = {
                                 <div style="color: #aaa; font-size: 0.85em; margin-bottom: 5px;">Deaths</div>
                                 <div style="color: #f44336; font-size: 1.3em; font-weight: bold;">
                                     💀 ${stats.deaths}
-                                    <span style="font-size: 0.7em; color: #aaa;">(10% gold penalty applied)</span>
+                                    <span style="font-size: 0.7em; color: #aaa;">(combat stopped — equip more food to idle longer)</span>
                                 </div>
                             </div>
                         ` : ''}

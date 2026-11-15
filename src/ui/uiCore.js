@@ -277,7 +277,10 @@ const UICore = {
             || GameEngine.state?.compiledStats?.maxHealth
             || 0
         );
-        const currentHP = Math.floor(GameEngine.state?.currentHP ?? maxHealth);
+        // Clamp for display: currentHP can briefly sit above maxHP right after
+        // unequipping a +health item while full (state keeps the absolute value;
+        // it resolves on the next hit). Never show more than the max.
+        const currentHP = Math.min(Math.floor(GameEngine.state?.currentHP ?? maxHealth), maxHealth);
         el.textContent = `${currentHP}/${maxHealth}`;
     },
 

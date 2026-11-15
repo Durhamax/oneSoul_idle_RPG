@@ -22,6 +22,7 @@
 
 const BackgroundSystem = {
     currentBiome: null,
+    currentBackgroundKey: null,
     transitionDuration: 1000, // 1 second
     particleInterval: null,
 
@@ -236,11 +237,16 @@ const BackgroundSystem = {
             biome = 'plains';
         }
 
-        // Skip if already on this biome (unless we have a custom image)
-        if (this.currentBiome === biome && !customImage) {
-            console.log(`🎨 Already on biome: ${biome}, skipping update`);
+        // Skip only if the resolved background is identical to what's shown. Keying
+        // on biome alone meant moving between two same-biome regions with different
+        // custom art (or from a custom-art region back to a biome-default one) was
+        // skipped, leaving the wrong background in place.
+        const newKey = customImage || `biome:${biome}`;
+        if (this.currentBackgroundKey === newKey) {
+            console.log(`🎨 Background unchanged (${newKey}), skipping update`);
             return;
         }
+        this.currentBackgroundKey = newKey;
 
         console.log(`🎨 Changing background to: ${regionName || biome}`);
 
@@ -278,16 +284,26 @@ const BackgroundSystem = {
         // Add transition class
         bgLayer.classList.add('transitioning');
 
+        // Record the intended background synchronously. Image loads are async, so two
+        // rapid calls (e.g. init() then the save-load refresh) each start their own
+        // preload and the one that *finishes* last used to win — regardless of call
+        // order. Stamping the target here lets a stale onload bail instead of
+        // clobbering a newer background.
+        const targetSrc = biomeData.image || null;
+        this.pendingBgSrc = targetSrc;
+
         // If image is provided, use it; otherwise use backgroundColor
         if (biomeData.image) {
             // Test if image exists before setting it
             const testImage = new Image();
             testImage.onload = () => {
+                if (this.pendingBgSrc !== targetSrc) return; // superseded by a newer call
                 console.log(`🎨 Setting background image: ${biomeData.image}`);
                 bgLayer.style.backgroundImage = `url('${biomeData.image}')`;
                 bgLayer.style.backgroundColor = ''; // Clear background color
             };
             testImage.onerror = () => {
+                if (this.pendingBgSrc !== targetSrc) return; // superseded by a newer call
                 console.warn(`⚠️ Background image not found: ${biomeData.image}, using fallback color`);
                 // Fallback to solid color if image fails to load
                 bgLayer.style.backgroundImage = ''; // Clear background image

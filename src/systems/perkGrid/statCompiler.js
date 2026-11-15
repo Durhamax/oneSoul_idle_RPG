@@ -80,6 +80,24 @@ const StatCompiler = {
         // Store in state
         state.compiledStats = compiled;
 
+        // Keep the persistent HP pool in step with the compiled max, which folds
+        // in equipment and perk health. Previously state.maxHP kept its saved
+        // value and was never recomputed here, so equipment health bonuses never
+        // reached the usable HP pool, the out-of-combat cap, or the HUD ribbon
+        // (combat read compiledStats.maxHealth directly, so only the top bar and
+        // auto-eat lagged).
+        //
+        // Only maxHP is synced here; currentHP is left untouched. A gear swap
+        // unequips the old piece before equipping the new one, so this compiler
+        // runs once mid-swap with a transiently lower max — clamping currentHP
+        // down here would permanently shave HP off the player for equipping a
+        // *stronger* item. Current HP is instead clamped non-destructively at the
+        // display/use sites (the HUD readouts), and on first compile we seed it.
+        if (Number.isFinite(compiled.maxHealth) && compiled.maxHealth > 0) {
+            state.maxHP = compiled.maxHealth;
+            if (state.currentHP == null) state.currentHP = compiled.maxHealth;
+        }
+
         // Log compilation details for debugging
         const activePerks = Object.entries(perks).filter(([k, v]) => v !== 1.0);
         console.log('📊 Stats compiled:', {

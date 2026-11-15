@@ -11,6 +11,35 @@
  */
 
 const AutoConsumption = {
+    // ─── Auto-eat threshold (fraction of max HP) ──────────────────────────────
+    // The trigger point is a percentage of max HP, stored as a dynamic per-player
+    // value so it can be raised by upgrades later. It starts at 15% and is capped
+    // at 50%; until an upgrade bumps `state.autoEatThresholdPct`, it stays at BASE.
+    // (Keep these as the single source of truth — do not re-hardcode the percent.)
+    BASE_AUTO_EAT_THRESHOLD_PCT: 0.15,
+    MAX_AUTO_EAT_THRESHOLD_PCT: 0.50,
+
+    /**
+     * Resolve the current auto-eat threshold fraction for a player, clamped to
+     * [BASE, MAX]. Reads the persisted `autoEatThresholdPct` (set by upgrades);
+     * a perk multiplier can raise it too. Absent/invalid values fall back to BASE.
+     */
+    getAutoEatThresholdPct(player) {
+        const BASE = this.BASE_AUTO_EAT_THRESHOLD_PCT;
+        const MAX = this.MAX_AUTO_EAT_THRESHOLD_PCT;
+
+        let pct = (player && typeof player.autoEatThresholdPct === 'number' && player.autoEatThresholdPct > 0)
+            ? player.autoEatThresholdPct
+            : BASE;
+
+        // Perk grid can offer an upgrade path via this multiplier (default 1.0 = no change).
+        const mult = (player?.perkMultipliers?.autoEatThreshold) || 1.0;
+        pct *= mult;
+
+        // Never below the starting threshold, never above the upgrade cap.
+        return Math.min(MAX, Math.max(BASE, pct));
+    },
+
     /**
      * Get perk multipliers for consumables
      * @returns {Object} Consumable-related perk multipliers
@@ -97,16 +126,16 @@ const AutoConsumption = {
     },
 
     /**
-     * Calculate auto-eat threshold (20% of max HP by default)
+     * Calculate auto-eat threshold (starts at 15% of max HP, upgradeable to 50%).
      * An equipped salve (potion slot) with effect.autoEatThreshold adds a flat HP
      * bonus to the trigger point while it has charges (e.g. Daypetal Salve: +1 HP).
      */
     calculateAutoEatThreshold(player) {
-        const mult = player.perkMultipliers || {};
         const maxHP = this.calculateMaxHP(player);
 
-        // Fixed 20% of max HP, modified by perk only
-        let threshold = Math.ceil(maxHP * 0.20 * (mult.autoEatThreshold || 1.0));
+        // Percentage of max HP (dynamic, upgradeable), rounded to the nearest whole HP.
+        const pct = this.getAutoEatThresholdPct(player);
+        let threshold = Math.round(maxHP * pct);
 
         // Flat bonus from an equipped threshold-salve (only while it has charges).
         const salve = this.getAutoEatThresholdSalve(player);

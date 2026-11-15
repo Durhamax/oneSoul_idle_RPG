@@ -1,390 +1,251 @@
 /**
  * OFFLINE COMBAT SYSTEM
  *
- * Simulates combat progress while the player is away from the game.
- * Calculates kills, XP, loot, and resource consumption based on elapsed time.
+ * Simulates combat progress while the player is away, using the SAME rules as live
+ * combat. Rather than a parallel damage/loot model, it fast-forwards the live combat
+ * primitives (CombatSystem.performAttack, AutoConsumption auto-eat/ammo, and the shared
+ * CombatSystem.rollKillRewards/depositKillRewards) on a disposable clone of the player.
+ * Running on a clone lets both the rewards AND the resources that produced them be scaled
+ * by the offline efficiency before a single application to the real state.
+ *
+ * Triggered from SaveSystem.load() with the elapsed offline time. Only resumes a fight
+ * that was genuinely active (state.currentActivity === 'combat' + a persisted target).
  */
 
 const OfflineCombatSystem = {
-    MAX_OFFLINE_TIME: 8 * 60 * 60 * 1000,  // 8 hours in milliseconds
-    OFFLINE_EFFICIENCY: 0.70,               // 70% efficiency when offline
-    COMBAT_TICK_INTERVAL: 100,              // Simulate every 100ms
-
-    /**
-     * Initialize the offline combat system
-     */    /**
-     * Get item definition from ItemRegistry (standardized access pattern)
-     * @param {string} itemId - Item ID to retrieve
-     * @returns {object|null} Item definition or null if not found
-     */
-    _getItemDef(itemId) {
-        // Primary: Use ItemRegistry if available
-        if (typeof ItemRegistry !== 'undefined' && ItemRegistry.getItem) {
-            return ItemRegistry.getItem(itemId);
-        }
-
-        // Fallback: Use definitions.items (legacy support)
-        return this.definitions?.items?.[itemId] || null;
-    },
-
+    MAX_OFFLINE_TIME: 8 * 60 * 60 * 1000,  // 8 hours
+    OFFLINE_EFFICIENCY: 0.70,              // 70% of what live play would yield
+    SIM_STEP_MS: 200,                      // simulation resolution
+    AUTO_EAT_INTERVAL_MS: 1000,            // matches the live auto-eat cooldown (sim-time)
 
     init(engine) {
         engine.simulateOfflineCombat = this.simulateOfflineCombat.bind(engine);
-        console.log('✅ Offline Combat System initialized');
-        console.log('✅ OfflineCombatSystem initialized (ItemRegistry pattern)');
-
+        console.log('✅ Offline Combat System initialized (shared live-combat rules)');
     },
 
     /**
-     * Simulate offline combat progress
-     * @param {number} offlineTime - Time elapsed in milliseconds
-     * @returns {Object} Summary of offline progress
+     * Entry point (bound so `this` === GameEngine). Returns a results summary for
+     * OfflineCombatUI, or null if there was no active fight to resume.
      */
     simulateOfflineCombat(offlineTime) {
-        // Cap offline time to prevent overflow
-        const cappedTime = Math.min(offlineTime, OfflineCombatSystem.MAX_OFFLINE_TIME);
-        const wasCapped = offlineTime > OfflineCombatSystem.MAX_OFFLINE_TIME;
+        const OC = OfflineCombatSystem;
+        const state = this.state;
 
-        // Check if player was in combat or had an enemy selected
-        const selectedEnemy = this.state.combat.selectedEnemyId;
-        if (!selectedEnemy) {
-            console.log('⏭️ Skipping offline combat simulation (no enemy selected)');
+        // Only resume a fight the player was genuinely in (set by CombatSystem.startCombat).
+        if (!state || state.currentActivity !== 'combat') {
+            console.log('⏭️ Offline combat skipped (not the active activity)');
+            return null;
+        }
+        const enemyId = state.combat && state.combat.selectedEnemyId;
+        if (!enemyId) {
+            console.log('⏭️ Offline combat skipped (no persisted target)');
             return null;
         }
 
-        const enemyDef = this.definitions.enemies[selectedEnemy];
+        // Resolve the enemy from the live registry (current schema) — same source as live combat.
+        const enemyDef = (typeof EnemyRegistry !== 'undefined')
+            ? (EnemyRegistry.get ? EnemyRegistry.get(enemyId) : (EnemyRegistry.production || {})[enemyId])
+            : null;
         if (!enemyDef) {
-            console.log('⚠️ Invalid enemy selected for offline combat');
+            console.log(`⚠️ Offline combat: enemy '${enemyId}' not found in registry`);
             return null;
         }
 
-        // Initialize offline combat statistics
+        const cappedTime = Math.min(offlineTime, OC.MAX_OFFLINE_TIME);
+        const wasCapped = offlineTime > OC.MAX_OFFLINE_TIME;
+
         const stats = {
-            enemiesKilled: 0,
-            totalDamageDealt: 0,
-            totalDamageTaken: 0,
-            foodConsumed: 0,
-            ammoConsumed: 0,
-            combatXpGained: 0,
-            goldGained: 0,
-            medalsGained: 0,
-            lootGained: {},
-            deaths: 0,
-            timeSimulated: cappedTime,
-            wasCapped: wasCapped
+            enemiesKilled: 0, combatXpGained: 0, goldGained: 0, medalsGained: 0,
+            lootGained: {}, foodConsumed: 0, ammoConsumed: 0,
+            totalDamageDealt: 0, totalDamageTaken: 0, deaths: 0,
+            timeSimulated: cappedTime, wasCapped, stopReason: null
         };
 
-        // Get player combat stats
-        const playerStats = this.getPlayerCombatStats();
+        OC.runSharedSimulation.call(this, enemyDef, cappedTime, stats);
+        OC.applyEfficiencyAndDeposit.call(this, stats);
 
-        // Check if player can survive this enemy
-        const canSurvive = this.checkOfflineCombatViability(enemyDef, playerStats);
-        if (!canSurvive.viable) {
-            console.log(`⚠️ Player cannot safely fight ${enemyDef.name} offline: ${canSurvive.reason}`);
-            return {
-                ...stats,
-                failed: true,
-                reason: canSurvive.reason
-            };
-        }
-
-        // Calculate number of combat ticks to simulate
-        const numTicks = Math.floor(cappedTime / OfflineCombatSystem.COMBAT_TICK_INTERVAL);
-
-        console.log(`🔄 Simulating ${numTicks} combat ticks (${(cappedTime / 1000 / 60).toFixed(1)} minutes) at ${OfflineCombatSystem.OFFLINE_EFFICIENCY * 100}% efficiency`);
-
-        // Simulate combat
-        this.runOfflineCombatSimulation(enemyDef, playerStats, numTicks, stats);
-
-        // Apply offline efficiency penalty
-        this.applyOfflineEfficiency(stats);
-
-        // Apply rewards to game state
-        this.applyOfflineRewards(stats);
-
-        console.log(`⚔️ Offline Combat Complete: ${stats.enemiesKilled} kills, ${stats.combatXpGained} XP, ${stats.goldGained} gold`);
-
+        console.log(`⚔️ Offline combat: ${stats.enemiesKilled} kills, ${stats.combatXpGained} XP, ${stats.goldGained} gold, stop=${stats.stopReason}`);
         return stats;
     },
 
     /**
-     * Check if player can viably fight this enemy offline
+     * Fast-forward the fight on a player clone using the live combat primitives. Fills
+     * `stats` with 100%-rate totals (scaling happens afterward). `this` === GameEngine.
      */
-    checkOfflineCombatViability(enemyDef, playerStats) {
-        // Calculate average damage rates
-        const playerDPS = (playerStats.maxHit + playerStats.minHit) / 2 * (1000 / playerStats.effectiveAttackInterval);
-        const enemyDPS = enemyDef.stats.attackDamage * enemyDef.stats.attackSpeed;
+    runSharedSimulation(enemyDef, cappedTime, stats) {
+        const OC = OfflineCombatSystem;
+        const state = this.state;
+        const step = OC.SIM_STEP_MS;
 
-        // Factor in accuracy and evasion
-        const playerEffectiveDPS = playerDPS * (playerStats.effectiveHitChance / 100);
-        const enemyEffectiveDPS = enemyDPS * (enemyDef.stats.accuracy / 100) * (1 - playerStats.evasionRating / 100);
+        // ── Enemy instance (clone + compiled derived stats) ──
+        const enemy = Object.assign({}, enemyDef, {
+            enemyId: enemyDef.id || enemyDef.enemyId,
+            currentHP: enemyDef.maxHP || enemyDef.health || 100
+        });
+        enemy.maxHP = enemy.maxHP || enemy.health || 100;
+        if (CombatSystem.compileEnemyStats) CombatSystem.compileEnemyStats(enemy);
 
-        // Factor in damage reduction
-        const playerNetDamagePerSecond = Math.max(0, enemyEffectiveDPS * (1 - playerStats.damageReductionRate) - playerStats.hpRegenerationRate);
-
-        // Calculate time to kill enemy
-        const timeToKillEnemy = enemyDef.stats.maxHealth / playerEffectiveDPS;
-
-        // Calculate damage taken per kill
-        const damageTakenPerKill = playerNetDamagePerSecond * timeToKillEnemy;
-
-        // Check if player can sustain combat
-        if (damageTakenPerKill >= playerStats.maxHealth * 0.90) {
-            return {
-                viable: false,
-                reason: "Takes too much damage per kill (90%+ max HP)"
-            };
-        }
-
-        // Check if player has enough DPS
-        if (playerEffectiveDPS < 1) {
-            return {
-                viable: false,
-                reason: "Insufficient damage output"
-            };
-        }
-
-        return {
-            viable: true,
-            timeToKillEnemy: timeToKillEnemy,
-            damageTakenPerKill: damageTakenPerKill
+        // ── Player clone (equipment deep-cloned so food/ammo deplete here, not for real) ──
+        const maxHP = state.maxHP || state.compiledStats?.maxHealth
+            || (AutoConsumption.calculateMaxHP ? AutoConsumption.calculateMaxHP(state) : 100);
+        const perkMultipliers = state.compiledStats?.perkMultipliers
+            || (this.getPerkMultipliers ? this.getPerkMultipliers() : {});
+        const sim = {
+            currentHP: Math.min(state.currentHP != null ? state.currentHP : maxHP, maxHP),
+            maxHP,
+            autoEatThresholdPct: state.autoEatThresholdPct,
+            perkMultipliers,
+            combatAttributes: Object.assign({}, state.combatAttributes),
+            activeEffects: [],
+            equipment: JSON.parse(JSON.stringify(state.equipment || {}))
         };
-    },
+        if (CombatSystem.compilePlayerStats) CombatSystem.compilePlayerStats(sim);
 
-    /**
-     * Run the actual offline combat simulation
-     */
-    runOfflineCombatSimulation(enemyDef, playerStats, numTicks, stats) {
-        let playerCurrentHealth = playerStats.maxHealth;
-        let enemyCurrentHealth = enemyDef.stats.maxHealth;
-        let playerLastAttack = 0;
-        let enemyLastAttack = 0;
-        let playerAmmo = 0;
-        let playerMaxAmmo = 0;
-        let isReloading = false;
-        let reloadStartTime = 0;
+        // Combat context the shared helpers read (compiled weapon/ammo + session + cooldown).
+        const compiledWeapon = CombatSystem.compileWeaponData ? CombatSystem.compileWeaponData(sim) : null;
+        const compiledAmmo = CombatSystem.compileAmmoData ? CombatSystem.compileAmmoData(sim) : null;
+        sim.combat = {
+            compiledWeapon,
+            playerAmmo: compiledAmmo,
+            session: { foodConsumed: 0, ammoConsumed: 0 },
+            lastAutoEat: 0
+        };
 
-        // Check if player has a gun
-        const equippedWeapon = this.state.equipment.weapon;
-        if (equippedWeapon) {
-            const weaponDef = OfflineCombatSystem._getItemDef.call(this, equippedWeapon);
-            if (weaponDef?.magazineSize) {
-                playerMaxAmmo = weaponDef.magazineSize;
-                playerAmmo = playerMaxAmmo;
-            }
-        }
+        // Starting resources, to measure consumption after the run.
+        const ammoStart = sim.equipment?.ammo?.quantity || 0;
+        const foodStart = sim.equipment?.food?.quantity || 0;
 
-        // Get equipped food for healing
-        const equippedFood = this.state.equipment.food;
-        const foodDef = equippedFood ? OfflineCombatSystem._getItemDef.call(this, equippedFood) : null;
-        const foodHealAmount = foodDef ? Math.floor(foodDef.healAmount * (1 + playerStats.consumableEfficiency)) : 0;
-        const autoEatThreshold = Math.min(0.95, this.state.combat.autoEatThreshold + playerStats.autoEatThresholdBonus);
-        let lastFoodUse = 0;
-        const foodCooldown = this.state.combat.autoEatCooldown;
+        const playerInterval = (CombatSystem.getPlayerAttackInterval
+            ? (CombatSystem.getPlayerAttackInterval(sim).interval || 2000) : 2000);
+        const enemyInterval = enemy.attackInterval || 2000;
+        const respawnMs = enemyDef.respawnTime || 0;
 
-        // Simulate each tick
+        let playerLast = -playerInterval;   // allow an immediate first swing
+        let enemyLast = 0;
+        let enemyRespawnAt = 0;
+        let simLastEat = -OC.AUTO_EAT_INTERVAL_MS;
+        const numTicks = Math.floor(cappedTime / step);
+
         for (let tick = 0; tick < numTicks; tick++) {
-            const currentTime = tick * OfflineCombatSystem.COMBAT_TICK_INTERVAL;
+            const now = tick * step;
 
-            // Apply HP regeneration
-            playerCurrentHealth = Math.min(playerCurrentHealth + (playerStats.hpRegenerationRate * OfflineCombatSystem.COMBAT_TICK_INTERVAL / 1000), playerStats.maxHealth);
-
-            // Check for auto-eat
-            const healthPercent = playerCurrentHealth / playerStats.maxHealth;
-            if (equippedFood && healthPercent < autoEatThreshold && currentTime - lastFoodUse >= foodCooldown) {
-                // Check if we have food in inventory
-                if (this.state.bank.items[equippedFood]?.quantity > 0) {
-                    playerCurrentHealth = Math.min(playerCurrentHealth + foodHealAmount, playerStats.maxHealth);
-                    stats.foodConsumed++;
-                    lastFoodUse = currentTime;
-
-                    // Consume food from inventory (but don't go below 0)
-                    if (this.state.bank.items[equippedFood].quantity > 0) {
-                        // We'll track this and apply at the end
-                    }
-                }
+            // Auto-eat on the live rules, gated in SIM-time (processAutoEat's own cooldown
+            // keys on real Date.now(), which barely moves during this compressed loop).
+            if (now - simLastEat >= OC.AUTO_EAT_INTERVAL_MS) {
+                sim.combat.lastAutoEat = 0; // bypass the real-time cooldown; we gate above
+                AutoConsumption.processAutoEat(sim, sim.combat);
+                simLastEat = now;
             }
 
-            // Handle player reload
-            if (playerMaxAmmo > 0) {
-                const equippedWeapon = this.state.equipment.weapon;
-                const weaponDef = OfflineCombatSystem._getItemDef.call(this, equippedWeapon);
-                const baseReloadTime = weaponDef?.reloadTime || 2000;
-                const reloadReduction = 1 - playerStats.reloadTimeReduction;
-                const effectiveReloadTime = Math.max(500, baseReloadTime * reloadReduction);
-
-                if (isReloading) {
-                    if (currentTime - reloadStartTime >= effectiveReloadTime) {
-                        isReloading = false;
-                        playerAmmo = playerMaxAmmo;
-                    }
-                } else if (playerAmmo <= 0) {
-                    isReloading = true;
-                    reloadStartTime = currentTime;
+            // Player attack (only once the enemy has respawned)
+            if (now >= enemyRespawnAt && (now - playerLast) >= playerInterval) {
+                const can = AutoConsumption.canAttack(sim);
+                if (!can.canAttack) {
+                    // Out of ammo → the fight can't continue (activity stops).
+                    stats.stopReason = 'out-of-ammo';
+                    break;
                 }
-            }
-
-            // Player attack
-            if (!isReloading && currentTime - playerLastAttack >= playerStats.effectiveAttackInterval) {
-                // Check if attack hits
-                const hitRoll = Math.random() * 100;
-                if (hitRoll <= playerStats.effectiveHitChance) {
-                    // Calculate damage
-                    const damageRange = playerStats.maxHit - playerStats.minHit;
-                    const damageRoll = Math.random();
-                    let damage = playerStats.minHit + (damageRange * damageRoll);
-
-                    // Check for critical hit
-                    const critRoll = Math.random() * 100;
-                    if (critRoll < playerStats.criticalChance) {
-                        damage *= playerStats.criticalImpact;
-                    }
-
-                    // Apply damage
-                    enemyCurrentHealth -= damage;
-                    stats.totalDamageDealt += damage;
-
-                    // Consume ammo
-                    if (playerMaxAmmo > 0) {
-                        playerAmmo--;
-                        stats.ammoConsumed++;
-                    }
-
-                    // Check if enemy defeated
-                    if (enemyCurrentHealth <= 0) {
+                AutoConsumption.consumeAmmo(sim, sim.combat);
+                const res = CombatSystem.performAttack(sim, enemy);
+                if (res && res.hit && res.hit.success) {
+                    enemy.currentHP = Math.max(0, enemy.currentHP - res.finalDamage);
+                    stats.totalDamageDealt += res.finalDamage;
+                    if (enemy.currentHP <= 0) {
+                        const r = CombatSystem.rollKillRewards(sim, enemy);
                         stats.enemiesKilled++;
-
-                        // Roll for loot
-                        this.rollOfflineLoot(enemyDef, stats);
-
-                        // Add gold and medals
-                        const goldAmount = Math.floor(enemyDef.rewards.gold.min + Math.random() * (enemyDef.rewards.gold.max - enemyDef.rewards.gold.min));
-                        stats.goldGained += goldAmount;
-
-                        const medalAmount = Math.floor(enemyDef.rewards.medals.min + Math.random() * (enemyDef.rewards.medals.max - enemyDef.rewards.medals.min));
-                        stats.medalsGained += medalAmount;
-
-                        // Add combat XP
-                        stats.combatXpGained += enemyDef.rewards.exp.combat;
-
-                        // Respawn enemy
-                        enemyCurrentHealth = enemyDef.stats.maxHealth;
+                        stats.combatXpGained += r.xp;
+                        stats.goldGained += r.gold;
+                        stats.medalsGained += r.medals;
+                        for (const it of r.items) {
+                            stats.lootGained[it.itemId] = (stats.lootGained[it.itemId] || 0) + it.quantity;
+                        }
+                        enemy.currentHP = enemy.maxHP;        // respawn
+                        enemyRespawnAt = now + respawnMs;     // honor respawn delay
                     }
                 }
-
-                playerLastAttack = currentTime;
+                playerLast = now;
             }
 
             // Enemy attack
-            if (currentTime - enemyLastAttack >= (1000 / enemyDef.stats.attackSpeed)) {
-                // Check evasion
-                const evasionRoll = Math.random() * 100;
-                if (evasionRoll >= playerStats.evasionRating) {
-                    // Check if enemy hits
-                    const enemyHitRoll = Math.random() * 100;
-                    const effectiveEnemyAccuracy = enemyDef.stats.accuracy * (1 - playerStats.enemyAccuracyReduction);
-
-                    if (enemyHitRoll <= effectiveEnemyAccuracy) {
-                        // Calculate damage
-                        const variance = 0.9 + Math.random() * 0.2;
-                        let damage = enemyDef.stats.attackDamage * variance;
-
-                        // Apply damage reduction
-                        damage = damage * (1 - playerStats.damageReductionRate);
-                        damage = Math.max(1, damage - playerStats.absoluteDamageReduction);
-                        damage = Math.floor(damage);
-
-                        playerCurrentHealth -= damage;
-                        stats.totalDamageTaken += damage;
-
-                        // Check if player defeated
-                        if (playerCurrentHealth <= 0) {
-                            stats.deaths++;
-                            playerCurrentHealth = playerStats.maxHealth; // Respawn player
-
-                            // Apply death penalty (lose some gold)
-                            const goldLoss = Math.floor(stats.goldGained * 0.1);
-                            stats.goldGained -= goldLoss;
-                        }
+            if (now >= enemyRespawnAt && (now - enemyLast) >= enemyInterval) {
+                const res = CombatSystem.performAttack(enemy, sim);
+                if (res && res.hit && res.hit.success) {
+                    sim.currentHP = Math.max(0, sim.currentHP - res.finalDamage);
+                    stats.totalDamageTaken += res.finalDamage;
+                    if (sim.currentHP <= 0) {
+                        // Death stops the activity (no respawn-and-continue) — same rule the
+                        // player affirmed for live idling without enough food.
+                        stats.deaths = 1;
+                        stats.stopReason = 'death';
+                        break;
                     }
                 }
-
-                enemyLastAttack = currentTime;
-            }
-        }
-    },
-
-    /**
-     * Roll for loot from defeated enemy
-     */
-    rollOfflineLoot(enemyDef, stats) {
-        if (!enemyDef.lootTable) return;
-
-        for (let entry of enemyDef.lootTable) {
-            const roll = Math.random();
-            if (roll < entry.chance) {
-                const amount = Math.floor(entry.min + Math.random() * (entry.max - entry.min + 1));
-
-                if (!stats.lootGained[entry.itemId]) {
-                    stats.lootGained[entry.itemId] = 0;
-                }
-                stats.lootGained[entry.itemId] += amount;
-            }
-        }
-    },
-
-    /**
-     * Apply offline efficiency penalty
-     */
-    applyOfflineEfficiency(stats) {
-        stats.enemiesKilled = Math.floor(stats.enemiesKilled * OfflineCombatSystem.OFFLINE_EFFICIENCY);
-        stats.combatXpGained = Math.floor(stats.combatXpGained * OfflineCombatSystem.OFFLINE_EFFICIENCY);
-        stats.goldGained = Math.floor(stats.goldGained * OfflineCombatSystem.OFFLINE_EFFICIENCY);
-        stats.medalsGained = Math.floor(stats.medalsGained * OfflineCombatSystem.OFFLINE_EFFICIENCY);
-        stats.foodConsumed = Math.floor(stats.foodConsumed * OfflineCombatSystem.OFFLINE_EFFICIENCY);
-        stats.ammoConsumed = Math.floor(stats.ammoConsumed * OfflineCombatSystem.OFFLINE_EFFICIENCY);
-
-        // Apply efficiency to loot
-        for (let itemId in stats.lootGained) {
-            stats.lootGained[itemId] = Math.floor(stats.lootGained[itemId] * OfflineCombatSystem.OFFLINE_EFFICIENCY);
-        }
-    },
-
-    /**
-     * Apply offline rewards to game state
-     */
-    applyOfflineRewards(stats) {
-        // Add currencies
-        this.state.currencies.gold += stats.goldGained;
-        this.state.currencies.medals += stats.medalsGained;
-
-        // Add combat XP
-        if (this.gainSkillExp) {
-            this.gainSkillExp('combat', stats.combatXpGained);
-        }
-
-        // Add loot to bank
-        for (let itemId in stats.lootGained) {
-            const amount = stats.lootGained[itemId];
-            if (amount > 0) {
-                this.addItemToBank(itemId, amount);
+                enemyLast = now;
             }
         }
 
-        // Consume food from inventory
-        const equippedFood = this.state.equipment.food;
-        if (equippedFood && stats.foodConsumed > 0) {
-            if (this.state.bank.items[equippedFood]) {
-                const currentQuantity = this.state.bank.items[equippedFood].quantity;
-                const newQuantity = Math.max(0, currentQuantity - stats.foodConsumed);
+        if (!stats.stopReason) stats.stopReason = 'time-elapsed';
 
-                if (newQuantity <= 0) {
-                    delete this.state.bank.items[equippedFood];
-                    this.state.equipment.food = null;
-                } else {
-                    this.state.bank.items[equippedFood].quantity = newQuantity;
-                }
+        // Resources consumed, measured on the clone (100% rate; scaled next).
+        stats.ammoConsumed = Math.max(0, ammoStart - (sim.equipment?.ammo?.quantity || 0));
+        stats.foodConsumed = Math.max(0, foodStart - (sim.equipment?.food?.quantity || 0));
+    },
+
+    /**
+     * Scale the 100%-rate totals by the offline efficiency, then apply once to real state:
+     * deposit rewards through the shared depositKillRewards (no UI events during load) and
+     * deduct the scaled resources from the real equipped food/ammo slots. `this` === GameEngine.
+     */
+    applyEfficiencyAndDeposit(stats) {
+        const state = this.state;
+        const eff = OfflineCombatSystem.OFFLINE_EFFICIENCY;
+
+        stats.enemiesKilled = Math.floor(stats.enemiesKilled * eff);
+        stats.combatXpGained = Math.floor(stats.combatXpGained * eff);
+        stats.goldGained = Math.floor(stats.goldGained * eff);
+        stats.medalsGained = Math.floor(stats.medalsGained * eff);
+        stats.ammoConsumed = Math.floor(stats.ammoConsumed * eff);
+        stats.foodConsumed = Math.floor(stats.foodConsumed * eff);
+        for (const id in stats.lootGained) {
+            stats.lootGained[id] = Math.floor(stats.lootGained[id] * eff);
+        }
+
+        // Deposit rewards through the SAME path live kills use (XP → character level,
+        // gold/medals → currencies, items → bank). emit:false keeps it silent on load.
+        const items = Object.entries(stats.lootGained)
+            .filter(([, q]) => q > 0)
+            .map(([itemId, quantity]) => ({ itemId, quantity }));
+        if (CombatSystem.depositKillRewards) {
+            CombatSystem.depositKillRewards(state, {
+                xp: stats.combatXpGained,
+                gold: stats.goldGained,
+                medals: stats.medalsGained,
+                items
+            }, { emit: false });
+        }
+
+        // Deduct the scaled resources from the REAL equipped slots.
+        if (stats.ammoConsumed > 0 && state.equipment?.ammo && state.equipment.ammo.quantity != null) {
+            state.equipment.ammo.quantity = Math.max(0, state.equipment.ammo.quantity - stats.ammoConsumed);
+        }
+        if (stats.foodConsumed > 0 && state.equipment?.food && state.equipment.food.quantity != null) {
+            state.equipment.food.quantity = Math.max(0, state.equipment.food.quantity - stats.foodConsumed);
+            if (state.equipment.food.quantity <= 0) state.equipment.food = null;
+        }
+
+        // If the player died offline, the activity is over — clear it so the game resumes
+        // idle rather than silently re-entering combat.
+        if (stats.deaths > 0) {
+            if (state.currentActivity === 'combat') state.currentActivity = null;
+            if (state.combat) {
+                state.combat.selectedEnemyId = null;
+                state.combat.autoCombat = false;
             }
         }
     }
 };
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = OfflineCombatSystem;
+}

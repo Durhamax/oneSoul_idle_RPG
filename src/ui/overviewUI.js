@@ -456,7 +456,9 @@ const OverviewUI = {
 
         const maxHealth = Math.floor(c.maxHealth || 100);
         // currentHP is only set during/after combat; fall back to full when idle.
-        const currentHP = Math.floor(GameEngine.state?.currentHP ?? maxHealth);
+        // Clamp for display: it can briefly exceed max after unequipping a
+        // +health item while full (resolves on the next hit).
+        const currentHP = Math.min(Math.floor(GameEngine.state?.currentHP ?? maxHealth), maxHealth);
         const attackInterval = c.attackInterval || 2000;
         const attacksPerSec = c.attackSpeed || (1000 / attackInterval);
         const dmg = this.getEffectiveWeaponDamage(attrs, c);

@@ -129,6 +129,9 @@ const CombatSystem = {
                 }
                 ge.state.crafting.autoRecipe = null;
             }
+            // Declare combat as the active activity so the save and offline simulation
+            // know what the player is doing (offline combat keys on this + the target).
+            ge.state.currentActivity = 'combat';
         }
 
         console.log(`⚔️ [COMBAT START] vs ${enemy.name} (Lv.${enemy.level})`);
@@ -183,6 +186,10 @@ const CombatSystem = {
         player.combat = {
             inCombat: true,
             currentEnemy: enemy,
+
+            // Persisted target id — what the player is fighting. The offline simulator
+            // resolves this against EnemyRegistry to continue the same fight while away.
+            selectedEnemyId: enemy.id || enemy.enemyId || null,
 
             // Pre-compiled equipment data (resolved once, used throughout combat)
             compiledWeapon: compiledWeapon,
@@ -347,6 +354,15 @@ const CombatSystem = {
         combat.inCombat = false;
         combat.currentEnemy = null;
 
+        // Release the active-activity flag + persisted target UNLESS live combat will
+        // auto-respawn and continue. This keeps the saved "what am I doing" accurate so
+        // the offline simulator only resumes a fight that was genuinely still going.
+        const willRespawn = victory && (GameEngine?.state?.combat?.autoCombat ?? false) && enemyId;
+        if (!willRespawn && typeof GameEngine !== 'undefined' && GameEngine.state) {
+            if (GameEngine.state.currentActivity === 'combat') GameEngine.state.currentActivity = null;
+            if (GameEngine.state.combat) GameEngine.state.combat.selectedEnemyId = null;
+        }
+
         return combat.session;
     },
 
@@ -377,6 +393,10 @@ const CombatSystem = {
         // Tear down the live fight (no victory/defeat resolution)
         combat.inCombat = false;
         combat.currentEnemy = null;
+        combat.selectedEnemyId = null;
+
+        // Combat is no longer the active activity (the incoming activity sets its own).
+        if (state.currentActivity === 'combat') state.currentActivity = null;
 
         if (typeof EventBus !== 'undefined') {
             EventBus.emit('combat-ended', { result: 'stopped', reason: 'activity-switch' });
@@ -936,10 +956,12 @@ const CombatSystem = {
     },
 
     /**
-     * Award loot and XP with multipliers from compiled stats
+     * Roll the rewards for a single enemy kill — pure rolls, NO side effects on the
+     * player. Returns a structured bundle { xp, gold, medals, items[] } so live and
+     * offline combat share identical reward rules. Multipliers come from compiled
+     * stats / perks. Pair with depositKillRewards() to actually grant them.
      */
-    awardLoot(player, enemy) {
-        // Get compiled stats for loot multipliers
+    rollKillRewards(player, enemy) {
         const compiled = typeof GameEngine !== 'undefined' && GameEngine.state?.compiledStats;
         const mult = player.perkMultipliers || {};
 
@@ -948,122 +970,116 @@ const CombatSystem = {
         const xpMultiplier = compiled?.combatXPMultiplier || mult.combatXP || 1.0;
         const xp = Math.floor(baseXP * xpMultiplier);
 
-        // ═══ GOLD with goldFind multiplier ═══
-        // Supports both { min, max } object and legacy single number
+        // ═══ GOLD ({min,max} object or legacy single number) ═══
         const goldDrop = enemy.goldDrop;
-        let baseGold = 0;
-        if (goldDrop && typeof goldDrop === 'object') {
-            // Roll between min and max (inclusive)
-            baseGold = this.rollRange(goldDrop.min, goldDrop.max);
-        } else {
-            baseGold = goldDrop || 5;
-        }
+        let baseGold = (goldDrop && typeof goldDrop === 'object')
+            ? this.rollRange(goldDrop.min, goldDrop.max)
+            : (goldDrop || 5);
         const goldMultiplier = compiled?.goldFindMultiplier || mult.goldFind || 1.0;
         const gold = Math.round(baseGold * goldMultiplier);
 
-        console.log(`💰 Loot: Gold ${baseGold} × ${goldMultiplier.toFixed(2)} = ${gold} | XP ${baseXP} × ${xpMultiplier.toFixed(2)} = ${xp}`);
-
-        // Store gold in pending loot (don't add to player yet)
-        if (gold > 0) {
-            // Emit event for UI to show in loot box
-            if (typeof EventBus !== 'undefined') {
-                EventBus.emit('loot-dropped', {
-                    itemId: 'gold',
-                    name: 'Gold',
-                    icon: '🪙',
-                    quantity: gold,
-                    rarity: 'currency',
-                    isCurrency: true
-                });
-            }
-        }
-
-        // ═══ MEDAL FRAGMENTS with fragmentFind multiplier ═══
-        // Supports { min, max } object format
+        // ═══ MEDALS (from fragmentDrop) ═══
+        let medals = 0;
         const fragmentDrop = enemy.fragmentDrop;
         if (fragmentDrop) {
-            let baseFragments = 0;
-            if (typeof fragmentDrop === 'object') {
-                // Roll between min and max (inclusive)
-                baseFragments = this.rollRange(fragmentDrop.min, fragmentDrop.max);
-            } else {
-                // Legacy: single number
-                baseFragments = fragmentDrop;
-            }
-
+            const baseFragments = (typeof fragmentDrop === 'object')
+                ? this.rollRange(fragmentDrop.min, fragmentDrop.max)
+                : fragmentDrop;
             if (baseFragments > 0) {
                 const fragmentMultiplier = compiled?.fragmentFindMultiplier || mult.fragmentFind || 1.0;
-                const fragments = Math.round(baseFragments * fragmentMultiplier);
-
-                console.log(`🏅 Loot: Fragments ${baseFragments} × ${fragmentMultiplier.toFixed(2)} = ${fragments}`);
-
-                // Store fragments in pending loot (don't add to player yet)
-                if (fragments > 0) {
-                    // Emit event for UI to show in loot box
-                    if (typeof EventBus !== 'undefined') {
-                        EventBus.emit('loot-dropped', {
-                            itemId: 'medals',
-                            name: 'Medals',
-                            icon: '🏅',
-                            quantity: fragments,
-                            rarity: 'currency',
-                            isCurrency: true
-                        });
-                    }
-                }
+                medals = Math.round(baseFragments * fragmentMultiplier);
             }
         }
 
-        // ═══ ITEM DROPS with itemFind multiplier ═══
-        // Check both 'loot' (new schema) and 'lootTable' (legacy) arrays
+        // ═══ ITEM DROPS (supports 'loot' new schema and legacy 'lootTable') ═══
+        const items = [];
         const lootArray = enemy.loot || enemy.lootTable;
         if (lootArray && Array.isArray(lootArray)) {
             const itemMultiplier = compiled?.itemFindMultiplier || mult.itemFind || 1.0;
-
             for (const lootEntry of lootArray) {
-                // Roll for drop chance
-                const roll = Math.random();
-                const baseChance = lootEntry.chance || 0.1;
-
-                if (roll < baseChance) {
-                    // Roll quantity within range
-                    // Supports: { quantity: 1 }, { quantity: { min, max } }, { minQty, maxQty }
-                    let baseQty = 1;
-                    if (lootEntry.quantity && typeof lootEntry.quantity === 'object') {
-                        baseQty = this.rollRange(lootEntry.quantity.min, lootEntry.quantity.max);
-                    } else if (lootEntry.minQty !== undefined || lootEntry.maxQty !== undefined) {
-                        baseQty = this.rollRange(lootEntry.minQty || 1, lootEntry.maxQty || 1);
-                    } else {
-                        baseQty = lootEntry.quantity || 1;
-                    }
-
-                    // Apply item find multiplier to quantity
-                    const finalQty = Math.round(baseQty * itemMultiplier);
-
-                    if (finalQty > 0) {
-                        // Store item in pending loot (don't add to inventory yet)
-                        // Get item definition for display info
-                        const itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(lootEntry.itemId) : null;
-
-                        // Emit event for UI to show in loot box
-                        if (typeof EventBus !== 'undefined') {
-                            EventBus.emit('loot-dropped', {
-                                itemId: lootEntry.itemId,
-                                name: itemDef?.name || lootEntry.itemId,
-                                icon: itemDef?.icon || '📦',
-                                quantity: finalQty,
-                                rarity: lootEntry.rarity || itemDef?.rarity || 'common',
-                                isItem: true
-                            });
-                        }
-
-                        console.log(`🎁 Loot: ${lootEntry.itemId} × ${baseQty} × ${itemMultiplier.toFixed(2)} = ${finalQty}`);
-                    }
+                if (Math.random() >= (lootEntry.chance || 0.1)) continue;
+                let baseQty = 1;
+                if (lootEntry.quantity && typeof lootEntry.quantity === 'object') {
+                    baseQty = this.rollRange(lootEntry.quantity.min, lootEntry.quantity.max);
+                } else if (lootEntry.minQty !== undefined || lootEntry.maxQty !== undefined) {
+                    baseQty = this.rollRange(lootEntry.minQty || 1, lootEntry.maxQty || 1);
+                } else {
+                    baseQty = lootEntry.quantity || 1;
+                }
+                const finalQty = Math.round(baseQty * itemMultiplier);
+                if (finalQty > 0) {
+                    items.push({ itemId: lootEntry.itemId, quantity: finalQty, rarity: lootEntry.rarity });
                 }
             }
         }
 
-        // TODO: Integrate with player progression system for XP
+        return { xp, gold, medals, items };
+    },
+
+    /**
+     * Apply a reward bundle to the player immediately: character (Adventurer) XP,
+     * currencies and bank items. Used by live kills (auto-apply) and once by offline
+     * resolution on the scaled tally. Emits loot-dropped events for UI feedback —
+     * rewards are already applied, so there is no manual "collect" step.
+     * @param {Object} [opts] - { emit?: boolean } (default true)
+     */
+    depositKillRewards(player, rewards, opts = {}) {
+        if (!rewards) return;
+        const emit = opts.emit !== false;
+        const currencies = player.currencies || (typeof GameEngine !== 'undefined' && GameEngine.state?.currencies);
+
+        // XP → character (Adventurer) level
+        if (rewards.xp > 0 && typeof GameEngine !== 'undefined' && GameEngine.gainCharacterExp) {
+            GameEngine.gainCharacterExp(rewards.xp);
+        }
+
+        // Gold
+        if (rewards.gold > 0 && currencies) {
+            currencies.gold = (currencies.gold || 0) + rewards.gold;
+            if (emit && typeof EventBus !== 'undefined') {
+                EventBus.emit('loot-dropped', { itemId: 'gold', name: 'Gold', icon: '🪙', quantity: rewards.gold, rarity: 'currency', isCurrency: true, applied: true });
+            }
+        }
+
+        // Medals
+        if (rewards.medals > 0 && currencies) {
+            currencies.medals = (currencies.medals || 0) + rewards.medals;
+            if (emit && typeof EventBus !== 'undefined') {
+                EventBus.emit('loot-dropped', { itemId: 'medals', name: 'Medals', icon: '🏅', quantity: rewards.medals, rarity: 'currency', isCurrency: true, applied: true });
+            }
+        }
+
+        // Items → bank
+        if (rewards.items && rewards.items.length) {
+            for (const it of rewards.items) {
+                if (!it || !it.itemId || !(it.quantity > 0)) continue;
+                if (typeof GameEngine !== 'undefined' && GameEngine.addItemToBank) {
+                    GameEngine.addItemToBank(it.itemId, it.quantity);
+                }
+                if (emit && typeof EventBus !== 'undefined') {
+                    const itemDef = typeof ItemRegistry !== 'undefined' ? ItemRegistry.getItem(it.itemId) : null;
+                    EventBus.emit('loot-dropped', { itemId: it.itemId, name: itemDef?.name || it.itemId, icon: itemDef?.icon || '📦', quantity: it.quantity, rarity: it.rarity || itemDef?.rarity || 'common', isItem: true, applied: true });
+                }
+            }
+        }
+
+        // Refresh the currency HUD on live kills (rewards used to update it via the
+        // manual "collect" step, which no longer exists).
+        if (emit && typeof UICore !== 'undefined' && UICore.updateCurrencyDisplay) {
+            UICore.updateCurrencyDisplay();
+        }
+    },
+
+    /**
+     * Award loot for a defeated enemy in LIVE combat: roll, then deposit immediately.
+     * Rewards auto-apply on kill — there is no manual loot-collection step. Offline
+     * combat rolls via rollKillRewards() into a tally instead (see endCombat simCtx).
+     */
+    awardLoot(player, enemy) {
+        const rewards = this.rollKillRewards(player, enemy);
+        console.log(`💰 Loot applied: +${rewards.gold} gold, +${rewards.medals} medals, +${rewards.xp} XP, ${rewards.items.length} item(s)`);
+        this.depositKillRewards(player, rewards);
+        return rewards;
     },
 
     /**
