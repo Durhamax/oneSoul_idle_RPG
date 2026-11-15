@@ -1,0 +1,50 @@
+{
+  "_readme": "Visual specs for region backgrounds (rendered by scripts/asset-gen/render-backgrounds.js; shared format + style tracks live in prompt-templates.json \"backgrounds\"). Keys are region ids from src/data/regions/worldRegions.js. scene = what is in the picture (landmarks from the region's description / REGION_BUILDS.md / MAP_POI.md); mood + palette = the region's Mood/Lore beat and era palette (WORLD_BIBLE.md §11 mood-per-region / mood-per-era); avoid = region-specific negatives. targetPath = where an approved image would be installed (set the region's backgroundImage to it).",
+  "region_-2_-3": {
+    "name": "Scoutreach",
+    "stem": "scoutreach",
+    "targetPath": "assets/backgrounds/regions/region_scoutreach_01.jpg",
+    "scene": "a quiet sunny woodland meadow at the edge of a vast wilderness: (a small rustic scout outpost:1.3) of the gentle earth folk at the forest edge - (a weathered rough-timber lookout tower:1.3) and two small turf-roofed log huts beside a low stone-ringed campfire, a split-rail fence and a narrow footpath through tall grass, rolling grassland with dark peat bog pools and reeds, a tall forest tree line behind, (far away on a distant hill a single tall thin black metal survey mast with a tiny glowing purple light at its tip:1.25)",
+    "mood": "the edge of the known world, peaceful but watchful, something foreign has arrived",
+    "palette": "warm golden-green late afternoon light, natural earthy browns and greens, purple only in the one tiny distant light, long soft shadows",
+    "avoid": "tents, military camp, drones, robots, black pods, crates, soldiers, people, city, modern buildings, purple sky, purple grass, purple landscape, explosions, fire"
+  },
+  "region_-3_-3": {
+    "name": "Verduun South",
+    "stem": "verduun_south",
+    "targetPath": "assets/backgrounds/regions/region_verduun_south_01.jpg",
+    "scene": "a vast ancient abandoned amphitheatre deep in an old-growth forest, everything grown over with thick moss and hanging vines: (a great ring of massive moss-covered standing stones with heavy stone lintels, like Stonehenge:1.3) in the centre, and behind it (a huge curved earthen embankment three storeys high, stepped into terraces, rising all the way around:1.3), (its terraces lined with old doorways and windows dug into the earth, half hidden under curtains of vines and moss:1.2), (colossal old-growth trees growing out of the terraces and towering over the rim, their canopy overhead:1.25), (the whole floor in the lower part of the image paved with old stone pavers overtaken by moss and rotten fallen leaves:1.35), ferns and roots pushing between the stones",
+    "mood": "quiet, reverent, melancholy, the heart of a gentle people's homeland, reclaimed by the forest",
+    "palette": "deep moss and emerald greens, weathered grey stone, rust and brown fallen leaves, warm shafts of light, cool green shadows",
+    "avoid": "people, castle, colosseum arcade, roman arches, marble columns, brick, city, modern buildings, mushroom, water, grass lawn, bright green lawn, meadow, plain grass, cartoon, flat illustration, 3d render, cgi, smooth plastic",
+    "extra": "moss on every surface, ivy and vines, dappled golden sunlight through the canopy with floating motes, rich detailed painterly texture"
+  },
+  "region_-4_-3": {
+    "name": "Verduun West",
+    "stem": "verduun_west",
+    "targetPath": "assets/backgrounds/regions/region_verduun_west_01.jpg",
+    "scene": "deep untouched old-growth forest: (a cathedral of colossal ancient hardwood trees:1.3) with trunks as wide as houses and (massive buttress roots:1.2) on steep mossy slopes, dense ferns and thickets, a narrow game trail winding up into the depths, the high canopy swallowing the light, (thin shafts of sunlight through mist:1.2)",
+    "mood": "deep, quiet, wild, a little watchful",
+    "palette": "dark emerald and moss greens, cool shadows, a few warm shafts of light through mist",
+    "avoid": "buildings, houses, bridges, roads, people, ruins"
+  },
+  "region_-3_-2": {
+    "name": "Verduun North",
+    "stem": "verduun_north",
+    "targetPath": "assets/backgrounds/regions/region_verduun_north_01.jpg",
+    "scene": "deep untouched old-growth forest: (colossal ancient mossy trees with massive buttress roots:1.2) crowding close on all sides, and in the middle distance (a small weathered concrete bunker entrance set into the base of a steep mossy hillside, earth and ferns mounded over its roof:1.35): a low square doorway framed in stained grey concrete with a (pitch-black interior:1.2), roots and moss growing over its edges, a rusted steel door hanging open; (undisturbed forest floor of thick moss, ferns and fallen leaves:1.25) right up to the hillside, centuries of overgrowth",
+    "mood": "ominous stillness, an old wound hidden in the woods, something still keeps watch",
+    "palette": "deep moss and emerald greens, weathered grey concrete, rust brown accents, cool soft light filtering through mist",
+    "avoid": "path, trail, footpath, dirt path, road, track, trench, ditch, stream, river, creek, puddle, walkway, boardwalk, stairs, leading lines, portal, round hole, circular opening, glowing light, large building, soldiers, people, skeletons, fire, explosions, purple, door in a tree, carved tree trunk, temple, shrine, ancient ruins, stone carvings, freestanding building, hut, red leaves, see-through doorway, open frame, gateway, archway, light through the door, bare dirt, mud",
+    "composition": "wide establishing view at eye level, centered composition, the bunker entrance as the focal point in the middle distance at the center, huge tree trunks framing the left and right edges, layered depth into soft mist, untouched ground, no characters"
+  },
+  "region_-4_-4": {
+    "name": "The West Shoals",
+    "stem": "west_shoals",
+    "targetPath": "assets/backgrounds/regions/region_west_shoals_01.jpg",
+    "scene": "a quiet coastline at low tide: (shallow turquoise tidal shoals and wet sandbars:1.3) with tide pools, clusters of shells and smooth dark rocks, (bleached silver driftwood along the tide line:1.15), pale grassy sand dunes rising on the left and right sides with white crusted salt pans between them, the open sea stretching to the horizon",
+    "mood": "serene, open, airy, a breath of calm",
+    "palette": "warm pale sand, vivid turquoise and teal shallows, salt white, soft blue sky with gentle clouds, warm late-morning sunlight, rich color not washed out",
+    "avoid": "people, boats, ships, piers, houses, lighthouse, palm trees, tropical resort, washed out, white void, snow, foggy grey"
+  }
+}

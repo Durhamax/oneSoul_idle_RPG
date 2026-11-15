@@ -1,0 +1,116 @@
+{
+  "_readme": "Visual specs for raw materials. archetype = shape family (rules in prompt-templates.json itemTypes.materials.subtypes); subject + cues = what to draw, with 1-2 identity cues taken from the item's name/description/tags. Shared family shape + distinct cue is the convention common RPG icons use (e.g. one ore rock, only the embedded-metal colour changes). Review/edit these as text before rendering. tint (optional hex) = main colour used to tint the grey family base before rendering; image-to-image keeps the start image colour, so this is how an item gets its own colour on a shared family shape.",
+  "pinewood": {
+    "archetype": "wood",
+    "subject": "a pinewood log",
+    "cues": "warm reddish-brown pine bark with a few dried resin streaks, pale yellow end grain",
+    "tint": "#a4502e"
+  },
+  "riverwillow": {
+    "archetype": "wood",
+    "subject": "a riverwillow log",
+    "cues": "smooth grey-green willow bark, slender and slightly bent, pale cream end grain",
+    "tint": "#8a957a"
+  },
+  "copperiteOre": {
+    "archetype": "ore",
+    "subject": "a chunk of copperite ore",
+    "cues": "the embedded metal chunks are copper-orange with a distinctive green patina tint",
+    "tint": "#7c7f80"
+  },
+  "goldFlakes": {
+    "archetype": "precious",
+    "subject": "gold flakes",
+    "cues": "a small neat heap of thin bright gold flakes catching the light",
+    "tint": "#d4a53a"
+  },
+  "clay": {
+    "archetype": "mineral",
+    "subject": "raw river clay",
+    "cues": "smooth reddish-tan raw clay, soft and slightly damp",
+    "tint": "#b0704f"
+  },
+  "flint": {
+    "archetype": "stone",
+    "subject": "a flint stone",
+    "cues": "dark grey glassy flint with sharp conchoidal flaked edges, a pale chalky rind on one side"
+  },
+  "solfish": {
+    "archetype": "fish",
+    "subject": "a solfish",
+    "cues": "teal-blue body with a cream belly and a few yellow and red patches, red-orange and teal fins, red-rimmed eye, matte scales, not glossy"
+  },
+  "minnows": {
+    "archetype": "fishSchool",
+    "subject": "five small minnows",
+    "cues": "dark forest-green backs and pale cream-white bellies, faint darker side bands, matte scales",
+    "tint": "#2f4a32",
+    "tintPivot": 0.4,
+    "lightBelly": 0.65
+  },
+  "mossShrimp": {
+    "archetype": "crustacean",
+    "subject": "a moss shrimp",
+    "cues": "moss-green segmented shell with darker green bands, tufts of soft moss clinging to its back"
+  },
+  "smallGameMeat": {
+    "archetype": "meat",
+    "subject": "a cut of raw small-game meat",
+    "cues": "a small red meat haunch with a short bone end and a pale fat edge"
+  },
+  "smallPelts": {
+    "archetype": "hide",
+    "subject": "a small animal pelt",
+    "cues": "pale tan leather with a stripe of warm brown fur down the spine, fringed ragged edge"
+  },
+  "feathers": {
+    "archetype": "feather",
+    "subject": "a feather",
+    "cues": "rust-orange vanes with a dark brown tip, cream shaft"
+  },
+  "mintyHerb": {
+    "archetype": "herb",
+    "subject": "a bunch of minty herb",
+    "cues": "bright mint-green serrated leaves on short stems, tied with a thin grass strand"
+  },
+  "commonMushrooms": {
+    "archetype": "fungus",
+    "subject": "common mushrooms",
+    "cues": "two or three plain tan-brown capped mushrooms with pale stems, growing from a small clump of soil"
+  },
+  "plantFibers": {
+    "archetype": "fiber",
+    "subject": "plant fibers",
+    "cues": "pale green-tan plant fibers, cinched with a darker twisted binding strand"
+  },
+  "auroranTuber": {
+    "archetype": "root",
+    "subject": "an auroran tuber, a root vegetable",
+    "cues": "dusky violet-purple skin with paler lilac knobs"
+  },
+  "resin": {
+    "archetype": "extract",
+    "subject": "a glob of amber resin",
+    "cues": "warm golden-amber sticky resin, satin sheen, not glassy"
+  },
+  "meadowGreens": {
+    "archetype": "vegetable",
+    "subject": "meadow greens",
+    "cues": "a small bunch of fresh leafy greens, light and dark green leaves"
+  },
+  "daypetalBloom": {
+    "archetype": "flower",
+    "subject": "a daypetal bloom",
+    "cues": "a sunny pale-yellow open flower with soft petals and a warm orange center"
+  },
+  "copperWire": {
+    "archetype": "component",
+    "subject": "a coil of copper wire",
+    "cues": "a neat round coil of bright copper wire, one loose end sticking out"
+  },
+  "salvagedSensor": {
+    "archetype": "component",
+    "subject": "a salvaged optical sensor",
+    "cues": "a small black-and-dark-grey Elaran sensor module with a round purple-tinted lens and a few torn wires"
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "pinewood": {
+    "file": "scripts/asset-gen/approved/pinewood.png",
+    "targetPath": "assets/icons/materials/pinewood.png",
+    "from": "assets/_staging/materials/pinewood__m3/v2.png",
+    "seed": 8301,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "copperiteOre": {
+    "file": "scripts/asset-gen/approved/copperite_ore.png",
+    "targetPath": "assets/icons/materials/copperite_ore.png",
+    "from": "assets/_staging/materials/copperite_ore__m3/v1.png",
+    "seed": 8300,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "clay": {
+    "file": "scripts/asset-gen/approved/clay.png",
+    "targetPath": "assets/icons/materials/clay.png",
+    "from": "assets/_staging/materials/clay__m8/v2.png",
+    "seed": 8501,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "goldFlakes": {
+    "file": "scripts/asset-gen/approved/gold_flakes.png",
+    "targetPath": "assets/icons/materials/gold_flakes.png",
+    "from": "assets/_staging/materials/gold_flakes__m8/v1.png",
+    "seed": 8500,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "mossShrimp": {
+    "file": "scripts/asset-gen/approved/moss_shrimp.png",
+    "targetPath": "assets/icons/materials/moss_shrimp.png",
+    "from": "assets/_staging/materials/moss_shrimp__p3_05/v2.png",
+    "seed": 8801,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "solfish": {
+    "file": "scripts/asset-gen/approved/solfish.png",
+    "targetPath": "assets/icons/materials/solfish.png",
+    "from": "assets/_staging/materials/solfish__f5/v2.png",
+    "seed": 9201,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "minnows": {
+    "file": "scripts/asset-gen/approved/minnows.png",
+    "targetPath": "assets/icons/materials/minnows.png",
+    "from": "assets/_staging/materials/minnows__f7/v2.png",
+    "seed": 9201,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "flint": {
+    "file": "scripts/asset-gen/approved/flint.png",
+    "targetPath": "assets/icons/materials/flint.png",
+    "from": "assets/_staging/materials/flint__n1/v1.png",
+    "seed": 9300,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "mintyHerb": {
+    "file": "scripts/asset-gen/approved/minty_herb.png",
+    "targetPath": "assets/icons/materials/minty_herb.png",
+    "from": "assets/_staging/materials/minty_herb__n1/v1.png",
+    "seed": 9300,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "commonMushrooms": {
+    "file": "scripts/asset-gen/approved/common_mushrooms.png",
+    "targetPath": "assets/icons/materials/common_mushrooms.png",
+    "from": "assets/_staging/materials/common_mushrooms__n1/v2.png",
+    "seed": 10301,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "riverwillow": {
+    "file": "scripts/asset-gen/approved/riverwillow.png",
+    "targetPath": "assets/icons/materials/riverwillow.png",
+    "from": "assets/_staging/materials/riverwillow__m7/v1.png",
+    "seed": 8400,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "plantFibers": {
+    "file": "scripts/asset-gen/approved/plant_fibers.png",
+    "targetPath": "assets/icons/materials/plant_fibers.png",
+    "from": "assets/_staging/materials/plant_fibers__n2/v1.png",
+    "seed": 9400,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "resin": {
+    "file": "scripts/asset-gen/approved/resin.png",
+    "targetPath": "assets/icons/materials/resin.png",
+    "from": "assets/_staging/materials/resin__n5_0.6/v1.png",
+    "seed": 9700,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "smallPelts": {
+    "file": "scripts/asset-gen/approved/small_pelts.png",
+    "targetPath": "assets/icons/materials/small_pelts.png",
+    "from": "assets/_staging/materials/small_pelts__n7_0.5/v2.png",
+    "seed": 9901,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "smallGameMeat": {
+    "file": "scripts/asset-gen/approved/small_game_meat.png",
+    "targetPath": "assets/icons/materials/small_game_meat.png",
+    "from": "assets/_staging/materials/small_game_meat__n9/v2.png",
+    "seed": 10101,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "feathers": {
+    "file": "scripts/asset-gen/approved/feathers.png",
+    "targetPath": "assets/icons/materials/feathers.png",
+    "from": "assets/_staging/materials/feathers__n9/v2.png",
+    "seed": 10101,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14"
+  },
+  "auroranTuber": {
+    "file": "scripts/asset-gen/approved/auroran_tuber.png",
+    "targetPath": "assets/icons/materials/auroran_tuber.png",
+    "from": "assets/_staging/materials/auroran_tuber__n15_edit/v1.png",
+    "seed": 10600,
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "approved": "2026-11-14",
+    "note": "n14_0.6 v1, lower right stub removed by hand edit"
+  }
+}

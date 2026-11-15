@@ -1,0 +1,512 @@
+{
+  "_readme": "Art rules for scripts/generate-assets.js and scripts/style-board.js. styleLead/style = the CURRENT CANDIDATE look (stylized 3D, low detail) until the user locks a style. Camera angles are defined once in angles; itemTypes say which angle each type uses plus its presentation and never-draw list. materials/materialTags and factions are chosen from item tags. Negatives only ever add up; keep the shared negative to things every asset must avoid.",
+  "preferredCheckpoint": "sd_xl_base",
+  "outline": {
+    "_note": "Code-drawn outline added in post-processing (after cleanup): identical on every icon. px is at the 1024 render size. User chose 3px on 2026-11-14 (16 was far too bold; 4-5 also tested).",
+    "enabled": true,
+    "px": 3,
+    "color": "#1a1612"
+  },
+  "cleanup": {
+    "_note": "Post-processing per item type, run after background removal. find = SAM 3 text prompt; action: void (dark empty opening), erase (make transparent), cutBelow (straight cut just above the top of the detection, e.g. ankles). maxArea = largest plausible detection as a fraction of the image; anything bigger is treated as a bad detection and ignored (the quality gate then decides). verify = things that type must never show; checked again on the cleaned icon, and a hit rejects the variant and re-renders on a new seed (up to maxAttempts). If every attempt fails, the best one is kept and flagged in meta.json and the review page. requireSkin: a body-part detection only counts if at least minSkin of its pixels are skin-toned, because SAM labels an empty dark face-shaped hood opening as a face (and even as nose/mouth). Every gated item is also checked for multiple separate objects (islands bigger than minIslandArea). minStructure: a region with 0% skin still counts as a body part if its light/dark structure (mean abs Laplacian inside the mask, rim excluded) is >= this - catches faces in deep shadow. Measured 2026-11-14: shadowed face 0.93, empty voids 0.11-0.68 (narrow margin, provisional).",
+    "detector": "sam3",
+    "threshold": 0.5,
+    "maxAttempts": 3,
+    "rejectArea": 0.002,
+    "cutMargin": 14,
+    "rules": {
+      "head": [
+        {
+          "find": "human face",
+          "action": "void",
+          "maxArea": 0.15,
+          "requireSkin": true
+        }
+      ],
+      "legs": [
+        {
+          "find": "foot, shoe",
+          "action": "cutBelow",
+          "maxArea": 0.06
+        },
+        {
+          "find": "hand",
+          "action": "erase",
+          "maxArea": 0.04
+        }
+      ],
+      "chest": [
+        {
+          "find": "hand",
+          "action": "erase",
+          "maxArea": 0.04
+        }
+      ]
+    },
+    "verify": {
+      "head": [
+        {
+          "find": "human face",
+          "requireSkin": true
+        }
+      ],
+      "legs": [
+        "foot, shoe",
+        {
+          "find": "hand, arm",
+          "requireSkin": true
+        }
+      ],
+      "chest": [
+        {
+          "find": "human face",
+          "requireSkin": true
+        },
+        {
+          "find": "hand",
+          "requireSkin": true
+        }
+      ],
+      "gloves": [
+        {
+          "find": "hand",
+          "requireSkin": true
+        }
+      ],
+      "boots": [
+        {
+          "find": "foot",
+          "requireSkin": true
+        }
+      ],
+      "back": [
+        {
+          "find": "human face",
+          "requireSkin": true
+        },
+        {
+          "find": "hand",
+          "requireSkin": true
+        }
+      ]
+    },
+    "voidGrow": 14,
+    "minIslandArea": 0.01,
+    "minSkin": 0.15,
+    "minStructure": 0.8,
+    "singleObject": {
+      "_note": "Item types whose icon must be ONE object: the gate rejects renders with more than one separate shape. exceptSubtypes lists subcategories that are naturally several pieces.",
+      "types": [
+        "head",
+        "chest",
+        "legs",
+        "back",
+        "weapons",
+        "tools",
+        "materials"
+      ],
+      "exceptSubtypes": [
+        "precious",
+        "fish"
+      ]
+    }
+  },
+  "familyBases": {
+    "_note": "Approved base icon per shape family (archetype). Items of that archetype render image-to-image from the base start image (raw render, no outline, flattened on grey, converted to NEUTRAL GREY so the base gives shape only and colour comes from each item spec - at denoise 0.6 a coloured base kept its colour: riverwillow came out with pine bark), so a family shares one shape and only its identity cues change. denoise = how far members may move from the base. Override with --from, disable with --no-base.",
+    "wood": {
+      "start": "scripts/asset-gen/references/families/wood_start.png",
+      "preview": "scripts/asset-gen/references/families/wood.png",
+      "denoise": 0.6,
+      "approvedFrom": "pinewood m3 v2 (seed 8301), approved 2026-11-14"
+    },
+    "ore": {
+      "start": "scripts/asset-gen/references/families/ore_start.png",
+      "preview": "scripts/asset-gen/references/families/ore.png",
+      "denoise": 0.6,
+      "approvedFrom": "copperiteOre m3 v1 (seed 8300), approved 2026-11-14"
+    },
+    "mineral": {
+      "start": "scripts/asset-gen/references/families/mineral_start.png",
+      "preview": "scripts/asset-gen/references/families/mineral.png",
+      "denoise": 0.6,
+      "approvedFrom": "clay clay__m8 v2.png (seed 8501), approved 2026-11-14"
+    },
+    "precious": {
+      "start": "scripts/asset-gen/references/families/precious_start.png",
+      "preview": "scripts/asset-gen/references/families/precious.png",
+      "denoise": 0.6,
+      "approvedFrom": "goldFlakes gold_flakes__m8 v1.png (seed 8500), approved 2026-11-14"
+    },
+    "crustacean": {
+      "start": "scripts/asset-gen/references/families/crustacean_start.png",
+      "preview": "scripts/asset-gen/references/families/crustacean.png",
+      "denoise": 0.5,
+      "approvedFrom": "mossShrimp moss_shrimp__p3_05 v2.png (seed 8801), approved 2026-11-14",
+      "keepColor": true
+    },
+    "fish": {
+      "start": "scripts/asset-gen/references/families/fish_start.png",
+      "preview": "scripts/asset-gen/references/families/fish.png",
+      "denoise": 0.55,
+      "approvedFrom": "solfish solfish__f5 v2.png (seed 9201), approved 2026-11-14"
+    },
+    "fishSchool": {
+      "start": "scripts/asset-gen/references/families/fishSchool_start.png",
+      "preview": "scripts/asset-gen/references/families/fishSchool.png",
+      "denoise": 0.45,
+      "approvedFrom": "minnows minnows__f7 v2.png (seed 9201), approved 2026-11-14"
+    },
+    "stone": {
+      "start": "scripts/asset-gen/references/families/stone_start.png",
+      "preview": "scripts/asset-gen/references/families/stone.png",
+      "denoise": 0.55,
+      "approvedFrom": "flint flint__n1 v1.png (seed 9300), approved 2026-11-14"
+    },
+    "herb": {
+      "start": "scripts/asset-gen/references/families/herb_start.png",
+      "preview": "scripts/asset-gen/references/families/herb.png",
+      "denoise": 0.55,
+      "approvedFrom": "mintyHerb minty_herb__n1 v1.png (seed 9300), approved 2026-11-14"
+    },
+    "fungus": {
+      "start": "scripts/asset-gen/references/families/fungus_start.png",
+      "preview": "scripts/asset-gen/references/families/fungus.png",
+      "denoise": 0.55,
+      "approvedFrom": "commonMushrooms common_mushrooms__n1 v2.png (seed 10301), approved 2026-11-14"
+    },
+    "fiber": {
+      "start": "scripts/asset-gen/references/families/fiber_start.png",
+      "preview": "scripts/asset-gen/references/families/fiber.png",
+      "denoise": 0.55,
+      "approvedFrom": "plantFibers plant_fibers__n2 v1.png (seed 9400), approved 2026-11-14"
+    },
+    "extract": {
+      "start": "scripts/asset-gen/references/families/extract_start.png",
+      "preview": "scripts/asset-gen/references/families/extract.png",
+      "denoise": 0.6,
+      "approvedFrom": "resin resin__n5_0.6 v1.png (seed 9700), approved 2026-11-14"
+    },
+    "hide": {
+      "start": "scripts/asset-gen/references/families/hide_start.png",
+      "preview": "scripts/asset-gen/references/families/hide.png",
+      "denoise": 0.5,
+      "approvedFrom": "smallPelts small_pelts__n7_0.5 v2.png (seed 9901), approved 2026-11-14"
+    },
+    "meat": {
+      "start": "scripts/asset-gen/references/families/meat_start.png",
+      "preview": "scripts/asset-gen/references/families/meat.png",
+      "denoise": 0.55,
+      "approvedFrom": "smallGameMeat small_game_meat__n9 v2.png (seed 10101), approved 2026-11-14"
+    },
+    "feather": {
+      "start": "scripts/asset-gen/references/families/feather_start.png",
+      "preview": "scripts/asset-gen/references/families/feather.png",
+      "denoise": 0.55,
+      "approvedFrom": "feathers feathers__n9 v2.png (seed 10101), approved 2026-11-14"
+    },
+    "root": {
+      "start": "scripts/asset-gen/references/families/root_start.png",
+      "preview": "scripts/asset-gen/references/families/root.png",
+      "denoise": 0.45,
+      "approvedFrom": "auroranTuber auroran_tuber__n12_0.75 v2.png (seed 10401), approved 2026-11-14"
+    }
+  },
+  "styleLead": "thin-outlined stylized 3D game item render",
+  "enemyStyleLead": "stylized hand-painted fantasy game enemy portrait",
+  "style": "chunky simplified proportions, smooth clean shapes, subtle surface detail, minimal fine detail, large simple shapes, soft studio lighting with gentle rim light, clean readable silhouette edged by a thin even dark outline for contrast, polished casual-game look, single subject centered, plain flat light grey background",
+  "negative": "photo, photograph, photorealistic, gritty texture, noisy texture, macro photography, scientific illustration, text, letters, watermark, signature, logo, border, frame, multiple objects, scenery, landscape, ground, environment, busy background, cropped, cut off, blurry, lowres, jpeg artifacts, deformed, intricate details, fine patterns, embroidery, ornate, filigree, clutter, gritty, grunge, noise, scratches, seamless pattern, tiling texture, texture sheet, wallpaper, many scattered pieces",
+  "tierMood": {
+    "1": "early frontier era, earthy palette, warm golden light",
+    "2": "early frontier era, earthy palette, warm light",
+    "3": "maturing frontier era, mixed warm and cool light",
+    "default": ""
+  },
+  "organicHint": "subtly unfamiliar natural details, believable and grounded",
+  "organicSubcategories": [
+    "fish",
+    "meat",
+    "hide",
+    "herb",
+    "fungus",
+    "flower",
+    "vegetable",
+    "fiber",
+    "extract"
+  ],
+  "angles": {
+    "_note": "Each camera angle is defined ONCE. Helmet, chest and legs all use armorFront so equipped pieces line up as one outfit; back is the reverse view.",
+    "armorFront": {
+      "view": "three-quarter front view, the item turned about 15 degrees so its front faces slightly toward the viewer's left, camera level with the item",
+      "avoid": "side view, profile view, back view, rear view, top-down view"
+    },
+    "backRear": {
+      "view": "three-quarter rear view showing the back of the item, turned about 15 degrees the opposite way so its back faces slightly toward the viewer's right, camera level with the item",
+      "avoid": "front view, front opening, face, chest"
+    },
+    "bootSide": {
+      "view": "side view, angled about 15 degrees toward the viewer, camera level with the item",
+      "avoid": "front view, back view, top-down view, soles facing the viewer"
+    },
+    "gloveTop": {
+      "view": "seen from slightly above, tilted about 15 degrees from directly overhead",
+      "avoid": "side view, profile view, front view, palms facing the viewer"
+    },
+    "weaponSide": {
+      "view": "side view of the full length, angled about 15 degrees toward the viewer, lying along a shallow diagonal from lower left to upper right",
+      "avoid": "front view, end-on view, top-down view, extreme foreshortening"
+    },
+    "resting": {
+      "view": "three-quarter view from slightly above, as if resting on an unseen surface, camera angled about 30 degrees down",
+      "avoid": "top-down flat lay, straight side view, extreme close-up"
+    },
+    "creatureSide": {
+      "view": "side view, angled about 15 degrees toward the viewer, whole body visible, head toward the left",
+      "avoid": "front view, top-down view, back view, extreme foreshortening"
+    }
+  },
+  "itemTypes": {
+    "_note": "Per item type: which angle, how the item is presented, and what must never appear. Read by generate-assets.js and style-board.js.",
+    "head": {
+      "angle": "armorFront",
+      "presentation": "a single helmet or head covering shown entirely on its own, hollow inside, the opening of the hood or visor is a deep dark empty void with nothing inside",
+      "avoid": "person, people, human, character, character sheet, turnaround, multiple views, model sheet, mannequin, dress form, display stand, hanger, extra loose items, weapons, face, eyes, nose, mouth, skin, hair, neck, shoulders, body, torso, blank face, featureless face, smooth face shape, mannequin head, faceless head, skull"
+    },
+    "chest": {
+      "angle": "armorFront",
+      "presentation": "a single chest piece shown entirely on its own as an empty hollow shell, empty neck opening, sleeves end in empty openings",
+      "avoid": "person, people, human, character, character sheet, turnaround, multiple views, model sheet, mannequin, dress form, display stand, hanger, extra loose items, weapons, head, face, hands, fingers, skin, helmet, hood, gloves, gauntlets, cloak, cape, trousers, legs"
+    },
+    "legs": {
+      "angle": "armorFront",
+      "presentation": "exactly one pair of trousers or leg armor, shown once from a single angle, entirely on its own as an empty hollow shell, empty waistband opening at the top, the legs end above the ankles in empty open hems, nothing above the waistband, nothing below the hems",
+      "avoid": "person, people, human, character, character sheet, turnaround, multiple views, model sheet, mannequin, dress form, display stand, hanger, extra loose items, weapons, arms, hands, fingers, gloves, torso, chest, shirt, jacket, feet, toes, shoes, boots, socks, ankles, skin, front and back views, side view, three views, multiple angles, multiple pairs, two pairs, product sheet, flat lay set, reference sheet"
+    },
+    "back": {
+      "angle": "backRear",
+      "presentation": "a single cloak or cape hanging straight down from empty shoulders, hood down and empty",
+      "avoid": "person, people, human, character, character sheet, turnaround, multiple views, model sheet, mannequin, dress form, display stand, hanger, extra loose items, weapons, head, face, hands, skin, body, torso armor"
+    },
+    "boots": {
+      "angle": "bootSide",
+      "presentation": "a matching pair of boots, the nearer boot slightly overlapping the farther one, empty with open tops",
+      "avoid": "person, people, human, character, character sheet, turnaround, multiple views, model sheet, mannequin, dress form, display stand, hanger, extra loose items, weapons, feet, toes, skin, legs, trousers"
+    },
+    "gloves": {
+      "angle": "gloveTop",
+      "presentation": "a matching pair of gloves or gauntlets lying side by side, backs facing up, fingers pointing away from the viewer, empty with open cuffs",
+      "avoid": "person, people, human, character, character sheet, turnaround, multiple views, model sheet, mannequin, dress form, display stand, hanger, extra loose items, weapons, hands, fingers, skin, arms, sleeves"
+    },
+    "weapons": {
+      "angle": "weaponSide",
+      "presentation": "a single weapon shown entirely on its own, nothing else in the image",
+      "avoid": "person, people, human, character, character sheet, turnaround, multiple views, model sheet, mannequin, dress form, display stand, hanger, extra loose items, hands, holding, wielder, multiple weapons, scabbard on a belt"
+    },
+    "materials": {
+      "angle": "resting",
+      "presentation": "a single raw crafting material shown entirely on its own",
+      "avoid": "person, people, human, hands, holding, character, character sheet, turnaround, multiple views, model sheet, table, plate, basket, container, scenery, extra unrelated items",
+      "subtypes": {
+        "wood": {
+          "presentation": "one single log lying on its side at a slight diagonal, the cut end facing the viewer showing pale end grain rings, bark running along its length",
+          "avoid": "log pile, woodpile, bundle, many logs, wood slices, discs, planks, scattered pieces"
+        },
+        "ore": {
+          "presentation": "one single fist-sized faceted stone in neutral grey, with several small angular chunks of colored metal embedded in its surface; the stone stays grey and only the embedded chunks carry the color",
+          "avoid": "giant crystal, glowing gem, loose gems, cut gemstones, scattered crystals, many separate rocks, colored rock"
+        },
+        "stone": {
+          "presentation": "one sharp-edged knapped stone with crisp facets"
+        },
+        "mineral": {
+          "presentation": "two or three soft flat lumpy slabs of raw material with rounded edges, resting together",
+          "avoid": "pottery, vase, pot, jar, bowl, sculpture, figurine, bricks"
+        },
+        "precious": {
+          "presentation": "a small neat heap of tiny shiny flakes"
+        },
+        "fish": {
+          "angle": "creatureSide",
+          "presentation": "one whole fish in side profile, angled slightly toward the viewer, deep rounded body, fins clearly separated, readable eye, muted natural darker colors, matte low-gloss scales",
+          "avoid": "bent body, twisted pose, curled fish, multiple fish, fish bones, cooked fish, glossy, shiny, reflective, metallic sheen, chrome, wet highlights, bright saturated colors, neon"
+        },
+        "meat": {
+          "presentation": "one raw meat haunch shaped like a chunky drumstick, a rounded red meat body with a thin pale fat rim, a short clean white bone end sticking out of one side",
+          "avoid": "cooked, roasted, grill marks, steak on plate, sausage, ham slices, butcher board, knife, whole animal, head, many pieces, gore, blood splatter, animal, cow, pig, sheep, legs, hooves, low poly animal, figurine"
+        },
+        "hide": {
+          "presentation": "one whole small animal hide stretched flat and spread out, seen from the front, the classic hide silhouette: a notched neck at the top, short flared leg flaps at the corners, a ragged fringed edge all around, pale tan leather with a soft stripe of brown fur running down the middle",
+          "avoid": "whole animal, head, face, eyes, paws, tail, furniture, stool, chair, cushion, blanket, cloth, fabric, garment, coat, vest, bag, folded, rolled, stacked pelts, long shaggy hair, leaf"
+        },
+        "herb": {
+          "presentation": "a small fresh bunch tied together"
+        },
+        "vegetable": {
+          "presentation": "a small fresh bunch"
+        },
+        "flower": {
+          "presentation": "a single picked flower with a short stem"
+        },
+        "fungus": {
+          "presentation": "a small cluster of two or three mushrooms"
+        },
+        "fiber": {
+          "presentation": "one neat coiled hank of plant fibers looped into a ring, cinched tight around one side with a single wrapped binding strand, the strands running smoothly in parallel",
+          "avoid": "rope pile, basket, woven cloth, loose strands everywhere, scattered grass, hay bale, broom"
+        },
+        "extract": {
+          "presentation": "one soft sticky glob of hardened golden sap, a rounded lumpy blob with a short drip running down one side, semi-translucent amber with a darker core and a soft satin sheen, simple and chunky like a piece of candy",
+          "avoid": "gemstone, gem, cut facets, crystal, glass, glass shell, clear glass, orb, sphere, mirror shine, chrome, tree, branches, scene inside, insect, sculpture, stand, jar, bottle, vial, puddle, many drops"
+        },
+        "component": {
+          "presentation": "a single crafting component"
+        },
+        "crustacean": {
+          "angle": "creatureSide",
+          "presentation": "a small bug-like shrimp creature that lives clinging in moss, side view: a segmented moss-green shell, a fanned tail, small legs, short antennae, a few soft tufts of moss clinging to its back",
+          "avoid": "tentacles, sail, wings, translucent glass, ribbon, worm, caterpillar, crab claws, lobster"
+        },
+        "fishSchool": {
+          "angle": "creatureSide",
+          "presentation": "five small fish swimming together in roughly the same direction, a loose natural school with varied spacing and slight differences in angle and depth, each fish whole with a visible eye and tail, muted natural darker colors, matte low-gloss scales",
+          "avoid": "rows, grid, lined up, evenly spaced, symmetrical arrangement, one large fish, many scattered fish, water, bubbles, bones, cooked fish, bait bucket, metal, robot, missile, torpedo, glossy, shiny, reflective, metallic sheen, chrome, wet highlights, bright saturated colors, neon"
+        },
+        "root": {
+          "presentation": "one single root vegetable like a big knobby potato or a hand of ginger root, lying on its side, a plump rounded body with three stubby rounded knobs and a couple of short thin root hairs, clean stylized skin: smooth matte surface with fine soft speckles, a few shallow potato eyes and gentle ring creases, evenly lit with soft bright ambient light, no cast shadow beneath it",
+          "avoid": "cast shadow, drop shadow, ground shadow, shadow underneath, dark shadowed underside, harsh shadows, deep dark crevices, cracked bark, rough gritty skin, creature, monster, alien, animal, tentacles, legs, standing, eyes, glowing eye, face, mouth, tree, stump, egg, orb, leaves, potato pile, many tubers, sliced, plant pot"
+        },
+        "feather": {
+          "presentation": "one single long feather lying diagonally, a clear straight central shaft with smooth soft vanes on both sides, a short bare quill at the bottom end",
+          "avoid": "bird, wings, quill pen, ink, headdress, fan, bouquet, two feathers, many feathers, scattered feathers, arrow"
+        }
+      },
+      "_compositionNotes": "Derived 2026-11-14 from studying common RPG item icons (composition only; no images used as inputs): one simple readable object per icon; identity carried by one or two cues (bark color, embedded-chunk color, stripe color) on a shared family shape."
+    }
+  },
+  "itemHints": {
+    "_note": "Extra visual wording appended to an item description (never replaces it). Use sparingly, for things the model keeps getting wrong.",
+    "unityScoutJacket": "the front hangs fully open showing a plain undershirt underneath, loose sleeves, no zipper"
+  },
+  "folders": {
+    "ammo": "small bundle of ammunition",
+    "tools": "handheld tool, full object visible, angled diagonally, hand-forged frontier craftsmanship",
+    "technology": "compact handheld frontier gadget, small glowing display",
+    "food": "prepared meal in a simple rustic dish",
+    "potions": "small glass vial or jar of liquid remedy",
+    "currency": "game currency icon, small stack, shiny",
+    "enemies": "full body creature or machine, three-quarter view, menacing but readable, centered, entire body visible",
+    "neck": "a single amulet or necklace shown entirely on its own",
+    "ring": "a single ring shown entirely on its own, three-quarter view"
+  },
+  "folderNegatives": {
+    "neck": "person, people, human, character, character sheet, turnaround, multiple views, model sheet, mannequin, dress form, display stand, hanger, extra loose items, weapons, neck, skin, chest",
+    "ring": "person, people, human, character, character sheet, turnaround, multiple views, model sheet, mannequin, dress form, display stand, hanger, extra loose items, weapons, finger, hand, skin"
+  },
+  "materialTags": {
+    "linen": "cloth",
+    "wool": "cloth",
+    "cotton": "cloth",
+    "cloth": "cloth",
+    "fabric": "cloth",
+    "silk": "cloth",
+    "canvas": "cloth",
+    "padded": "cloth",
+    "waxed": "waxed",
+    "waterproof": "waxed",
+    "leather": "leather",
+    "hide": "leather",
+    "suede": "leather",
+    "plate": "plate",
+    "plated": "plate",
+    "steel": "plate",
+    "iron": "plate",
+    "metal": "plate",
+    "alloy": "plate"
+  },
+  "materials": {
+    "cloth": {
+      "prompt": "made of soft woven cloth with a visible fine woven fabric texture, gentle folds and simple seams, matte fabric surface, no metal parts",
+      "negative": "metal plates, plate armor, steel, iron, rivets, pauldrons, shoulder plates, breastplate, chainmail, hard shell, armor plating"
+    },
+    "waxed": {
+      "prompt": "made of waxed water-resistant canvas with a visible woven canvas texture, smooth slightly glossy coated fabric, simple seams, no metal parts",
+      "negative": "metal plates, plate armor, steel, iron, rivets, pauldrons, shoulder plates, breastplate, chainmail, hard shell, armor plating"
+    },
+    "leather": {
+      "prompt": "made of stitched leather panels, smooth matte leather surface, simple straps and laces",
+      "negative": "metal plates, plate armor, steel, iron, rivets, pauldrons, shoulder plates, breastplate, chainmail, armor plating"
+    },
+    "plate": {
+      "prompt": "made of smooth rigid armor plates with clean panel lines",
+      "negative": "torn rags, frayed cloth"
+    }
+  },
+  "factions": {
+    "unity": {
+      "motif": "Unity earth-folk craftsmanship, humble practical handmade design, natural materials",
+      "palette": "earthy natural palette of undyed wool cream, moss green, warm browns and tan leather",
+      "negative": "neon, chrome, glowing tech, purple, black armor, zipper, bomber jacket, modern clothing, synthetic fabric"
+    },
+    "elaran": {
+      "motif": "Elaran neo-futuristic militarized design, sleek angular panels, precise clean lines, utopian military aesthetic",
+      "palette": "black and dark charcoal gray with vivid purple accent trim and purple glowing lights",
+      "negative": "gold, white armor, warm earthy colors, brown, rustic, wood, embroidery, folk patterns"
+    }
+  },
+  "enemyStyle": "bold simplified shapes, chunky readable silhouette, thick clean outline, dramatic soft lighting, rich saturated colors, painterly texture, single subject centered, plain flat light grey background",
+  "overrides": {
+    "_example_itemId": "replace the auto-built subject for one item with your own words",
+    "mossShrimp": "a plump curled freshwater shrimp with a soft green mossy shell, small claws, long thin antennae",
+    "copperWire": "a neat coil of bright copper wire",
+    "salvagedSensor": "a salvaged electronic sensor module with exposed circuit board and a cracked lens",
+    "sidekick22": "a compact frontier pistol, .22 caliber, worn wooden grip",
+    "frontierMarksmanRifle": "a long frontier marksman rifle with a brass scope and wooden stock",
+    "copperiteRounds": "a small pile of copper-jacketed bullets",
+    "gold": "a small stack of gold coins",
+    "medals": "a bronze military medal with a ribbon, war trophy",
+    "tomes": "a thick engineering tome with brass corner guards and diagrams on the cover",
+    "gems": "a cluster of faceted glowing gemstones",
+    "_note_armor": "Armor is modelled as separate head / chest / legs items; gloves, boots and back are separate items too. Never draw another slot's gear in an item."
+  },
+  "negativeExamples": {
+    "_note": "Renders the user rejected, kept so the same mistakes are recognised. Each: what went wrong and the fix applied.",
+    "pinewood_m1": {
+      "files": "assets/_staging/materials/pinewood__m1/",
+      "problem": "seamless tiling pattern of wood slices (a texture sheet), not a log bundle",
+      "cause": "\"material texture\" in the shared style pulled texture-sheet imagery",
+      "fix": "style says \"surface detail\" not \"texture\"; tiling/pattern negatives; single-object gate; composition templates (planned)"
+    },
+    "copperiteOre_m1": {
+      "files": "assets/_staging/materials/copperite_ore__m1/",
+      "problem": "tiled crystal pattern / scattered loose gems instead of one ore rock",
+      "cause": "same texture wording; \"crystals\" read as gems",
+      "fix": "\"one single chunky ore rock\"; loose-gem negatives; single-object gate; composition templates (planned)"
+    },
+    "mossShrimp_templates": {
+      "files": "assets/_staging/materials/moss_shrimp__m9, __m10, __m11",
+      "problem": "hand-drawn shrimp templates rendered as a grasshopper, glass ribbon, worm/caterpillar",
+      "cause": "over-literal prawn rules + code-drawn creature anatomy; user wants a small bug-like shrimp creature that clings in moss",
+      "fix": "start from an earlier good render picked by the user (moss_shrimp_candidates.png)"
+    }
+  },
+  "noOrganicHintArchetypes": [],
+  "backgrounds": {
+    "_note": "Region backgrounds. Format derived from the current Cradle background (assets/backgrounds/regions/region_the_scar_01.png - used for FORMAT only, never as a style input): 1024x1024 square, shown with background-size: cover / center under translucent UI panels with a 2-5px blur, so the centre carries the scene and both edges are cropped on phones (tall) and the top/bottom on desktops (wide). Composition: one clear focal landmark in the middle distance at the centre, leading lines (path, river, shoreline) into hazy depth, foreground framing on the left and right edges, brighter centre and darker edges.",
+    "size": 1024,
+    "composition": "wide establishing landscape view at eye level, centered symmetrical composition, one clear focal landmark in the middle distance at the center of the image, leading lines drawing the eye into the distance, foreground framing elements on the left and right edges, layered depth receding into soft atmospheric haze, brighter center and gently darker edges, no characters",
+    "tracks": {
+      "cinematic": {
+        "label": "Cinematic painterly",
+        "lead": "atmospheric digital matte painting, cinematic fantasy landscape concept art",
+        "style": "soft volumetric light, hazy aerial perspective, lush rich natural color, luminous, painterly detail, high quality game background art",
+        "negative": "photograph, photo, harsh hdr"
+      },
+      "stylized": {
+        "label": "Stylized 3D (matches item icons)",
+        "lead": "stylized 3D animated-film environment art, hand-painted casual-game landscape background",
+        "style": "bold simplified shapes, chunky stylized geometry, smooth clean surfaces, soft color gradients, minimal fine detail, large readable forms, warm painterly lighting, polished casual-game look",
+        "negative": "photorealistic, photograph, gritty, noisy texture, intricate detail"
+      }
+    },
+    "negative": "people, person, human, character, figure, crowd, animals in the foreground, text, letters, watermark, signature, logo, UI, interface, frame, border, vignette frame, split image, collage, multiple panels, diptych, fisheye, tilted horizon, cropped, blurry, lowres, jpeg artifacts, deformed, oversaturated neon, cartoon mascot, top-down view, aerial view, isometric, map, white border, torn paper edge, unfinished canvas edges, sketch"
+  }
+}

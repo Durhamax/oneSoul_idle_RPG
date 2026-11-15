@@ -1,0 +1,48 @@
+{
+  "_readme": "Armor-as-body-parts test. Each subject is ONE equipment piece; its 'slot' pulls the real drawing rule + negatives from prompt-templates.json. Rules under test: chest = no hands/head, head = no face, legs = no feet, and no other slot's gear. Styles are three of the user's round-1/2 favourites. 2 seeds each to judge reliability.",
+  "name": "pieces1",
+  "title": "Piece test: individual equipment pieces (columns) x styles (rows), 2 seeds",
+  "seed": 3000,
+  "variants": 2,
+
+  "framing": "single subject centered, entire subject visible, plain flat light grey background",
+  "palette": "warm golden saturated palette, early frontier era",
+  "negative": "text, letters, watermark, signature, logo, border, frame, cropped, cut off, busy background, scenery, landscape, ground, environment, blurry, lowres, jpeg artifacts, deformed",
+
+  "subjects": [
+    { "id": "unity_hood",     "label": "Head: Unity hood",       "slot": "head",   "prompt": "a Unity scout's soft woven hooded cowl, natural dyed wool with folk-pattern embroidered trim" },
+    { "id": "elaran_helmet",  "label": "Head: Elaran helmet",    "slot": "head",   "prompt": "an Elaran military helmet, sleek neo-futuristic utopian design, polished white and gold armor plates, dark tinted visor" },
+    { "id": "unity_tunic",    "label": "Chest: Unity tunic",     "slot": "chest",  "prompt": "a Unity scout's quilted linen tunic with a leather belt, small pouches and an embroidered folk-pattern sash" },
+    { "id": "unity_trousers", "label": "Legs: Unity trousers",   "slot": "legs",   "prompt": "a Unity scout's sturdy linen trousers with leather knee patches and wrapped shins" },
+    { "id": "unity_gloves",   "label": "Gloves: Unity",          "slot": "gloves", "prompt": "a pair of Unity scout's fingerless leather gloves with stitched folk patterns" },
+    { "id": "unity_boots",    "label": "Boots: Unity",           "slot": "boots",  "prompt": "a pair of Unity scout's soft leather boots with laced wrap bindings" },
+    { "id": "unity_cloak",    "label": "Back: Unity cloak",      "slot": "back",   "prompt": "a Unity scout's hooded travel cloak, natural dyed wool with a folk-pattern embroidered hem" }
+  ],
+
+  "styles": [
+    {
+      "code": "A2",
+      "id": "painterly_defined",
+      "label": "Painterly, crisp edges",
+      "lead": "painterly digital illustration game icon",
+      "prompt": "visible brushstrokes, soft blended gradients, crisp clean defined edges, thin dark outline around the silhouette, high readability",
+      "negative": "photo, photorealistic, 3d render, vector, blurry edges"
+    },
+    {
+      "code": "B",
+      "id": "cel_ink",
+      "label": "Cel-shaded bold ink",
+      "lead": "cel-shaded bold ink game icon",
+      "prompt": "thick black ink outlines, flat color fills, hard-edged cel shadows, graphic novel style",
+      "negative": "photo, photorealistic, 3d render, soft gradients, painterly"
+    },
+    {
+      "code": "G2",
+      "id": "vector_sticker",
+      "label": "Vector, bold outline + 2-tone",
+      "lead": "flat vector sticker-style game icon",
+      "prompt": "bold uniform dark outline, flat colors with one hard shadow tone and one highlight tone, simplified geometric shapes, crisp edges",
+      "negative": "photo, photorealistic, 3d render, texture, brushstrokes, soft gradients"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "_readme": "Round 3: user direction = simpler, less detail, items like a casual stylized-3D game item model (Fortnite-like) rather than detailed 3D. Detail is where AI errors come from. The look is DESCRIBED, never named. Subjects are deliberately simple (few large parts, no embroidery/pouches/patterns). Armor pieces use the real per-slot rules via 'slot'.",
+  "name": "round3",
+  "title": "Round 3: simplified stylized-3D item look (rows) x items (columns), 2 seeds",
+  "seed": 4000,
+  "variants": 2,
+
+  "framing": "single subject centered, entire subject visible, plain flat light grey background",
+  "palette": "bright saturated colors, warm early-game palette",
+  "negative": "text, letters, watermark, signature, logo, border, frame, cropped, cut off, busy background, scenery, landscape, ground, environment, blurry, lowres, jpeg artifacts, deformed, intricate details, fine patterns, embroidery, ornate, filigree, stitching, small text, clutter, realistic texture, photorealistic, photo, gritty, grunge, noise, scratches",
+
+  "subjects": [
+    { "id": "moss_shrimp",    "label": "Moss Shrimp",          "prompt": "a chunky cartoon freshwater shrimp with a simple rounded segmented body, fan tail, two small claws and two antennae, soft green shell", "negative": "centipede, millipede, scorpion, insect, many legs" },
+    { "id": "oak_logs",       "label": "Oak Logs",             "prompt": "three chunky cut oak logs stacked together, simple bark, pale end rings" },
+    { "id": "unity_hood",     "label": "Head: Unity hood",     "slot": "head",  "prompt": "a simple soft cloth hood in plain natural wool color with one colored trim band" },
+    { "id": "elaran_helmet",  "label": "Head: Elaran helmet",  "slot": "head",  "prompt": "a sleek simple white and gold futuristic helmet with a dark visor" },
+    { "id": "unity_tunic",    "label": "Chest: Unity tunic",   "slot": "chest", "prompt": "a simple padded cloth tunic with one leather belt" },
+    { "id": "unity_trousers", "label": "Legs: Unity trousers", "slot": "legs",  "prompt": "a simple pair of cloth trousers with leather knee pads" }
+  ],
+
+  "styles": [
+    {
+      "code": "S1",
+      "id": "stylized_3d",
+      "label": "Stylized 3D, clean",
+      "lead": "stylized 3D game item render",
+      "prompt": "chunky simplified proportions, smooth clean surfaces, minimal surface detail, large simple shapes, soft studio lighting with gentle rim light, clean readable silhouette, polished casual-game look"
+    },
+    {
+      "code": "S2",
+      "id": "stylized_3d_outline",
+      "label": "Stylized 3D + thin outline",
+      "lead": "stylized 3D game item render",
+      "prompt": "chunky simplified proportions, smooth clean surfaces, minimal surface detail, large simple shapes, soft studio lighting with gentle rim light, thin dark outline around the silhouette, polished casual-game look"
+    },
+    {
+      "code": "S3",
+      "id": "toy_3d",
+      "label": "Extra simple, toy-like 3D",
+      "lead": "stylized 3D toy-like game item render",
+      "prompt": "extra chunky rounded proportions, very few parts, smooth matte vinyl-toy surfaces, almost no surface detail, soft even studio lighting, bold simple silhouette"
+    }
+  ]
+}

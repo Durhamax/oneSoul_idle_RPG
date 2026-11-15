@@ -1,0 +1,20 @@
+{
+  "_note": "Approved by the user 2026-11-14 as the Unity Scout Hood reference (replaces r8 v1 try 1, archived as unity_scout_hood_r8.*). Refine from it; reproduce with the settings below.",
+  "item": "unityScoutHood",
+  "file": "unity_scout_hood.png",
+  "approvedAs": "reference (near-final), not final art",
+  "seed": 7201,
+  "checkpoint": "sd_xl_base_1.0.safetensors",
+  "size": 1024,
+  "steps": 28,
+  "cfg": 6,
+  "sampler": "dpmpp_2m",
+  "scheduler": "karras",
+  "init": {
+    "from": "scripts/asset-gen/references/unity_scout_hood_start.png",
+    "denoise": 0.75
+  },
+  "cleanup": "none applied (face detection skipped: 0% skin); outline 3px #1a1612",
+  "positive": "thin-outlined stylized 3D game item render of Unity Scout Hood, A soft linen hood issued to Unity scouts, soft woven linen cloth texture visible across the fabric, a fitted cloth faceguard wraps across the lower half of the hood opening, above the faceguard the opening is a dark empty void, made of soft woven cloth with gentle folds and simple seams, matte fabric surface, no metal parts, a single helmet or head covering shown entirely on its own, hollow inside, the opening of the hood or visor is a deep dark empty void with nothing inside, three-quarter front view, the item turned about 15 degrees so its front faces slightly toward the viewer's left, camera level with the item, Unity earth-folk craftsmanship, humble practical handmade design, natural materials, chunky simplified proportions, smooth clean surfaces, minimal surface detail, large simple shapes, soft studio lighting with gentle rim light, clean readable silhouette edged by a thin even dark outline for contrast, polished casual-game look, single subject centered, plain flat light grey background, earthy natural palette of undyed wool cream, moss green, warm browns and tan leather",
+  "negative": "photo, photograph, photorealistic, realistic texture, macro photography, scientific illustration, text, letters, watermark, signature, logo, border, frame, multiple objects, scenery, landscape, ground, environment, busy background, cropped, cut off, blurry, lowres, jpeg artifacts, deformed, intricate details, fine patterns, embroidery, ornate, filigree, clutter, gritty, grunge, noise, scratches, person, people, human, character, character sheet, turnaround, multiple views, model sheet, mannequin, dress form, display stand, hanger, extra loose items, weapons, face, eyes, nose, mouth, skin, hair, neck, shoulders, body, torso, blank face, featureless face, smooth face shape, mannequin head, faceless head, skull, side view, profile view, back view, rear view, top-down view, metal plates, plate armor, steel, iron, rivets, pauldrons, shoulder plates, breastplate, chainmail, hard shell, armor plating, neon, chrome, glowing tech, purple, black armor, zipper, bomber jacket, modern clothing, synthetic fabric"
+}

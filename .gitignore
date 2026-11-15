@@ -59,3 +59,6 @@ node_modules/
 
 # npm package lock (optional - uncomment if you want to ignore)
 # package-lock.json
+
+# asset pipeline scratch: blockout/composite start images (regenerable)
+scripts/asset-gen/references/backgrounds/

@@ -1,0 +1,63 @@
+{
+  "_readme": "Armor framing test. Goal: armor shaped as if on a mannequin, with no person, mannequin, face, or weapons. Subjects = 4 phrasings (P1-P4); styles = style x guidance settings. 2 seeds each to judge reliability, not luck.",
+  "name": "armor1",
+  "title": "Armor framing test: phrasings (columns) x style/guidance (rows), 2 seeds",
+  "seed": 2000,
+  "variants": 2,
+
+  "framing": "single subject centered, entire subject visible, plain flat light grey background",
+  "palette": "warm golden saturated palette, early frontier era",
+  "negative": "text, letters, watermark, signature, logo, border, frame, cropped, cut off, busy background, scenery, landscape, ground, environment, blurry, lowres, jpeg artifacts, deformed, person, people, human, man, woman, face, eyes, head, hair, skin, hands, fingers, character, character sheet, turnaround, multiple views, model sheet, mannequin, dress form, display stand, hanger, weapons, sword, spear, bow, gun, knife",
+
+  "subjects": [
+    {
+      "id": "p1_ghost",
+      "label": "P1 ghost-mannequin term",
+      "prompt": "ghost mannequin apparel product shot of a Unity scout outfit: hooded travel cloak, quilted tunic, leather belts and pouches, woven sash with folk embroidery, trousers and soft leather boots, hollow clothing standing upright with a visible empty neck opening and the dark empty inside of the hood"
+    },
+    {
+      "id": "p2_floating",
+      "label": "P2 empty outfit floating",
+      "prompt": "an empty Unity scout outfit floating upright by itself as if worn by an invisible spirit: hollow hooded cloak with nothing inside the hood, quilted tunic, leather belts and pouches, woven sash with folk embroidery, empty sleeves, trousers, soft leather boots"
+    },
+    {
+      "id": "p3_shell",
+      "label": "P3 inventory icon, hollow shell",
+      "prompt": "game inventory icon of the Unity scout armor set as one standing hollow shell: hooded cloak draped over a quilted tunic, belts and pouches, embroidered sash, trousers and boots, the hood opening is dark and empty"
+    },
+    {
+      "id": "p4_torso",
+      "label": "P4 torso only (cloak + tunic)",
+      "prompt": "game inventory icon of a Unity scout armor set: hooded cloak over a quilted tunic with leather belts, pouches and an embroidered folk sash, standing by itself as a hollow three-dimensional garment, empty hood, empty sleeves"
+    }
+  ],
+
+  "styles": [
+    {
+      "code": "A2",
+      "id": "painterly_cfg2",
+      "label": "Painterly crisp, cfg 2 (default)",
+      "lead": "painterly digital illustration game icon",
+      "prompt": "visible brushstrokes, soft blended gradients, crisp clean defined edges, thin dark outline around the silhouette, high readability",
+      "negative": "photo, photorealistic, 3d render, vector, blurry edges"
+    },
+    {
+      "code": "A2+",
+      "id": "painterly_cfg35",
+      "label": "Painterly crisp, cfg 3.5 / 8 steps",
+      "lead": "painterly digital illustration game icon",
+      "prompt": "visible brushstrokes, soft blended gradients, crisp clean defined edges, thin dark outline around the silhouette, high readability",
+      "negative": "photo, photorealistic, 3d render, vector, blurry edges",
+      "settings": { "cfg": 3.5, "steps": 8 }
+    },
+    {
+      "code": "G2+",
+      "id": "sticker_cfg35",
+      "label": "Vector sticker, cfg 3.5 / 8 steps",
+      "lead": "flat vector sticker-style game icon",
+      "prompt": "bold uniform dark outline, flat colors with one hard shadow tone and one highlight tone, simplified geometric shapes, crisp edges",
+      "negative": "photo, photorealistic, 3d render, texture, brushstrokes, soft gradients",
+      "settings": { "cfg": 3.5, "steps": 8 }
+    }
+  ]
+}

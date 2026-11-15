@@ -1,0 +1,115 @@
+{
+  "_readme": "Style board: every style x every subject, same seed, no style anchor. Render with: node scripts/style-board.js scripts/asset-gen/boards/round1.json. Pick favourites by code (A, B, ...); the next round branches from them.",
+  "name": "round1",
+  "title": "Round 1: broad survey of rendering styles",
+  "seed": 2000,
+  "variants": 1,
+
+  "framing": "single subject centered, entire subject visible, plain flat light grey background",
+  "palette": "warm golden saturated palette, early frontier era",
+  "negative": "text, letters, watermark, signature, logo, border, frame, cropped, cut off, person, wearer, mannequin, hands, busy background, scenery, landscape, ground, environment, multiple separate objects, blurry, lowres, jpeg artifacts, deformed",
+
+  "subjects": [
+    {
+      "id": "moss_shrimp",
+      "label": "Moss Shrimp",
+      "family": "item",
+      "prompt": "a plump curled freshwater shrimp with a soft green mossy shell, small claws, long thin antennae, subtly alien wildlife"
+    },
+    {
+      "id": "oak_logs",
+      "label": "Oak Logs",
+      "family": "item",
+      "prompt": "a small stack of three cut oak logs with rough bark and pale end-grain rings"
+    },
+    {
+      "id": "unity_scout_set",
+      "label": "Unity Scout Set",
+      "family": "item",
+      "prompt": "a lightweight scout outfit laid out as one set with no wearer: hooded travel cloak, quilted tunic, leather belts and pouches, woven sash with folk-pattern embroidery, natural dyed fabrics, humble communal earth-folk craftsmanship, no metal plating"
+    }
+  ],
+
+  "styles": [
+    {
+      "code": "A",
+      "id": "painterly",
+      "label": "Painterly illustration",
+      "lead": "painterly digital illustration game icon",
+      "prompt": "visible brushstrokes, soft blended gradients, storybook concept art",
+      "negative": "photo, photorealistic, 3d render, vector, flat color"
+    },
+    {
+      "code": "B",
+      "id": "cel_ink",
+      "label": "Cel-shaded, bold ink",
+      "lead": "cel-shaded bold ink game icon",
+      "prompt": "thick black ink outlines, flat color fills, hard-edged cel shadows, graphic novel style",
+      "negative": "photo, photorealistic, 3d render, soft gradients, painterly"
+    },
+    {
+      "code": "C",
+      "id": "stylized_3d",
+      "label": "Stylized 3D",
+      "lead": "stylized 3D rendered game icon",
+      "prompt": "smooth sculpted forms, soft studio lighting, gentle ambient occlusion, toy-like readability",
+      "negative": "photo, photorealistic, flat, 2d, sketch, line art"
+    },
+    {
+      "code": "D",
+      "id": "pixel",
+      "label": "Pixel art",
+      "lead": "pixel art game item sprite",
+      "prompt": "crisp hard-edged pixels, limited palette, 16-bit era, no anti-aliasing, clean pixel outline",
+      "negative": "photo, photorealistic, 3d render, smooth gradients, blurry, painterly"
+    },
+    {
+      "code": "E",
+      "id": "watercolor_ink",
+      "label": "Watercolor and ink",
+      "lead": "watercolor and ink illustration game icon",
+      "prompt": "loose watercolor washes, delicate pen linework, soft bleeding edges, subtle paper texture",
+      "negative": "photo, photorealistic, 3d render, vector, hard cel shading"
+    },
+    {
+      "code": "F",
+      "id": "woodcut",
+      "label": "Woodcut / linocut print",
+      "lead": "woodcut linocut print game icon",
+      "prompt": "carved bold lines, limited ink colors, folk printmaking texture, hand-printed look",
+      "negative": "photo, photorealistic, 3d render, smooth gradients, glossy"
+    },
+    {
+      "code": "G",
+      "id": "flat_vector",
+      "label": "Flat vector",
+      "lead": "flat vector illustration game icon",
+      "prompt": "clean geometric shapes, minimal shading, crisp edges, simple bold forms",
+      "negative": "photo, photorealistic, 3d render, texture, brushstrokes, gradients"
+    },
+    {
+      "code": "H",
+      "id": "low_poly",
+      "label": "Low-poly faceted",
+      "lead": "low-poly faceted 3D game icon",
+      "prompt": "flat-shaded triangular facets, gem-like geometric planes, simple lighting",
+      "negative": "photo, photorealistic, smooth surfaces, painterly, sketch"
+    },
+    {
+      "code": "I",
+      "id": "gouache_folk",
+      "label": "Gouache folk art",
+      "lead": "matte gouache folk-art painting game icon",
+      "prompt": "rich flat opaque color, decorative folk ornament and patterns, naive charm, visible matte paint texture",
+      "negative": "photo, photorealistic, 3d render, glossy, vector"
+    },
+    {
+      "code": "J",
+      "id": "engraving",
+      "label": "Engraved ink + tint",
+      "lead": "hand-engraved ink illustration game icon",
+      "prompt": "fine cross-hatched engraving lines, antique field-guide plate, muted color tint over linework",
+      "negative": "photo, photorealistic, 3d render, flat vector, neon"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "_readme": "Round 4 tests the user's round-3 feedback: (1) intentional material — cloth vs leather tunic vs plate; (2) trousers fix; (3) helmets near-front turned ~15 degrees left, not side-on; (4) faction palettes — Unity earthy natural, Elaran black/dark gray + purple accents. Material, faction and slot rules all come from prompt-templates.json. Base SDXL (preferredCheckpoint).",
+  "name": "round4",
+  "title": "Round 4: material, faction and angle rules (base SDXL), 2 seeds",
+  "seed": 5000,
+  "variants": 2,
+
+  "framing": "single subject centered, entire subject visible, plain flat light grey background",
+  "palette": "bright saturated colors",
+  "negative": "text, letters, watermark, signature, logo, border, frame, cropped, cut off, busy background, scenery, landscape, ground, environment, blurry, lowres, jpeg artifacts, deformed, intricate details, fine patterns, embroidery, ornate, filigree, small text, clutter, realistic texture, photorealistic, photo, gritty, grunge, noise, scratches",
+
+  "subjects": [
+    { "id": "unity_cloth_tunic",   "label": "Chest: Unity cloth tunic",   "slot": "chest", "material": "cloth",   "faction": "unity",  "prompt": "a simple long-sleeved Unity scout tunic belted at the waist" },
+    { "id": "unity_leather_tunic", "label": "Chest: Unity leather tunic", "slot": "chest", "material": "leather", "faction": "unity",  "prompt": "a simple Unity hunter's leather tunic with a laced collar" },
+    { "id": "elaran_plate_chest",  "label": "Chest: Elaran plate",        "slot": "chest", "material": "plate",   "faction": "elaran", "prompt": "an Elaran soldier's armored chestplate with a high collar" },
+    { "id": "unity_trousers",      "label": "Legs: Unity cloth trousers", "slot": "legs",  "material": "cloth",   "faction": "unity",  "prompt": "simple Unity scout trousers" },
+    { "id": "elaran_plate_legs",   "label": "Legs: Elaran plate",         "slot": "legs",  "material": "plate",   "faction": "elaran", "prompt": "an Elaran soldier's armored leg guards" },
+    { "id": "elaran_helmet",       "label": "Head: Elaran helmet",        "slot": "head",  "material": "plate",   "faction": "elaran", "prompt": "an Elaran soldier's full helmet with a visor" },
+    { "id": "unity_hood",          "label": "Head: Unity hood",           "slot": "head",  "material": "cloth",   "faction": "unity",  "prompt": "a simple Unity scout hood" }
+  ],
+
+  "styles": [
+    {
+      "code": "S1",
+      "id": "stylized_3d",
+      "label": "Stylized 3D, clean",
+      "lead": "stylized 3D game item render",
+      "prompt": "chunky simplified proportions, smooth clean surfaces, minimal surface detail, large simple shapes, soft studio lighting with gentle rim light, clean readable silhouette, polished casual-game look"
+    },
+    {
+      "code": "S3",
+      "id": "toy_3d",
+      "label": "Extra simple, toy-like 3D",
+      "lead": "stylized 3D toy-like game item render",
+      "prompt": "extra chunky rounded proportions, very few parts, smooth matte vinyl-toy surfaces, almost no surface detail, soft even studio lighting, bold simple silhouette"
+    }
+  ]
+}

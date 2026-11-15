@@ -16,7 +16,7 @@
 | Asset type | Approved & installed | In progress | Legacy art | Not started |
 |---|---|---|---|---|
 | Item icons | 17 | 10 | 8 | 54 |
-| Region backgrounds | 3 | 2 | 1 | 1 |
+| Region backgrounds | 5 | 0 | 1 | 1 |
 | Enemy art | 0 | 0 | 0 | 7 |
 | Node art | 0 | 0 | 0 | 19 |
 
@@ -89,14 +89,13 @@
 | Region | id | File |
 |---|---|---|
 | Scoutreach | `region_-2_-3` | `assets/backgrounds/regions/region_scoutreach_01.jpg` |
+| Verduun South | `region_-3_-3` | `assets/backgrounds/regions/region_verduun_south_01.jpg` |
 | Verduun West | `region_-4_-3` | `assets/backgrounds/regions/region_verduun_west_01.jpg` |
+| Verduun North | `region_-3_-2` | `assets/backgrounds/regions/region_verduun_north_01.jpg` |
 | The West Shoals | `region_-4_-4` | `assets/backgrounds/regions/region_west_shoals_01.jpg` |
 
 ### In progress
-| Region | id | Pipeline |
-|---|---|---|
-| Verduun South | `region_-3_-3` | specced; 27 staged round(s) under review |
-| Verduun North | `region_-3_-2` | specced; 10 staged round(s) under review |
+_None._
 
 Review page: `node scripts/asset-gen/background-review.js` → `assets/_staging/backgrounds.html`.
 

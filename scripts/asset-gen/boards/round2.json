@@ -1,0 +1,117 @@
+{
+  "_readme": "Round 2 branches from the round-1 picks A (painterly), B (cel-shaded ink), G (flat vector), H (low-poly faceted). Baselines keep their round-1 codes; '2' = a variation; two-letter codes = hybrids. Same seed as round 1.",
+  "name": "round2",
+  "title": "Round 2: variations and hybrids of A, B, G, H",
+  "seed": 2000,
+  "variants": 1,
+
+  "framing": "single subject centered, entire subject visible, plain flat light grey background",
+  "palette": "warm golden saturated palette, early frontier era",
+  "negative": "text, letters, watermark, signature, logo, border, frame, cropped, cut off, busy background, scenery, landscape, ground, environment, multiple separate objects, blurry, lowres, jpeg artifacts, deformed",
+
+  "subjects": [
+    {
+      "id": "moss_shrimp",
+      "label": "Moss Shrimp",
+      "family": "item",
+      "prompt": "a plump freshwater shrimp seen from the side, a true crustacean with a curved segmented body, fan-shaped tail fin, small front claws and two long antennae, soft green mossy shell, subtly alien wildlife",
+      "negative": "centipede, millipede, scorpion, insect, worm, many legs"
+    },
+    {
+      "id": "oak_logs",
+      "label": "Oak Logs",
+      "family": "item",
+      "prompt": "a small stack of three cut oak logs with rough bark and pale end-grain rings"
+    },
+    {
+      "id": "unity_scout_set",
+      "label": "Unity Scout Set",
+      "family": "item",
+      "prompt": "Unity scout armor set shown as if worn on an invisible mannequin, the garments hold their worn three-dimensional shape with a hollow empty interior and an empty hood: hooded travel cloak, quilted tunic, leather belts and pouches, woven sash with folk-pattern embroidery, soft leather boots, natural dyed fabrics, humble communal earth-folk craftsmanship, no metal plating",
+      "negative": "person, human, face, head, skin, hands, arms, body, mannequin, dress form, display stand, hanger, weapons, sword, spear, bow, gun"
+    }
+  ],
+
+  "styles": [
+    {
+      "code": "A",
+      "id": "painterly",
+      "label": "Painterly (round-1 A)",
+      "lead": "painterly digital illustration game icon",
+      "prompt": "visible brushstrokes, soft blended gradients, storybook concept art",
+      "negative": "photo, photorealistic, 3d render, vector, flat color"
+    },
+    {
+      "code": "A2",
+      "id": "painterly_defined",
+      "label": "Painterly, crisp edges",
+      "lead": "painterly digital illustration game icon",
+      "prompt": "visible brushstrokes, soft blended gradients, crisp clean defined edges, thin dark outline around the silhouette, high readability",
+      "negative": "photo, photorealistic, 3d render, vector, blurry edges"
+    },
+    {
+      "code": "B",
+      "id": "cel_ink",
+      "label": "Cel-shaded bold ink (round-1 B)",
+      "lead": "cel-shaded bold ink game icon",
+      "prompt": "thick black ink outlines, flat color fills, hard-edged cel shadows, graphic novel style",
+      "negative": "photo, photorealistic, 3d render, soft gradients, painterly"
+    },
+    {
+      "code": "B2",
+      "id": "cel_color_line",
+      "label": "Cel-shaded, colored linework",
+      "lead": "cel-shaded anime-style game icon",
+      "prompt": "medium-weight colored lineart darker than the fill instead of black, two-tone hard cel shading with a single highlight, clean and bright",
+      "negative": "photo, photorealistic, 3d render, black outlines, painterly, gritty"
+    },
+    {
+      "code": "G",
+      "id": "flat_vector",
+      "label": "Flat vector (round-1 G)",
+      "lead": "flat vector illustration game icon",
+      "prompt": "clean geometric shapes, minimal shading, crisp edges, simple bold forms",
+      "negative": "photo, photorealistic, 3d render, texture, brushstrokes, gradients"
+    },
+    {
+      "code": "G2",
+      "id": "vector_sticker",
+      "label": "Vector, bold outline + 2-tone",
+      "lead": "flat vector sticker-style game icon",
+      "prompt": "bold uniform dark outline, flat colors with one hard shadow tone and one highlight tone, simplified geometric shapes, crisp edges",
+      "negative": "photo, photorealistic, 3d render, texture, brushstrokes, soft gradients"
+    },
+    {
+      "code": "H",
+      "id": "low_poly",
+      "label": "Low-poly faceted (round-1 H)",
+      "lead": "low-poly faceted 3D game icon",
+      "prompt": "flat-shaded triangular facets, gem-like geometric planes, simple lighting",
+      "negative": "photo, photorealistic, smooth surfaces, painterly, sketch"
+    },
+    {
+      "code": "H2",
+      "id": "low_poly_soft",
+      "label": "Low-poly, soft lighting",
+      "lead": "low-poly faceted 3D game icon",
+      "prompt": "visible polygon facets with soft gradient lighting across them, warm rim light, subtle color variation per facet, polished stylized render",
+      "negative": "photo, photorealistic, high-poly smooth surfaces, sketch"
+    },
+    {
+      "code": "AB",
+      "id": "painterly_ink",
+      "label": "Hybrid: painterly inside bold ink",
+      "lead": "painterly illustration game icon with bold ink outlines",
+      "prompt": "thick confident black ink contour lines, painted soft-shaded fills inside the lines, brush texture, comic cover art finish",
+      "negative": "photo, photorealistic, 3d render, flat vector"
+    },
+    {
+      "code": "GH",
+      "id": "faceted_vector",
+      "label": "Hybrid: faceted flat vector",
+      "lead": "geometric faceted vector illustration game icon",
+      "prompt": "shapes built from flat-colored angular planes like cut paper or crystal, no gradients, crisp edges, clean bold silhouette",
+      "negative": "photo, photorealistic, smooth 3d render, brushstrokes, soft gradients"
+    }
+  ]
+}

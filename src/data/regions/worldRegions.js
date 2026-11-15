@@ -365,7 +365,7 @@ const WorldRegions = {
         description: "The heart of the old Unity woods, long abandoned. Here the Unity raised an earthen amphitheatre three storeys high, encircling a hundred-yard market floor reached only by ground-level tunnels. At its centre stands a ring of great stones — an ode to a world they left behind, aligned to the new constellations of Aurora Vitae.",
         biome: "forest",
         icon: "🏛️",
-        backgroundImage: null,
+        backgroundImage: "assets/backgrounds/regions/region_verduun_south_01.jpg",
 
         hexCoords: { q: -3, r: -3 },
         navigationRequirement: 2,
@@ -556,7 +556,7 @@ const WorldRegions = {
         description: "The northern Verduun woods carry the scars of an early war between the factions — underground trenches and passages that still thread the hills beneath five centuries of dirt and overgrowth. Something down there still keeps watch.",
         biome: "forest",
         icon: "⚔️",
-        backgroundImage: null,
+        backgroundImage: "assets/backgrounds/regions/region_verduun_north_01.jpg",
 
         hexCoords: { q: -3, r: -2 },
         navigationRequirement: 3,
